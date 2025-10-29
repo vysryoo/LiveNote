@@ -2,6 +2,8 @@
 
 Complete setup instructions for RAGKit - a Python library for RAG using ChromaDB and OpenAI.
 
+> **⚠️ Note on Metadata**: The `difficulty` or `level` metadata fields are **not used** in this project. Use `category`, `topic`, or custom fields instead for classification.
+
 ## Prerequisites
 
 - **Python 3.11+**

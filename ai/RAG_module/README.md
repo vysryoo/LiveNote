@@ -219,8 +219,6 @@ python examples/ingest_pdf_pages.py test_data/sample_lecture.pdf my_collection
 RAGConfig(
     persist_dir="./chroma_data",           # Chroma storage directory
     embedding_model="text-embedding-3-large",  # OpenAI model
-    chunk_size=1000,                       # For future chunking
-    chunk_overlap=200,                     # For future chunking
     openai_api_key=None                    # Defaults to OPENAI_API_KEY env
 )
 ```
