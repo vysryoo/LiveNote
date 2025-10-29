@@ -1,2 +1,32 @@
-.venv
-chroma_data
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.Python
+build/
+dist/
+
+# Virtual Environment
+.venv/
+venv/
+
+# ChromaDB
+test_chroma_data/
+chroma_data/
+*.sqlite3
+
+# API Keys
+.env
+*.key
+
+# Test Data (자동 생성 가능)
+test_data/*.pdf
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup
+*_OLD.md
+*.backup
