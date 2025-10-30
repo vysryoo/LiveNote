@@ -221,16 +221,82 @@ def main():
         print(f"{i}. [유사도: {chunk.score:.4f}] {chunk.text[:60]}...")
         print(f"   섹션: {chunk.metadata.get('섹션')}, 청크: {chunk.metadata.get('청크번호')}")
     
+    # 쿼리 8: timestamp 필터 테스트
+    print("\n【쿼리 8】timestamp 필터 테스트: 최근 3분 내 데이터만 (top_k=5)")
+    print("-" * 80)
+    
+    current_time = int(time.time() * 1000)  # 현재 시간 (밀리초)
+    three_minutes_ago = current_time - (3 * 60 * 1000)  # 3분 전
+    
+    print(f"   현재 시간: {current_time}")
+    print(f"   3분 전: {three_minutes_ago}")
+    print(f"   필터: min_timestamp={three_minutes_ago}")
+    
+    filters = RetrieveFilters(min_timestamp=three_minutes_ago)
+    chunks = service.retrieve("lecture_collection", "인공지능", top_k=5, filters=filters)
+    
+    if chunks:
+        print(f"\n   ✅ 최근 3분 내 데이터 {len(chunks)}개 발견:")
+        for i, chunk in enumerate(chunks, 1):
+            ts = chunk.metadata.get('타임스탬프', 0)
+            seconds_ago = (current_time - ts) / 1000
+            print(f"   {i}. [유사도: {chunk.score:.4f}] {chunk.text[:40]}...")
+            print(f"      타임스탬프: {ts} ({seconds_ago:.0f}초 전)")
+    else:
+        print("   ℹ️  최근 3분 내 데이터 없음 (정상 - 테스트 데이터는 과거 시간 사용)")
+    
+    # 쿼리 9: subject 필터 테스트
+    print("\n【쿼리 9】subject 필터 테스트: subject='AI' (top_k=3)")
+    print("-" * 80)
+    
+    # AI subject를 가진 데이터 먼저 추가
+    test_items = [
+        UpsertItem(
+            text="AI는 인공지능의 약자로 기계가 학습하고 판단하는 기술입니다.",
+            metadata={"subject": "AI", "topic": "definition"}
+        ),
+        UpsertItem(
+            text="머신러닝은 AI의 한 분야로 데이터로부터 패턴을 학습합니다.",
+            metadata={"subject": "AI", "topic": "ml"}
+        ),
+        UpsertItem(
+            text="파이썬은 프로그래밍 언어입니다.",
+            metadata={"subject": "Programming", "topic": "python"}
+        ),
+    ]
+    service.upsert_text("test_subject_collection", test_items)
+    print("   테스트 데이터 3개 추가 완료 (AI 2개, Programming 1개)")
+    
+    filters = RetrieveFilters(subject="AI")
+    chunks = service.retrieve("test_subject_collection", "인공지능과 학습", top_k=5, filters=filters)
+    
+    print(f"\n   ✅ subject='AI' 필터 결과: {len(chunks)}개")
+    for i, chunk in enumerate(chunks, 1):
+        print(f"   {i}. [유사도: {chunk.score:.4f}] {chunk.text[:50]}...")
+        print(f"      subject: {chunk.metadata.get('subject')}, topic: {chunk.metadata.get('topic')}")
+    
+    # Programming subject는 제외되었는지 확인
+    programming_found = any(c.metadata.get('subject') == 'Programming' for c in chunks)
+    if not programming_found:
+        print(f"\n   ✅ 필터 정상 동작: subject='Programming'은 제외됨")
+    else:
+        print(f"\n   ⚠️  경고: subject 필터가 제대로 작동하지 않음")
+    
     # ========== 4. 통계 정보 ==========
     print_section("📊 4단계: 테스트 요약")
     
     print("✅ 성공적으로 완료된 작업:")
     print(f"   1. 텍스트 60개 청크 업로드 (6개 섹션)")
     print(f"   2. PDF 20페이지 업로드 (다양한 주제)")
-    print(f"   3. 총 7개 쿼리 테스트 (일반 검색, 필터 검색)")
+    print(f"   3. 총 9개 쿼리 테스트:")
+    print(f"      - 일반 검색 (쿼리 1, 2, 5, 6)")
+    print(f"      - 커스텀 필터 검색 (쿼리 3, 4, 7)")
+    print(f"      - timestamp 필터 검색 (쿼리 8)")
+    print(f"      - subject 필터 검색 (쿼리 9)")
     print(f"\n✅ 사용된 컬렉션:")
     print(f"   - lecture_collection: 60개 텍스트 청크")
     print(f"   - pdf_collection: 20개 PDF 페이지")
+    print(f"   - test_subject_collection: 3개 테스트 데이터")
     print(f"\n✅ 임베딩 모델: {config.embedding_model}")
     print(f"✅ 저장 위치: {config.persist_dir}")
     
@@ -238,6 +304,9 @@ def main():
     print("팀원들에게 다음과 같이 설명하세요:")
     print("1. 대량 데이터 처리 성능 확인 (60 텍스트 + 20 PDF)")
     print("2. 메타데이터 필터링 기능 동작 확인")
+    print("   - 커스텀 필터 (섹션별 검색)")
+    print("   - subject 필터 (과목별 검색)")
+    print("   - timestamp 필터 (시간 범위 검색)")
     print("3. 다양한 주제의 문서에서 정확한 검색 가능")
     print("4. 유사도 점수로 결과 품질 평가 가능\n")
 

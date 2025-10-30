@@ -141,18 +141,28 @@ POST /rag/upsert-text
 ```python
 # 임베딩 생성 + 저장
 embedding = openai.embed("스택은 LIFO...")
-vectordb.save(
-    collection="session_abc123",
-    id="7f3e9a2b1c4d5e",  # 자동 생성된 ID
-    embedding=embedding,
-    text="스택은 LIFO..."
+
+# 실제 저장되는 내용 (metadata 포함!)
+vectordb.upsert(
+    collection_id="session_abc123",
+    ids=["7f3e9a2b1c4d5e"],        # 자동 생성된 ID
+    embeddings=[embedding],         # 3072차원 벡터
+    documents=["스택은 LIFO..."],   # 원본 텍스트
+    metadatas=[{
+        "section_id": 1,            # ✅ 메타데이터도 함께 저장
+        "timestamp": 1703001234567, # ✅ 검색 필터에 사용 가능
+        "subject": "CS"             # ✅ 과목별 필터 가능
+    }]
 )
 ```
 
 **3. 결과 → ChromaDB 상태**
 ```
 📦 Collection: "session_abc123"
-└── 7f3e9a2b1c4d5e: [벡터] + "스택은 LIFO..."
+└── 7f3e9a2b1c4d5e: 
+    ├── 벡터: [3072차원]
+    ├── 텍스트: "스택은 LIFO..."
+    └── 메타데이터: {section_id: 1, timestamp: 1703001234567, subject: "CS"}
 ```
 
 ---
