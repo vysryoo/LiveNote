@@ -94,6 +94,7 @@ echo "  numpy 다운그레이드 (호환성)..."
 pip install "numpy<2" -q
 
 echo "  RAGKit 및 의존성 설치 중 (1-2분 소요)..."
+echo "  (chromadb, openai, pypdf, reportlab, python-dotenv 등)"
 pip install -e . -q
 
 # 설치 확인
@@ -158,8 +159,11 @@ print_step $CURRENT_STEP $TOTAL_STEPS "테스트 PDF 생성"
 if [ ! -f "test_data/large_test_20pages.pdf" ]; then
     if [ -f "create_large_test_pdf.py" ]; then
         echo "  20페이지 PDF 생성 중..."
-        python create_large_test_pdf.py > /dev/null 2>&1
-        print_success "20페이지 PDF 생성 완료"
+        if python create_large_test_pdf.py 2>&1 | grep -q "생성 완료"; then
+            print_success "20페이지 PDF 생성 완료"
+        else
+            print_warning "PDF 생성 실패 (테스트는 계속 진행 가능)"
+        fi
     else
         print_warning "PDF 생성 스크립트 없음 (건너뜀)"
     fi
