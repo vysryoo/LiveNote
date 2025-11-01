@@ -283,77 +283,7 @@ POST /rag/retrieve
 
 ---
 
-## � 핵심 설계 개념
-
-### 같은 Collection에 여러 타입 저장하기
-
-**강의노트와 요약본을 한 컬렉션에 함께 저장**할 수 있습니다. `type` 메타데이터로 구분하세요:
-
-```python
-from ragkit import RAGService
-from ragkit.models import UpsertItem, RetrieveFilters
-
-service = RAGService()
-collection_id = "lecture_cs101"
-
-# 1. 강의노트 PDF 업로드
-service.upsert_pdf(
-    collection_id,
-    "data_structure.pdf",
-    base_metadata={
-        "type": "lecture_note",  # 📄 타입 구분
-        "subject": "CS",
-        "week": 1
-    }
-)
-
-# 2. 실시간 요약본 업로드
-service.upsert_text(
-    collection_id,
-    items=[
-        UpsertItem(
-            text="스택은 LIFO 구조입니다...",
-            metadata={
-                "type": "summary",  # 📝 타입 구분
-                "subject": "CS",
-                "section_id": 1,
-                "timestamp": 1703001234567
-            }
-        )
-    ]
-)
-
-# 3. 검색 시 필터링
-# 강의노트만 검색
-notes = service.retrieve(
-    collection_id,
-    "스택이란?",
-    filters=RetrieveFilters(custom={"type": "lecture_note"})
-)
-
-# 요약본만 검색
-summaries = service.retrieve(
-    collection_id,
-    "스택이란?",
-    filters=RetrieveFilters(custom={"type": "summary"})
-)
-
-# 둘 다 검색 (필터 없이)
-all_chunks = service.retrieve(
-    collection_id,
-    "스택이란?",
-    top_k=10  # 강의노트 + 요약본 모두 포함
-)
-```
-
-**장점:**
-- ✅ 관리 편리 (컬렉션 1개)
-- ✅ 강의노트 + 요약본 통합 검색 가능
-- ✅ 필터로 원하는 것만 선택 가능
-
----
-
-## �📦 설치
+## 📦 설치
 
 ### 사전 요구사항
 
@@ -384,50 +314,9 @@ python all_test.py
 
 ## 🔧 핵심 API 3가지
 
-### API 개요
-
-RAGKit는 3개의 핵심 메서드를 제공합니다:
-
-| API | 용도 | 입력 | 출력 |
-|-----|------|------|------|
-| `upsert_text()` | 섹션 요약 저장 | 텍스트 + 메타데이터 | 저장된 개수 |
-| `upsert_pdf()` | 강의노트 저장 | PDF 파일 경로 | 페이지 개수 |
-| `retrieve()` | 관련 내용 검색 | 쿼리 텍스트 + 필터 | 유사 청크 리스트 |
-
----
-
-### 1️⃣ `upsert_text()` - 섹션 요약 저장
-
 ### 1️⃣ `upsert_text()` - 섹션 요약 저장
 
 **언제 사용?** Spring이 LLM에서 받은 섹션 요약을 저장할 때 (매 1분)
-
-#### 📥 입력 파라미터
-
-| 필드 | 타입 | 필수 | 설명 |
-|------|------|:----:|------|
-| `collection_id` | string | ✅ | 저장 대상 컬렉션 ID. 실시간 세션은 session_ID 사용 권장 (예: `session_abc123`). 영문/숫자/하이픈/언더스코어만 허용. |
-| `items` | object[] | ✅ | 업서트할 청크 목록. 최소 1개 이상. |
-| `items[].text` | string | ✅ | 저장할 섹션 요약 텍스트 (비어있으면 안 됨). |
-| `items[].id` | string | ❌ | 청크 고유 ID. 미제공 시 text 해시로 자동 생성. |
-| `items[].metadata` | object | ❌ | 검색/필터용 메타데이터 (자유 필드). 아래 권장 키 사용 가능. |
-| `└ type` | string | 권장 | 데이터 타입 구분 (예: `"summary"`, `"lecture_note"`). |
-| `└ section_id` | integer | 권장 | 섹션 번호 (1부터 시작). |
-| `└ timestamp` | integer | 권장 | 밀리초 단위 Unix epoch (예: `1703001234567`). |
-| `└ duration` | integer | 권장 | 섹션 길이 (초 단위). |
-| `└ subject` | string | 권장 | 과목 코드 (예: `"CS"`, `"Math"`). |
-| `└ language` | string | 선택 | 언어 코드 (예: `"ko"`, `"en"`). |
-| `└ (기타)` | any | 선택 | 커스텀 필드 무제한 추가 가능. |
-
-#### 📤 출력 필드
-
-| 필드명 | 타입 | 설명 |
-|--------|------|------|
-| `collection_id` | string | 저장된 컬렉션 ID (Echo). |
-| `count` | integer | 저장(업서트)된 청크 개수. |
-| `embedding_dim` | integer | 임베딩 벡터 차원 (정보용, 예: 3072 for text-embedding-3-large). |
-
-#### 💻 사용 예시
 
 ```python
 from ragkit import RAGService
@@ -442,7 +331,6 @@ result = service.upsert_text(
         UpsertItem(
             text="스택은 LIFO 구조입니다. push와 pop으로...",
             metadata={
-                "type": "summary",
                 "section_id": 1,
                 "timestamp": 1703001234567,
                 "duration": 60,
@@ -456,12 +344,12 @@ print(f"✅ 저장 완료: {result['count']}개")
 # ✅ 저장 완료: 1개
 ```
 
-**반환값 예시:**
+**반환값:**
 ```python
 {
     "collection_id": "session_abc123",
-    "count": 1,
-    "embedding_dim": 3072
+    "count": 1,               # 저장된 청크 수
+    "embedding_dim": 3072     # 벡터 차원 (정보용)
 }
 ```
 
@@ -471,47 +359,14 @@ print(f"✅ 저장 완료: {result['count']}개")
 
 **언제 사용?** 강의 시작 전 학생이 업로드한 PDF를 저장할 때 (1회)
 
-#### 📥 입력 파라미터
-
-| 필드 | 타입 | 필수 | 설명 |
-|------|------|:----:|------|
-| `collection_id` | string | ✅ | 저장 대상 컬렉션 ID. 강의노트는 lecture_notes_과목코드 사용 권장 (예: `lecture_notes_cs`). |
-| `pdf_path` | string | ✅ | PDF 파일의 절대 경로 (예: `/path/to/lecture.pdf`). |
-| `base_metadata` | object | ❌ | 모든 페이지에 공통 적용할 메타데이터. 아래 권장 키 사용 가능. |
-| `└ type` | string | 권장 | 데이터 타입 (예: `"lecture_note"`). |
-| `└ subject` | string | 권장 | 과목 코드 (예: `"CS"`, `"Math"`). |
-| `└ course` | string | 권장 | 강의명 (예: `"데이터구조"`). |
-| `└ week` | integer | 권장 | 주차 번호 (1부터 시작). |
-| `└ (기타)` | any | 선택 | 커스텀 필드 무제한 추가 가능. |
-
-**자동 추가되는 메타데이터 (각 페이지마다):**
-
-| 필드명 | 타입 | 설명 |
-|--------|------|------|
-| `source` | string | PDF 파일명 (예: `"data_structure.pdf"`). |
-| `page` | integer | 페이지 번호 (0-based, 예: 0, 1, 2, ...). |
-| `total_pages` | integer | 전체 페이지 수 (예: 20). |
-
-#### 📤 출력 필드
-
-| 필드명 | 타입 | 설명 |
-|--------|------|------|
-| `collection_id` | string | 저장된 컬렉션 ID (Echo). |
-| `count` | integer | 저장된 페이지 개수. |
-| `embedding_dim` | integer | 임베딩 벡터 차원 (정보용, 예: 3072). |
-
-#### 💻 사용 예시
-
 ```python
 # PDF 자동 분할 + 저장
 result = service.upsert_pdf(
     collection_id="lecture_notes_cs",
     pdf_path="data_structure.pdf",
     base_metadata={
-        "type": "lecture_note",
         "subject": "CS",
-        "course": "데이터구조",
-        "week": 1
+        "course": "데이터구조"
     }
 )
 
@@ -519,31 +374,20 @@ print(f"✅ {result['count']}페이지 저장 완료")
 # ✅ 20페이지 저장 완료
 ```
 
-**반환값 예시:**
-```python
-{
-    "collection_id": "lecture_notes_cs",
-    "count": 20,
-    "embedding_dim": 3072
-}
-```
-
 **내부 동작:**
 ```python
 # 1. PDF → 페이지별 분할
-pages = ["1장. 스택과 큐...", "2장. 트리...", ...]
+pages = [
+    "1장. 스택과 큐...",
+    "2장. 트리...",
+    ...
+]
 
-# 2. 각 페이지 → 벡터 변환 + 메타데이터 병합
+# 2. 각 페이지 → 벡터 변환 + 저장
 for page_num, text in enumerate(pages):
     id = f"data_structure|p{page_num}"  # 결정적 ID
-    metadata = {
-        **base_metadata,  # type, subject, course, week
-        "source": "data_structure.pdf",
-        "page": page_num,
-        "total_pages": 20
-    }
     embedding = openai.embed(text)
-    vectordb.save(id, embedding, text, metadata)
+    vectordb.save(id, embedding, text)
 ```
 
 ---
@@ -552,41 +396,11 @@ for page_num, text in enumerate(pages):
 
 **언제 사용?** 현재 섹션과 관련된 이전 내용을 찾을 때 (매 섹션마다)
 
-#### 📥 입력 파라미터
-
-| 필드 | 타입 | 필수 | 기본값 | 설명 |
-|------|------|:----:|:------:|------|
-| `collection_id` | string | ✅ | - | 검색 대상 컬렉션 ID. |
-| `query` | string | ✅ | - | 검색 쿼리 텍스트 (섹션 요약 또는 질문). |
-| `top_k` | integer | ❌ | 5 | 반환할 결과 개수 (최대 권장: 10). |
-| `filters` | object | ❌ | null | 메타데이터 기반 검색 필터. 아래 필드 사용 가능. |
-| `└ subject` | string | ❌ | - | 과목 필터 (예: `"CS"`). metadata.subject와 일치하는 것만 검색. |
-| `└ section_id` | string | ❌ | - | 섹션 ID 필터. metadata.section_id와 일치하는 것만 검색. |
-| `└ min_timestamp` | integer | ❌ | - | 최소 timestamp (밀리초). 이 값 이상인 청크만 반환. |
-| `└ max_timestamp` | integer | ❌ | - | 최대 timestamp (밀리초). 이 값 이하인 청크만 반환. |
-| `└ custom` | object | ❌ | {} | 커스텀 필터 (예: `{"type": "summary"}`). metadata의 임의 필드로 필터링. |
-
-#### 📤 출력 필드
-
-**반환 타입:** `RetrievedChunk[]` - 유사도 순으로 정렬된 청크 배열
-
-| 필드명 | 타입 | 설명 |
-|--------|------|------|
-| `id` | string | 청크 고유 ID (upsert 시 생성된 ID). |
-| `text` | string | 원본 텍스트 내용. |
-| `score` | float | 유사도 점수 (0.0~1.0, 높을수록 쿼리와 유사). |
-| `metadata` | object | 저장 시 설정한 메타데이터 (type, section_id, timestamp 등). |
-| `section_id` | string \| null | 섹션 ID (metadata에 있으면 추출, 없으면 null). |
-
-#### 💻 사용 예시
-
 ```python
-from ragkit.models import RetrieveFilters
-
-# 1. 기본 검색
+# 유사한 청크 검색
 chunks = service.retrieve(
     collection_id="session_abc123",
-    query="스택의 실전 응용...",
+    query="스택의 실전 응용: 괄호 검사...",
     top_k=3
 )
 
@@ -601,66 +415,22 @@ for chunk in chunks:
 #    섹션 ID: 3
 # [0.65] 큐는 FIFO 구조입니다...
 #    섹션 ID: 2
-
-# 2. 필터 검색 (특정 타입만)
-filters = RetrieveFilters(custom={"type": "lecture_note"})
-chunks = service.retrieve(
-    "lecture_cs101",
-    "스택",
-    top_k=5,
-    filters=filters
-)
-
-# 3. 시간 필터 (최근 3분 내용만)
-import time
-current_time = int(time.time() * 1000)
-three_minutes_ago = current_time - (3 * 60 * 1000)
-
-filters = RetrieveFilters(min_timestamp=three_minutes_ago)
-chunks = service.retrieve(
-    "session_abc123",
-    "스택",
-    filters=filters
-)
-
-# 4. 과목 필터
-filters = RetrieveFilters(subject="CS")
-chunks = service.retrieve(
-    "all_lectures",
-    "알고리즘",
-    filters=filters
-)
 ```
 
-**반환값 예시:**
+**필터 사용:**
 ```python
-[
-    RetrievedChunk(
-        id="7f3e9a2b1c4d5e",
-        text="스택은 LIFO 구조입니다. push와 pop으로...",
-        score=0.92,
-        metadata={
-            "type": "summary",
-            "section_id": 1,
-            "timestamp": 1703001234567,
-            "subject": "CS"
-        },
-        section_id=None
-    ),
-    RetrievedChunk(
-        id="data_structure|p0",
-        text="1장. 스택과 큐 - 자료구조의 기본...",
-        score=0.89,
-        metadata={
-            "type": "lecture_note",
-            "source": "data_structure.pdf",
-            "page": 0,
-            "subject": "CS"
-        },
-        section_id=None
-    ),
-    # ... 나머지 청크
-]
+from ragkit.models import RetrieveFilters
+
+# 특정 조건으로 검색
+chunks = service.retrieve(
+    collection_id="session_abc123",
+    query="스택",
+    top_k=5,
+    filters=RetrieveFilters(
+        subject="CS",                  # 과목 필터
+        min_timestamp=1703000000000    # 최근 N분 내용만
+    )
+)
 ```
 
 ---
