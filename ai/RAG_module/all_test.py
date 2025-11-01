@@ -51,7 +51,7 @@ def main():
     # 설정
     config = RAGConfig(
         persist_dir="./test_chroma_data",
-        embedding_model="text-embedding-3-small"  # 빠른 테스트용
+        embedding_model="text-embedding-3-large"  # 고품질 임베딩 (3072차원)
     )
     service = RAGService(config)
     
