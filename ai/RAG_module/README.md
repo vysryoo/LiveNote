@@ -72,6 +72,7 @@ POST /rag/upsert-pdf
   "collection_id": "lecture_notes_cs",  # 강의노트 저장소
   "pdf_file": <data_structure.pdf>,
   "metadata": {
+    "type": "lecture note",
     "subject": "CS",
     "course": "데이터구조"
   }
@@ -130,6 +131,7 @@ POST /rag/upsert-text
     "text": "스택은 LIFO 구조입니다. push와 pop으로 데이터를 관리하며...",
     "metadata": {
       "section_id": 1,
+      "type": "summary",
       "timestamp": 1703001234567,
       "subject": "CS"
     }
@@ -150,6 +152,7 @@ vectordb.upsert(
     documents=["스택은 LIFO..."],   # 원본 텍스트
     metadatas=[{
         "section_id": 1,            # ✅ 메타데이터도 함께 저장
+        "type": "summary",
         "timestamp": 1703001234567, # ✅ 검색 필터에 사용 가능
         "subject": "CS"             # ✅ 과목별 필터 가능
     }]
@@ -177,7 +180,7 @@ POST /rag/upsert-text
   "collection_id": "session_abc123",
   "items": [{
     "text": "스택의 실전 응용: 괄호 검사, 후위 표기법 계산...",
-    "metadata": {"section_id": 3}
+    "metadata": {"section_id": 3, "type": "summary"}
   }]
 }
 
@@ -231,7 +234,7 @@ context = """
 
 ---
 
-### **Phase 3: 강의노트 + 실시간 섹션 함께 검색**
+### **Phase 3: 강의노트 + 실시간 섹션 함께 검색** -> 그냥 하나 콜렉션에 요약이랑 PDF랑 다 떼려 박아도 됨. distingusin using metadata:type field.
 
 ```python
 POST /rag/retrieve
@@ -366,6 +369,7 @@ result = service.upsert_pdf(
     pdf_path="data_structure.pdf",
     base_metadata={
         "subject": "CS",
+        "type" : "lecture note",
         "course": "데이터구조"
     }
 )

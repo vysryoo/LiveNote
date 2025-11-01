@@ -37,12 +37,14 @@ class RetrieveFilters:
         section_id: Filter by section_id
         min_timestamp: Filter by minimum timestamp (ISO format or unix timestamp)
         max_timestamp: Filter by maximum timestamp
+        confidence: Minimum similarity score threshold (0.0-1.0). Results below this are filtered out.
         custom: Additional custom filters as key-value pairs
         
     Example:
         >>> filters = RetrieveFilters(
         ...     subject="computer science",
-        ...     min_timestamp=1609459200
+        ...     min_timestamp=1609459200,
+        ...     confidence=0.7  # Only return chunks with score >= 0.7
         ... )
     """
     
@@ -50,6 +52,7 @@ class RetrieveFilters:
     section_id: str | None = None
     min_timestamp: int | str | None = None
     max_timestamp: int | str | None = None
+    confidence: float | None = None
     custom: dict[str, Any] = field(default_factory=dict)
 
 

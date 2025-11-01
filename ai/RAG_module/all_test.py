@@ -311,23 +311,76 @@ def main():
     else:
         print(f"\n   ⚠️  경고: subject 필터가 제대로 작동하지 않음")
     
+    # ========== 추가 테스트: confidence 필터 ==========
+    print("\n" + "="*80)
+    print("  🆕 추가 테스트: confidence 필터")
+    print("="*80)
+    
+    # 쿼리 10: confidence 필터 (높은 점수만)
+    print("\n【쿼리 10】confidence=0.5 필터: 유사도 0.5 이상만 (top_k=10)")
+    print("-" * 80)
+    
+    filters = RetrieveFilters(confidence=0.5)
+    chunks = service.retrieve("lecture_collection", "인공지능 학습", top_k=10, filters=filters)
+    
+    print(f"\n   ✅ confidence >= 0.5 결과: {len(chunks)}개")
+    for i, chunk in enumerate(chunks, 1):
+        print(f"   {i}. [유사도: {chunk.score:.4f}] {chunk.text[:40]}...")
+    
+    # 모든 점수가 0.5 이상인지 확인
+    all_above_threshold = all(c.score >= 0.5 for c in chunks)
+    print(f"\n   {'✅' if all_above_threshold else '❌'} 모든 결과 점수 >= 0.5: {all_above_threshold}")
+    
+    # 쿼리 11: 400 에러 테스트 (빈 쿼리)
+    print("\n【쿼리 11】400 에러 테스트: 빈 쿼리")
+    print("-" * 80)
+    
+    try:
+        chunks = service.retrieve("lecture_collection", "", top_k=3)
+        print("   ❌ 에러가 발생하지 않음 (예상과 다름)")
+    except ValueError as e:
+        print(f"   ✅ ValueError 발생: {e}")
+    
+    # 쿼리 12: 400 에러 테스트 (잘못된 collection_id)
+    print("\n【쿼리 12】400 에러 테스트: 잘못된 collection_id 형식")
+    print("-" * 80)
+    
+    try:
+        chunks = service.retrieve("강의/컬렉션", "테스트", top_k=3)
+        print("   ❌ 에러가 발생하지 않음 (예상과 다름)")
+    except ValueError as e:
+        print(f"   ✅ ValueError 발생: {e}")
+    
+    # 쿼리 13: confidence 범위 에러 테스트
+    print("\n【쿼리 13】400 에러 테스트: confidence 범위 오류")
+    print("-" * 80)
+    
+    try:
+        filters = RetrieveFilters(confidence=1.5)  # 1.0 초과
+        chunks = service.retrieve("lecture_collection", "테스트", top_k=3, filters=filters)
+        print("   ❌ 에러가 발생하지 않음 (예상과 다름)")
+    except ValueError as e:
+        print(f"   ✅ ValueError 발생: {e}")
+    
     # ========== 4. 통계 정보 ==========
     print_section("📊 4단계: 테스트 요약")
     
     print("✅ 성공적으로 완료된 작업:")
     print(f"   1. 텍스트 60개 청크 업로드 (6개 섹션)")
     print(f"   2. PDF 20페이지 업로드 (다양한 주제)")
-    print(f"   3. 총 9개 쿼리 테스트:")
+    print(f"   3. 총 13개 쿼리 테스트:")
     print(f"      - 일반 검색 (쿼리 1, 2, 5, 6)")
     print(f"      - 커스텀 필터 검색 (쿼리 3, 4, 7)")
     print(f"      - timestamp 필터 검색 (쿼리 8)")
     print(f"      - subject 필터 검색 (쿼리 9)")
+    print(f"      - 🆕 confidence 필터 검색 (쿼리 10)")
+    print(f"      - 🆕 400 에러 처리 테스트 (쿼리 11, 12, 13)")
     print(f"\n✅ 사용된 컬렉션:")
     print(f"   - lecture_collection: 60개 텍스트 청크")
     print(f"   - pdf_collection: 20개 PDF 페이지")
     print(f"   - test_subject_collection: 3개 테스트 데이터")
-    print(f"\n✅ 임베딩 모델: {config.embedding_model}")
-    print(f"✅ 저장 위치: {config.persist_dir}")
+    print(f"\n✅ 임베딩 모델: {service.config.embedding_model}")
+    print(f"✅ 저장 위치: {service.config.persist_dir}")
     
     print_section("🎉 모든 테스트 완료!")
     print("팀원들에게 다음과 같이 설명하세요:")
@@ -336,8 +389,10 @@ def main():
     print("   - 커스텀 필터 (섹션별 검색)")
     print("   - subject 필터 (과목별 검색)")
     print("   - timestamp 필터 (시간 범위 검색)")
+    print("   - 🆕 confidence 필터 (최소 점수 임계값)")
     print("3. 다양한 주제의 문서에서 정확한 검색 가능")
-    print("4. 유사도 점수로 결과 품질 평가 가능\n")
+    print("4. 유사도 점수로 결과 품질 평가 가능")
+    print("5. 🆕 입력 검증 및 에러 처리 확인 (400 에러)\n")
 
 if __name__ == "__main__":
     main()

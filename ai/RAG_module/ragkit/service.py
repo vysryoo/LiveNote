@@ -254,20 +254,46 @@ class RAGService:
         Returns:
             List of RetrievedChunk objects, sorted by score (descending)
             
+        Raises:
+            ValueError: If collection_id is empty or query is empty
+            RuntimeError: If embedding or vector DB operation fails
+            
         Example:
             >>> chunks = service.retrieve(
             ...     "lectures",
             ...     "What is a vector database?",
             ...     top_k=3,
-            ...     filters=RetrieveFilters(subject="Computer Science")
+            ...     filters=RetrieveFilters(subject="Computer Science", confidence=0.7)
             ... )
             >>> for chunk in chunks:
             ...     print(f"{chunk.score:.2f}: {chunk.text[:50]}...")
             0.92: Vector databases store and query high-dimensional...
         """
-        # Generate query embedding
-        logger.info(f"Generating query embedding for: '{query[:50]}...'")
-        query_embedding = self.embedding_service.embed_query(query)
+        # ✅ Validation (400 에러 대응)
+        if not collection_id or not collection_id.strip():
+            raise ValueError("collection_id는 비어 있을 수 없습니다")
+        
+        if not query or not query.strip():
+            raise ValueError("query는 비어 있을 수 없습니다")
+        
+        # Validate collection_id format (영문/숫자/하이픈/언더스코어만)
+        import re
+        if not re.match(r'^[a-zA-Z0-9_-]+$', collection_id):
+            raise ValueError(
+                "collection_id는 영문, 숫자, 하이픈, 언더스코어만 사용 가능합니다"
+            )
+        
+        if filters and filters.confidence is not None:
+            if not (0.0 <= filters.confidence <= 1.0):
+                raise ValueError("confidence는 0.0과 1.0 사이여야 합니다")
+        
+        try:
+            # Generate query embedding
+            logger.info(f"Generating query embedding for: '{query[:50]}...'")
+            query_embedding = self.embedding_service.embed_query(query)
+        except Exception as e:
+            logger.error(f"Failed to generate embedding: {e}")
+            raise RuntimeError(f"임베딩 생성 중 오류 발생: {e}")
         
         # Build where clause from filters
         where = None
@@ -291,21 +317,27 @@ class RAGService:
             if not where:
                 where = None
         
-        # Query vector store
-        results = self.vector_store.query(
-            collection_id=collection_id,
-            query_embedding=query_embedding,
-            top_k=top_k,
-            where=where,
-        )
+        try:
+            # Query vector store
+            results = self.vector_store.query(
+                collection_id=collection_id,
+                query_embedding=query_embedding,
+                top_k=top_k,
+                where=where,
+            )
+        except Exception as e:
+            logger.error(f"Failed to query vector store: {e}")
+            raise RuntimeError(f"벡터 DB 검색 중 오류 발생: {e}")
         
         # Convert to RetrievedChunk objects
         chunks = []
         for result in results:
             metadata = result["metadata"]
+            score = result["score"]
             
-            # Apply timestamp filters if needed
+            # Apply filters
             if filters:
+                # Timestamp filters
                 if filters.min_timestamp is not None:
                     ts = metadata.get("timestamp")
                     if ts is not None and ts < filters.min_timestamp:
@@ -315,11 +347,16 @@ class RAGService:
                     ts = metadata.get("timestamp")
                     if ts is not None and ts > filters.max_timestamp:
                         continue
+                
+                # ✨ Confidence (minimum score) filter
+                if filters.confidence is not None:
+                    if score < filters.confidence:
+                        continue
             
             chunk = RetrievedChunk(
                 id=result["id"],
                 text=result["text"],
-                score=result["score"],
+                score=score,
                 metadata=metadata,
                 section_id=metadata.get("section_id"),
             )
