@@ -597,6 +597,43 @@ python all_test.py
 
 ## 🔧 문제 해결
 
+### ChromaDB 텔레메트리 경고 메시지
+
+**증상:**
+```
+Failed to send telemetry event ClientStartEvent: 
+capture() takes 1 positional argument but 3 were given
+```
+
+**원인:**
+- ChromaDB 0.5.23 내부 버그
+- 텔레메트리 시스템의 함수 서명 불일치
+- **기능에는 전혀 영향 없음** (모든 테스트 정상 작동)
+
+**해결:**
+`all_test.py`에 이미 적용되어 있습니다:
+```python
+# ChromaDB 텔레메트리 비활성화
+os.environ['ANONYMIZED_TELEMETRY'] = 'False'
+
+# 텔레메트리 경고 메시지 필터링
+class StderrFilter:
+    def write(self, message):
+        if "Failed to send telemetry event" not in message:
+            self.original_stderr.write(message)
+
+sys.stderr = StderrFilter(sys.stderr)
+```
+
+자체 코드에서도 사용하려면:
+```python
+import os
+os.environ['ANONYMIZED_TELEMETRY'] = 'False'
+# ↑ chromadb import 전에 설정
+```
+
+---
+
 ### ChromaDB 초기화 오류
 
 ```bash

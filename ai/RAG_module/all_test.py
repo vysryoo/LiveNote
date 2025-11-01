@@ -7,7 +7,30 @@ RAGKit 종합 테스트 스크립트
 """
 
 import os
+import sys
 import time
+
+# ⚠️ ChromaDB 텔레메트리 비활성화 - import 전에 설정해야 함!
+os.environ['ANONYMIZED_TELEMETRY'] = 'False'
+os.environ['CHROMA_TELEMETRY_ENABLED'] = 'False'
+
+# ChromaDB의 텔레메트리 경고 메시지 필터링
+class StderrFilter:
+    """ChromaDB 텔레메트리 경고만 필터링하는 클래스"""
+    def __init__(self, original_stderr):
+        self.original_stderr = original_stderr
+    
+    def write(self, message):
+        # "Failed to send telemetry event" 메시지는 무시
+        if "Failed to send telemetry event" not in message:
+            self.original_stderr.write(message)
+    
+    def flush(self):
+        self.original_stderr.flush()
+
+# stderr 필터 적용
+sys.stderr = StderrFilter(sys.stderr)
+
 from dotenv import load_dotenv
 
 # .env 파일에서 환경 변수 로드
