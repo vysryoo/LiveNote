@@ -19,7 +19,7 @@ load_dotenv()
 TEST_SCENARIOS = [
     {
         "name": "CS (자료구조)",
-        "session_id": "test_session_cs",
+        "lecture_id": "test_lecture_cs",
         "section_id": 1,
         "section_summary": """
 스택(Stack)은 LIFO(Last In First Out) 구조를 가진 자료구조입니다.
@@ -38,7 +38,7 @@ TEST_SCENARIOS = [
     },
     {
         "name": "수학 (미적분)",
-        "session_id": "test_session_math",
+        "lecture_id": "test_lecture_math",
         "section_id": 2,
         "section_summary": """
 미분은 함수의 순간 변화율을 나타냅니다.
@@ -53,7 +53,7 @@ TEST_SCENARIOS = [
     },
     {
         "name": "물리 (뉴턴 법칙)",
-        "session_id": "test_session_physics",
+        "lecture_id": "test_lecture_physics",
         "section_id": 3,
         "section_summary": """
 뉴턴의 제1법칙은 관성의 법칙입니다. 물체는 외력이 없으면 정지 또는 등속 운동을 유지합니다.
@@ -69,7 +69,7 @@ TEST_SCENARIOS = [
     },
     {
         "name": "화학 (산화-환원)",
-        "session_id": "test_session_chemistry",
+        "lecture_id": "test_lecture_chemistry",
         "section_id": 4,
         "section_summary": """
 산화는 전자를 잃는 반응이고, 환원은 전자를 얻는 반응입니다.
@@ -81,7 +81,7 @@ TEST_SCENARIOS = [
     },
     {
         "name": "역사 (임진왜란)",
-        "session_id": "test_session_history",
+        "lecture_id": "test_lecture_history",
         "section_id": 5,
         "section_summary": """
 임진왜란은 1592년 일본의 조선 침략으로 시작된 7년 전쟁입니다.
@@ -127,7 +127,7 @@ async def test_qa_generation():
         
         # QARequest 생성
         request = QARequest(
-            session_id=scenario["session_id"],
+            lecture_id=scenario["lecture_id"],
             section_id=scenario["section_id"],
             section_summary=scenario["section_summary"],
             subject=scenario.get("subject"),
@@ -177,7 +177,7 @@ async def test_single_qa():
     qa_service = QAService(api_key=api_key)
     
     request = QARequest(
-        session_id="quick_test",
+        lecture_id="quick_test",
         section_id=1,
         section_summary="Python의 리스트(list)는 동적 배열로, 여러 타입의 데이터를 저장할 수 있습니다. append()로 추가하고 pop()으로 제거합니다.",
         question_types=["개념"],
@@ -210,7 +210,7 @@ def test_validation():
     print("1️⃣ 기본값 테스트 (question_types=[], qa_count=0)")
     try:
         req = QARequest(
-            session_id="test1",
+            lecture_id="test1",
             section_id=1,
             section_summary="테스트 내용입니다.",
             question_types=[],
@@ -226,7 +226,7 @@ def test_validation():
     print("2️⃣ question_types=['응용'] 하나, qa_count=3")
     try:
         req = QARequest(
-            session_id="test2",
+            lecture_id="test2",
             section_id=1,
             section_summary="테스트 내용입니다.",
             question_types=["응용"],
@@ -242,7 +242,7 @@ def test_validation():
     print("3️⃣ 잘못된 유형 테스트 (['개념', '잘못된유형'])")
     try:
         req = QARequest(
-            session_id="test3",
+            lecture_id="test3",
             section_id=1,
             section_summary="테스트 내용입니다.",
             question_types=["개념", "잘못된유형"],
@@ -257,7 +257,7 @@ def test_validation():
     print("4️⃣ qa_count=6 (MAX_QA_COUNT 초과)")
     try:
         req = QARequest(
-            session_id="test4",
+            lecture_id="test4",
             section_id=1,
             section_summary="테스트 내용입니다.",
             question_types=["개념", "응용", "비교", "심화", "실습", "추가"],
@@ -272,7 +272,7 @@ def test_validation():
     print("5️⃣ question_types 6개 with '추가' (잘못된 유형)")
     try:
         req = QARequest(
-            session_id="test5",
+            lecture_id="test5",
             section_id=1,
             section_summary="테스트 내용입니다.",
             question_types=["개념", "응용", "비교", "심화", "실습", "추가"],
@@ -287,7 +287,7 @@ def test_validation():
     print("6️⃣ 불일치 테스트 (types=2개, count=5) - question_types 우선")
     try:
         req = QARequest(
-            session_id="test6",
+            lecture_id="test6",
             section_id=1,
             section_summary="테스트 내용입니다.",
             question_types=["개념", "응용"],
@@ -303,7 +303,7 @@ def test_validation():
     print("7️⃣ 불일치 테스트 (types=5개, count=2) - question_types 우선")
     try:
         req = QARequest(
-            session_id="test7",
+            lecture_id="test7",
             section_id=1,
             section_summary="테스트 내용입니다.",
             question_types=["개념", "응용", "비교", "심화", "실습"],
@@ -319,7 +319,7 @@ def test_validation():
     print("8️⃣ question_types=['심화', '실습'], qa_count=0")
     try:
         req = QARequest(
-            session_id="test8",
+            lecture_id="test8",
             section_id=1,
             section_summary="테스트 내용입니다.",
             question_types=["심화", "실습"],
@@ -350,4 +350,3 @@ if __name__ == "__main__":
         test_validation()
     else:
         asyncio.run(test_qa_generation())
-

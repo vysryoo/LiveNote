@@ -71,7 +71,7 @@ LiveNote는 **실시간 강의를 전사하고 요약**하는 서비스입니다
 ```python
 POST /rag/retrieve
 {
-  "collection_id": "session_abc123",
+  "collection_id": "lecture_abc123",
   "query": "스택의 실전 응용...",
   "top_k": 3
 }
@@ -94,7 +94,7 @@ from qakit.service import QAService
 service = QAService()
 
 request = QARequest(
-    session_id="session_abc123",
+    lecture_id="lecture_abc123",
     section_id=3,
     section_summary="스택의 실전 응용: 괄호 검사, 후위 표기법 계산...",
     subject="CS",
@@ -183,7 +183,7 @@ ws.send({
 ### 3. **메타데이터 활용**
 ```python
 QARequest(
-    session_id="session_abc123",  # 세션 추적
+    lecture_id="lecture_abc123",  # 세션 추적
     section_id=3,                  # 섹션 번호
     subject="CS",                  # 과목 (프롬프트 최적화)
     language="ko",                 # 언어 (한국어/영어)
@@ -265,7 +265,7 @@ service = QAService()
 
 request = QARequest(
     # ━━━ 필수 필드 ━━━
-    session_id="session_abc123",        # 세션 ID (추적용)
+    lecture_id="lecture_abc123",        # 세션 ID (추적용)
     section_id=3,                       # 섹션 번호 (1, 2, 3, ...)
     section_summary="스택의 실전 응용: 괄호 검사, 후위 표기법...",  
                                         # 현재 섹션 요약 (최소 10자)
@@ -309,7 +309,7 @@ qa_list = await service.generate_questions(request)
 
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|------|------|
-| `session_id` | `str` | ✅ | 세션 고유 ID (예: `session_abc123`) |
+| `lecture_id` | `str` | ✅ | 세션 고유 ID (예: `lecture_abc123`) |
 | `section_id` | `int` | ✅ | 섹션 번호 (1, 2, 3, ...) |
 | `section_summary` | `str` | ✅ | 섹션 요약 내용 (최소 10자) |
 | `subject` | `str` | ❌ | 과목명 (CS, 수학, 물리 등) |
@@ -366,7 +366,7 @@ async def generate_qa_basic():
     
     # 최소 파라미터만 제공
     request = QARequest(
-        session_id="session_123",
+        lecture_id="lecture_123",
         section_id=1,
         section_summary="Python의 리스트는 동적 배열로, append()와 pop()으로 데이터를 관리합니다."
     )
@@ -406,7 +406,7 @@ async def generate_qa_with_rag():
     service = QAService()
     
     request = QARequest(
-        session_id="session_abc123",
+        lecture_id="lecture_abc123",
         section_id=3,
         section_summary="스택의 실전 응용: 괄호 검사, 후위 표기법 계산, 함수 호출 스택",
         subject="CS",
@@ -458,7 +458,7 @@ async def generate_qa_no_duplicate():
     service = QAService()
     
     request = QARequest(
-        session_id="session_abc123",
+        lecture_id="lecture_abc123",
         section_id=5,
         section_summary="힙(Heap)은 완전 이진 트리 기반의 자료구조로, 우선순위 큐 구현에 사용됩니다.",
         
@@ -505,7 +505,7 @@ async def generate_custom_types():
     
     # 수학 과목 - 심화/실습 위주
     request = QARequest(
-        session_id="math_session",
+        lecture_id="math_session",
         section_id=1,
         section_summary="미분은 함수의 순간 변화율을 나타냅니다. 도함수 f'(x)는 x에서의 접선의 기울기를 의미합니다.",
         subject="수학",
@@ -542,7 +542,7 @@ async def full_lecture_session():
     # 섹션 1 (0~60초)
     print("\n━━━ 섹션 1: 스택 개념 ━━━")
     qa_list_1 = await service.generate_questions(QARequest(
-        session_id="cs_lecture",
+        lecture_id="cs_lecture",
         section_id=1,
         section_summary="스택은 LIFO 구조입니다. push와 pop으로 데이터를 관리합니다.",
         question_types=["개념", "응용"]
@@ -551,7 +551,7 @@ async def full_lecture_session():
     # 섹션 2 (60~120초) - 이전 QA 포함
     print("\n━━━ 섹션 2: 큐 개념 ━━━")
     qa_list_2 = await service.generate_questions(QARequest(
-        session_id="cs_lecture",
+        lecture_id="cs_lecture",
         section_id=2,
         section_summary="큐는 FIFO 구조입니다. enqueue와 dequeue로 데이터를 관리합니다.",
         question_types=["개념", "비교"],
@@ -567,7 +567,7 @@ async def full_lecture_session():
     # 섹션 3 (120~180초) - RAG + 이전 QA 모두 포함
     print("\n━━━ 섹션 3: 스택 응용 ━━━")
     qa_list_3 = await service.generate_questions(QARequest(
-        session_id="cs_lecture",
+        lecture_id="cs_lecture",
         section_id=3,
         section_summary="스택의 실전 응용: 괄호 검사, 후위 표기법",
         question_types=["응용", "실습"],

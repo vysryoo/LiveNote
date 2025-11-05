@@ -27,7 +27,7 @@ class PreviousQA(BaseModel):
 
 class QARequest(BaseModel):
     """QA 생성 요청"""
-    session_id: str = Field(..., description="세션 ID")
+    lecture_id: str = Field(..., description="강의 세션 ID")
     section_id: int = Field(..., ge=1, description="섹션 번호")
     section_summary: str = Field(..., min_length=10, description="섹션 요약 내용")
     subject: Optional[str] = Field(None, description="과목 (CS/수학/역사 등)")
@@ -84,7 +84,7 @@ class QARequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "session_id": "session_abc123",
+                "lecture_id": "lecture_abc123",
                 "section_id": 5,
                 "section_summary": "C++ STL 벡터는 동적 배열로, push_back과 pop_back으로 요소를 관리합니다.",
                 "subject": "CS",
