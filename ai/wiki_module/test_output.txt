@@ -1,0 +1,856 @@
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 WikiKit 종합 테스트 (12개 시나리오)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 1. CS (Stack) - top_k=1, LLM 검증
+   📥 입력 (WikiRequest):
+      - lecture_id: lecture_cs_001
+      - section_id: 1
+      - lecture_summary: "Stack is a LIFO (Last In First Out) data structure..."
+      - top_k: 1 | verify_wiki: True
+      - wiki_lang: en | fallback_to_ko: False
+      - min_score: 5.0
+
+   📤 출력 (List[WikiResponse]): 1개 문서 (4986ms)
+
+      [1] WikiResponse:
+         ├─ lecture_id: lecture_cs_001
+         ├─ section_id: 1
+         ├─ score: 9.0
+         ├─ reason: "The document directly explains the stack as a LIFO data structure and details its main operations, aligning closely with the lecture content."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Stack (abstract data type)"
+            ├─ lang: en
+            ├─ page_id: 273993
+            ├─ url: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
+            └─ extract: "In computer science, a stack is an abstract data type that serves as a collection of elements with two main operations:
+
+Push, which adds an element to the collection, and
+Pop, which removes the most recently added element.
+Additionally, a peek operation can, without modifying the stack, return the value of the last element added (the item at the top of the stack). The name stack is an analogy to a set of physical items stacked one atop another, such as a stack of plates."
+
+📝 2. Math (Calculus) - top_k=3, Heuristic
+   📥 입력 (WikiRequest):
+      - lecture_id: lecture_math_001
+      - section_id: 1
+      - lecture_summary: "Differentiation is the process of finding the rate..."
+      - top_k: 3 | verify_wiki: False
+      - wiki_lang: en | fallback_to_ko: True
+      - min_score: 5.0
+
+   📤 출력 (List[WikiResponse]): 3개 문서 (2893ms)
+
+      [1] WikiResponse:
+         ├─ lecture_id: lecture_math_001
+         ├─ section_id: 1
+         ├─ score: 7.5
+         ├─ reason: "Related to: function, differentiation"
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Differentiation rules"
+            ├─ lang: en
+            ├─ page_id: 10308785
+            ├─ url: https://en.wikipedia.org/wiki/Differentiation_rules
+            └─ extract: "This article is a summary of differentiation rules, that is, rules for computing the derivative of a function in calculus."
+
+      [2] WikiResponse:
+         ├─ lecture_id: lecture_math_001
+         ├─ section_id: 1
+         ├─ score: 7.5
+         ├─ reason: "Related to: function, differentiation"
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Automatic differentiation"
+            ├─ lang: en
+            ├─ page_id: 734787
+            ├─ url: https://en.wikipedia.org/wiki/Automatic_differentiation
+            └─ extract: "In mathematics and computer algebra, automatic differentiation (auto-differentiation, autodiff, or AD), also called algorithmic differentiation, computational differentiation, and differentiation arithmetic is a set of techniques to evaluate the partial derivative of a function specified by a computer program. Automatic differentiation is a subtle and central tool to automate the simultaneous computation of the numerical values of arbitrarily complex functions and their derivatives with no need for the symbolic representation of the derivative, only the function rule or an algorithm thereof is required. Auto-differentiation is thus neither numeric nor symbolic, nor is it a combination of both."
+
+      [3] WikiResponse:
+         ├─ lecture_id: lecture_math_001
+         ├─ section_id: 1
+         ├─ score: 7.0
+         ├─ reason: "Related to: differentiation"
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Differentiation"
+            ├─ lang: en
+            ├─ page_id: 61335
+            ├─ url: https://en.wikipedia.org/wiki/Differentiation
+            └─ extract: "Differentiation may refer to:"
+
+📝 3. Physics (Quantum) - top_k=5, English
+   📥 입력 (WikiRequest):
+      - lecture_id: lecture_physics_001
+      - section_id: 1
+      - lecture_summary: "Schrödinger equation describes quantum state evolu..."
+      - top_k: 5 | verify_wiki: True
+      - wiki_lang: en | fallback_to_ko: True
+      - min_score: 5.0
+
+   📤 출력 (List[WikiResponse]): 5개 문서 (4428ms)
+
+      [1] WikiResponse:
+         ├─ lecture_id: lecture_physics_001
+         ├─ section_id: 1
+         ├─ score: 9.0
+         ├─ reason: "The document directly explains the Schrödinger equation, which is central to the lecture on quantum state evolution."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Schrödinger equation"
+            ├─ lang: en
+            ├─ page_id: 59874
+            ├─ url: https://en.wikipedia.org/wiki/Schr%C3%B6dinger_equation
+            └─ extract: "The Schrödinger equation is a partial differential equation that governs the wave function of a non-relativistic quantum-mechanical system. Its discovery was a significant landmark in the development of quantum mechanics. It is named after Erwin Schrödinger, an Austrian physicist, who postulated the equation in 1925 and published it in 1926, forming the basis for the work that resulted in his Nobel Prize in Physics in 1933."
+
+      [2] WikiResponse:
+         ├─ lecture_id: lecture_physics_001
+         ├─ section_id: 1
+         ├─ score: 8.0
+         ├─ reason: "The document directly relates to the Schrödinger equation by discussing its nonlinear variant and applications in quantum mechanics."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Nonlinear Schrödinger equation"
+            ├─ lang: en
+            ├─ page_id: 1422748
+            ├─ url: https://en.wikipedia.org/wiki/Nonlinear_Schr%C3%B6dinger_equation
+            └─ extract: "In theoretical physics, the (one-dimensional) nonlinear Schrödinger equation (NLSE) is a nonlinear variation of the Schrödinger equation.  It is a classical field equation whose principal applications are to the propagation of light in nonlinear optical fibers, planar waveguides and hot rubidium vapors
+and to Bose–Einstein condensates confined to highly anisotropic, cigar-shaped traps, in the mean-field regime. Additionally, the equation appears in the studies of small-amplitude gravity waves on the surface of deep inviscid (zero-viscosity) water; the Langmuir waves in hot plasmas; the propagation of plane-diffracted wave beams in the focusing regions of the ionosphere; the propagation of Davydov's alpha-helix solitons, which are responsible for energy transport along molecular chains; and many others."
+
+      [3] WikiResponse:
+         ├─ lecture_id: lecture_physics_001
+         ├─ section_id: 1
+         ├─ score: 6.0
+         ├─ reason: "The document provides foundational knowledge about quantum mechanics, which is essential for understanding the Schrödinger equation."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Quantum mechanics"
+            ├─ lang: en
+            ├─ page_id: 25202
+            ├─ url: https://en.wikipedia.org/wiki/Quantum_mechanics
+            └─ extract: "Quantum mechanics is the fundamental physical theory that describes the behavior of matter and of light; its unusual characteristics typically occur at and below the scale of atoms. It is the foundation of all quantum physics, which includes quantum chemistry, quantum biology, quantum field theory, quantum technology, and quantum information science.
+Quantum mechanics can describe many systems that classical physics cannot."
+
+      [4] WikiResponse:
+         ├─ lecture_id: lecture_physics_001
+         ├─ section_id: 1
+         ├─ score: 6.0
+         ├─ reason: "The document provides foundational knowledge about the history of quantum mechanics, which is essential for understanding concepts like the Schrödinger equation."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "History of quantum mechanics"
+            ├─ lang: en
+            ├─ page_id: 9067941
+            ├─ url: https://en.wikipedia.org/wiki/History_of_quantum_mechanics
+            └─ extract: "The history of quantum mechanics is a fundamental part of the history of modern physics. The major chapters of this history begin with the emergence of quantum ideas to explain individual phenomena—blackbody radiation, the photoelectric effect, solar emission spectra—an era called the Old or Older quantum theories. 
+Building on the technology developed in classical mechanics, the invention of wave mechanics by Erwin Schrödinger and expansion by many others triggers the "modern" era beginning around 1925."
+
+      [5] WikiResponse:
+         ├─ lecture_id: lecture_physics_001
+         ├─ section_id: 1
+         ├─ score: 6.0
+         ├─ reason: "The document provides foundational knowledge about quantum mechanics, which is essential for understanding the Schrödinger equation."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Introduction to quantum mechanics"
+            ├─ lang: en
+            ├─ page_id: 2796131
+            ├─ url: https://en.wikipedia.org/wiki/Introduction_to_quantum_mechanics
+            └─ extract: "Quantum mechanics is the study of matter and matter's interactions with energy on the scale of atomic and subatomic particles. By contrast, classical physics explains matter and energy only on a scale familiar to human experience, including the behavior of astronomical bodies such as the Moon. Classical physics is still used in much of modern science and technology."
+
+📝 4. Chemistry (Organic) - top_k=10, EN+KO fallback
+   📥 입력 (WikiRequest):
+      - lecture_id: lecture_chemistry_001
+      - section_id: 1
+      - lecture_summary: "SN2 reaction is a nucleophilic substitution mechan..."
+      - top_k: 10 | verify_wiki: True
+      - wiki_lang: en | fallback_to_ko: True
+      - min_score: 5.0
+
+   📤 출력 (List[WikiResponse]): 7개 문서 (7623ms)
+
+      [1] WikiResponse:
+         ├─ lecture_id: lecture_chemistry_001
+         ├─ section_id: 1
+         ├─ score: 9.0
+         ├─ reason: "The document directly explains the SN2 reaction mechanism, detailing the role of nucleophiles and the process of backside attack."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "SN2 reaction"
+            ├─ lang: en
+            ├─ page_id: 241878
+            ├─ url: https://en.wikipedia.org/wiki/SN2_reaction
+            └─ extract: "The bimolecular nucleophilic substitution (SN2) is a type of reaction mechanism that is common in organic chemistry. In the SN2 reaction, a strong nucleophile forms a new bond to an sp3-hybridised carbon atom via a backside attack, all while the leaving group detaches from the reaction center in a concerted (i.e. simultaneous) fashion."
+
+      [2] WikiResponse:
+         ├─ lecture_id: lecture_chemistry_001
+         ├─ section_id: 1
+         ├─ score: 9.0
+         ├─ reason: "The document directly explains the SN2 reaction mechanism and its influencing factors, aligning closely with the lecture content."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "SN2 반응"
+            ├─ lang: en
+            ├─ page_id: 618245
+            ├─ url: https://ko.wikipedia.org/wiki/SN2_%EB%B0%98%EC%9D%91
+            └─ extract: "SN2 반응은 유기화학에서 치환반응의 한 종류로, Bimolecular Nucleophilic Substitution, 즉 이분자성 친핵성 치환반응을 줄여쓴 것이다. (S: Substitution, N: Nucleophilic, 2: Bimolecular)
+SN2 반응에 영향을 줄 수 있는 변수로는 크게 4가지 - 용매의 종류, 이탈기의 종류, 친핵체의 종류와 농도, 반응 기질의 종류와 농도 - 가 있으며, 상황에 따라 SN1 반응과 경쟁관계가 될 수도 있다. SN2 반응에서의 생성물은 반응물이 카이랄한 경우 그 카이랄성이 뒤집히게 된다."
+
+      [3] WikiResponse:
+         ├─ lecture_id: lecture_chemistry_001
+         ├─ section_id: 1
+         ├─ score: 9.0
+         ├─ reason: "The document directly explains the concept of nucleophilic substitution, which is central to the SN2 reaction discussed in the lecture."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "친핵성 치환"
+            ├─ lang: en
+            ├─ page_id: 3123503
+            ├─ url: https://ko.wikipedia.org/wiki/%EC%B9%9C%ED%95%B5%EC%84%B1_%EC%B9%98%ED%99%98
+            └─ extract: "친핵성 치환(親核性置換, 영어: nucleophilic substitution)은 전자가 풍부한 화학종(친핵체로 알려짐)이 다른 전자 결핍 분자(친전자체로 알려짐) 내의 작용기를 대체하는 화학 반응의 한 종류이다. 친전자체와 이탈 작용기를 포함하는 분자를 기질이라고 한다.
+반응의 가장 일반적인 형태는 다음과 같이 주어질 수 있다."
+
+      [4] WikiResponse:
+         ├─ lecture_id: lecture_chemistry_001
+         ├─ section_id: 1
+         ├─ score: 8.0
+         ├─ reason: "The document directly explains the concept of nucleophilic substitution, which is fundamental to understanding the SN2 reaction."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Nucleophilic substitution"
+            ├─ lang: en
+            ├─ page_id: 236445
+            ├─ url: https://en.wikipedia.org/wiki/Nucleophilic_substitution
+            └─ extract: "In chemistry, a nucleophilic substitution (SN) is a class of chemical reactions in which an electron-rich chemical species (known as a nucleophile) replaces a functional group within another electron-deficient molecule (known as the electrophile). The molecule that contains the electrophile and the leaving functional group is called the substrate. 
+The most general form of the reaction may be given as the following: 
+
+  
+    
+      
+        
+          Nuc
+        
+        
+          :
+        
+        +
+        
+          R
+          
+            −
+          
+          LG
+          ⟶
+          R
+          
+            −
+          
+          Nuc
+        
+        +
+        
+          LG
+        
+        
+          :
+        
+      
+    
+    {\displaystyle {\text{Nuc}}\mathbf {:} +{\ce {R-LG -> R-Nuc}}+{\text{LG}}\mathbf {:} }
+  
+
+The electron pair (:) from the nucleophile (Nuc) attacks the substrate (R−LG) and bonds with it."
+
+      [5] WikiResponse:
+         ├─ lecture_id: lecture_chemistry_001
+         ├─ section_id: 1
+         ├─ score: 8.0
+         ├─ reason: "The document directly explains substitution reactions, which are fundamental to understanding the SN2 mechanism in organic chemistry."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "치환 반응"
+            ├─ lang: en
+            ├─ page_id: 317792
+            ├─ url: https://ko.wikipedia.org/wiki/%EC%B9%98%ED%99%98_%EB%B0%98%EC%9D%91
+            └─ extract: "치환 반응(置換反應, 영어: substitution reaction)이란 특정 화합물의 작용기가 다른 작용기로 교체되는 반응을 뜻한다. 유기화학에서는 친전자체 또는 친핵체에 의한 치환이 가장 중요하게 여겨진다. 유기화학에서의 치환반응은 치환이 친전자체 아니면 친핵체에 의해서 일어난 것인지, 반응 중간체로 탄소 양이온, 탄소 음이온, 유리기 중 어떠한 것이 존재하는지, 기질이 지방족 탄화수소인지 방향족 탄화수소인지에 따라 여러가지로 분류될 수 있다."
+
+      [6] WikiResponse:
+         ├─ lecture_id: lecture_chemistry_001
+         ├─ section_id: 1
+         ├─ score: 6.0
+         ├─ reason: "The document provides foundational knowledge about a specific type of nucleophilic substitution that relates to the broader concepts of SN2 reactions."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Vicarious nucleophilic substitution"
+            ├─ lang: en
+            ├─ page_id: 12238304
+            ├─ url: https://en.wikipedia.org/wiki/Vicarious_nucleophilic_substitution
+            └─ extract: "In organic chemistry, the vicarious nucleophilic substitution is a special type of nucleophilic aromatic substitution in which a nucleophile replaces a hydrogen atom on the aromatic ring and not leaving groups such as halogen substituents which are ordinarily encountered in SNAr. This reaction type was reviewed in 1987 by Polish chemists Mieczysław Mąkosza and Jerzy Winiarski.
+It is typically encountered with nitroarenes and especially with nucleophiles, resulting in alkylated arenes: the new substituent can take the ortho or para positions, reversing the selectivity for the meta position that is usually observed with such compounds under electrophilic substitution."
+
+      [7] WikiResponse:
+         ├─ lecture_id: lecture_chemistry_001
+         ├─ section_id: 1
+         ├─ score: 6.0
+         ├─ reason: "The document provides foundational knowledge about nucleophilic substitution reactions, specifically in the context of aromatic compounds, which relates to the SN2 reaction concept."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Nucleophilic aromatic substitution"
+            ├─ lang: en
+            ├─ page_id: 2408688
+            ├─ url: https://en.wikipedia.org/wiki/Nucleophilic_aromatic_substitution
+            └─ extract: "A nucleophilic aromatic substitution (SNAr) is a substitution reaction in organic chemistry in which the nucleophile displaces a good leaving group, such as a halide, on an aromatic ring. Aromatic rings are usually nucleophilic, but some aromatic compounds do undergo nucleophilic substitution. Just as normally nucleophilic alkenes can be made to undergo conjugate substitution if they carry electron-withdrawing substituents, so normally nucleophilic aromatic rings also become electrophilic if they have the right substituents.This reaction differs from a common SN2 reaction, because it happens at a trigonal carbon atom (sp2 hybridization)."
+
+📝 5. Biology (Cell) - min_score=1.0
+   📥 입력 (WikiRequest):
+      - lecture_id: lecture_biology_001
+      - section_id: 1
+      - lecture_summary: "Mitochondria are the powerhouse of the cell, gener..."
+      - top_k: 5 | verify_wiki: True
+      - wiki_lang: en | fallback_to_ko: True
+      - min_score: 1.0
+
+   📤 출력 (List[WikiResponse]): 5개 문서 (4784ms)
+
+      [1] WikiResponse:
+         ├─ lecture_id: lecture_biology_001
+         ├─ section_id: 1
+         ├─ score: 9.0
+         ├─ reason: "The document directly explains the process of cellular respiration, which is essential for ATP production in mitochondria."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Cellular respiration"
+            ├─ lang: en
+            ├─ page_id: 102871
+            ├─ url: https://en.wikipedia.org/wiki/Cellular_respiration
+            └─ extract: "Cellular respiration is the process of oxidizing biological fuels using an inorganic electron acceptor, such as oxygen, to drive production of adenosine triphosphate (ATP), which stores chemical energy in a biologically accessible form. Cellular respiration may be described as a set of metabolic reactions and processes that take place in the cells to transfer chemical energy from nutrients to ATP, with the flow of electrons to an electron acceptor, and then release waste products.
+If the electron acceptor is oxygen, the process is more specifically known as aerobic cellular respiration."
+
+      [2] WikiResponse:
+         ├─ lecture_id: lecture_biology_001
+         ├─ section_id: 1
+         ├─ score: 9.0
+         ├─ reason: "The document directly explains the structure and function of mitochondria, emphasizing their role in ATP generation through aerobic respiration, which aligns closely with the lecture content."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Mitochondrion"
+            ├─ lang: en
+            ├─ page_id: 19588
+            ├─ url: https://en.wikipedia.org/wiki/Mitochondrion
+            └─ extract: "A mitochondrion (pl. mitochondria) is an organelle found in the cells of most eukaryotes, such as animals, plants and fungi. Mitochondria have a double membrane structure and use aerobic respiration to generate adenosine triphosphate (ATP), which is used throughout the cell as a source of chemical energy. They were discovered by Albert von Kölliker in 1857 in the voluntary muscles of insects."
+
+      [3] WikiResponse:
+         ├─ lecture_id: lecture_biology_001
+         ├─ section_id: 1
+         ├─ score: 8.0
+         ├─ reason: "The document directly explains the role of mitochondrial DNA in ATP generation, which is a key concept from the lecture."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Mitochondrial DNA"
+            ├─ lang: en
+            ├─ page_id: 89796
+            ├─ url: https://en.wikipedia.org/wiki/Mitochondrial_DNA
+            └─ extract: "Mitochondrial DNA (mDNA or mtDNA) is the DNA located in the mitochondria organelles in a eukaryotic cell that converts chemical energy from food into adenosine triphosphate (ATP). Mitochondrial DNA is a small portion of the DNA contained in a eukaryotic cell; most of the DNA is in the cell nucleus, and, in plants and algae, the DNA also is found in plastids, such as chloroplasts. Mitochondrial DNA is responsible for coding of 13 essential subunits of the complex oxidative phosphorylation (OXPHOS) system which has a role in cellular energy conversion."
+
+      [4] WikiResponse:
+         ├─ lecture_id: lecture_biology_001
+         ├─ section_id: 1
+         ├─ score: 6.0
+         ├─ reason: "The document provides foundational knowledge about respiration processes, contrasting anaerobic and aerobic respiration, which relates to the overall concept of ATP generation."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Anaerobic respiration"
+            ├─ lang: en
+            ├─ page_id: 435420
+            ├─ url: https://en.wikipedia.org/wiki/Anaerobic_respiration
+            └─ extract: "Anaerobic respiration is respiration using electron acceptors other than molecular oxygen (O2) in its electron transport chain.
+In aerobic organisms, electrons are shuttled to an electron transport chain, and the final electron acceptor is oxygen. Molecular oxygen is an excellent electron acceptor."
+
+      [5] WikiResponse:
+         ├─ lecture_id: lecture_biology_001
+         ├─ section_id: 1
+         ├─ score: 6.0
+         ├─ reason: "The document provides foundational knowledge about respiration, which is related to the process of cellular respiration occurring in mitochondria."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Respiration (physiology)"
+            ├─ lang: en
+            ├─ page_id: 491962
+            ├─ url: https://en.wikipedia.org/wiki/Respiration_(physiology)
+            └─ extract: "In physiology, respiration is a process that facilitates the transport of oxygen from the outside environment to bodily tissues and the removal of carbon dioxide using a respiratory system.
+The physiological definition of respiration differs from the biological definition of cellular respiration, which refers to a metabolic process by which an organism obtains energy (in the form of ATP and NADPH) by oxidizing nutrients and releasing waste products. Although physiologic respiration is necessary to sustain cellular respiration and thus life in animals, the processes are distinct: cellular respiration takes place in individual cells of the organism, while physiologic respiration concerns the diffusion and transport of metabolites between the organism and the external environment."
+
+📝 6. History (Korean War) - min_score=5.0
+   📥 입력 (WikiRequest):
+      - lecture_id: lecture_history_001
+      - section_id: 1
+      - lecture_summary: "The Korean War was a conflict between North and So..."
+      - top_k: 5 | verify_wiki: True
+      - wiki_lang: en | fallback_to_ko: True
+      - min_score: 5.0
+
+   📤 출력 (List[WikiResponse]): 5개 문서 (4493ms)
+
+      [1] WikiResponse:
+         ├─ lecture_id: lecture_history_001
+         ├─ section_id: 1
+         ├─ score: 10.0
+         ├─ reason: "The document directly explains the Korean War, including its timeline, key participants, and the involvement of allies."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Korean War"
+            ├─ lang: en
+            ├─ page_id: 16772
+            ├─ url: https://en.wikipedia.org/wiki/Korean_War
+            └─ extract: "The Korean War (25 June 1950 – 27 July 1953) was an armed conflict on the Korean Peninsula fought between North Korea (Democratic People's Republic of Korea; DPRK) and South Korea (Republic of Korea; ROK) and their allies. North Korea was supported by China and the Soviet Union, while South Korea was supported by the United Nations Command (UNC) led by the United States. The conflict was one of the first major proxy wars of the Cold War."
+
+      [2] WikiResponse:
+         ├─ lecture_id: lecture_history_001
+         ├─ section_id: 1
+         ├─ score: 6.0
+         ├─ reason: "The document provides foundational knowledge about South Korea's military involvement in a subsequent conflict, reflecting the historical context established by the Korean War."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "South Korea in the Vietnam War"
+            ├─ lang: en
+            ├─ page_id: 40906410
+            ├─ url: https://en.wikipedia.org/wiki/South_Korea_in_the_Vietnam_War
+            └─ extract: "South Korea, which was at the time an semi-presidential republic under its right-wing president Park Chung Hee, took a major active role in the Vietnam War. The Korean War just a decade prior was still fresh on the minds of the South Korean people, and the threat from North Korea was still very real. South Korea's decision to join resulted from various underlying causes."
+
+      [3] WikiResponse:
+         ├─ lecture_id: lecture_history_001
+         ├─ section_id: 1
+         ├─ score: 6.0
+         ├─ reason: "The document provides foundational knowledge about North Korea, which is essential for understanding the context of the Korean War."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "North Korea"
+            ├─ lang: en
+            ├─ page_id: 21255
+            ├─ url: https://en.wikipedia.org/wiki/North_Korea
+            └─ extract: "North Korea, officially the Democratic People's Republic of Korea (DPRK), is a country in East Asia. It constitutes the northern half of the Korean Peninsula and borders China and Russia to the north at the Yalu (Amnok) and Tumen rivers, and South Korea to the south at the Korean Demilitarized Zone (DMZ). The country's western border is formed by the Yellow Sea, while its eastern border is defined by the Sea of Japan."
+
+      [4] WikiResponse:
+         ├─ lecture_id: lecture_history_001
+         ├─ section_id: 1
+         ├─ score: 6.0
+         ├─ reason: "The document provides foundational knowledge about North Korean defectors, which is relevant to understanding the broader context of the Korean War and its aftermath."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "North Korean defectors"
+            ├─ lang: en
+            ├─ page_id: 3682015
+            ├─ url: https://en.wikipedia.org/wiki/North_Korean_defectors
+            └─ extract: "People defect from North Korea for political, material, safety and personal reasons. Defectors flee to various countries, mainly South Korea. In South Korea, they are referred to by several terms, including "northern refugees" and "new settlers"."
+
+      [5] WikiResponse:
+         ├─ lecture_id: lecture_history_001
+         ├─ section_id: 1
+         ├─ score: 6.0
+         ├─ reason: "The document provides foundational knowledge about South Korea, which is relevant to understanding the context of the Korean War."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "South Korea"
+            ├─ lang: en
+            ├─ page_id: 27019
+            ├─ url: https://en.wikipedia.org/wiki/South_Korea
+            └─ extract: "South Korea, officially the Republic of Korea (ROK), is a country in East Asia. It constitutes the southern half of the Korean Peninsula and borders North Korea along the Korean Demilitarized Zone, with the Yellow Sea to the west and the Sea of Japan to the east. Like North Korea, South Korea claims to be the sole legitimate government of the entire peninsula and adjacent islands."
+
+📝 7. Literature (Shakespeare) - min_score=7.0
+   📥 입력 (WikiRequest):
+      - lecture_id: lecture_literature_001
+      - section_id: 1
+      - lecture_summary: "Hamlet is a tragedy written by William Shakespeare..."
+      - top_k: 5 | verify_wiki: True
+      - wiki_lang: en | fallback_to_ko: True
+      - min_score: 7.0
+
+   📤 출력 (List[WikiResponse]): 4개 문서 (7820ms)
+
+      [1] WikiResponse:
+         ├─ lecture_id: lecture_literature_001
+         ├─ section_id: 1
+         ├─ score: 9.0
+         ├─ reason: "The document provides a direct summary of Hamlet, highlighting its themes of revenge and madness, which are central to the lecture."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Hamlet"
+            ├─ lang: en
+            ├─ page_id: 13554
+            ├─ url: https://en.wikipedia.org/wiki/Hamlet
+            └─ extract: "The Tragedy of Hamlet, Prince of Denmark, often shortened to Hamlet (), is a tragedy written by William Shakespeare sometime between 1599 and 1601. It is Shakespeare's longest play. Set in Denmark, the play depicts Prince Hamlet and his attempts to exact revenge against his uncle, Claudius, who has murdered Hamlet's father in order to seize his throne and marry Hamlet's mother."
+
+      [2] WikiResponse:
+         ├─ lecture_id: lecture_literature_001
+         ├─ section_id: 1
+         ├─ score: 9.0
+         ├─ reason: "The document provides a detailed summary of Hamlet, directly relating to the themes of revenge and madness discussed in the lecture."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "햄릿"
+            ├─ lang: en
+            ├─ page_id: 170734
+            ├─ url: https://ko.wikipedia.org/wiki/%ED%96%84%EB%A6%BF
+            └─ extract: "《덴마크 왕자 햄릿의 비극》(The Tragedy of Hamlet, Prince of Denmark), 흔히 줄여서 《햄릿》(문화어: 햄리트)은 1599년에서 1601년 사이에 쓰인 윌리엄 셰익스피어의 비극이다. 덴마크를 공간적 배경으로, 햄릿이 자신의 아버지를 죽이고 어머니와 결혼한 클라우디우스 왕에게 복수하는 과정에서 일어나는 비극을 보여준다.
+햄릿이 보여주는 이야기 구조와 인물의 깊이는 많은 사람들이 다양한 해석을 할 수 있도록 한다."
+
+      [3] WikiResponse:
+         ├─ lecture_id: lecture_literature_001
+         ├─ section_id: 1
+         ├─ score: 8.0
+         ├─ reason: "The document provides foundational knowledge about William Shakespeare and mentions 'Hamlet' as one of his masterpieces, directly relating to the lecture's focus on the play's themes."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "윌리엄 셰익스피어"
+            ├─ lang: en
+            ├─ page_id: 12599
+            ├─ url: https://ko.wikipedia.org/wiki/%EC%9C%8C%EB%A6%AC%EC%97%84_%EC%85%B0%EC%9D%B5%EC%8A%A4%ED%94%BC%EC%96%B4
+            └─ extract: "윌리엄 셰익스피어(영어: William Shakespeare, 문화어: 윌리암 쉑스피어, 1564년 4월 26일~1616년 4월 23일)는 잉글랜드의 극작가이자 시인이다. 잉글랜드의 유복한 집안에서 태어나 런던으로 이주하고서 본격 작품 활동을 시작하여 일약 명성을 얻었고, 생전에 '영국 최고의 극작가' 지위에 올랐다. 《로미오와 줄리엣》, 《햄릿》처럼 인간 내면을 통찰한 걸작을 남겼으며, 그 희곡은 인류의 고전으로 남아 수백 년이 지난 지금도 널리 읽히고 있다."
+
+      [4] WikiResponse:
+         ├─ lecture_id: lecture_literature_001
+         ├─ section_id: 1
+         ├─ score: 7.0
+         ├─ reason: "The document provides foundational knowledge about the tragedy genre, which is relevant to understanding the themes in Hamlet."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Tragedy"
+            ├─ lang: en
+            ├─ page_id: 57993
+            ├─ url: https://en.wikipedia.org/wiki/Tragedy
+            └─ extract: "A tragedy is a genre of drama based on human suffering and, mainly, the terrible or sorrowful events that befall a main character or cast of characters. Traditionally, the intention of tragedy is to invoke an accompanying catharsis, or a "pain [that] awakens pleasure," for the audience. While many cultures have developed forms that provoke this paradoxical response, the term tragedy often refers to a specific tradition of drama that has played a unique and important role historically in the self-definition of Western civilization."
+
+📝 8. Economics (Korean) - min_score=5.0
+   📥 입력 (WikiRequest):
+      - lecture_id: lecture_economics_001
+      - section_id: 1
+      - lecture_summary: "시장경제는 수요와 공급의 원리로 작동하는 경제 체제입니다...."
+      - top_k: 5 | verify_wiki: True
+      - wiki_lang: ko | fallback_to_ko: False
+      - min_score: 5.0
+
+   📤 출력 (List[WikiResponse]): 5개 문서 (3908ms)
+
+      [1] WikiResponse:
+         ├─ lecture_id: lecture_economics_001
+         ├─ section_id: 1
+         ├─ score: 9.0
+         ├─ reason: "The document directly explains the principles of demand and supply, which are fundamental to understanding the market economy discussed in the lecture."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "수요와 공급"
+            ├─ lang: ko
+            ├─ page_id: 150986
+            ├─ url: https://ko.wikipedia.org/wiki/%EC%88%98%EC%9A%94%EC%99%80_%EA%B3%B5%EA%B8%89
+            └─ extract: "수요와 공급(需要와 供給 영어: demand and supply)은 경제학에서 개별 상품 판매자와 구매자의 시장 관계를 나타낸다. '수요와 공급 모형'은 시장에서 거래되는 재화의 양과 시장에서 형성되는 가격을 결정하고 예측한다. 수요와 공급의 개념 및 모델은 시장에서 구매자와 소비자에 대한 미시경제적 분석에 필수적이다."
+
+      [2] WikiResponse:
+         ├─ lecture_id: lecture_economics_001
+         ├─ section_id: 1
+         ├─ score: 9.0
+         ├─ reason: "The document directly explains the principles of market economy, including the role of supply and demand, aligning closely with the lecture content."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "시장 경제"
+            ├─ lang: ko
+            ├─ page_id: 279373
+            ├─ url: https://ko.wikipedia.org/wiki/%EC%8B%9C%EC%9E%A5_%EA%B2%BD%EC%A0%9C
+            └─ extract: "시장 경제(市場經濟)는 분업에 의해 생산된 재화와 용역을 자유 가격 체제의 수요와 공급 관계에 의해 분배하는 사회구성체이다. 시장 경제는 애덤 스미스가 말한 것처럼 보이지 않는 손에 의해 자원이 효율적으로 배분되는 체제이다. 시장 경제는 종종 계획 경제, 혼합 경제 등과 대비되는 개념으로 다루어진다."
+
+      [3] WikiResponse:
+         ├─ lecture_id: lecture_economics_001
+         ├─ section_id: 1
+         ├─ score: 8.0
+         ├─ reason: "The document explains the social market economy, which operates on the principles of supply and demand while emphasizing government intervention to prevent unfair practices."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "사회적 시장경제"
+            ├─ lang: ko
+            ├─ page_id: 1324705
+            ├─ url: https://ko.wikipedia.org/wiki/%EC%82%AC%ED%9A%8C%EC%A0%81_%EC%8B%9C%EC%9E%A5%EA%B2%BD%EC%A0%9C
+            └─ extract: "사회적 시장경제(社會的 市場經濟, Social market economy)는 독일식 자본주의 모델로 '사회적 자본주의', '라인 자본주의'라고도 불린다. 빈곤층과 저임금 계층을 배려한 복지 지향적, 인도주의적인 자본주의를 말한다.
+질서자유주의의 영향을 받아 시장 메커니즘, 민간기업의 활동에 대해 정부의 개입을 최소화하지만, 독과점 등 시장경제 자체를 해칠 수 있는 불공정 행위에 있어서는 정부가 적극적으로 개입해서 규제해야 한다고 본다."
+
+      [4] WikiResponse:
+         ├─ lecture_id: lecture_economics_001
+         ├─ section_id: 1
+         ├─ score: 8.0
+         ├─ reason: "The document discusses capitalism, which operates on the principles of private ownership and market dynamics, directly relating to the concepts of supply and demand in a market economy."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "자본주의"
+            ├─ lang: ko
+            ├─ page_id: 46980
+            ├─ url: https://ko.wikipedia.org/wiki/%EC%9E%90%EB%B3%B8%EC%A3%BC%EC%9D%98
+            └─ extract: "자본주의(資本主義, 독일어: Kapitalismus, 프랑스어: capitalisme, 영어: capitalism)는 재화의 사적 소유권을 개인이 가지는 자유의지에 반하거나 법률에 의하지 않는 방법으로는 양도 불가능한 사회 구성원의 기본권으로 인정하는 사회 구성체이다. 또는, 사회주의적 관점에서 볼 때 생산 수단을 가진 자본가 및 기업가 계급이 그 이익 추구를 위해 생산 활동을 제한적으로 보장하는 사회적 경제 체제로 정의 하기도 한다. 재화의 사적 소유권에 대한 인정은 곧바로 재화의 매매, 양도, 소비 및 이윤의 처분 등에 대한 결정을 개인에게 일임한다."
+
+      [5] WikiResponse:
+         ├─ lecture_id: lecture_economics_001
+         ├─ section_id: 1
+         ├─ score: 8.0
+         ├─ reason: "The document directly explains the concept of demand, which is a fundamental principle in the market economy related to supply and demand."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "수요"
+            ├─ lang: ko
+            ├─ page_id: 150987
+            ├─ url: https://ko.wikipedia.org/wiki/%EC%88%98%EC%9A%94
+            └─ extract: "경제학에서 수요(需要, demand)란 소비자가 특정 재화나 서비스를 구매하기 위한 의지와 소망을 나타내는 경제원리이다. 기본적으로 수요란 구매자가 원하는 재화나 서비스의 양을 의미한다. 수요량이란 특정 가격 하에 사람들이 구매하고자 하는 양을 의미한다."
+
+📝 9. Philosophy (Kant) - Heuristic
+   📥 입력 (WikiRequest):
+      - lecture_id: lecture_philosophy_001
+      - section_id: 1
+      - lecture_summary: "Kant's categorical imperative emphasizes the unive..."
+      - top_k: 5 | verify_wiki: False
+      - wiki_lang: en | fallback_to_ko: True
+      - min_score: 5.0
+
+   📤 출력 (List[WikiResponse]): 5개 문서 (3059ms)
+
+      [1] WikiResponse:
+         ├─ lecture_id: lecture_philosophy_001
+         ├─ section_id: 1
+         ├─ score: 7.5
+         ├─ reason: "Related to: kant, categorical imperative"
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Categorical imperative"
+            ├─ lang: en
+            ├─ page_id: 214856
+            ├─ url: https://en.wikipedia.org/wiki/Categorical_imperative
+            └─ extract: "The categorical imperative (German: Kategorischer Imperativ) is the central philosophical concept in the deontological moral philosophy of Immanuel Kant. Introduced in Kant's 1785 Groundwork of the Metaphysics of Morals, it is a way of evaluating motivations for action. It is best known in its original formulation: "Act only according to that maxim whereby you can at the same time will that it should become a universal law."
+According to Kant, rational beings occupy a special place in creation, and morality can be summed up in an imperative, or ultimate commandment of reason, from which all duties and obligations derive."
+
+      [2] WikiResponse:
+         ├─ lecture_id: lecture_philosophy_001
+         ├─ section_id: 1
+         ├─ score: 7.0
+         ├─ reason: "Related to: kant"
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Immanuel Kant"
+            ├─ lang: en
+            ├─ page_id: 14631
+            ├─ url: https://en.wikipedia.org/wiki/Immanuel_Kant
+            └─ extract: "Immanuel Kant (born Emanuel Kant; 22 April 1724 – 12 February 1804) was a German philosopher. Born in Königsberg, he is considered one of the central thinkers of the Enlightenment. His comprehensive and systematic works in epistemology, metaphysics, ethics, and aesthetics have made him one of the most influential and highly discussed figures in modern Western philosophy."
+
+      [3] WikiResponse:
+         ├─ lecture_id: lecture_philosophy_001
+         ├─ section_id: 1
+         ├─ score: 7.0
+         ├─ reason: "Related to: kant"
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Kant (disambiguation)"
+            ├─ lang: en
+            ├─ page_id: 31185273
+            ├─ url: https://en.wikipedia.org/wiki/Kant_(disambiguation)
+            └─ extract: "Immanuel Kant (1724–1804) was a German philosopher."
+
+      [4] WikiResponse:
+         ├─ lecture_id: lecture_philosophy_001
+         ├─ section_id: 1
+         ├─ score: 7.0
+         ├─ reason: "Related to: kant"
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Surya Kant (judge)"
+            ├─ lang: en
+            ├─ page_id: 59399505
+            ├─ url: https://en.wikipedia.org/wiki/Surya_Kant_(judge)
+            └─ extract: "Suryakant Sharma (born 10 February 1962) is an Indian judge of the Supreme Court of India, who is declared to become the 53rd Chief Justice of India, on ,November 23,2025. Prior to his elevation as judge, Kant was a Senior Advocate and also served as the Advocate General for Haryana. He is also the visitor of National University of Study and Research in Law, Ranchi."
+
+      [5] WikiResponse:
+         ├─ lecture_id: lecture_philosophy_001
+         ├─ section_id: 1
+         ├─ score: 5.5
+         ├─ reason: "Related to: kant"
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Groundwork of the Metaphysics of Morals"
+            ├─ lang: en
+            ├─ page_id: 235875
+            ├─ url: https://en.wikipedia.org/wiki/Groundwork_of_the_Metaphysics_of_Morals
+            └─ extract: "Groundwork of the Metaphysics of Morals (1785; German: Grundlegung zur Metaphysik der Sitten; also known as the Foundations of the Metaphysics of Morals, Grounding of the Metaphysics of Morals, and the Grounding for the Metaphysics of Morals) is the first of Immanuel Kant's mature works on moral philosophy and the first of his trilogy of major works on ethics alongside the Critique of Practical Reason and The Metaphysics of Morals. It remains one of the most influential in the field. Kant conceives his investigation as a work of foundational ethics—one that clears the ground for future research by explaining the core concepts and principles of moral theory, and showing that they are normative for rational agents."
+
+📝 10. Art (Renaissance) - LLM 검증
+   📥 입력 (WikiRequest):
+      - lecture_id: lecture_art_001
+      - section_id: 1
+      - lecture_summary: "Renaissance art reflects humanistic thinking and c..."
+      - top_k: 5 | verify_wiki: True
+      - wiki_lang: en | fallback_to_ko: True
+      - min_score: 5.0
+
+   📤 출력 (List[WikiResponse]): 5개 문서 (5215ms)
+
+      [1] WikiResponse:
+         ├─ lecture_id: lecture_art_001
+         ├─ section_id: 1
+         ├─ score: 9.0
+         ├─ reason: "The document directly discusses Renaissance art, its timeline, and its connection to humanistic thinking and classical revival, aligning closely with the lecture concepts."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Renaissance art"
+            ├─ lang: en
+            ├─ page_id: 311401
+            ├─ url: https://en.wikipedia.org/wiki/Renaissance_art
+            └─ extract: "Renaissance art (1350 – 1620) is the painting, sculpture, and decorative arts of the period of European history known as the Renaissance, which emerged as a distinct style in Italy in about AD 1400, in parallel with developments which occurred in philosophy, literature, music, science, and technology. Renaissance art took as its foundation the art of Classical antiquity, perceived as the noblest of ancient traditions, but transformed that tradition by absorbing recent developments in the art of Northern Europe and by applying contemporary scientific knowledge. Along with Renaissance humanist philosophy, it spread throughout Europe, affecting both artists and their patrons with the development of new techniques and new artistic sensibilities."
+
+      [2] WikiResponse:
+         ├─ lecture_id: lecture_art_001
+         ├─ section_id: 1
+         ├─ score: 9.0
+         ├─ reason: "The document directly explains the concept of humanism, which is central to understanding the philosophical underpinnings of Renaissance art."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Humanism"
+            ├─ lang: en
+            ├─ page_id: 5135982
+            ├─ url: https://en.wikipedia.org/wiki/Humanism
+            └─ extract: "Humanism is a philosophical stance that emphasizes the individual and social potential, and agency of human beings, whom it considers the starting point for serious moral and philosophical inquiry.
+The meaning of the term "humanism" has changed according to successive intellectual movements that have identified with it. During the Italian Renaissance, Italian scholars inspired by Greek classical scholarship gave rise to the Renaissance humanism movement."
+
+      [3] WikiResponse:
+         ├─ lecture_id: lecture_art_001
+         ├─ section_id: 1
+         ├─ score: 9.0
+         ├─ reason: "The document directly addresses the Renaissance as a cultural movement that reflects humanistic thinking and the revival of classical ideas, aligning closely with the lecture's focus."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Renaissance"
+            ├─ lang: en
+            ├─ page_id: 25532
+            ├─ url: https://en.wikipedia.org/wiki/Renaissance
+            └─ extract: "The Renaissance (UK:  rin-AY-sənss, US:   REN-ə-sahnss) is a period of history and a European cultural movement covering the 15th and 16th centuries. It marked the transition from the Middle Ages to modernity and was characterized by an effort to revive and surpass the ideas and achievements of classical antiquity. Associated with great social change in most fields and disciplines, including art, architecture, politics, literature, exploration and science, the Renaissance was first centered in the Republic of Florence, then spread to the rest of Italy and later throughout Europe."
+
+      [4] WikiResponse:
+         ├─ lecture_id: lecture_art_001
+         ├─ section_id: 1
+         ├─ score: 8.0
+         ├─ reason: "The document directly relates to the humanistic thinking that is central to Renaissance art by emphasizing reason and ethics over religious dogma."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Secular humanism"
+            ├─ lang: en
+            ├─ page_id: 29021
+            ├─ url: https://en.wikipedia.org/wiki/Secular_humanism
+            └─ extract: "Secular humanism is a philosophy, belief system, or life stance that embraces human reason, logic, secular ethics, and philosophical naturalism, while specifically rejecting religious dogma, supernaturalism, and superstition as the basis of morality and decision-making. 
+Secular humanism posits that human beings are capable of being ethical and moral without religion or belief in a deity. It does not, however, assume that humans are either inherently good or evil, nor does it present humans as being superior to nature."
+
+      [5] WikiResponse:
+         ├─ lecture_id: lecture_art_001
+         ├─ section_id: 1
+         ├─ score: 8.0
+         ├─ reason: "The document directly discusses the High Renaissance, a key period in art history that exemplifies the humanistic thinking and classical revival central to the lecture."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "High Renaissance"
+            ├─ lang: en
+            ├─ page_id: 357090
+            ├─ url: https://en.wikipedia.org/wiki/High_Renaissance
+            └─ extract: "In art history, the High Renaissance was a short period of the most exceptional artistic production in the Italian states, particularly Rome, capital of the Papal States, and in Florence, during the Italian Renaissance. Most art historians state that the High Renaissance started between 1490 and 1500, and ended in 1520 with the death of Raphael, although some say the High Renaissance ended about 1525, or in 1527 with the Sack of Rome by the mutinous army of Charles V, Holy Roman Emperor, or about 1530. The best-known exponents of painting, sculpture, and architecture of the High Renaissance include Leonardo da Vinci, Michelangelo, Raphael, and Bramante."
+
+📝 11. AI (DQN) - 이전 섹션 + RAG 포함
+   📥 입력 (WikiRequest):
+      - lecture_id: lecture_ai_001
+      - section_id: 3
+      - lecture_summary: "DQN uses Experience Replay and Target Network to s..."
+      - top_k: 5 | verify_wiki: True
+      - wiki_lang: en | fallback_to_ko: True
+      - min_score: 5.0
+
+   📤 출력 (List[WikiResponse]): 4개 문서 (10446ms)
+
+      [1] WikiResponse:
+         ├─ lecture_id: lecture_ai_001
+         ├─ section_id: 3
+         ├─ score: 6.0
+         ├─ reason: "The document mentions Deep Q-Network, which is related to the concepts of Experience Replay and Target Network in reinforcement learning."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "DQN"
+            ├─ lang: en
+            ├─ page_id: 11631427
+            ├─ url: https://en.wikipedia.org/wiki/DQN
+            └─ extract: "DQN could refer to:
+
+Du Quoin station, Amtrak station code DQN
+Station code for Dhanera station, Gujarat, India - see List of railway stations in India
+Deep Q-Network, used in Deep Q-learning
+An internet slang used as derogatory name in Japan."
+
+      [2] WikiResponse:
+         ├─ lecture_id: lecture_ai_001
+         ├─ section_id: 3
+         ├─ score: 6.0
+         ├─ reason: "The document provides foundational knowledge about DQN as a deep learning algorithm developed by Google DeepMind, which is relevant to the lecture on its components."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "DQN"
+            ├─ lang: en
+            ├─ page_id: 1665391
+            ├─ url: https://ko.wikipedia.org/wiki/DQN
+            └─ extract: "DQN의 다른 뜻은 다음과 같다.
+
+"Deep Q-Network"의 준말: 구글 딥마인드가 개발한 딥 러닝 인공지능 알고리즘."
+
+      [3] WikiResponse:
+         ├─ lecture_id: lecture_ai_001
+         ├─ section_id: 3
+         ├─ score: 5.0
+         ├─ reason: "The document discusses deep learning, which is related to machine learning concepts but does not directly explain the specific mechanisms of DQN, experience replay, or target networks."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "딥 러닝"
+            ├─ lang: en
+            ├─ page_id: 1116197
+            ├─ url: https://ko.wikipedia.org/wiki/%EB%94%A5_%EB%9F%AC%EB%8B%9D
+            └─ extract: "심층 학습(深層學習) 또는 딥 러닝(영어: deep structured learning, deep learning 또는 hierarchical learning)은 여러 '비선형 변환기법'의 조합을 통해 높은 수준의 추상화(abstractions, 다량의 데이터나 복잡한 자료들 속에서 핵심적인 내용 또는 기능을 요약하는 작업)를 시도하는 기계 학습 알고리즘의 집합으로 정의되며, 큰 틀에서 사람의 사고방식을 컴퓨터에게 가르치는 기계학습의 한 분야라고 이야기할 수 있다.
+어떠한 데이터가 있을 때 이를 컴퓨터가 알아 들을 수 있는 형태(예를 들어 이미지의 경우는 픽셀정보를 열벡터로 표현하는 등)로 표현(representation)하고 이를 학습에 적용하기 위해 많은 연구(어떻게 하면 더 좋은 표현기법을 만들고 또 어떻게 이것들을 학습할 모델을 만들지에 대한)가 진행되고 있으며, 이러한 노력의 결과로 deep neural networks, convolutional deep neural networks, deep belief networks와 같은 다양한 딥 러닝 기법들이 컴퓨터 비전, 음성인식, 자연어 처리, 음성/신호처리 등 최첨단 분야에 적용되고 있다.
+2012년 스탠포드대학의 앤드류 응과 구글이 함께한 딥 러닝 프로젝트에서는 16,000개의 컴퓨터 프로세서와 10억 개 이상의 neural networks 그리고 DNN(deep neural networks)을 이용하여 유튜브에 업로드 되어 있는 천만 개 넘는 비디오 중 고양이 인식에 성공하였다."
+
+      [4] WikiResponse:
+         ├─ lecture_id: lecture_ai_001
+         ├─ section_id: 3
+         ├─ score: 5.0
+         ├─ reason: "The document discusses recurrent neural networks, which are related to neural network architectures but do not directly explain the concepts of Experience Replay and Target Network in DQN."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "순환 신경망"
+            ├─ lang: en
+            ├─ page_id: 1793308
+            ├─ url: https://ko.wikipedia.org/wiki/%EC%88%9C%ED%99%98_%EC%8B%A0%EA%B2%BD%EB%A7%9D
+            └─ extract: "순환 신경망(Recurrent neural network, RNN)은 인공 신경망의 한 종류로, 유닛간의 연결이 순환적 구조를 갖는 특징을 갖고 있다. 이러한 구조는 시변적 동적 특징을 모델링 할 수 있도록 신경망 내부에 상태를 저장할 수 있게 해주므로, 순방향 신경망과 달리 내부의 메모리를 이용해 시퀀스 형태의 입력을 처리할 수 있다. 따라서 순환 인공 신경망은 필기 인식이나 음성 인식과 같이 시변적 특징을 지니는 데이터를 처리하는데 적용할 수 있다."
+
+📝 12. Medicine (Heart) - 중복 제거 테스트
+   📥 입력 (WikiRequest):
+      - lecture_id: lecture_medicine_001
+      - section_id: 2
+      - lecture_summary: "The heart is a muscular organ that pumps blood thr..."
+      - top_k: 5 | verify_wiki: True
+      - wiki_lang: en | fallback_to_ko: True
+      - min_score: 5.0
+
+   📤 출력 (List[WikiResponse]): 5개 문서 (8397ms)
+
+      [1] WikiResponse:
+         ├─ lecture_id: lecture_medicine_001
+         ├─ section_id: 2
+         ├─ score: 10.0
+         ├─ reason: "The document directly explains the heart's function as a muscular organ that pumps blood through the circulatory system, aligning perfectly with the lecture content."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Heart"
+            ├─ lang: en
+            ├─ page_id: 36808
+            ├─ url: https://en.wikipedia.org/wiki/Heart
+            └─ extract: "The heart is a muscular organ found in humans and other animals. This organ pumps blood through the blood vessels. The heart and blood vessels together make the circulatory system."
+
+      [2] WikiResponse:
+         ├─ lecture_id: lecture_medicine_001
+         ├─ section_id: 2
+         ├─ score: 10.0
+         ├─ reason: "The document directly explains the functions of the circulatory system, including the role of the heart in pumping blood, which aligns perfectly with the lecture content."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "순환계"
+            ├─ lang: en
+            ├─ page_id: 260718
+            ├─ url: https://ko.wikipedia.org/wiki/%EC%88%9C%ED%99%98%EA%B3%84
+            └─ extract: "순환계(循環系, 영어: circulatory system) 또는 심혈관계(心血管系, 영어: cardiovascular system)는 동물에서 혈액·림프액 등 체액의 흐름에 관여하는 기관계로, 생명 활동에 필요한 산소와 영양소를 몸 안의 각 기관에 공급하고 그 결과로 생기는 이산화탄소와 노폐물을 호흡계통이나 비뇨계통으로 전달하여 몸 밖으로 배출하도록 한다. 혈액의 순환은 심장의 운동에 의해 이루어진다. 순환 중인 혈액은 산소의 운반, 영양분의 공급, 대사과정에서 생긴 노폐물의 제거, 체온의 유지, 호르몬의 운반과 같은 역할을 한다."
+
+      [3] WikiResponse:
+         ├─ lecture_id: lecture_medicine_001
+         ├─ section_id: 2
+         ├─ score: 8.0
+         ├─ reason: "The document directly explains the components of the circulatory system, including the heart, which is central to the lecture."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "Circulatory system of the horse"
+            ├─ lang: en
+            ├─ page_id: 12295709
+            ├─ url: https://en.wikipedia.org/wiki/Circulatory_system_of_the_horse
+            └─ extract: "The circulatory system of the horse consists of the heart, the blood vessels, and the blood."
+
+      [4] WikiResponse:
+         ├─ lecture_id: lecture_medicine_001
+         ├─ section_id: 2
+         ├─ score: 8.0
+         ├─ reason: "The document directly explains the concept of heart rate, which is a key function of the heart as a muscular organ that pumps blood."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "심박수"
+            ├─ lang: en
+            ├─ page_id: 839552
+            ├─ url: https://ko.wikipedia.org/wiki/%EC%8B%AC%EB%B0%95%EC%88%98
+            └─ extract: "심장박동수(영어: heart rate) 또는 심박수(心搏數) 또는 심박(心搏)은 단위시간당 심장박동의 수로 일반적으로 분당 맥의 수(beats per minute, bpm)로 표현되는 숫자이다. 심박수는 신체적인 운동이나 잠자는 것, 몸이 산소를 흡수하고 이산화탄소를 배출하는 것 등 생명 활동에 따라 다양해질 수 있다.
+심박수의 측정은 의료전문가들이 진단과 의학적 상태를 검사하기 위해 사용된다."
+
+      [5] WikiResponse:
+         ├─ lecture_id: lecture_medicine_001
+         ├─ section_id: 2
+         ├─ score: 6.0
+         ├─ reason: "The document provides foundational knowledge about mean systemic pressure, which is relevant to understanding blood circulation and the heart's function."
+         └─ page_info (WikiPageInfo):
+            ├─ title: "평균 체혈압"
+            ├─ lang: en
+            ├─ page_id: 3847554
+            ├─ url: https://ko.wikipedia.org/wiki/%ED%8F%89%EA%B7%A0_%EC%B2%B4%ED%98%88%EC%95%95
+            └─ extract: "의학에서 평균 체혈압(mean systemic pressure, MSP) 또는 평균 전신 충만압(mean systemic filling pressure, MSFP)은 혈액의 움직임이 없을 때 순환계에 존재하는 평균 압력으로 정의된다. 유사한 용어인 평균 순환 충만압(mean circulatory filling pressure, MCFP)은 혈액의 움직임이 없을 때 순환계(circulatory system)와 폐계(pulmonary system) 결합에 존재하는 평균 압력으로 정의된다. 동물 실험 모델에서 MSP 값은 약 7mmHg이다."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✨ 총 54개 문서 추천 완료! (12개 시나리오)
+⏱️  총 소요 시간: 68052ms (평균: 5671ms)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
