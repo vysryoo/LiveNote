@@ -1,0 +1,9 @@
+[submodule "cap1_QA_module"]
+	path = cap1_QA_module
+	url = https://github.com/nongman25/cap1_QA_module.git
+[submodule "cap1_RAG_module"]
+	path = cap1_RAG_module
+	url = https://github.com/nongman25/cap1_RAG_module.git
+[submodule "cap1_wiki_module"]
+	path = cap1_wiki_module
+	url = https://github.com/nongman25/cap1_wiki_module.git
