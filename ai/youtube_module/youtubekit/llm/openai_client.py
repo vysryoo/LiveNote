@@ -6,9 +6,9 @@ from __future__ import annotations
 import json
 from typing import Any, Dict
 
-from youtubekit.config.youtube_config import YouTubeConfig
-from youtubekit.config import flags
-from youtubekit.config import (
+from ..config.youtube_config import YouTubeConfig
+from ..config import flags
+from ..config import (
     QUERY_GENERATION_PROMPT,
     SUMMARY_PROMPT,
     SUMMARY_NO_TRANSCRIPT_PROMPT,

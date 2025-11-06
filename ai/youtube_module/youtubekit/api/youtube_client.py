@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from youtubekit.config.youtube_config import YouTubeConfig
+from ..config.youtube_config import YouTubeConfig
 
 logger = logging.getLogger(__name__)
 

@@ -47,6 +47,9 @@ test_chroma_data/
 chroma_data/
 *.sqlite3
 
+# Storage (VectorDB, uploads)
+server_storage/
+
 # Logs
 *.log
 

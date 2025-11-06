@@ -1,0 +1,21 @@
+# Runtime
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+httpx[http2]==0.27.2
+
+# OpenAI / Vector
+openai==1.54.0
+chromadb==0.5.11
+
+# Data & Utilities
+pydantic==2.9.0
+python-dotenv==1.0.1
+pandas==2.2.2
+pypdf==4.2.0
+reportlab==4.2.0
+streamlit==1.36.0
+python-multipart==0.0.9
+
+# Media Providers
+youtube-transcript-api==0.6.1
+rapidfuzz==3.6.1

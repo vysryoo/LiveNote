@@ -46,7 +46,7 @@ class YouTubeConfig:
     @classmethod
     def validate(cls):
         """설정 검증"""
-        from youtubekit.config import flags
+        from . import flags
         
         if not cls.OFFLINE_MODE:
             if not cls.OPENAI_API_KEY:

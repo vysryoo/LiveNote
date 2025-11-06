@@ -4,14 +4,14 @@ import asyncio
 import logging
 from typing import List
 
-from youtubekit.api import YouTubeAPIClient
-from youtubekit.llm import YouTubeLLMClient
-from youtubekit.models import (
+from .api import YouTubeAPIClient
+from .llm import YouTubeLLMClient
+from .models import (
     YouTubeRequest,
     YouTubeResponse,
     YouTubeVideoInfo,
 )
-from youtubekit.utils import normalize_title, deduplicate_items, heuristic_score
+from .utils import normalize_title, deduplicate_items, heuristic_score
 
 logger = logging.getLogger(__name__)
 
@@ -20,13 +20,13 @@ class YouTubeService:
     """High-level service for lecture-aware YouTube recommendations."""
 
     def __init__(self, yt_client: YouTubeAPIClient | None = None, llm: YouTubeLLMClient | None = None):
-        from youtubekit.config.youtube_config import YouTubeConfig
+        from .config.youtube_config import YouTubeConfig
         self.yt = yt_client or YouTubeAPIClient(api_key=YouTubeConfig.YOUTUBE_API_KEY)
         self.llm = llm or YouTubeLLMClient(api_key=YouTubeConfig.OPENAI_API_KEY)
 
     async def recommend_videos(self, request: YouTubeRequest) -> List[YouTubeResponse]:
-        from youtubekit.config.youtube_config import YouTubeConfig
-        from youtubekit.config import flags
+        from .config.youtube_config import YouTubeConfig
+        from .config import flags
         
         # 1) Build queries (LLM or stub)
         q_payload = await self.llm.generate_queries(

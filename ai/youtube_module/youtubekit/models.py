@@ -4,7 +4,7 @@ YouTubeKit 데이터 모델 정의
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, field_validator
 
-from youtubekit.config import flags
+from .config import flags
 
 
 class RAGChunk(BaseModel):
@@ -110,4 +110,3 @@ class YouTubeResponse(BaseModel):
     def normalize_newlines(cls, v: str) -> str:
         """줄바꿈 문자를 공백으로 치환"""
         return v.replace('\n', ' ').replace('\r', ' ')
-

@@ -8,7 +8,7 @@ import math
 from typing import Dict, Iterable, List, Tuple
 
 from rapidfuzz import fuzz
-from youtubekit.config import flags
+from ..config import flags
 
 
 def normalize_title(t: str) -> str:
@@ -73,4 +73,3 @@ def heuristic_score(
     )
     
     return max(0.0, min(10.0, raw * 10.0))
-
