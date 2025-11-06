@@ -49,3 +49,8 @@ chroma_data/
 
 # Logs
 *.log
+
+# Environment files
+.env
+*.env
+!.env.example
