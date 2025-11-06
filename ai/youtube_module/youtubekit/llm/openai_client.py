@@ -60,11 +60,13 @@ class YouTubeLLMClient:
                 "rationale": "Derived from lecture summary (stub).",
             }
 
+        query_language = request_data.get("yt_lang") or request_data.get("language") or "en"
+
         prompt = QUERY_GENERATION_PROMPT.format(
             query_min=flags.QUERY_MIN,
             query_max=flags.QUERY_MAX,
             lecture_summary=request_data.get("lecture_summary", ""),
-            language=request_data.get("language", "ko"),
+            query_language=query_language,
             yt_lang=request_data.get("yt_lang", "en"),
             previous_summaries=request_data.get("previous_summaries", []),
             rag_context=request_data.get("rag_context", []),

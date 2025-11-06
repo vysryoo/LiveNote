@@ -7,10 +7,10 @@ YouTube LLM 프롬프트 템플릿
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 QUERY_GENERATION_PROMPT = """
-Generate {query_min}-{query_max} YouTube search queries focused on: "{lecture_summary}"
+Generate {query_min}-{query_max} YouTube search queries (use {query_language}) focused on: "{lecture_summary}"
 
 Settings:
-- Answer language: {language}
+- Query language: {query_language}
 - Video language preference: {yt_lang}
 
 Additional context (reference only):
@@ -93,4 +93,3 @@ Return JSON (reason in {language}, one sentence, no line breaks):
   "reason": "명확한 한 문장 평가"
 }}
 """.strip()
-
