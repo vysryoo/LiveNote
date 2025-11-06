@@ -25,6 +25,7 @@ class OpenAIClient:
         self, 
         lecture_summary: str,
         language: str = "en",
+        search_language: str = "en",
         previous_summaries: Optional[Sequence] = None,
         rag_context: Optional[Sequence] = None
     ) -> List[str]:
@@ -69,6 +70,7 @@ class OpenAIClient:
             prompt = prompts.KEYWORD_GENERATION_PROMPT.format(
                 lecture_summary=lecture_summary,
                 language=language,
+                search_language=search_language,
                 previous_summaries=build_prev_text(previous_summaries),
                 rag_context=build_rag_text(rag_context)
             )
@@ -84,7 +86,7 @@ class OpenAIClient:
             result = json.loads(response.choices[0].message.content)
             keywords = result.get("keywords", [])
             
-            logger.info(f"📚 키워드 생성 ({language}): {keywords}")
+            logger.info(f"📚 키워드 생성 (search={search_language}, output={language}): {keywords}")
             return keywords
             
         except Exception as e:
@@ -97,7 +99,8 @@ class OpenAIClient:
         self, 
         lecture_summary: str,
         title: str,
-        extract: str
+        extract: str,
+        language: str = "ko"
     ) -> Dict:
         """
         문서 관련도 평가
@@ -117,7 +120,8 @@ class OpenAIClient:
             prompt = prompts.SCORE_PAGE_PROMPT.format(
                 lecture_summary=lecture_summary,
                 title=title,
-                extract=extract_clean
+                extract=extract_clean,
+                language=language
             )
             
             response = await self.client.chat.completions.create(

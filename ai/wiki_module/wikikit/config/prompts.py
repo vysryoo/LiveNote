@@ -16,7 +16,8 @@ RAG Context:
 {{rag_context}}
 
 Rules:
-- Use {{language}} terms (en → English, ko → 한국어)
+- Use {{search_language}} terms (en → English, ko → 한국어)
+- Return keywords in {{search_language}}
 - Focus on core concepts and technical terms.
 - Focus on Lecture Summary. Rag Context, Recent Sections are just for reference only
 - Keep keywords simple and searchable
@@ -40,5 +41,5 @@ Rate relevance (0-10):
 - 1-3: Keyword match only
 
 Output (JSON, one line):
-{{"score": <number>, "reason": "<1 sentence>"}}
+{{"score": <number>, "reason": "<1 sentence in {language}>"}}
 """

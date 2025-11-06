@@ -55,6 +55,7 @@ class WikiService:
             keywords = await self.llm_client.generate_keywords(
                 lecture_summary=request.lecture_summary,
                 language=request.language,
+                search_language=request.wiki_lang,
                 previous_summaries=request.previous_summaries,
                 rag_context=request.rag_context
             )
@@ -260,7 +261,8 @@ class WikiService:
                         result = await self.llm_client.score_page(
                             request.lecture_summary,
                             page.get("title", ""),
-                            page.get("extract", "")
+                            page.get("extract", ""),
+                            language=request.language
                         )
                         
                         return WikiResponse(
