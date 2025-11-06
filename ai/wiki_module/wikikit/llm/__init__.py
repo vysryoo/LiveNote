@@ -1,6 +1,6 @@
 """
 LLM module
 """
-from wikikit.llm.openai_client import OpenAIClient
+from .openai_client import OpenAIClient
 
 __all__ = ["OpenAIClient"]

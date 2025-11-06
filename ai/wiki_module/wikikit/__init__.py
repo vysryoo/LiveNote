@@ -1,14 +1,14 @@
 """
 WikiKit package
 """
-from wikikit.models import (
+from .models import (
     WikiRequest,
     WikiResponse,
     WikiPageInfo,
     RAGChunk,
-    PreviousSummary
+    PreviousSummary,
 )
-from wikikit.service import WikiService
+from .service import WikiService
 
 __version__ = "0.1.0"
 __all__ = [
@@ -17,5 +17,5 @@ __all__ = [
     "WikiPageInfo",
     "RAGChunk",
     "PreviousSummary",
-    "WikiService"
+    "WikiService",
 ]

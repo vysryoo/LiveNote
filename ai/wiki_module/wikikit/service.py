@@ -6,11 +6,11 @@ import logging
 import time
 from typing import List, Dict
 
-from wikikit.models import WikiRequest, WikiResponse, WikiPageInfo
-from wikikit.api import WikiAPIClient
-from wikikit.llm import OpenAIClient
-from wikikit.utils import deduplicate_pages, rerank_pages
-from wikikit.config import WikiConfig
+from .models import WikiRequest, WikiResponse, WikiPageInfo
+from .api import WikiAPIClient
+from .llm import OpenAIClient
+from .utils import deduplicate_pages, rerank_pages
+from .config import WikiConfig
 
 logger = logging.getLogger(__name__)
 

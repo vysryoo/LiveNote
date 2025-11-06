@@ -1,7 +1,7 @@
 """
 Wikipedia Provider prompts (간소화 버전)
 """
-from wikikit.config import flags
+from . import flags
 
 # ━━━ 키워드 생성 프롬프트 (간소화) ━━━
 KEYWORD_GENERATION_PROMPT = f"""Extract {flags.KEYWORD_MIN}-{flags.KEYWORD_MAX} Wikipedia search keywords from this lecture summary and related context.

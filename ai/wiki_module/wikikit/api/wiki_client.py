@@ -5,7 +5,7 @@ import logging
 from typing import List, Dict, Optional
 import httpx
 
-from wikikit.config import WikiConfig
+from ..config import WikiConfig
 
 logger = logging.getLogger(__name__)
 

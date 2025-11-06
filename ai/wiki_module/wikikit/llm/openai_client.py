@@ -8,7 +8,7 @@ from textwrap import shorten
 from typing import List, Dict, Sequence, Optional
 from openai import AsyncOpenAI
 
-from wikikit.config import WikiConfig, prompts
+from ..config import WikiConfig, prompts
 
 logger = logging.getLogger(__name__)
 
