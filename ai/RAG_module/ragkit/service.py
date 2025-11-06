@@ -4,12 +4,12 @@ import logging
 from pathlib import Path
 from typing import List, Dict, Any
 
-from ragkit.config import RAGConfig
-from ragkit.embeddings.openai import OpenAIEmbeddingService
-from ragkit.models import UpsertItem, RetrieveFilters, RetrievedChunk
-from ragkit.utils.pdf import load_pdf_pages
-from ragkit.utils.text import make_id, normalize_text
-from ragkit.vectordb.chroma import ChromaVectorStore
+from .config import RAGConfig
+from .embeddings.openai import OpenAIEmbeddingService
+from .models import UpsertItem, RetrieveFilters, RetrievedChunk
+from .utils.pdf import load_pdf_pages
+from .utils.text import make_id, normalize_text
+from .vectordb.chroma import ChromaVectorStore
 
 logger = logging.getLogger(__name__)
 

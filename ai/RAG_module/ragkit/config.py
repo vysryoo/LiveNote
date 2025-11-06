@@ -1,28 +1,31 @@
 """Configuration for RAG service."""
 
+from __future__ import annotations
+
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
 
+def _default_persist_dir() -> str:
+    return os.getenv("RAG_PERSIST_DIR", "./test_chroma_data")
+
+
+def _default_embedding_model() -> str:
+    return os.getenv("RAG_EMBEDDING_MODEL", "text-embedding-3-large")
+
+
+def _default_api_key() -> str | None:
+    return os.getenv("RAG_OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+
+
 @dataclass
 class RAGConfig:
-    """Configuration for RAG service.
+    """Configuration for RAG service."""
     
-    Attributes:
-        persist_dir: Directory for ChromaDB persistence
-        embedding_model: OpenAI embedding model (text-embedding-3-large recommended)
-        openai_api_key: OpenAI API key (defaults to OPENAI_API_KEY env var)
-        
-    Example:
-        >>> config = RAGConfig(
-        ...     persist_dir="./my_vectordb",
-        ...     embedding_model="text-embedding-3-large"
-        ... )
-    """
-    
-    persist_dir: str = "./test_chroma_data"
-    embedding_model: str = "text-embedding-3-large"
-    openai_api_key: str | None = None
+    persist_dir: str = field(default_factory=_default_persist_dir)
+    embedding_model: str = field(default_factory=_default_embedding_model)
+    openai_api_key: str | None = field(default_factory=_default_api_key)
     
     def __post_init__(self):
         """Ensure persist_dir exists."""

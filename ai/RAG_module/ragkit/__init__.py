@@ -15,9 +15,9 @@ Example:
     >>> chunks = service.retrieve("my_collection", "greeting", top_k=3)
 """
 
-from ragkit.config import RAGConfig
-from ragkit.models import UpsertItem, RetrieveFilters, RetrievedChunk
-from ragkit.service import RAGService
+from .config import RAGConfig
+from .models import UpsertItem, RetrieveFilters, RetrievedChunk
+from .service import RAGService
 
 __version__ = "0.1.0"
 
