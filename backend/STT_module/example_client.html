@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STT 클라이언트 예제</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid #667eea;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-disconnected { background: #dc3545; }
+        .status-connected { background: #28a745; }
+        .status-recording { background: #ff6b6b; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-clear {
+            background: #6c757d;
+            color: white;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .info-box h3 {
+            color: #1976D2;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        .transcript-section {
+            margin: 20px 0;
+        }
+
+        .transcript-section h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .transcript-box {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 1em;
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+
+        .transcript-box:empty::before {
+            content: '전사 결과가 여기에 표시됩니다...';
+            color: #adb5bd;
+            font-style: italic;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .log-entry {
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 5px;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .log-delta {
+            background: #fff3cd;
+            border-left: 3px solid #ffc107;
+        }
+
+        .log-completed {
+            background: #d4edda;
+            border-left: 3px solid #28a745;
+            font-weight: bold;
+        }
+
+        .log-event {
+            background: #d1ecf1;
+            border-left: 3px solid #17a2b8;
+        }
+
+        .log-error {
+            background: #f8d7da;
+            border-left: 3px solid #dc3545;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            button {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎤 STT 클라이언트 예제</h1>
+            <p>OpenAI Realtime API 기반 실시간 음성 인식</p>
+        </div>
+
+        <div class="content">
+            <!-- 상태 표시 -->
+            <div class="status-card">
+                <div class="status-indicator">
+                    <span class="status-dot status-disconnected" id="statusDot"></span>
+                    <span id="statusText">연결되지 않음</span>
+                </div>
+            </div>
+
+            <!-- 컨트롤 버튼 -->
+            <div class="controls">
+                <button class="btn-start" id="startBtn" onclick="startRecording()">
+                    🎙️ 녹음 시작
+                </button>
+                <button class="btn-stop" id="stopBtn" onclick="stopRecording()" disabled>
+                    ⏹️ 녹음 중지
+                </button>
+                <button class="btn-clear" id="clearBtn" onclick="clearTranscript()">
+                    🗑️ 내용 지우기
+                </button>
+            </div>
+
+            <!-- 사용 안내 -->
+            <div class="info-box">
+                <h3>📋 사용 방법</h3>
+                <ul>
+                    <li><strong>녹음 시작</strong> 버튼을 클릭하세요</li>
+                    <li>마이크 권한을 허용하세요</li>
+                    <li>한국어로 말하세요 (실시간으로 전사됩니다)</li>
+                    <li>완료되면 <strong>녹음 중지</strong>를 클릭하세요</li>
+                    <li>VAD 활성화 시 자동으로 음성을 감지합니다</li>
+                </ul>
+            </div>
+
+            <!-- 통계 -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="transcriptCount">0</div>
+                    <div class="stat-label">전사 완료 횟수</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="audioChunkCount">0</div>
+                    <div class="stat-label">전송된 오디오 청크</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="sessionDuration">0s</div>
+                    <div class="stat-label">세션 지속 시간</div>
+                </div>
+            </div>
+
+            <!-- 전사 결과 -->
+            <div class="transcript-section">
+                <h3>📝 전사 결과</h3>
+                <div class="transcript-box" id="transcriptBox"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="stt_client.js"></script>
+</body>
+</html>
