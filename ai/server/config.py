@@ -37,7 +37,7 @@ class OpenAlexSettings(BaseModel):
     verify: bool = Field(default=True, description="LLM 검증 여부")
     year_from: int = Field(default=2015, description="검색 최소 연도")
     sort_by: str = Field(default="hybrid", description="정렬 기준")
-    min_score: float = Field(default=3.0, ge=0.0, le=10.0, description="최소 점수")
+    min_score: float = Field(default=0.0, ge=0.0, le=10.0, description="최소 점수")
     language: str = Field(default="ko", description="응답 언어")
 
 

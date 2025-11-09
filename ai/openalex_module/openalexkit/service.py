@@ -57,13 +57,17 @@ class OpenAlexService:
         
         try:
             # 1. 검색 쿼리 생성 (LLM)
+            logger.info(f"🔍 OpenAlex 검색 시작 (lecture={request.lecture_id}, section={request.section_id})")
             query = await self._generate_search_query(request)
+            
+            logger.info(f"📝 생성된 쿼리: tokens={query.get('tokens', [])}, year_from={query.get('year_from')}")
             
             if not query.get("tokens"):
                 logger.warning("⚠️  검색 토큰이 생성되지 않았습니다")
                 return []
             
             # 2. OpenAlex API 호출
+            logger.info(f"🌐 OpenAlex API 호출 (tokens={len(query.get('tokens', []))}개)")
             papers = await self.api_client.search_papers(
                 query=query,
                 exclude_ids=request.exclude_ids,
@@ -71,8 +75,10 @@ class OpenAlexService:
             )
             
             if not papers:
-                logger.warning("⚠️  검색된 논문이 없습니다")
+                logger.warning(f"⚠️  검색된 논문이 없습니다 (tokens={query.get('tokens', [])})")
                 return []
+            
+            logger.info(f"📚 검색된 논문: {len(papers)}개")
             
             # 3. 중복 제거 + 재랭킹
             papers = deduplicate_papers(papers)
@@ -158,8 +164,11 @@ class OpenAlexService:
                 "rag_context": request.rag_context,
             }
             
+            logger.info("🤖 LLM 쿼리 생성 시작")
             # LLM 쿼리 생성
             result = await self.llm_client.generate_query(request_data)
+            
+            logger.info(f"✅ LLM 쿼리 생성 완료: {result}")
             
             # year_from 추가
             result["year_from"] = request.year_from
@@ -167,7 +176,7 @@ class OpenAlexService:
             return result
             
         except Exception as e:
-            logger.error(f"❌ 쿼리 생성 실패: {e}")
+            logger.error(f"❌ 쿼리 생성 실패: {e}", exc_info=True)
             return {"tokens": [], "year_from": request.year_from}
     
     async def _verify_papers_parallel(
