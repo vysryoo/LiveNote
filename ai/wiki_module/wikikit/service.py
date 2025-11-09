@@ -11,6 +11,7 @@ from .api import WikiAPIClient
 from .llm import OpenAIClient
 from .utils import deduplicate_pages, rerank_pages
 from .config import WikiConfig
+from .config import flags
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +151,25 @@ class WikiService:
             
             if not pages:
                 return []
+            
+            # 🚀 NO_SCORING 모드: 검증 없이 검색 결과만 반환
+            if flags.NO_SCORING:
+                logger.info(f"⚡ Wikipedia({lang}) NO_SCORING 모드: 검증 스킵")
+                results = []
+                for page in pages[:self.config.CARD_LIMIT]:
+                    info = WikiPageInfo(
+                        title=page.get("title", "Unknown"),
+                        url=page.get("url", ""),
+                        extract=page.get("snippet", "")[:500]
+                    )
+                    results.append(WikiResponse(
+                        lecture_id=request.lecture_id,
+                        section_id=request.section_id,
+                        page_info=info,
+                        reason="search",
+                        score=10.0
+                    ))
+                return results
             
             # 3. 검증/스코어링
             if request.verify_wiki:
