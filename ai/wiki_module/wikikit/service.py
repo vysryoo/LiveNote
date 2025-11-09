@@ -53,6 +53,7 @@ class WikiService:
             logger.info(f"🔍 Wikipedia 검색 시작 (lecture={request.lecture_id}, section_id={request.section_id})")
             
             # 1. 키워드 생성
+            logger.info(f"🔑 키워드 생성 시작 (NO_SCORING={flags.NO_SCORING})")
             keywords = await self.llm_client.generate_keywords(
                 lecture_summary=request.lecture_summary,
                 language=request.language,
@@ -64,6 +65,8 @@ class WikiService:
             if not keywords:
                 logger.warning("⚠️ 키워드 생성 실패")
                 return []
+            
+            logger.info(f"✅ 키워드 생성 완료: {keywords}")
             
             # 2. 영문 팬아웃 검색 + 검증
             logger.info(f"🔍 Wikipedia({request.wiki_lang}) 팬아웃 검색 시작")
@@ -154,7 +157,7 @@ class WikiService:
             
             # 🚀 NO_SCORING 모드: 검증 없이 검색 결과만 반환
             if flags.NO_SCORING:
-                logger.info(f"⚡ Wikipedia({lang}) NO_SCORING 모드: 검증 스킵")
+                logger.info(f"⚡ Wikipedia({lang}) NO_SCORING 모드: 검증 스킵 (pages={len(pages)})")
                 results = []
                 for page in pages[:self.config.CARD_LIMIT]:
                     info = WikiPageInfo(
@@ -169,6 +172,8 @@ class WikiService:
                         reason="search",
                         score=10.0
                     ))
+                logger.info(f"✅ NO_SCORING 결과: {len(results)}개 반환")
+                return results
                 return results
             
             # 3. 검증/스코어링
