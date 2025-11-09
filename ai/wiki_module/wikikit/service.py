@@ -170,7 +170,9 @@ class WikiService:
                     info = WikiPageInfo(
                         title=page.get("title", "Unknown"),
                         url=page.get("url", ""),
-                        extract=page.get("snippet", "")[:500]
+                        extract=page.get("snippet", "")[:500],
+                        lang=lang,
+                        page_id=page.get("pageid", 0)
                     )
                     results.append(WikiResponse(
                         lecture_id=request.lecture_id,
