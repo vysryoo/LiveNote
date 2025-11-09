@@ -40,6 +40,7 @@ class WikiConfig:
     
     # ━━━ 제한 ━━━
     MAX_TOP_K: int = 10  # 최대 반환 개수
+    CARD_LIMIT: int = 15  # 검증 대상 최대 수 (NO_SCORING 모드에서도 사용)
     
     # EXTRACT_SENTENCES: Wikipedia에서 가져올 문서 요약 문장 수
     # Wikipedia API가 문서의 도입부(intro)에서 이 개수만큼 문장을 추출해서 반환

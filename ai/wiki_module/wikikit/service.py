@@ -143,17 +143,24 @@ class WikiService:
         """
         try:
             # 1. 팬아웃 검색
+            logger.info(f"📡 Wikipedia({lang}) 팬아웃 검색 시작 (keywords={keywords})")
             all_results = await self._fanout_search(keywords, lang, request.exclude_titles)
             
             if not all_results:
-                logger.warning(f"⚠️ Wikipedia({lang}) 검색 결과 없음")
+                logger.warning(f"⚠️ Wikipedia({lang}) 검색 결과 없음 (keywords={keywords})")
                 return []
             
+            logger.info(f"📊 Wikipedia({lang}) 검색 결과: {len(all_results)}개")
+            
             # 2. 상세 정보 fetch (병렬)
+            logger.info(f"📥 Wikipedia({lang}) 상세 정보 fetch 시작")
             pages = await self._fetch_details_parallel(all_results, lang)
             
             if not pages:
+                logger.warning(f"⚠️ Wikipedia({lang}) 상세 정보 fetch 실패")
                 return []
+            
+            logger.info(f"✅ Wikipedia({lang}) 상세 정보 fetch 완료: {len(pages)}개")
             
             # 🚀 NO_SCORING 모드: 검증 없이 검색 결과만 반환
             if flags.NO_SCORING:
@@ -174,7 +181,6 @@ class WikiService:
                     ))
                 logger.info(f"✅ NO_SCORING 결과: {len(results)}개 반환")
                 return results
-                return results
             
             # 3. 검증/스코어링
             if request.verify_wiki:
@@ -187,7 +193,8 @@ class WikiService:
             return verified
             
         except Exception as e:
-            logger.error(f"❌ Wikipedia({lang}) 검색/검증 실패: {e}")
+            logger.error(f"❌ Wikipedia({lang}) 검색/검증 실패: {e}", exc_info=True)
+            return []
             return []
     
     async def _fanout_search(
