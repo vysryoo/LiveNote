@@ -193,6 +193,8 @@ async def recommend_resources(
             )
             for finished in done:
                 source = tasks.get(finished, "unknown")
+                elapsed_ms = int((time.perf_counter() - start) * 1000)
+                
                 try:
                     result = await finished
                 except Exception as exc:
@@ -200,6 +202,7 @@ async def recommend_resources(
                         {
                             "source": source,
                             "error": str(exc),
+                            "elapsed_ms": elapsed_ms,
                         },
                         event="rec_error"
                     )
@@ -212,6 +215,7 @@ async def recommend_resources(
                         "source": source,
                         "count": len(payload),
                         "items": payload,
+                        "elapsed_ms": elapsed_ms,
                     },
                     event="rec_partial"
                 )

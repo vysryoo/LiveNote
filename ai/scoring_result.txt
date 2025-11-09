@@ -1,0 +1,40 @@
+[*] 기존에 실행 중인 FastAPI 서버를 사용합니다.
+[*] Health 체크를 수행합니다...
+{"status":"ok"}
+[*] 멀티프로세싱 30초 분량 텍스트 3개를 업서트합니다...
+{"collection_id":"lecture_mp101","result":{"collection_id":"lecture_mp101","count":3,"embedding_dim":3072}}
+[*] QA 스트림을 요청합니다 (하이퍼 스레딩)...
+event: qa_context
+data: {"event": "context_ready", "collection_id": "lecture_mp101", "chunk_count": 2}
+
+event: qa_partial
+data: {"type": "응용", "qa": {"type": "응용", "question": "하이퍼 스레딩 기술을 활용한 예시로 어떤 상황에서 성능 향상을 기대할 수 있을까요?", "answer": "하이퍼 스레딩 기술은 멀티태스킹 환경에서 성능 향상을 기대할 수 있습니다. 예를 들어, 비디오 편집 소프트웨어나 3D 렌더링 작업처럼 여러 작업이 동시에 진행될 때, 하나의 물리 코어가 두 개의 스레드를 처리하여 CPU 자원을 더 효율적으로 사용할 수 있습니다."}, "index": 1}
+
+event: qa_partial
+data: {"type": "심화", "qa": {"type": "심화", "question": "하이퍼 스레딩이 물리 코어의 자원을 더 효율적으로 사용하는 방법은 무엇인가요?", "answer": "하이퍼 스레딩은 하나의 물리 코어가 두 개의 스레드를 동시에 처리함으로써 CPU의 자원을 보다 효율적으로 활용합니다. 이를 통해 각 스레드가 대기 시간 동안 다른 스레드의 작업을 수행할 수 있어 CPU의 활용도를 높이고, 전반적인 성능 향상을 가져옵니다."}, "index": 2}
+
+event: qa_partial
+data: {"type": "비교", "qa": {"type": "비교", "question": "하이퍼 스레딩과 멀티프로세싱의 주요 차이점은 무엇인가요?", "answer": "하이퍼 스레딩은 하나의 물리 코어에서 두 개의 스레드를 동시에 실행하여 자원을 효율적으로 사용하는 기술인 반면, 멀티프로세싱은 여러 개의 프로세스를 독립적으로 실행하여 CPU 코어를 최대한 활용하는 방식입니다. 즉, 하이퍼 스레딩은 단일 코어 내에서의 동시 실행을 강조하고, 멀티프로세싱은 여러 코어를 활용한 병렬 처리를 중시합니다."}, "index": 3}
+
+event: qa_complete
+data: {"total": 3, "duration_ms": 3095}
+
+
+[*] REC 스트림을 요청합니다 (하이퍼 스레딩)...
+event: rec_context
+data: {"event": "context_ready", "collection_id": "lecture_mp101", "chunk_count": 3}
+
+event: rec_partial
+data: {"source": "openalex", "count": 0, "items": []}
+
+event: rec_partial
+data: {"source": "wiki", "count": 2, "items": [{"lecture_id": "mp101", "section_id": 1, "page_info": {"url": "https://en.wikipedia.org/wiki/Hyper-threading", "title": "Hyper-threading", "extract": "Hyper-threading (officially called Hyper-Threading Technology or HT Technology and abbreviated as HTT or HT) is Intel's proprietary simultaneous multithreading (SMT) implementation used to improve parallelization of computations (doing multiple tasks at once) performed on x86 microprocessors. It was introduced on Xeon server processors in February 2002 and on Pentium 4 desktop processors in November 2002. Since then, Intel has included this technology in Itanium, Atom, and Core 'i' Series CPUs, among others.", "lang": "en", "page_id": 151443}, "reason": "하이퍼 스레딩이 동시 멀티스레딩 기술로서 물리 코어의 자원 효율성을 높이는 방법을 설명하고 있기 때문이다.", "score": 9.0}, {"lecture_id": "mp101", "section_id": 1, "page_info": {"url": "https://en.wikipedia.org/wiki/Simultaneous_multithreading", "title": "Simultaneous multithreading", "extract": "Simultaneous multithreading (SMT) is a technique for improving the overall efficiency of superscalar CPUs with hardware multithreading. SMT permits multiple independent threads of execution to better use the resources provided by modern processor architectures.", "lang": "en", "page_id": 315021}, "reason": "문서가 하이퍼 스레딩의 개념과 효율성을 직접적으로 설명하고 있어 강한 관련성이 있다.", "score": 9.0}]}
+
+event: rec_partial
+data: {"source": "youtube", "count": 2, "items": [{"lecture_id": "mp101", "section_id": 1, "video_info": {"url": "https://www.youtube.com/watch?v=lrT9Bl0MCXQ", "title": "Hyper Threading Explained", "extract": "이 애니메이션 비디오는 하이퍼 스레딩 기술이 무엇인지 설명합니다. 하이퍼 스레딩은 CPU의 코어를 가상으로 두 배로 늘려 작업 부하를 효율적으로 분산시켜 CPU의 성능을 향상시킵니다.", "lang": "en"}, "reason": "비디오가 하이퍼 스레딩의 개념을 직접 다루고 있으며, CPU 성능 향상에 대한 설명이 강의 내용과 잘 연결됩니다.", "score": 9.0}, {"lecture_id": "mp101", "section_id": 1, "video_info": {"url": "https://www.youtube.com/watch?v=wnS50lJicXc", "title": "What is Hyper Threading Technology as Fast As Possible", "extract": "이 비디오는 인텔의 하이퍼 스레딩 기술이 단일 코어에서 작업을 효율적으로 스케줄링하여 데이터 처리를 개선하는 방법을 설명합니다. 하이퍼 스레딩의 작동 원리와 이점에 대해 빠르게 배울 수 있습니다.", "lang": "en"}, "reason": "비디오가 하이퍼 스레딩의 작동 원리와 이점을 직접 다루고 있어 강의 핵심 개념을 잘 설명하고 있습니다.", "score": 9.0}]}
+
+event: rec_complete
+data: {"completed_sources": 3, "duration_ms": 9313}
+
+
+[*] 테스트 완료
