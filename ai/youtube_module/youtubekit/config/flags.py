@@ -3,6 +3,7 @@ YouTube Provider 전용 플래그
 """
 
 # ━━━ 검증 스위치 ━━━
+NO_SCORING = False  # True이면 검증 없이 검색 결과만 반환
 VERIFY_YT_DEFAULT = False  # 기본값: Heuristic (False), LLM (True)
 USE_TRANSCRIPT = False    # 자막 사용 여부 (False: 제목/설명만 사용)
 

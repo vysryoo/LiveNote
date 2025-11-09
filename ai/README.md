@@ -553,7 +553,26 @@ RAG_PERSIST_DIR="server_storage/chroma_data_real"
   - `verify_yt`, `yt_lang`, `min_score`.
 - 필요 시 설정 구조를 확장하거나 별도 config 파일을 도입할 수 있음.
 
-### 11.3 저장소 경로 지정
+### 11.3 설정 우선순위
+
+**검증(Verification) 설정 우선순위:**
+1. **server/config.py의 verify 필드** (최우선)
+   - 예: `OpenAlexSettings.verify = True` → 강제로 검증 활성화
+   - `None`이면 다음 단계로 fallback
+2. **각 모듈의 VERIFY_*_DEFAULT** (fallback)
+   - 예: `openalexkit/config/flags.py`의 `VERIFY_OPENALEX_DEFAULT`
+   - server/config.py에서 verify를 지정하지 않았을 때만 사용
+
+**NO_SCORING 모드:**
+- 각 모듈의 `config/flags.py`에서 `NO_SCORING = True`로 설정
+- 검증 단계를 완전히 스킵하고 검색 결과만 빠르게 반환
+- 효과:
+  - OpenAlex: 논문 검색 결과 → `reason="search"`, `score=10`
+  - Wiki: 문서 검색 결과 → `reason="search"`, `score=10`
+  - YouTube: 동영상 검색 결과 (description 사용) → `reason="search"`, `score=10`
+- 프로토타입 개발/테스트 시 유용 (검증 비용 절감)
+
+### 11.4 저장소 경로 지정
 - `.env` → `RAG_PERSIST_DIR`.
 - 상대 경로 사용 시 프로젝트 루트를 기준으로 자동 생성.
 - 운영 환경에서는 `/var/lib/livenote/chroma` 등 절대 경로 지정 권장.

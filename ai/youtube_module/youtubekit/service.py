@@ -12,6 +12,7 @@ from .models import (
     YouTubeVideoInfo,
 )
 from .utils import normalize_title, deduplicate_items, heuristic_score
+from .config import flags
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,31 @@ class YouTubeService:
         ids = [it.video_id for it in dedup]
         details = await self.yt.get_videos(ids)
         detail_map = {d.video_id: d for d in details}
+
+        # 🚀 NO_SCORING 모드: 검증 없이 검색 결과만 반환
+        if flags.NO_SCORING:
+            logger.info("⚡ NO_SCORING 모드: 검증 스킵 (description 사용)")
+            results = []
+            for it in dedup[:request.top_k]:
+                d = detail_map.get(it.video_id)
+                if not d:
+                    continue
+                
+                vi = YouTubeVideoInfo(
+                    url=d.url(),
+                    title=d.title,
+                    extract=d.description or "No description available",
+                    lang=request.yt_lang
+                )
+                results.append(YouTubeResponse(
+                    lecture_id=request.lecture_id,
+                    section_id=request.section_id,
+                    video_info=vi,
+                    reason="search",
+                    score=10.0
+                ))
+            logger.info(f"✅ NO_SCORING 결과: {len(results)}개 반환")
+            return results
 
         # 3) Build candidate list with summary + (optional) LLM score
         # 🚀 OPTIMIZATION: Process videos in parallel with Semaphore (동시성 제한)

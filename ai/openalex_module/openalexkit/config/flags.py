@@ -3,6 +3,7 @@ OpenAlex Provider 전용 플래그
 """
 
 # ━━━ 검증 스위치 ━━━
+NO_SCORING = False  # True이면 검증 없이 검색 결과만 반환
 VERIFY_OPENALEX_DEFAULT = True  # 기본값: LLM 검증
 
 # ━━━ 토큰 생성 설정 ━━━

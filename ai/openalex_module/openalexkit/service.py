@@ -7,6 +7,7 @@ from typing import List
 
 from .models import OpenAlexRequest, OpenAlexResponse, PaperInfo
 from .config.openalex_config import OpenAlexConfig
+from .config import flags
 from .api.openalex_client import OpenAlexAPIClient
 from .llm.openai_client import OpenAIClient
 from .utils.filters import deduplicate_papers, rerank_papers
@@ -80,6 +81,29 @@ class OpenAlexService:
             # 4. 상위 N개 선택 (CARD_LIMIT)
             papers = papers[:OpenAlexConfig.CARD_LIMIT]
             logger.info(f"📄 검증 대상: {len(papers)}개 (상한: {OpenAlexConfig.CARD_LIMIT})")
+            
+            # 🚀 NO_SCORING 모드: 검증 없이 검색 결과만 반환
+            if flags.NO_SCORING:
+                logger.info("⚡ NO_SCORING 모드: 검증 스킵")
+                results = []
+                for paper in papers[:request.top_k]:
+                    info = PaperInfo(
+                        title=paper.get("title", "Unknown"),
+                        authors=paper.get("authors", []),
+                        year=paper.get("publication_year"),
+                        citations=paper.get("cited_by_count", 0),
+                        url=paper.get("url", ""),
+                        abstract=paper.get("abstract", "No abstract available")[:500]
+                    )
+                    results.append(OpenAlexResponse(
+                        lecture_id=request.lecture_id,
+                        section_id=request.section_id,
+                        paper_info=info,
+                        reason="search",
+                        score=10.0
+                    ))
+                logger.info(f"✅ NO_SCORING 결과: {len(results)}개 반환")
+                return results
             
             # 5. 조건부 검증
             if request.verify_openalex:
