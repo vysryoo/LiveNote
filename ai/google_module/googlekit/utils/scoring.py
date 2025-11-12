@@ -87,24 +87,6 @@ def calculate_reason(
         language: 응답 언어
         
     Returns:
-        추천 이유 (1-2문장)
+        추천 이유 (항상 "Heuristic" 반환)
     """
-    matched_keywords = [
-        kw for kw in keywords
-        if kw.lower() in title.lower() or kw.lower() in snippet.lower()
-    ]
-    
-    if language == "ko":
-        if score >= 7.0:
-            return f"키워드 '{', '.join(matched_keywords[:2])}'와 높은 관련성을 보이는 자료입니다."
-        elif score >= 5.0:
-            return f"키워드 '{', '.join(matched_keywords[:2])}'와 관련된 유용한 정보를 제공합니다."
-        else:
-            return "검색 결과와 부분적으로 관련이 있습니다."
-    else:
-        if score >= 7.0:
-            return f"Highly relevant to keywords '{', '.join(matched_keywords[:2])}'."
-        elif score >= 5.0:
-            return f"Provides useful information related to '{', '.join(matched_keywords[:2])}'."
-        else:
-            return "Partially relevant to the search query."
+    return "Heuristic"
