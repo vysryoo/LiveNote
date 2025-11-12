@@ -31,6 +31,7 @@ def create_app(
     openalex_service=None,
     wiki_service=None,
     youtube_service=None,
+    google_service=None,
 ) -> FastAPI:
     """FastAPI 앱 생성"""
     base_settings = settings or AppSettings()
@@ -43,6 +44,7 @@ def create_app(
         _openalex = _ensure_service(openalex_service, "cap1_openalex_module.openalexkit.service.OpenAlexService")
         _wiki = _ensure_service(wiki_service, "cap1_wiki_module.wikikit.service.WikiService")
         _youtube = _ensure_service(youtube_service, "cap1_youtube_module.youtubekit.service.YouTubeService")
+        _google = _ensure_service(google_service, "cap1_google_module.googlekit.service.GoogleService")
         
         app.state.app_settings = base_settings
         app.state.rag_service = _rag
@@ -50,6 +52,7 @@ def create_app(
         app.state.openalex_service = _openalex
         app.state.wiki_service = _wiki
         app.state.youtube_service = _youtube
+        app.state.google_service = _google
         
         try:
             yield

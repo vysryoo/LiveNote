@@ -16,9 +16,10 @@
     - 5.3 cap1_openalex_module
     - 5.4 cap1_wiki_module
     - 5.5 cap1_youtube_module
-    - 5.6 server
-    - 5.7 tests
-    - 5.8 스크립트 및 보조 파일
+    - 5.6 cap1_google_module
+    - 5.7 server
+    - 5.8 tests
+    - 5.9 스크립트 및 보조 파일
 6. 환경 구축
     - 6.1 사전 준비물
     - 6.2 `setup.sh` 자동 설치
@@ -186,19 +187,32 @@ FastAPI (server/)
   - verify_yt 여부에 따라 LLM 스코어 vs 휴리스틱 사용.
   - transcript 가져오기 실패 시 fallback 로직 포함.
 
-### 5.6 server
+### 5.6 cap1_google_module
+- 주요 파일:
+  - `googlekit/service.py`: LLM 키워드 생성, 팬아웃 병렬 검색, LLM/Heuristic 검증.
+  - `googlekit/api/google_client.py`: Google Custom Search API 클라이언트.
+  - `googlekit/config/google_config.py`: API 키, Search Engine ID, 동시성 설정.
+  - `googlekit/llm/openai_client.py`: 키워드 생성 및 검색 결과 LLM 검증.
+  - `googlekit/utils/filters.py`: 중복 제거, 재정렬, URL 필터링.
+  - `googlekit/utils/scoring.py`: Heuristic 점수 계산.
+- 특징:
+  - verify_google 여부에 따라 LLM 스코어 vs Heuristic 사용.
+  - NO_SCORING 모드 지원 (검증 없이 빠른 검색).
+  - 신뢰 도메인(.edu, .gov, arxiv.org 등) 가중치 반영.
+
+### 5.7 server
 - 주요 파일:
   - `app.py`: FastAPI 생성, 서비스 인스턴스 구성, lifespan 관리.
   - `routes/rag.py`: 텍스트/PDF 업서트 endpoint.
   - `routes/qa.py`: QA 이벤트 스트림 endpoint.
-  - `routes/rec.py`: REC 이벤트 스트림 endpoint.
+  - `routes/rec.py`: REC 이벤트 스트림 endpoint (OpenAlex/Wiki/YouTube/Google 통합).
   - `config.py`: AppSettings와 하위 설정(RAG/QA/REC) 정의.
   - `utils.py`: 컬렉션 ID 생성, 청크 변환, SSE 직렬화.
 - 특징:
   - 서비스 인스턴스는 지연 로딩 방식으로 생성 (`_ensure_service`).
   - SSE 이벤트는 `format_sse`를 통해 JSON → 바이트 변환.
 
-### 5.7 tests
+### 5.8 tests
 - 구성:
   - `conftest.py`: Stub 서비스 정의, 가상 환경 설정.
   - `test_rag_pdf.py`, `test_rag_text.py`: 업서트 검증.
@@ -206,7 +220,7 @@ FastAPI (server/)
 - 참고:
   - 실제 API 키/외부 호출 없이도 테스트를 수행할 수 있도록 설계.
 
-### 5.8 스크립트 및 보조 파일
+### 5.9 스크립트 및 보조 파일
 - `setup.sh`: Python 3.11 가상환경 생성 → 의존성 설치 → `.env` 자동 로드 패치.
 - `test.sh`: 서버 실행 중 health 체크, 텍스트 업서트, REC 호출을 순서대로 수행.
 
@@ -253,6 +267,8 @@ source .venv/bin/activate
 ```
 OPENAI_API_KEY="..."
 YOUTUBE_API_KEY="..."
+GOOGLE_SEARCH_API_KEY="..."
+GOOGLE_SEARCH_ENGINE_ID="..."
 WIKIKIT_USER_AGENT="WikiKit/1.0 (+https://example.com; contact: you@example.com)"
 ANONYMIZED_TELEMETRY="False"
 CHROMA_TELEMETRY_ENABLED="False"
@@ -262,6 +278,8 @@ RAG_PERSIST_DIR="server_storage/chroma_data_real"
 ### 7.2 키 설명
 - `OPENAI_API_KEY`: OpenAI 요청 전반에 사용.
 - `YOUTUBE_API_KEY`: YouTube Data API.
+- `GOOGLE_SEARCH_API_KEY`: Google Custom Search API 키.
+- `GOOGLE_SEARCH_ENGINE_ID`: Programmable Search Engine ID (CX).
 - `WIKIKIT_USER_AGENT`: Wikipedia API 호출 시 필수 헤더.
 - `ANONYMIZED_TELEMETRY`, `CHROMA_TELEMETRY_ENABLED`: Chroma 텔레메트리 비활성화.
 - `RAG_PERSIST_DIR`: ChromaDB 저장 경로. 상대 경로로 지정하면 프로젝트 루트 기준.
@@ -270,6 +288,8 @@ RAG_PERSIST_DIR="server_storage/chroma_data_real"
 ```
 OPENAI_API_KEY="sk-proj-xxxx"
 YOUTUBE_API_KEY="AIzaSy...."
+GOOGLE_SEARCH_API_KEY="AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+GOOGLE_SEARCH_ENGINE_ID="a1b2c3d4e5f6g7h8i"
 WIKIKIT_USER_AGENT="WikiKit/1.0 (+https://github.com/acme; contact: ops@example.com)"
 ANONYMIZED_TELEMETRY="False"
 CHROMA_TELEMETRY_ENABLED="False"
@@ -293,7 +313,11 @@ RAG_PERSIST_DIR="server_storage/chroma_data_real"
 - `qa_top_k`: 사용할 질문 유형 수.
 
 ### 8.3 REC 설정 (`RECSettings`)
-- OpenAlex/Wiki/YouTube 각각 별도 서브 설정 보유.
+- OpenAlex/Wiki/YouTube/Google 각각 별도 서브 설정 보유.
+  - OpenAlexSettings: `top_k`, `verify`, `year_from`, `sort_by`, `min_score`, `language`
+  - WikiSettings: `top_k`, `verify`, `wiki_lang`, `language`, `min_score`, `fallback_to_ko`
+  - YouTubeSettings: `top_k`, `verify`, `yt_lang`, `language`, `min_score`
+  - GoogleSettings: `top_k`, `verify`, `search_lang`, `language`, `min_score`
 - 예: OpenAlex → `top_k`, `verify`, `sort_by`, `min_score`, `year_from`.
 - Wiki → `verify_wiki`, `wiki_lang`, `fallback_to_ko`.
 - YouTube → `verify_yt`, `yt_lang`, `min_score`.
@@ -319,7 +343,7 @@ RAG_PERSIST_DIR="server_storage/chroma_data_real"
 ### 9.3 REC 흐름
 1. `POST /rec/recommend` 호출.
 2. RAG 청크 검색 (설정된 top_k).
-3. OpenAlex, Wiki, YouTube task를 동시에 실행.
+3. OpenAlex, Wiki, YouTube, Google task를 동시에 실행.
 4. 끝나는 순서대로 `rec_partial` 이벤트 전송.
 5. 모든 작업 종료 시 `rec_complete`.
 
@@ -481,7 +505,8 @@ RAG_PERSIST_DIR="server_storage/chroma_data_real"
     "previous_summaries": [],
     "yt_exclude": [],
     "wiki_exclude": [],
-    "paper_exclude": []
+    "paper_exclude": [],
+    "google_exclude": []
   }
   ```
 - **입력 필드 설명**
@@ -495,14 +520,15 @@ RAG_PERSIST_DIR="server_storage/chroma_data_real"
 | yt_exclude | array[string] | 아니오 | 추천에서 제외할 유튜브 제목 목록 |
 | wiki_exclude | array[string] | 아니오 | 제외할 위키 제목 목록 |
 | paper_exclude | array[string] | 아니오 | 제외할 논문 ID 목록 |
+| google_exclude | array[string] | 아니오 | 제외할 구글 검색 URL 목록 |
 
 - **출력 이벤트 설명**
 
 | 이벤트 | 주요 필드 | 설명 |
 |--------|-----------|------|
 | rec_context | collection_id, chunk_count | 추천에 사용된 컬렉션 및 청크 수 |
-| rec_partial | source, count, items[] | 각 Provider의 결과 (items는 Provider별 모델 dump) |
-| rec_error | source, error | 특정 Provider 실패 시 |
+| rec_partial | source, count, items[], elapsed_ms | 각 Provider의 결과 (items는 Provider별 모델 dump) |
+| rec_error | source, error, elapsed_ms | 특정 Provider 실패 시 |
 | rec_complete | completed_sources, duration_ms | 완료된 Provider 수와 소요 시간 |
 
 - **응답**: SSE 스트림
@@ -511,12 +537,16 @@ RAG_PERSIST_DIR="server_storage/chroma_data_real"
   data: {"event":"context_ready","collection_id":"lecture_001","chunk_count":2}
 
   event: rec_partial
-  data: {"source":"wiki","count":2,"items":[...]}
+  data: {"source":"wiki","count":2,"items":[...],"elapsed_ms":1234}
+
+  event: rec_partial
+  data: {"source":"google","count":2,"items":[...],"elapsed_ms":1567}
 
   event: rec_complete
-  data: {"completed_sources":3,"duration_ms":5120}
+  data: {"completed_sources":4,"duration_ms":5120}
   ```
 - `previous_summaries.section_id` ≥ 1 이어야 하며, lecture_id는 업서트와 동일해야 합니다.
+- **Provider 순서**: OpenAlex, Wiki, YouTube, Google (병렬 실행, 완료 순서대로 스트림 전송)
 
 ### 10.5 SSE 이벤트 포맷
 - `qa_context`, `rec_context`: 초기 컨텍스트 정보.

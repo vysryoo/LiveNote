@@ -62,12 +62,23 @@ class YouTubeSettings(BaseModel):
     min_score: float = Field(default=3.0, ge=0.0, le=10.0, description="최소 점수")
 
 
+class GoogleSettings(BaseModel):
+    """Google 검색 추천 설정"""
+    
+    top_k: int = Field(default=2, ge=1, le=10, description="Google 추천 개수")
+    verify: bool = Field(default=True, description="LLM 검증 여부")
+    search_lang: str = Field(default="en", description="Google 검색 언어")
+    language: str = Field(default="ko", description="응답 언어")
+    min_score: float = Field(default=3.0, ge=0.0, le=10.0, description="최소 점수")
+
+
 class RECSettings(BaseModel):
     """REC 통합 설정"""
     
     openalex: OpenAlexSettings = Field(default_factory=OpenAlexSettings)
     wiki: WikiSettings = Field(default_factory=WikiSettings)
     youtube: YouTubeSettings = Field(default_factory=YouTubeSettings)
+    google: GoogleSettings = Field(default_factory=GoogleSettings)
 
 
 class AppSettings(BaseModel):

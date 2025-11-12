@@ -10,6 +10,7 @@ from cap1_QA_module.qakit.models import RAGChunk as QARAGChunk, RAGContext as QA
 from cap1_openalex_module.openalexkit.models import RAGChunk as OpenAlexRAGChunk
 from cap1_wiki_module.wikikit.models import RAGChunk as WikiRAGChunk
 from cap1_youtube_module.youtubekit.models import RAGChunk as YouTubeRAGChunk
+from cap1_google_module.googlekit.models import RAGChunk as GoogleRAGChunk
 
 
 def build_collection_id(prefix: str, lecture_id: str) -> str:
@@ -64,6 +65,14 @@ def to_youtube_rag_chunks(chunks: Iterable[Any]) -> List[YouTubeRAGChunk]:
     """RAG 청크를 YouTube 컨텍스트로 변환"""
     return [
         YouTubeRAGChunk(text=getattr(chunk, "text", ""), score=getattr(chunk, "score", 0.0), metadata=_as_metadata(chunk))
+        for chunk in chunks
+    ]
+
+
+def to_google_rag_chunks(chunks: Iterable[Any]) -> List[GoogleRAGChunk]:
+    """RAG 청크를 Google 컨텍스트로 변환"""
+    return [
+        GoogleRAGChunk(text=getattr(chunk, "text", ""), score=getattr(chunk, "score", 0.0), metadata=_as_metadata(chunk))
         for chunk in chunks
     ]
 

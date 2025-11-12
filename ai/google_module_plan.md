@@ -145,7 +145,7 @@ class GoogleRequest(BaseModel):
 - ✅ `exclude_*`: Wiki(`exclude_titles`), YouTube(`exclude_titles`), OpenAlex(`exclude_ids`) 패턴
 - ✅ `min_score`: 3개 모듈 공통
 - 🆕 `search_lang`: Wiki(`wiki_lang`), YouTube(`yt_lang`) 패턴. 검색 및 1차로 검색어 추출하는데 응답 언어임. 다른 모듈 prompt도 참고.
-- 🆕 `result_type`: Google 특화. 구현 all/news/blog 만으로 설정. 필드 비어있을시 default는 all로 flags.py에 설정가능하게 구
+- 🆕 `result_type`: Google 특화. 구현 all/news/blog 만으로 설정. 필드 비어있을시 default는 all로 flags.py에 설정가능하게 구현
 
 ### 3.2 GoogleSearchResult 모델 (상세 정보)
 
