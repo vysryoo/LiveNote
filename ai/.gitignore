@@ -53,6 +53,9 @@ server_storage/
 # Logs
 *.log
 
+# Test results
+test_result/
+
 # Environment files
 .env
 *.env
