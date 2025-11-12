@@ -222,12 +222,14 @@ class GoogleService:
             async with semaphore:
                 title = item.get("title", "")
                 snippet = item.get("snippet", "")
+                url = item.get("link", "")
                 
                 # LLM 점수 계산
                 llm_result = await self.llm_client.score_result(
                     lecture_summary=lecture_summary,
                     title=title,
                     snippet=snippet,
+                    url=url,
                     language=language
                 )
                 

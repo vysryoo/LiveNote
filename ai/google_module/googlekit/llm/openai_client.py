@@ -10,6 +10,7 @@ from openai import AsyncOpenAI
 
 from ..config.google_config import GoogleConfig
 from ..config import prompts
+from ..config import flags
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,8 @@ class GoogleLLMClient:
         
         # 프롬프트 생성
         prompt = prompts.KEYWORD_GENERATION_PROMPT.format(
+            keyword_min=flags.KEYWORD_MIN,
+            keyword_max=flags.KEYWORD_MAX,
             language=language,
             lecture_summary=lecture_summary,
             context=context
@@ -113,6 +116,7 @@ class GoogleLLMClient:
         lecture_summary: str,
         title: str,
         snippet: str,
+        url: str,
         language: str
     ) -> Dict[str, Any]:
         """
@@ -122,6 +126,7 @@ class GoogleLLMClient:
             lecture_summary: 강의 요약
             title: 검색 결과 제목
             snippet: 검색 결과 스니펫
+            url: 검색 결과 URL
             language: 응답 언어
             
         Returns:
@@ -131,6 +136,7 @@ class GoogleLLMClient:
             lecture_summary=lecture_summary,
             title=title,
             snippet=snippet,
+            url=url,
             language=language
         )
         
