@@ -367,12 +367,8 @@ class WikiService:
         
         score = min(score, 10.0)
         
-        # 추천 이유
-        if matched:
-            keywords_text = ", ".join(set(matched[:2]))
-            reason = f"Related to: {keywords_text}"
-        else:
-            reason = "Wikipedia encyclopedia article"
+        # 추천 이유 (Heuristic 모드)
+        reason = "Heuristic"
         
         return WikiResponse(
             lecture_id=request.lecture_id,
