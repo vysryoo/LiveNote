@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>LiveNote WS 테스트</title>
+</head>
+<body>
+<h1>LiveNote WebSocket Test</h1>
+
+<label>
+  Lecture ID:
+  <input id="lectureId" type="number" value="10" />
+</label>
+<br/>
+<label>
+  Session ID:
+  <input id="sessionId" type="text" value="10" />
+</label>
+<br/>
+<button id="connectBtn">Connect</button>
+<button id="disconnectBtn">Disconnect</button>
+
+<pre id="log" style="border:1px solid #ccc; padding:8px; margin-top:16px; height:300px; overflow:auto;"></pre>
+
+<!-- CDN으로 SockJS + STOMP 로드 -->
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script>
+  let stompClient = null;
+
+  function log(msg) {
+    const el = document.getElementById("log");
+    el.textContent += msg + "\n";
+    el.scrollTop = el.scrollHeight;
+    console.log(msg);
+  }
+
+  document.getElementById("connectBtn").onclick = () => {
+    const lectureId = document.getElementById("lectureId").value;
+    const sessionId = document.getElementById("sessionId").value;
+
+    const wsUrl = `http://localhost:8080/api/ws/transcription?lectureId=${lectureId}&sessionId=${sessionId}`;
+
+    log("Connecting to " + wsUrl);
+    const socket = new SockJS(wsUrl);
+    stompClient = Stomp.over(socket);
+
+    stompClient.connect({}, () => {
+      log("STOMP connected");
+
+      const destination = `/topic/lectures/${lectureId}/transcription`;
+      log("Subscribing to " + destination);
+
+      stompClient.subscribe(destination, (message) => {
+        const body = JSON.parse(message.body);
+        log("Received: " + JSON.stringify(body, null, 2));
+      });
+    }, (error) => {
+      log("STOMP error: " + error);
+    });
+  };
+
+  document.getElementById("disconnectBtn").onclick = () => {
+    if (stompClient && stompClient.connected) {
+      stompClient.disconnect(() => log("Disconnected"));
+    }
+  };
+</script>
+</body>
+</html>

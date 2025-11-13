@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/livenote?serverTimezone=Asia/Seoul
+    username: root
+    password: 1017
+  jpa:
+    hibernate.ddl-auto: create
+    show-sql: true
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 200MB
+
+app:
+  storage:
+    audio-dir: uploads/audio
+  ai:
+    #base-url: http://ai-server:8000  # FastAPI
+    base-url: http://localhost:8003
+    callback-base-url: http://backend:8080
+    chunk-sec: 60
