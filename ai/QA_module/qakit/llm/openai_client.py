@@ -15,7 +15,7 @@ from ..config.qa_config import QAConfig
 class OpenAIClient:
     """OpenAI API 비동기 클라이언트"""
     
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: str = None, model: Optional[str] = None):
         """
         초기화
         
@@ -24,12 +24,11 @@ class OpenAIClient:
         """
         # API 키 우선순위: 파라미터 > 환경변수 > config
         final_api_key = api_key or os.getenv("OPENAI_API_KEY") or QAConfig.OPENAI_API_KEY
-        
         self.client = AsyncOpenAI(
             api_key=final_api_key,
             timeout=QAConfig.OPENAI_TIMEOUT
         )
-        self.model = QAConfig.QA_MODEL
+        self.model = model or QAConfig.QA_MODEL
         self.max_tokens = QAConfig.QA_MAX_TOKENS
         self.temperature = QAConfig.QA_TEMPERATURE
     

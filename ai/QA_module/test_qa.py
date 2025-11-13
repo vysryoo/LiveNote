@@ -7,12 +7,33 @@ import asyncio
 import time
 from dotenv import load_dotenv
 
+from qakit.config.qa_config import QAConfig
 from qakit.models import QARequest, RAGContext, RAGChunk, PreviousQA
 from qakit.service import QAService
 
 
 # .env 파일 로드
 load_dotenv()
+
+MODEL_CHOICES = {
+    "1": "gpt-4o-mini",
+    "2": "gpt-3.5-turbo",
+    "3": "gpt-5-nano"
+}
+DEFAULT_MODEL = QAConfig.QA_MODEL
+
+
+def select_model() -> str:
+    """테스트에서 사용할 모델 선택"""
+    print("\n📡 QA 테스트용 모델을 선택하세요:")
+    for key, model in MODEL_CHOICES.items():
+        suffix = " (기본)" if model == DEFAULT_MODEL else ""
+        print(f"{key}. {model}{suffix}")
+
+    selection = input(f"선택 (1/2/3, 기본 {DEFAULT_MODEL}): ").strip()
+    chosen = MODEL_CHOICES.get(selection, DEFAULT_MODEL)
+    print(f"▶️ 선택된 모델: {chosen}\n")
+    return chosen
 
 
 # 테스트 시나리오
@@ -97,7 +118,7 @@ TEST_SCENARIOS = [
 ]
 
 
-async def test_qa_generation():
+async def test_qa_generation(model: str | None = None):
     """QA 생성 테스트"""
     print("\n" + "="*60)
     print("🚀 QAKit 모듈 테스트")
@@ -113,7 +134,7 @@ async def test_qa_generation():
     print(f"✅ API 키 로드 완료: {api_key[:20]}...")
     
     # QAService 초기화
-    qa_service = QAService(api_key=api_key)
+    qa_service = QAService(api_key=api_key, model=model)
     print("✅ QAService 초기화 완료\n")
     
     total_questions = 0
@@ -163,7 +184,7 @@ async def test_qa_generation():
     print("="*60 + "\n")
 
 
-async def test_single_qa():
+async def test_single_qa(model: str | None = None):
     """단일 QA 생성 테스트 (빠른 확인용)"""
     print("\n" + "="*60)
     print("� 단일 QA 생성 테스트")
@@ -174,7 +195,7 @@ async def test_single_qa():
         print("❌ OPENAI_API_KEY가 설정되지 않았습니다!")
         return
     
-    qa_service = QAService(api_key=api_key)
+    qa_service = QAService(api_key=api_key, model=model)
     
     request = QARequest(
         lecture_id="quick_test",
@@ -343,10 +364,14 @@ if __name__ == "__main__":
     print("3. 검증 테스트 (QARequest 유효성 검사)")
     
     choice = input("\n선택 (1/2/3, 기본값 1): ").strip() or "1"
+    selected_model = None
+    
+    if choice in {"1", "2"}:
+        selected_model = select_model()
     
     if choice == "2":
-        asyncio.run(test_single_qa())
+        asyncio.run(test_single_qa(model=selected_model))
     elif choice == "3":
         test_validation()
     else:
-        asyncio.run(test_qa_generation())
+        asyncio.run(test_qa_generation(model=selected_model))

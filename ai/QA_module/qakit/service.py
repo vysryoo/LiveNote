@@ -3,7 +3,7 @@ QA 생성 서비스 (병렬 처리)
 """
 
 import asyncio
-from typing import AsyncGenerator, List, Tuple
+from typing import AsyncGenerator, List, Optional, Tuple
 
 from .models import QARequest, QAResponse
 from .config.prompts import PromptTemplates
@@ -13,14 +13,14 @@ from .llm.openai_client import OpenAIClient
 class QAService:
     """QA 생성 서비스"""
     
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: str = None, model: Optional[str] = None):
         """
         초기화
         
         Args:
             api_key: OpenAI API 키 (None이면 환경변수에서 로드)
         """
-        self.client = OpenAIClient(api_key=api_key)
+        self.client = OpenAIClient(api_key=api_key, model=model)
         self.prompts = PromptTemplates()
     
     async def generate_questions(
