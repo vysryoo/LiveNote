@@ -3,7 +3,7 @@ Google Provider 전용 플래그
 """
 
 # ━━━ 검증 스위치 ━━━
-NO_SCORING = True  # True이면 검증 없이 검색 결과만 반환 (빠른 테스트용)
+NO_SCORING = False  # True이면 검증 없이 검색 결과만 반환 (빠른 테스트용)
 VERIFY_GOOGLE_DEFAULT = True  # 기본값: LLM 검증
 
 # ━━━ 키워드 생성 설정 ━━━
