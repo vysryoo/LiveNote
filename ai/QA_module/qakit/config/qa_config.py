@@ -14,7 +14,7 @@ class QAConfig:
     
     # 모델 설정
     QA_MODEL: str = "gpt-4o-mini"
-    QA_MAX_TOKENS: int = 300
+    QA_MAX_TOKENS: int = 500
     QA_TEMPERATURE: float = 0.5
     
     # 기본값

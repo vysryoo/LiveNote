@@ -18,6 +18,7 @@ load_dotenv()
 MODEL_CHOICES = {
     "1": "gpt-4o-mini",
     "2": "gpt-3.5-turbo",
+    "3": "gpt-4o",
 }
 DEFAULT_MODEL = QAConfig.QA_MODEL
 
@@ -29,7 +30,8 @@ def select_model() -> str:
         suffix = " (기본)" if model == DEFAULT_MODEL else ""
         print(f"{key}. {model}{suffix}")
 
-    selection = input(f"선택 (1/2/3, 기본 {DEFAULT_MODEL}): ").strip()
+    options = "/".join(MODEL_CHOICES.keys())
+    selection = input(f"선택 ({options}, 기본 {DEFAULT_MODEL}): ").strip()
     chosen = MODEL_CHOICES.get(selection, DEFAULT_MODEL)
     print(f"▶️ 선택된 모델: {chosen}\n")
     return chosen
