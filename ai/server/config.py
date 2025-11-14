@@ -33,10 +33,10 @@ class QASettings(BaseModel):
 class OpenAlexSettings(BaseModel):
     """OpenAlex 추천 설정"""
     
-    top_k: int = Field(default=2, ge=1, le=10, description="논문 추천 개수")
-    verify: bool = Field(default=False, description="LLM 검증 여부")
-    #verify: bool = Field(default=True, description="LLM 검증 여부")
-    year_from: int = Field(default=2015, description="검색 최소 연도")
+    top_k: int = Field(default=3, ge=1, le=10, description="논문 추천 개수")
+    verify: bool = Field(default=True, description="LLM 검증 여부")
+    #verify: bool = Field(default=False, description="LLM 검증 여부")
+    year_from: int = Field(default=1930, description="검색 최소 연도")
     sort_by: str = Field(default="hybrid", description="정렬 기준")
     min_score: float = Field(default=0.0, ge=0.0, le=10.0, description="최소 점수")
     language: str = Field(default="ko", description="응답 언어")
@@ -45,7 +45,7 @@ class OpenAlexSettings(BaseModel):
 class WikiSettings(BaseModel):
     """위키 추천 설정"""
     
-    top_k: int = Field(default=2, ge=1, le=10, description="Wiki 추천 개수")
+    top_k: int = Field(default=3, ge=1, le=10, description="Wiki 추천 개수")
     verify: bool = Field(default=False, description="LLM 검증 여부")
     #verify: bool = Field(default=True, description="LLM 검증 여부")
     wiki_lang: str = Field(default="en", description="Wikipedia 검색 언어")
@@ -57,9 +57,9 @@ class WikiSettings(BaseModel):
 class YouTubeSettings(BaseModel):
     """YouTube 추천 설정"""
     
-    top_k: int = Field(default=2, ge=1, le=10, description="YouTube 추천 개수")
-    verify: bool = Field(default=False, description="LLM 검증 여부")
-    #verify: bool = Field(default=True, description="LLM 검증 여부")
+    top_k: int = Field(default=3, ge=1, le=10, description="YouTube 추천 개수")
+    verify: bool = Field(default=True, description="LLM 검증 여부")
+    #verify: bool = Field(default=False, description="LLM 검증 여부")
     yt_lang: str = Field(default="en", description="YouTube 검색 언어")
     language: str = Field(default="ko", description="응답 언어")
     min_score: float = Field(default=3.0, ge=0.0, le=10.0, description="최소 점수")
@@ -69,8 +69,8 @@ class GoogleSettings(BaseModel):
     """Google 검색 추천 설정"""
     
     top_k: int = Field(default=4, ge=1, le=10, description="Google 추천 개수")
-    verify: bool = Field(default=False, description="LLM 검증 여부")
-    #verify: bool = Field(default=True, description="LLM 검증 여부")
+    verify: bool = Field(default=True, description="LLM 검증 여부")
+    #verify: bool = Field(default=False, description="LLM 검증 여부")
     search_lang: str = Field(default="en", description="Google 검색 언어")
     language: str = Field(default="ko", description="응답 언어")
     min_score: float = Field(default=3.0, ge=0.0, le=10.0, description="최소 점수")

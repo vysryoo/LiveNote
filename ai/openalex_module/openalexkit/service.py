@@ -58,16 +58,33 @@ class OpenAlexService:
         try:
             # 1. 검색 쿼리 생성 (LLM)
             logger.info(f"🔍 OpenAlex 검색 시작 (lecture={request.lecture_id}, section={request.section_id})")
+            logger.info(f"   ├─ section_summary: {request.section_summary[:100]}...")
+            logger.info(f"   ├─ previous_summaries: {len(request.previous_summaries)}개")
+            logger.info(f"   └─ rag_context: {len(request.rag_context)}개")
+            
             query = await self._generate_search_query(request)
             
-            logger.info(f"📝 생성된 쿼리: tokens={query.get('tokens', [])}, year_from={query.get('year_from')}")
+            tokens = query.get('tokens', [])
+            logger.info(f"📝 생성된 쿼리:")
+            logger.info(f"   ├─ tokens: {tokens} (총 {len(tokens)}개)")
+            logger.info(f"   └─ year_from: {query.get('year_from')}")
             
-            if not query.get("tokens"):
+            if not tokens:
                 logger.warning("⚠️  검색 토큰이 생성되지 않았습니다")
                 return []
             
+            # TOKEN 수 경고
+            if len(tokens) > 3:
+                logger.warning(f"⚠️  TOKEN 수가 많습니다 ({len(tokens)}개). 검색 결과가 없을 수 있습니다.")
+                logger.warning(f"   권장: 2-3개 TOKEN (현재: {tokens})")
+            
             # 2. OpenAlex API 호출
-            logger.info(f"🌐 OpenAlex API 호출 (tokens={len(query.get('tokens', []))}개)")
+            logger.info(f"🌐 OpenAlex API 호출:")
+            logger.info(f"   ├─ search_str: {' '.join(tokens)}")
+            logger.info(f"   ├─ year_from: {query.get('year_from')}")
+            logger.info(f"   ├─ sort_by: {request.sort_by}")
+            logger.info(f"   └─ exclude_ids: {len(request.exclude_ids)}개")
+            
             papers = await self.api_client.search_papers(
                 query=query,
                 exclude_ids=request.exclude_ids,
@@ -75,18 +92,30 @@ class OpenAlexService:
             )
             
             if not papers:
-                logger.warning(f"⚠️  검색된 논문이 없습니다 (tokens={query.get('tokens', [])})")
+                logger.warning(f"⚠️  검색된 논문이 없습니다 (tokens={tokens})")
+                logger.warning(f"   가능한 원인:")
+                logger.warning(f"   1. TOKEN이 너무 많음 ({len(tokens)}개) → 2-3개 권장")
+                logger.warning(f"   2. year_from이 부적절 ({query.get('year_from')}) → 2015 권장")
+                logger.warning(f"   3. 검색어가 너무 구체적 → 일반적인 학술 용어 사용")
                 return []
             
             logger.info(f"📚 검색된 논문: {len(papers)}개")
+            logger.info(f"   상위 3개 제목:")
+            for i, paper in enumerate(papers[:3], 1):
+                logger.info(f"   {i}. {paper.get('title', 'Unknown')[:80]}...")
             
             # 3. 중복 제거 + 재랭킹
+            before_dedup = len(papers)
             papers = deduplicate_papers(papers)
             papers = rerank_papers(papers, query)
+            logger.info(f"🔄 중복 제거: {before_dedup}개 → {len(papers)}개")
             
             # 4. 상위 N개 선택 (CARD_LIMIT)
             papers = papers[:OpenAlexConfig.CARD_LIMIT]
             logger.info(f"📄 검증 대상: {len(papers)}개 (상한: {OpenAlexConfig.CARD_LIMIT})")
+            logger.info(f"   ├─ verify_openalex: {request.verify_openalex}")
+            logger.info(f"   ├─ NO_SCORING: {flags.NO_SCORING}")
+            logger.info(f"   └─ min_score: {request.min_score}")
             
             # 🚀 NO_SCORING 모드: 검증 없이 검색 결과만 반환
             if flags.NO_SCORING:
@@ -114,31 +143,49 @@ class OpenAlexService:
             # 5. 조건부 검증
             if request.verify_openalex:
                 # LLM 병렬 검증
+                logger.info(f"✨ LLM 병렬 검증 시작:")
+                logger.info(f"   ├─ 대상: {len(papers)}개")
+                logger.info(f"   ├─ 동시성: {OpenAlexConfig.VERIFY_CONCURRENCY}")
+                logger.info(f"   └─ 모델: {OpenAlexConfig.LLM_MODEL}")
                 results = await self._verify_papers_parallel(papers, request, query)
             else:
                 # Heuristic 스코어링
+                logger.info(f"🔢 Heuristic 스코어링 시작 ({len(papers)}개)")
                 results = self._heuristic_score(papers, query, request)
             
             # 6. 점수 필터링 (min_score 이상만 선택)
             filtered_results = [r for r in results if r.score >= request.min_score]
             
             if len(filtered_results) < len(results):
+                filtered_count = len(results) - len(filtered_results)
                 logger.info(
                     f"🔍 점수 필터링: {len(results)}개 → {len(filtered_results)}개 "
-                    f"(min_score: {request.min_score})"
+                    f"(제외: {filtered_count}개, min_score: {request.min_score})"
                 )
+                # 제외된 논문의 점수 분포
+                excluded_scores = sorted([r.score for r in results if r.score < request.min_score], reverse=True)
+                if excluded_scores:
+                    logger.info(f"   제외된 점수: {excluded_scores[:5]}" + ("..." if len(excluded_scores) > 5 else ""))
             
             # 7. 점수 순 정렬 + top_k 반환 (필터링된 결과에서)
             filtered_results.sort(key=lambda x: x.score, reverse=True)
             final_results = filtered_results[:request.top_k]
             
             if final_results:
+                scores = [r.score for r in final_results]
                 logger.info(
-                    f"✅ 논문 추천 완료: {len(final_results)}개 "
-                    f"(최고 점수: {final_results[0].score:.1f})"
+                    f"✅ 논문 추천 완료: {len(final_results)}개"
                 )
+                logger.info(f"   ├─ 점수 범위: {min(scores):.1f} ~ {max(scores):.1f}")
+                logger.info(f"   └─ 평균 점수: {sum(scores)/len(scores):.1f}")
+                # 최종 결과 요약
+                for i, result in enumerate(final_results, 1):
+                    logger.info(f"   {i}. [{result.score:.1f}점] {result.paper_info.title[:60]}...")
             else:
                 logger.warning(f"⚠️  min_score {request.min_score} 이상인 논문이 없습니다")
+                if results:
+                    max_score = max(r.score for r in results)
+                    logger.warning(f"   최고 점수: {max_score:.1f} (min_score를 {max_score:.1f} 이하로 낮추세요)")
             
             return final_results
             

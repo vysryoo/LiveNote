@@ -9,4 +9,4 @@ VERIFY_OPENALEX_DEFAULT = True  # 기본값: LLM 검증
 
 # ━━━ 토큰 생성 설정 ━━━
 TOKEN_MIN = 2  # 최소 검색 토큰 개수
-TOKEN_MAX = 4  # 최대 검색 토큰 개수
+TOKEN_MAX = 3  # 최대 검색 토큰 개수 (4→3, 검색 결과 증가)

@@ -21,17 +21,18 @@ class OpenAlexConfig:
     # ━━━ 기본값 ━━━
     DEFAULT_LANGUAGE: str = "ko"
     DEFAULT_TOP_K: int = 5
-    DEFAULT_YEAR_FROM: int = 2015
+    DEFAULT_YEAR_FROM: int = 1930
     
     # ━━━ 제한 ━━━
     CARD_LIMIT: int = 13  # 검증 대상 최대 수 (13<-10, 23% 감소)
     MAX_TOP_K: int = 10   # 최대 반환 개수
     
     # ━━━ LLM 설정 ━━━
-    LLM_MODEL: str = "gpt-4o-mini"
+    #LLM_MODEL: str = "gpt-4o-mini"
+    LLM_MODEL: str = "gpt-4o"
     LLM_TEMPERATURE: float = 0.2  # 0.3→0.2 (더 결정적, 빠른 응답)
-    MAX_TOKENS_QUERY: int = 100   # 100<-80 (20% 감소)
-    MAX_TOKENS_SCORE: int = 80   # 80<-60 (25% 감소)
+    MAX_TOKENS_QUERY: int = 150   # 100<-80 (20% 감소)
+    MAX_TOKENS_SCORE: int = 200   # 120→200 (reason 잘림 방지)
     
     # ━━━ 초록 길이 ━━━
     ABSTRACT_MAX_LENGTH: int = 400  # 500→400 (20% 감소)
