@@ -8,7 +8,7 @@ import time
 from dotenv import load_dotenv
 
 from qakit.config.qa_config import QAConfig
-from qakit.models import QARequest, RAGContext, RAGChunk, PreviousQA
+from qakit.models import QARequest, QAResponse, RAGContext, RAGChunk, PreviousQA
 from qakit.service import QAService
 
 
@@ -18,7 +18,6 @@ load_dotenv()
 MODEL_CHOICES = {
     "1": "gpt-4o-mini",
     "2": "gpt-3.5-turbo",
-    "3": "gpt-5-nano"
 }
 DEFAULT_MODEL = QAConfig.QA_MODEL
 
@@ -143,7 +142,8 @@ async def test_qa_generation(model: str | None = None):
     # 각 시나리오 테스트
     for scenario in TEST_SCENARIOS:
         print(f"\n📝 시나리오: {scenario['name']}")
-        print(f"   요약: {scenario['section_summary'][:50]}...")
+        summary_text = scenario["section_summary"].strip()
+        print(f"   요약: {summary_text}")
         print(f"   질문 유형: {scenario['question_types']}")
         
         # QARequest 생성
@@ -159,23 +159,28 @@ async def test_qa_generation(model: str | None = None):
         )
         
         # QA 생성
-        start_time = time.time()
+        scenario_start = time.time()
+        question_starts = {q_type: scenario_start for q_type in scenario["question_types"]}
+        qa_list = []
         try:
-            qa_list = await qa_service.generate_questions(request)
-            elapsed = int((time.time() - start_time) * 1000)
-            
-            # 결과 출력
-            for qa in qa_list:
+            async for event_type, q_type, payload in qa_service.stream_questions(request):
+                if event_type != "qa":
+                    continue
+                elapsed_ms = int((time.time() - question_starts.get(q_type, scenario_start)) * 1000)
+                qa = QAResponse(**payload)
+                qa_list.append(qa)
                 print(f"   ✅ [{qa.type}] {qa.question}")
-                print(f"      💡 {qa.answer[:60]}...")
-            
-            print(f"   ⏱️  완료: {len(qa_list)}개 질문, {elapsed}ms\n")
-            
-            total_questions += len(qa_list)
-            total_time += elapsed
-            
+                print(f"      💡 {qa.answer}")
+                print(f"      ⏱️  {elapsed_ms}ms\n")
         except Exception as e:
             print(f"   ❌ 오류 발생: {e}\n")
+            continue
+
+        scenario_elapsed = int((time.time() - scenario_start) * 1000)
+        print(f"   ⏱️  완료: {len(qa_list)}개 질문, {scenario_elapsed}ms\n")
+
+        total_questions += len(qa_list)
+        total_time += scenario_elapsed
     
     # 전체 요약
     print("="*60)
@@ -209,11 +214,16 @@ async def test_single_qa(model: str | None = None):
     )
     
     start_time = time.time()
-    qa_list = await qa_service.generate_questions(request)
-    elapsed = int((time.time() - start_time) * 1000)
+    qa = None
+    question_start = time.time()
+    async for event_type, q_type, payload in qa_service.stream_questions(request):
+        if event_type != "qa":
+            continue
+        qa = QAResponse(**payload)
+        break
+    elapsed = int((time.time() - question_start) * 1000)
     
-    if qa_list:
-        qa = qa_list[0]
+    if qa:
         print(f"\n✅ [{qa.type}] {qa.question}")
         print(f"💡 {qa.answer}")
         print(f"⏱️  소요 시간: {elapsed}ms\n")
