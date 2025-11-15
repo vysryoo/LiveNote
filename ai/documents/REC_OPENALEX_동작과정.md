@@ -5,11 +5,12 @@
 이 문서는 **OpenAlex 논문 추천 시스템**의 전체 동작 과정을 설명합니다.
 
 **핵심 특징:**
-- LLM 기반 검색 쿼리 생성 (TOKEN_MIN=2, TOKEN_MAX=4개 토큰)
+- LLM 기반 검색 쿼리 생성 (TOKEN_MIN=2, TOKEN_MAX=3개 토큰)
 - OpenAlex API를 통한 학술 논문 검색
-- 병렬 LLM 검증 (Semaphore 동시성 제어)
+- 병렬 LLM 검증 (Semaphore 동시성 제어, 최대 20개)
 - Heuristic 스코어링 (빠른 평가)
 - NO_SCORING 모드 지원
+- JSON 파싱 오류 방지 (MAX_TOKENS_SCORE=200, reason 50자 제한)
 
 ---
 
@@ -108,7 +109,7 @@ request_data = {
 
 3. **OpenAI API 호출**
    - Model: `gpt-4o` (현재 설정)
-   - Temperature: `0.3` (일관성 우선)
+   - Temperature: `0.2` (일관성 우선, 0.3→0.2)
    - Max Tokens: `150`
 
 **출력:**
@@ -120,7 +121,7 @@ request_data = {
 ```
 
 **특징:**
-- **TOKEN_MIN=2, TOKEN_MAX=4**: 2~4개의 핵심 토큰 생성
+- **TOKEN_MIN=2, TOKEN_MAX=3**: 2~3개의 핵심 토큰 생성 (4→3 감소)
 - **JSON 파싱 오류 대응**: 섹션 요약에서 단어 추출 (Fallback)
 - **년도 필터**: `year_from`은 request에서 받음 (기본: 1930)
 
@@ -250,7 +251,7 @@ papers = papers[:OpenAlexConfig.CARD_LIMIT]  # 상위 N개 (예: 10개)
 ```
 
 **CARD_LIMIT:**
-- 검증 대상 논문 수 제한 (기본: 10개)
+- 검증 대상 논문 수 제한 (기본: 13개, 10→13 증가)
 - 검증 시간 단축 (LLM 호출 비용 절감)
 
 ---
@@ -272,7 +273,7 @@ if flags.NO_SCORING:
 **처리 흐름:**
 1. **Semaphore 동시성 제어**
    ```python
-   semaphore = asyncio.Semaphore(VERIFY_CONCURRENCY)  # 5개 동시 실행
+   semaphore = asyncio.Semaphore(VERIFY_CONCURRENCY)  # 20개 동시 실행 (5→20)
    
    async def verify_with_limit(paper):
        async with semaphore:
@@ -301,8 +302,8 @@ if flags.NO_SCORING:
 
 3. **OpenAI API 호출**
    - Model: `gpt-4o`
-   - Temperature: `0.3`
-   - Max Tokens: `100`
+   - Temperature: `0.2`
+   - Max Tokens: `200` (120→200, reason 잘림 방지)
 
 **출력:**
 ```json
@@ -313,7 +314,8 @@ if flags.NO_SCORING:
 ```
 
 **에러 처리:**
-- JSON 파싱 실패 → `score=5.0`, `reason="검증 실패 (JSON 파싱 오류)"`
+- JSON 파싱 실패 → Fallback: 점수만 추출 시도 (regex)
+- reason 잘림 감지 → MAX_TOKENS_SCORE 증가 권장
 - API 오류 → `score=5.0`, `reason="검증 실패 (API 오류)"`
 
 #### **5-2. Heuristic 스코어링 (verify=False)**
@@ -404,22 +406,26 @@ class OpenAlexSettings(BaseModel):
 class OpenAlexConfig:
     # LLM 설정
     LLM_MODEL: str = "gpt-4o"
-    LLM_TEMPERATURE: float = 0.3
+    LLM_TEMPERATURE: float = 0.2  # 0.3→0.2
     
     # TOKEN 생성 범위
     TOKEN_MIN: int = 2  # 최소 토큰 수
-    TOKEN_MAX: int = 4  # 최대 토큰 수
+    TOKEN_MAX: int = 3  # 최대 토큰 수 (4→3)
     
     # 검색 설정
-    PER_PAGE: int = 25  # API 페이지당 논문 수
-    CARD_LIMIT: int = 10  # 검증 대상 논문 수
+    PER_PAGE: int = 40  # API 페이지당 논문 수 (25→40)
+    CARD_LIMIT: int = 13  # 검증 대상 논문 수 (10→13)
     
     # 검증 설정
-    VERIFY_CONCURRENCY: int = 5  # 병렬 검증 동시성
+    VERIFY_CONCURRENCY: int = 20  # 병렬 검증 동시성 (5→20)
     
     # 필터링 설정
-    ABSTRACT_MAX_LENGTH: int = 500  # LLM 전달 초록 길이
-    DEFAULT_YEAR_FROM: int = 2015  # 기본 년도 필터
+    ABSTRACT_MAX_LENGTH: int = 400  # LLM 전달 초록 길이
+    DEFAULT_YEAR_FROM: int = 1930  # 기본 년도 필터
+    
+    # LLM 토큰 설정
+    MAX_TOKENS_QUERY: int = 150  # 쿼리 생성
+    MAX_TOKENS_SCORE: int = 200  # 논문 검증 (120→200)
 ```
 
 **설정 조정 가이드:**
@@ -437,7 +443,7 @@ class OpenAlexConfig:
 ```python
 NO_SCORING = False  # True: 검증 스킵, False: 검증 실행
 TOKEN_MIN = 2       # LLM 생성 최소 토큰 수
-TOKEN_MAX = 4       # LLM 생성 최대 토큰 수
+TOKEN_MAX = 3       # LLM 생성 최대 토큰 수 (4→3)
 ```
 
 ---
@@ -768,8 +774,9 @@ sort_by = "hybrid"  # relevance → hybrid (연관성 + 인용수)
 
 ---
 
-**작성일:** 2025년 5월  
-**버전:** 1.0  
+**작성일:** 2025년 11월 14일  
+**버전:** 1.1  
+**업데이트:** TOKEN_MAX: 4→3, MAX_TOKENS_SCORE: 120→200, VERIFY_CONCURRENCY: 5→20  
 **관련 파일:**
 - `cap1_openalex_module/openalexkit/service.py` (메인 로직)
 - `cap1_openalex_module/openalexkit/llm/openai_client.py` (LLM 클라이언트)

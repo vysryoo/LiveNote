@@ -25,8 +25,8 @@ class GoogleConfig:
     FANOUT: int = 3  # 동시 검색 키워드 개수
     
     # LLM 설정
-    #LLM_MODEL: str = "gpt-4o-mini"
-    LLM_MODEL: str = "gpt-4o"
+    LLM_MODEL: str = "gpt-4o-mini"
+    #LLM_MODEL: str = "gpt-4o"
     LLM_TEMPERATURE: float = 0.2
     MAX_TOKENS_QUERY: int = 100
     MAX_TOKENS_SCORE: int = 80

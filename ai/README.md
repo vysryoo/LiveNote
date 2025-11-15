@@ -93,7 +93,7 @@ LiveNote AI 게이트웨이는 다음과 같은 기능을 제공합니다.
    특정 섹션 요약과 `lecture_id`를 입력하면 저장된 청크를 불러오고, 미리 지정된 질문 유형에 대해 OpenAI Chat Completion을 비동기로 호출한 뒤 SSE로 순차 전송합니다.
 
 3. **REC 요청**  
-   같은 `lecture_id`를 기반으로 RAG 청크를 읽고, 각 Provider(OpenAlex, Wiki, YouTube)에 전달하여 추천 목록을 생성합니다. 결과는 준비되는 순서대로 스트림으로 내려보냅니다.
+   같은 `lecture_id`를 기반으로 RAG 청크를 읽고, 각 Provider(OpenAlex, Wiki, YouTube, Google)에 전달하여 추천 목록을 생성합니다. 결과는 준비되는 순서대로 스트림으로 내려보냅니다.
 
 ---
 
@@ -106,7 +106,7 @@ LiveNote AI 게이트웨이는 다음과 같은 기능을 제공합니다.
 FastAPI (server/)
  ├─ RAG 라우터 → cap1_RAG_module (OpenAI Embedding + ChromaDB)
  ├─ QA 라우터  → cap1_QA_module (OpenAI Chat Completion)
- └─ REC 라우터 → cap1_openalex_module / cap1_wiki_module / cap1_youtube_module
+ └─ REC 라우터 → cap1_openalex_module / cap1_wiki_module / cap1_youtube_module/ cap1_google_module
 ```
 
 - **server/**: FastAPI 앱, 라우터, 설정, 유틸리티.
@@ -126,6 +126,7 @@ FastAPI (server/)
 | `cap1_openalex_module/` | 논문 추천 모듈 |
 | `cap1_wiki_module/` | 위키 추천 모듈 |
 | `cap1_youtube_module/` | 유튜브 추천 모듈 |
+| `cap1_google_module/` | 구글 추천 모듈 |
 | `server/` | FastAPI 서버 구성 |
 | `tests/` | 단위/통합 테스트 |
 | `setup.sh` | 환경 구축 자동 스크립트 |
