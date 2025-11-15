@@ -42,21 +42,12 @@ public class SummaryController {
             @PathVariable Long summaryId,
             @RequestParam(required = false) String type) {
 
-        var list = resourceService.bySummary(summaryId, type).stream()
-                .map(r -> new ResourceResponseDto(
-                        r.getId(),
-                        r.getLectureId(),
-                        r.getSummaryId(),
-                        r.getSectionIndex(),
-                        r.getType().name().toLowerCase(),
-                        r.getTitle(),
-                        r.getUrl(),
-                        r.getThumbnail(),
-                        r.getScore()
-                ))
-                .toList();
-        return ApiResponse.ok(list);
+        var list = resourceService.bySummary(summaryId, type);
+        return ApiResponse.ok(
+                list.stream()
+                        .map(ResourceResponseDto::from)
+                        .toList()
+        );
+
     }
-
-
 }

@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+// 로컬 파일 시스템에 저장
 @Component
 public class LocalAudioStorage implements AudioStorage {
     private final Path root = Paths.get(System.getProperty("user.home"), "livenote-audio");

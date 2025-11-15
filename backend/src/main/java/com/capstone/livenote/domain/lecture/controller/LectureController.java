@@ -37,38 +37,35 @@ public class LectureController {
 
     private Long currentUserId(){ return 1L; } // 임시. 실제는 SecurityContext에서 꺼내기
 
+    // 강의 조회
     @GetMapping
     public ApiResponse<List<LectureResponseDto>> list() {
         var list = lectureService.list(currentUserId(), PageRequest.of(0, 20))
                 .stream()
-                .map(l -> new LectureResponseDto(
-                        l.getId(),
-                        l.getTitle(),
-                        l.getSubject(),
-                        l.getSttLanguage(),
-                        l.getStatus(),
-                        l.getCreatedAt(),
-                        l.getEndAt()
-                ))
+                .map(LectureResponseDto::from)
                 .toList();
         return ApiResponse.ok(list);
     }
 
 
+    // 강의 생성
     @PostMapping
     public ApiResponse<LectureResponseDto> create(@RequestBody CreateLectureRequestDto req){
         var l = lectureService.create(currentUserId(), req);
-        return ApiResponse.ok(new LectureResponseDto(l.getId(), l.getTitle(), l.getSubject(), l.getSttLanguage(), l.getStatus().name(), l.getCreatedAt(), l.getEndAt()));
+        return ApiResponse.ok(LectureResponseDto.from(l));
     }
 
+    // 강의 상세 조회
     @GetMapping("/{lectureId}")
     public ApiResponse<LectureResponseDto> get(@PathVariable Long lectureId){
         var l = lectureService.get(lectureId);
-        return ApiResponse.ok(new LectureResponseDto(l.getId(), l.getTitle(), l.getSubject(), l.getSttLanguage(), l.getStatus().name(), l.getCreatedAt(), l.getEndAt()));
+        return ApiResponse.ok(LectureResponseDto.from(l));
     }
 
-    // === 오디오 청크 업로드 ===
-    @PostMapping(value="/{lectureId}/audio/chunk", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+
+    // 오디오 청크 업로드
+    @PostMapping(value="/{lectureId}/audio/chunk",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<Void> uploadChunk(
             @PathVariable Long lectureId,
             @RequestPart("file") MultipartFile file,
@@ -93,7 +90,8 @@ public class LectureController {
         return ApiResponse.ok();
     }
 
-    // === 전사/요약 폴링 ===
+
+    // 전사
     @GetMapping("/{lectureId}/transcripts")
     public ApiResponse<List<TranscriptResponseDto>> transcripts(
             @PathVariable Long lectureId,
@@ -111,23 +109,33 @@ public class LectureController {
         return ApiResponse.ok(list);
     }
 
+    // 요약
     @GetMapping("/{lectureId}/summaries")
     public ApiResponse<List<SummaryResponseDto>> summaries(
             @PathVariable Long lectureId,
             @RequestParam(required = false) Integer sinceChunk){
         var list = smQuery.findSince(lectureId, sinceChunk).stream()
-                .map(s -> new SummaryResponseDto(s.getId(), s.getLectureId(), s.getSectionIndex(), s.getStartSec(), s.getEndSec(), s.getText()))
+                .map(s -> new SummaryResponseDto(
+                        s.getId(),
+                        s.getLectureId(),
+                        s.getSectionIndex(),
+                        s.getStartSec(),
+                        s.getEndSec(),
+                        s.getText()
+                ))
                 .toList();
         return ApiResponse.ok(list);
     }
 
-    // === QnA ===
+    // QnA
+// === QnA ===
     @GetMapping("/{lectureId}/qna")
     public ApiResponse<List<QnaResponseDto>> qna(@PathVariable Long lectureId){
         var list = qnaService.byLecture(lectureId).stream()
-                .map(q -> new QnaResponseDto(q.getId(), q.getLectureId(), q.getType(), q.getQuestion(), q.getAnswer()))
+                .map(QnaResponseDto::from)
                 .toList();
         return ApiResponse.ok(list);
     }
+
 }
 

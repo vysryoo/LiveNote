@@ -18,8 +18,8 @@ public class LectureService {
 
     @Transactional
     public Lecture create(Long userId, CreateLectureRequestDto req){
-        var user = new User();      // userId만 세팅
-        user.setId(userId);
+        //var user = new User();      // userId만 세팅
+        //user.setId(userId);
 
         Lecture lec = Lecture.builder()
                 .userId(userId)
@@ -38,12 +38,19 @@ public class LectureService {
     }
     @Transactional(readOnly = true)
     public Lecture get(Long id){
-        return lectureRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("lecture"));
+        return lectureRepo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("lecture"));
     }
     @Transactional
-    public void delete(Long id){ lectureRepo.deleteById(id); }
+    public void delete(Long id){
+        lectureRepo.deleteById(id);
+    }
     @Transactional
-    public void startProcessing(Long id){ lectureRepo.updateStatus(id, Lecture.Status.RECORDING); }
+    public void startProcessing(Long id){
+        lectureRepo.updateStatus(id, Lecture.Status.RECORDING);
+    }
     @Transactional
-    public void complete(Long id){ lectureRepo.updateStatus(id, Lecture.Status.COMPLETED); }
+    public void complete(Long id){
+        lectureRepo.updateStatus(id, Lecture.Status.COMPLETED);
+    }
 }

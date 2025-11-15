@@ -41,27 +41,40 @@ public class ResourceController {
     }
 
     // === 특정 요약(summary) 기준 추천자료 조회 ===
-    @GetMapping
-    public ApiResponse<List<ResourceResponseDto>> getResources(
-            @RequestParam Long summaryId,
+//    @GetMapping
+//    public ApiResponse<List<ResourceResponseDto>> getResources(
+//            @RequestParam Long summaryId,
+//            @RequestParam(required = false) String type
+//    ) {
+//        var list = resourceService.bySummary(summaryId, type);
+//        var dtoList = list.stream()
+//                .map(r -> new ResourceResponseDto(
+//                        r.getId(),
+//                        r.getLectureId(),
+//                        r.getSummaryId(),
+//                        r.getSectionIndex(),
+//                        r.getType().name().toLowerCase(),
+//                        r.getTitle(),
+//                        r.getUrl(),
+//                        r.getThumbnail(),
+//                        r.getScore(),
+//                        r.getText()
+//                ))
+//                .toList();
+//        return ApiResponse.ok(dtoList);
+//    }
+
+    // 요약 기준 자료 조회
+    @GetMapping("/api/summaries/{summaryId}/resources")
+    public ApiResponse<List<ResourceResponseDto>> bySummary(
+            @PathVariable Long summaryId,
             @RequestParam(required = false) String type
     ) {
         var list = resourceService.bySummary(summaryId, type);
-        var dtoList = list.stream()
-                .map(r -> new ResourceResponseDto(
-                        r.getId(),
-                        r.getLectureId(),
-                        r.getSummaryId(),
-                        r.getSectionIndex(),
-                        r.getType().name().toLowerCase(),
-                        r.getTitle(),
-                        r.getUrl(),
-                        r.getThumbnail(),
-                        r.getScore(),
-                        r.getText()
-                ))
-                .toList();
-        return ApiResponse.ok(dtoList);
+        return ApiResponse.ok(
+                list.stream()
+                        .map(ResourceResponseDto::from)
+                        .toList()
+        );
     }
 }
-

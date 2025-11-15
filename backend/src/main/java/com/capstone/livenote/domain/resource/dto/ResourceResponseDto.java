@@ -20,6 +20,18 @@ public class ResourceResponseDto {
     private Double score;
     private String text;
 
-    public ResourceResponseDto(Long id, Long lectureId, Long summaryId, Integer sectionIndex, String lowerCase, String title, String url, String thumbnail, Double score) {
+    public static ResourceResponseDto from(Resource r) {
+        return new ResourceResponseDto(
+                r.getId(),
+                r.getLectureId(),
+                r.getSummaryId(),
+                r.getSectionIndex(),
+                r.getType().name().toLowerCase(),
+                r.getTitle(),
+                r.getUrl(),
+                r.getThumbnail(),
+                r.getScore(),
+                r.getText()
+        );
     }
 }

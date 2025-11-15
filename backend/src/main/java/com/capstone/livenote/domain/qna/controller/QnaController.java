@@ -38,7 +38,6 @@ public class QnaController {
                         q.getAnswer()
                 ))
                 .toList();
-
         return ApiResponse.ok(response);
     }
 }

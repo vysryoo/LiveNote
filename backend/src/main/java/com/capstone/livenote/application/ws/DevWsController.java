@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-// 임시테스트
+// 임시테스트용
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/dev/ws")

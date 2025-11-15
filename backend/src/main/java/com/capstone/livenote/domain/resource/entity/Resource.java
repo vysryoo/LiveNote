@@ -27,7 +27,7 @@ public class Resource {
     private Long summaryId;
 
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id", nullable = true)
     private Long userId;
 
 

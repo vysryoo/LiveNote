@@ -7,22 +7,27 @@ import lombok.*;
 
 @Entity
 @Table(name = "summaries",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"lecture_id","chunkIndex"}),
+        uniqueConstraints = @UniqueConstraint(columnNames = {"lecture_id","section_index"}),
         indexes = {
-                @Index(name="idx_summaries_lecture_chunk", columnList = "lecture_id, chunkIndex"),
+                @Index(name="idx_summaries_lecture_section", columnList = "lecture_id, section_index"),
                 @Index(name="idx_summaries_lecture_start", columnList = "lecture_id, startSec")
         })
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Summary {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "lecture_id", nullable = false)
     private Long lectureId;
 
+    /**
+     * 섹션 인덱스 (30초 단위)
+     * 계산식: startSec / 30
+     */
     @Column(name = "section_index", nullable = false)
-    private Integer sectionIndex; // StartSec / 30
+    private Integer sectionIndex;
 
     @Column(nullable = false)
     private Integer startSec;
@@ -30,6 +35,7 @@ public class Summary {
     @Column(nullable = false)
     private Integer endSec;
 
-    @Lob @Column(nullable = false)
-    private String text; // 요약텍스트
+    @Lob
+    @Column(nullable = false)
+    private String text;
 }

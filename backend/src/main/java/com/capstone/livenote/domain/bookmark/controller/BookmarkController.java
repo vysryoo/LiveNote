@@ -21,7 +21,7 @@ public class BookmarkController {
     private BookmarkService bookmarkService;
 
     private Long currentUserId() {
-        // JWT 완성 시 토큰에서 가져오면 됨
+        // JWT 완성 시 토큰에서 가져올예정
         return 1L;
     }
 
@@ -29,16 +29,7 @@ public class BookmarkController {
     @PostMapping
     public ApiResponse<BookmarkResponseDto> createBookmark(@RequestBody CreateBookmarkRequestDto dto) {
         Bookmark b = bookmarkService.createBookmark(dto, currentUserId());
-        return ApiResponse.ok(
-                new BookmarkResponseDto(
-                        b.getId(),
-                        b.getUserId(),
-                        b.getLectureId(),
-                        b.getSectionIndex(),
-                        b.getTargetType().name().toLowerCase(),
-                        b.getTargetId()
-                )
-        );
+        return ApiResponse.ok(BookmarkResponseDto.from(b));
     }
 
     // === 북마크 목록 조회 ===
@@ -51,7 +42,6 @@ public class BookmarkController {
         var responseList = bookmarks.stream()
                 .map(b -> new BookmarkResponseDto(
                         b.getId(),
-                        b.getUserId(),
                         b.getLectureId(),
                         b.getSectionIndex(),
                         b.getTargetType().name().toLowerCase(),

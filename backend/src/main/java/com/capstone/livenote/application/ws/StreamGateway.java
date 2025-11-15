@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+// 메시지 헬퍼
 @Component
 @RequiredArgsConstructor
 public class StreamGateway {

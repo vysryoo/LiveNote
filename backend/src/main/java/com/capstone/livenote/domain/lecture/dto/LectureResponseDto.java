@@ -22,14 +22,27 @@ public class LectureResponseDto {
     private LocalDateTime createdAt;
     private LocalDateTime endAt;
 
-    public LectureResponseDto(Long id, String title, String subject, String language, Lecture.Status status, LocalDateTime createdAt, LocalDateTime endAt) {
-        this.id = id;
-        this.title = title;
-        this.subject = subject;
-        this.sttLanguage = language;
-        this.status = status.name();
-        this.createdAt = createdAt;
-        this.endAt = endAt;
+//    public LectureResponseDto(Long id, String title, String subject, String language, Lecture.Status status, LocalDateTime createdAt, LocalDateTime endAt) {
+//        this.id = id;
+//        this.title = title;
+//        this.subject = subject;
+//        this.sttLanguage = language;
+//        this.status = status.name();
+//        this.createdAt = createdAt;
+//        this.endAt = endAt;
+//    }
+
+
+    public static LectureResponseDto from(Lecture l) {
+        return new LectureResponseDto(
+                l.getId(),
+                l.getTitle(),
+                l.getSubject(),
+                l.getSttLanguage(),
+                l.getStatus().name(),
+                l.getCreatedAt(),
+                l.getEndAt()
+        );
     }
 
 }

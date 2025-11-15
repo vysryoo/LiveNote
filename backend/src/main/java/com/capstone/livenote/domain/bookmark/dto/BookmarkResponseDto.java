@@ -1,5 +1,6 @@
 package com.capstone.livenote.domain.bookmark.dto;
 
+import com.capstone.livenote.domain.bookmark.entity.Bookmark;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,9 +12,16 @@ public class BookmarkResponseDto {
     private Long id;
     private Long lectureId;
     private Integer sectionIndex;
-    private String targetType; // 응답도 소문자로 통일
+    private String targetType; // "resource" / "qna"
     private Long targetId;
 
-    public BookmarkResponseDto(Long id, Long userId, Long lectureId, Integer sectionIndex, String lowerCase, Long targetId) {
+    public static BookmarkResponseDto from(Bookmark b) {
+        return new BookmarkResponseDto(
+                b.getId(),
+                b.getLectureId(),
+                b.getSectionIndex(),
+                b.getTargetType().name().toLowerCase(),
+                b.getTargetId()
+        );
     }
 }

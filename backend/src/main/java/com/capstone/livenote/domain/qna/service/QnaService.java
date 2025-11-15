@@ -21,4 +21,8 @@ public class QnaService {
         return repo.findByLectureIdAndSectionIndexOrderByIdAsc(lectureId, sectionIndex);
     }
 
+    public Qna save(Qna qna) {
+        return repo.save(qna);
+    }
+
 }

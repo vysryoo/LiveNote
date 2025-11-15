@@ -18,6 +18,14 @@ public class QnaResponseDto {
     private String question;
     private String answer;
 
-    public QnaResponseDto(Long id, Long id1, Qna.Type type, String question, String answer) {
+    public static QnaResponseDto from(Qna q) {
+        return new QnaResponseDto(
+                q.getId(),
+                q.getLectureId(),
+                q.getSectionIndex(),
+                q.getType().name().toLowerCase(),
+                q.getQuestion(),
+                q.getAnswer()
+        );
     }
 }
