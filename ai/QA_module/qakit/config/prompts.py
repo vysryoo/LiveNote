@@ -19,7 +19,7 @@ class PromptTemplates:
 
 {context_qp}
 
-{subject_context}위 기존 질문과 중복되지 않게, 현재 강의에서 핵심 개념/정의 질문 1개만 생성. 답변 4-5문장.
+{subject_context}위 기존 질문과 중복되지 않게, 현재 강의에서 핵심 개념/정의 질문 1개만 생성. 답변 3-4문장.
 
 {language_instruction}
 
@@ -34,7 +34,7 @@ JSON 출력 (정확히 이 형식만):
 
 {context_qp}
 
-{subject_context}위 기존 질문과 중복되지 않게, 현재 강의의 실제 적용/예시 질문 1개만 생성. 답변 4-5문장.
+{subject_context}위 기존 질문과 중복되지 않게, 현재 강의의 실제 적용/예시 질문 1개만 생성. 답변 3-4문장.
 
 {language_instruction}
 
@@ -49,7 +49,7 @@ JSON 출력 (정확히 이 형식만):
 
 {context_qp}
 
-{subject_context}위 기존 질문과 중복되지 않게, 현재 강의의 개념들 비교/대조 질문 1개만 생성. 답변 4-5문장.
+{subject_context}위 기존 질문과 중복되지 않게, 현재 강의의 개념들 비교/대조 질문 1개만 생성. 답변 3-4문장.
 
 {language_instruction}
 
@@ -64,7 +64,7 @@ JSON 출력 (정확히 이 형식만):
 
 {context_qp}
 
-{subject_context}위 기존 질문과 중복되지 않게, 현재 강의의 원리/이유 심화 질문 1개만 생성. 답변 4-5문장.
+{subject_context}위 기존 질문과 중복되지 않게, 현재 강의의 원리/이유 심화 질문 1개만 생성. 답변 3-4문장.
 
 {language_instruction}
 
@@ -79,7 +79,7 @@ JSON 출력 (정확히 이 형식만):
 
 {context_qp}
 
-{subject_context}위 기존 질문과 중복되지 않게, 현재 강의의 실습 문제 1개만 생성. 구체적 수치/상황 제시. 답변 4-5문장.
+{subject_context}위 기존 질문과 중복되지 않게, 현재 강의의 실습 문제 1개만 생성. 구체적 수치/상황 제시. 답변 3-4문장.
 
 {language_instruction}
 
