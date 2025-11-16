@@ -19,3 +19,11 @@ python-multipart==0.0.9
 # Media Providers
 youtube-transcript-api==0.6.1
 rapidfuzz==3.6.1
+
+# Local Modules (Editable Install)
+-e ./cap1_RAG_module
+-e ./cap1_QA_module
+-e ./cap1_openalex_module
+-e ./cap1_wiki_module
+-e ./cap1_youtube_module
+-e ./cap1_google_module
