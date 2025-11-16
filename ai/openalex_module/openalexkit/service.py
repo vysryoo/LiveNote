@@ -301,7 +301,8 @@ class OpenAlexService:
             result = await self.llm_client.score_paper(
                 paper=paper,
                 section_summary=request.section_summary,
-                keywords=keywords
+                keywords=keywords,
+                language=request.language
             )
             
             return OpenAlexResponse(

@@ -119,7 +119,8 @@ class OpenAIClient:
         self, 
         paper: Dict, 
         section_summary: str,
-        keywords: str
+        keywords: str,
+        language: str = "Korean"
     ) -> Dict[str, Any]:
         """
         단일 논문 검증 (LLM)
@@ -128,6 +129,7 @@ class OpenAIClient:
             paper: 논문 정보 (title, abstract, year, cited_by_count)
             section_summary: 현재 섹션 요약
             keywords: 검색 키워드
+            language: 응답 언어 (Korean, English, etc.)
             
         Returns:
             {"score": float, "reason": str}
@@ -145,7 +147,8 @@ class OpenAIClient:
                 title=title,
                 abstract=abstract[:OpenAlexConfig.ABSTRACT_MAX_LENGTH],
                 year=paper.get("year", "N/A"),
-                cited_by_count=paper.get("cited_by_count", 0)
+                cited_by_count=paper.get("cited_by_count", 0),
+                language=language
             )
             
             # OpenAI API 호출

@@ -28,8 +28,8 @@ class OpenAlexConfig:
     MAX_TOP_K: int = 10   # 최대 반환 개수
     
     # ━━━ LLM 설정 ━━━
-    LLM_MODEL: str = "gpt-4o-mini"
-    #LLM_MODEL: str = "gpt-4o"
+    #LLM_MODEL: str = "gpt-4o-mini"
+    LLM_MODEL: str = "gpt-4o"
     LLM_TEMPERATURE: float = 0.2  # 0.3→0.2 (더 결정적, 빠른 응답)
     MAX_TOKENS_QUERY: int = 150   # 100<-80 (20% 감소)
     MAX_TOKENS_SCORE: int = 200   # 120→200 (reason 잘림 방지)
