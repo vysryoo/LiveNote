@@ -19,7 +19,9 @@ class PromptTemplates:
 
 {context_qp}
 
-현재 강의에서 핵심 개념/정의 질문 1개만 생성. 답변 2-3문장.
+{subject_context}위 기존 질문과 중복되지 않게, 현재 강의에서 핵심 개념/정의 질문 1개만 생성. 답변 4-5문장.
+
+{language_instruction}
 
 JSON 출력 (정확히 이 형식만):
 {{"type":"개념","q":"질문 내용","a":"답변 내용"}}"""
@@ -32,7 +34,9 @@ JSON 출력 (정확히 이 형식만):
 
 {context_qp}
 
-현재 강의의 실제 적용/예시 질문 1개만 생성. 답변 2-3문장.
+{subject_context}위 기존 질문과 중복되지 않게, 현재 강의의 실제 적용/예시 질문 1개만 생성. 답변 4-5문장.
+
+{language_instruction}
 
 JSON 출력 (정확히 이 형식만):
 {{"type":"응용","q":"질문 내용","a":"답변 내용"}}"""
@@ -45,7 +49,9 @@ JSON 출력 (정확히 이 형식만):
 
 {context_qp}
 
-현재 강의의 개념들 비교/대조 질문 1개만 생성. 답변 2-3문장.
+{subject_context}위 기존 질문과 중복되지 않게, 현재 강의의 개념들 비교/대조 질문 1개만 생성. 답변 4-5문장.
+
+{language_instruction}
 
 JSON 출력 (정확히 이 형식만):
 {{"type":"비교","q":"질문 내용","a":"답변 내용"}}"""
@@ -58,7 +64,9 @@ JSON 출력 (정확히 이 형식만):
 
 {context_qp}
 
-현재 강의의 원리/이유 심화 질문 1개만 생성. 답변 2-3문장.
+{subject_context}위 기존 질문과 중복되지 않게, 현재 강의의 원리/이유 심화 질문 1개만 생성. 답변 4-5문장.
+
+{language_instruction}
 
 JSON 출력 (정확히 이 형식만):
 {{"type":"심화","q":"질문 내용","a":"답변 내용"}}"""
@@ -71,7 +79,9 @@ JSON 출력 (정확히 이 형식만):
 
 {context_qp}
 
-현재 강의의 실습 문제 1개만 생성. 구체적 수치/상황 제시. 답변 2-3문장.
+{subject_context}위 기존 질문과 중복되지 않게, 현재 강의의 실습 문제 1개만 생성. 구체적 수치/상황 제시. 답변 4-5문장.
+
+{language_instruction}
 
 JSON 출력 (정확히 이 형식만):
 {{"type":"실습","q":"질문 내용","a":"답변 내용"}}"""
@@ -111,3 +121,26 @@ JSON 출력 (정확히 이 형식만):
             parts.append(f"{i}. [{qa.type}] {qa.question}")
         
         return "\n".join(parts)
+    
+    @classmethod
+    def build_subject_context(cls, subject: str) -> str:
+        """과목 정보를 컨텍스트 형식으로 변환"""
+        if not subject:
+            return ""
+        return f"[과목: {subject}] "
+    
+    @classmethod
+    def build_language_instruction(cls, language: str) -> str:
+        """언어 설정을 지시문으로 변환"""
+        if not language:
+            return ""
+        
+        # 한국어 처리
+        if language.lower() in ["ko", "korean", "한국어"]:
+            return "질문과 답변을 한국어로 작성하세요."
+        # 영어 처리
+        elif language.lower() in ["en", "english", "영어"]:
+            return "Write questions and answers in English."
+        # 기타 언어
+        else:
+            return f"Write questions and answers in {language}."

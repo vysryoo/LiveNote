@@ -58,6 +58,8 @@ class QAService:
         # RAG context와 이전 QA context 분리
         rag_context = self.prompts.build_rag_context(request.rag_context)
         context_qp = self.prompts.build_context_qp(request.previous_qa)
+        subject_context = self.prompts.build_subject_context(request.subject)
+        language_instruction = self.prompts.build_language_instruction(request.language)
         
         # 각 질문 유형별 태스크 생성
         task_map: dict[asyncio.Task, str] = {}
@@ -66,7 +68,9 @@ class QAService:
                 section_summary=request.section_summary,
                 question_type=q_type,
                 rag_context=rag_context,
-                context_qp=context_qp
+                context_qp=context_qp,
+                subject_context=subject_context,
+                language_instruction=language_instruction
             )
             task = asyncio.create_task(coroutine)
             task_map[task] = q_type
@@ -97,7 +101,9 @@ class QAService:
         section_summary: str,
         question_type: str,
         rag_context: str,
-        context_qp: str
+        context_qp: str,
+        subject_context: str = "",
+        language_instruction: str = ""
     ) -> dict:
         """
         단일 질문 생성
@@ -107,6 +113,8 @@ class QAService:
             question_type: 질문 유형
             rag_context: RAG 컨텍스트 (참고용)
             context_qp: 이전 QA (중복 방지용)
+            subject_context: 과목 정보
+            language_instruction: 언어 지시문
         
         Returns:
             {"type": "개념", "question": "...", "answer": "..."}
@@ -116,7 +124,9 @@ class QAService:
         prompt = prompt_template.format(
             section_summary=section_summary,
             rag_context=rag_context,
-            context_qp=context_qp
+            context_qp=context_qp,
+            subject_context=subject_context,
+            language_instruction=language_instruction
         )
         
         # OpenAI API 호출
