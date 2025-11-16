@@ -269,13 +269,25 @@ POST /qa/generate
 }
 ```
 
-**예시 2: 과목 정보 포함 QA 생성**
+**예시 2: 과목 정보 및 이전 QA 포함**
 ```json
 {
   "lecture_id": "002",
   "section_id": 3,
   "section_summary": "이진 탐색 트리의 삽입, 삭제, 검색 연산을 구현하고 시간 복잡도를 분석합니다.",
-  "subject": "자료구조"
+  "subject": "자료구조",
+  "previous_qa": [
+    {
+      "type": "개념",
+      "question": "트리의 기본 개념은 무엇인가요?",
+      "answer": "트리는 계층적 구조를 가진 자료구조로, 루트 노드를 시작으로 부모-자식 관계를 형성합니다."
+    },
+    {
+      "type": "응용",
+      "question": "이진 트리는 어떤 상황에서 사용하나요?",
+      "answer": "이진 트리는 검색, 정렬, 우선순위 큐 구현 등에 활용됩니다."
+    }
+  ]
 }
 ```
 
@@ -287,6 +299,10 @@ POST /qa/generate
 | section_id | int | 예 | 섹션 번호. 1 이상의 정수 |
 | section_summary | string | 예 | 섹션 요약 내용. 최소 10자 이상 권장 |
 | subject | string | 아니오 | 과목 정보 (예: "자료구조", "운영체제"). 질문 생성 시 컨텍스트로 활용 |
+| previous_qa | array | 아니오 | 중복 방지를 위한 이전 QA 목록. 각 항목은 type, question, answer 포함 |
+| previous_qa[].type | string | 예 | 질문 유형 (개념/응용/비교/심화/실습) |
+| previous_qa[].question | string | 예 | 이전 질문 내용 |
+| previous_qa[].answer | string | 예 | 이전 답변 내용 |
 
 ### 출력 이벤트 설명
 
@@ -339,6 +355,7 @@ data: {"total":2,"duration_ms":5128}
 - `lecture_id`에 해당하는 컬렉션이 없으면 HTTP 404 오류 발생
 - `section_summary`가 10자 미만이면 품질 낮은 질문이 생성될 수 있습니다
 - 질문 유형 순서는 LLM 응답 속도에 따라 달라지며 보장되지 않습니다
+- `previous_qa`에 이전 질문을 포함하면 중복 질문 생성을 방지할 수 있습니다
 - OpenAI API 오류 시 일부 질문만 생성될 수 있습니다 (qa_error 이벤트 확인)
 - SSE 연결이 끊기면 클라이언트에서 재시도 로직 구현 필요
 
@@ -347,6 +364,7 @@ data: {"total":2,"duration_ms":5128}
 - 생성되는 질문 수는 `qa_top_k` 설정으로 조정 가능 (기본: 3개)
 - RAG 검색에 사용되는 청크 수는 `RAGSettings.qa_retrieve_top_k`로 조정 (기본: 2개)
 - 비동기 처리로 여러 질문을 동시에 생성하므로 순차 생성보다 빠릅니다
+- `previous_qa`는 동일 섹션에서 여러 번 호출할 때 유용합니다 (추가 질문 생성 시)
 
 ---
 

@@ -5,19 +5,26 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, validator
 
-from cap1_QA_module.qakit.models import QARequest
+from cap1_QA_module.qakit.models import QARequest, PreviousQA
 
 from ..config import AppSettings
 from ..dependencies import get_qa_service, get_rag_service, get_settings
 from ..utils import build_collection_id, format_sse, to_qa_rag_context
 
 router = APIRouter(prefix="/qa", tags=["QA"])
+
+
+class PreviousQAItem(BaseModel):
+    """이전 QA 항목 (API 입력용)"""
+    type: str = Field(..., description="질문 유형 (개념/응용/비교/심화/실습)")
+    question: str = Field(..., description="질문 내용")
+    answer: str = Field(..., description="답변 내용")
 
 
 class QAGenerateRequest(BaseModel):
@@ -27,6 +34,10 @@ class QAGenerateRequest(BaseModel):
     section_id: int = Field(..., ge=1, description="섹션 ID")
     section_summary: str = Field(..., min_length=10, description="섹션 요약")
     subject: Optional[str] = Field(default=None, description="선택 과목 정보")
+    previous_qa: Optional[List[PreviousQAItem]] = Field(
+        default_factory=list,
+        description="중복 방지를 위한 이전 QA 목록"
+    )
 
     @validator("lecture_id")
     def validate_lecture_id(cls, value: str) -> str:
@@ -75,7 +86,11 @@ async def generate_qa(
         language=settings.qa.language,
         question_types=qa_question_types,
         qa_count=len(qa_question_types),
-        rag_context=to_qa_rag_context(rag_chunks)
+        rag_context=to_qa_rag_context(rag_chunks),
+        previous_qa=[
+            PreviousQA(type=item.type, question=item.question, answer=item.answer)
+            for item in request.previous_qa
+        ]
     )
     
     async def event_stream():

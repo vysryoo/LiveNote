@@ -71,14 +71,22 @@ echo
 
 SECTION_SUMMARY="하이퍼 스레딩은 하나의 물리 코어가 두 개의 명령 흐름을 번갈아 실행하여 자원을 더 효율적으로 쓰도록 설계된 동시 멀티스레딩 기술이다."
 
-echo "[*] QA 스트림을 요청합니다 (하이퍼 스레딩)..."
+echo "[*] QA 스트림을 요청합니다 (하이퍼 스레딩, 이전 질문 포함)..."
 curl --no-buffer --max-time 30 -sS -N -X POST "http://$HOST:$PORT/qa/generate" \
      -H "Content-Type: application/json" \
      -d @- <<JSON
 {
   "lecture_id": "${LECTURE_ID}",
   "section_id": 1,
-  "section_summary": "${SECTION_SUMMARY}"
+  "section_summary": "${SECTION_SUMMARY}",
+  "subject": "운영체제",
+  "previous_qa": [
+    {
+      "type": "개념",
+      "question": "멀티프로세싱과 멀티스레딩의 차이점은 무엇인가요?",
+      "answer": "멀티프로세싱은 여러 프로세스가 독립된 메모리 공간에서 실행되는 반면, 멀티스레딩은 하나의 프로세스 내에서 여러 스레드가 메모리를 공유하며 실행됩니다."
+    }
+  ]
 }
 JSON
 echo

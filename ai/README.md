@@ -459,7 +459,15 @@ RAG_PERSIST_DIR="server_storage/chroma_data_real"
   {
     "lecture_id": "001",
     "section_id": 1,
-    "section_summary": "스택과 큐의 차이를 설명한다."
+    "section_summary": "스택과 큐의 차이를 설명한다.",
+    "subject": "자료구조",
+    "previous_qa": [
+      {
+        "type": "개념",
+        "question": "배열이란 무엇인가요?",
+        "answer": "배열은 같은 타입의 데이터를 연속된 메모리에 저장하는 자료구조입니다."
+      }
+    ]
   }
   ```
 - **입력 필드 설명**
@@ -470,6 +478,7 @@ RAG_PERSIST_DIR="server_storage/chroma_data_real"
 | section_id | int | 예 | 섹션 번호 (1 이상) |
 | section_summary | string | 예 | 섹션 요약. 최소 10자 |
 | subject | string | 아니오 | 과목 정보 (선택) |
+| previous_qa | array | 아니오 | 중복 방지를 위한 이전 QA 목록 |
 
 - **출력 이벤트 설명**
 
