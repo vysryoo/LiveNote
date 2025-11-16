@@ -23,6 +23,10 @@ from cap1_youtube_module.youtubekit.models import (
     PreviousSummary as YouTubePreviousSummary,
     YouTubeRequest,
 )
+from cap1_google_module.googlekit.models import (
+    PreviousSummary as GooglePreviousSummary,
+    GoogleRequest,
+)
 
 from ..config import AppSettings
 from ..dependencies import (
@@ -31,6 +35,7 @@ from ..dependencies import (
     get_settings,
     get_wiki_service,
     get_youtube_service,
+    get_google_service,
 )
 from ..utils import (
     build_collection_id,
@@ -38,6 +43,7 @@ from ..utils import (
     to_openalex_rag_chunks,
     to_wiki_rag_chunks,
     to_youtube_rag_chunks,
+    to_google_rag_chunks,
 )
 
 router = APIRouter(prefix="/rec", tags=["REC"])
@@ -61,6 +67,7 @@ class RECRequest(BaseModel):
     yt_exclude: List[str] = Field(default_factory=list, description="제외할 유튜브 제목")
     wiki_exclude: List[str] = Field(default_factory=list, description="제외할 위키 제목")
     paper_exclude: List[str] = Field(default_factory=list, description="제외할 논문 ID")
+    google_exclude: List[str] = Field(default_factory=list, description="제외할 구글 URL")
 
     @validator("lecture_id")
     def validate_lecture_id(cls, value: str) -> str:
@@ -76,9 +83,10 @@ async def recommend_resources(
     openalex_service=Depends(get_openalex_service),
     wiki_service=Depends(get_wiki_service),
     youtube_service=Depends(get_youtube_service),
+    google_service=Depends(get_google_service),
     settings: AppSettings = Depends(get_settings),
 ):
-    """논문/위키/유튜브 추천 SSE 엔드포인트"""
+    """논문/위키/유튜브/구글 추천 SSE 엔드포인트"""
     collection_id = build_collection_id(settings.rag.collection_prefix, request.lecture_id)
     
     def _retrieve():
@@ -115,6 +123,14 @@ async def recommend_resources(
     ]
     youtube_prev = [
         YouTubePreviousSummary(
+            section_id=ps.section_id,
+            summary=ps.summary,
+            timestamp=ps.timestamp
+        )
+        for ps in request.previous_summaries
+    ]
+    google_prev = [
+        GooglePreviousSummary(
             section_id=ps.section_id,
             summary=ps.summary,
             timestamp=ps.timestamp
@@ -166,6 +182,20 @@ async def recommend_resources(
         min_score=settings.rec.youtube.min_score,
     )
     
+    google_request = GoogleRequest(
+        lecture_id=request.lecture_id,
+        section_id=request.section_id,
+        lecture_summary=request.section_summary,
+        language=settings.rec.google.language,
+        top_k=settings.rec.google.top_k,
+        verify_google=settings.rec.google.verify,
+        previous_summaries=google_prev,
+        rag_context=to_google_rag_chunks(rag_chunks),
+        search_lang=settings.rec.google.search_lang,
+        exclude_urls=request.google_exclude,
+        min_score=settings.rec.google.min_score,
+    )
+    
     async def event_stream():
         start = time.perf_counter()
         completed = 0
@@ -183,6 +213,7 @@ async def recommend_resources(
             asyncio.create_task(openalex_service.recommend_papers(openalex_request)): "openalex",
             asyncio.create_task(wiki_service.recommend_pages(wiki_request)): "wiki",
             asyncio.create_task(youtube_service.recommend_videos(youtube_request)): "youtube",
+            asyncio.create_task(google_service.recommend_results(google_request)): "google",
         }
 
         pending = set(tasks.keys())
@@ -193,6 +224,8 @@ async def recommend_resources(
             )
             for finished in done:
                 source = tasks.get(finished, "unknown")
+                elapsed_ms = int((time.perf_counter() - start) * 1000)
+                
                 try:
                     result = await finished
                 except Exception as exc:
@@ -200,6 +233,7 @@ async def recommend_resources(
                         {
                             "source": source,
                             "error": str(exc),
+                            "elapsed_ms": elapsed_ms,
                         },
                         event="rec_error"
                     )
@@ -212,6 +246,7 @@ async def recommend_resources(
                         "source": source,
                         "count": len(payload),
                         "items": payload,
+                        "elapsed_ms": elapsed_ms,
                     },
                     event="rec_partial"
                 )

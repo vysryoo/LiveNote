@@ -35,3 +35,8 @@ async def get_wiki_service(request: Request):
 async def get_youtube_service(request: Request):
     """YouTube 서비스 인스턴스"""
     return request.app.state.youtube_service
+
+
+async def get_google_service(request: Request):
+    """Google 서비스 인스턴스"""
+    return request.app.state.google_service

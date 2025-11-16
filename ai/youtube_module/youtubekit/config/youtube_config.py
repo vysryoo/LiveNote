@@ -28,7 +28,8 @@ class YouTubeConfig:
     # MAX_SEARCH_RESULTS는 flags.py에서 정의 (중복 제거)
     
     # ━━━ LLM 설정 ━━━
-    LLM_MODEL: str = "gpt-4o-mini"
+    #LLM_MODEL: str = "gpt-4o-mini"
+    LLM_MODEL: str = "gpt-4o"
     LLM_TEMPERATURE: float = 0.1
     MAX_TOKENS_QUERY: int = 300   # 쿼리 생성용
     MAX_TOKENS_SUMMARY: int = 400  # 요약 생성용

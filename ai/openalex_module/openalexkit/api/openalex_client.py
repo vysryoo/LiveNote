@@ -81,7 +81,12 @@ class OpenAlexAPIClient:
                 "per_page": per_page if sort_by == "hybrid" else OpenAlexConfig.PER_PAGE
             }
             
-            logger.info(f"🔍 OpenAlex API 호출: {search_str} (정렬: {sort_by})")
+            logger.info(f"🔍 OpenAlex API 요청:")
+            logger.info(f"   ├─ URL: {self.BASE_URL}/works")
+            logger.info(f"   ├─ search: \"{search_str}\"")
+            logger.info(f"   ├─ filters: {filters}")
+            logger.info(f"   ├─ sort: {sort_param}")
+            logger.info(f"   └─ per_page: {params['per_page']}")
             
             response = await self.http_client.get(
                 f"{self.BASE_URL}/works",
@@ -92,6 +97,14 @@ class OpenAlexAPIClient:
             
             works = data.get("results", [])
             logger.info(f"📄 OpenAlex 원본 검색: {len(works)}개")
+            
+            if len(works) == 0:
+                logger.warning(f"⚠️  검색 결과 없음. 가능한 원인:")
+                logger.warning(f"   1. 검색어가 너무 구체적: \"{search_str}\"")
+                logger.warning(f"   2. TOKEN 수가 많음: {len(tokens)}개")
+                logger.warning(f"   3. year_from 필터: {year_from}")
+                logger.warning(f"   해결: TOKEN 줄이기 (2-3개), year_from 조정 (2015)")
+                return []
             
             # 파싱 및 필터링
             papers = []
