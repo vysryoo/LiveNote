@@ -24,10 +24,10 @@ class QASettings(BaseModel):
     
     language: str = Field(default="ko", description="QA 생성 언어")
     question_types: List[str] = Field(
-        default_factory=lambda: ["응용", "비교", "개념"],
+        default_factory=lambda: ["응용", "비교", "개념", "심화"],
         description="생성할 질문 유형"
     )
-    qa_top_k: int = Field(default=3, ge=1, description="QA 생성 개수")
+    qa_top_k: int = Field(default=4, ge=1, description="QA 생성 개수")
 
 
 class OpenAlexSettings(BaseModel):
