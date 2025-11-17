@@ -85,7 +85,7 @@ class GoogleResponse(BaseModel):
     section_id: int = Field(..., description="섹션 번호")
     search_result: GoogleSearchResult = Field(..., description="검색 결과 정보")
     reason: str = Field(..., description="추천 이유 (1-2문장)")
-    score: float = Field(..., ge=0.0, le=10.0, description="관련도 점수 (0-10)")
+    score: float = Field(..., ge=0.0, le=15.0, description="관련도 점수 (0-10, LLM이 초과 가능)")
     
     @field_validator('reason')
     @classmethod

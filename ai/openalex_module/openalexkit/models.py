@@ -79,4 +79,4 @@ class OpenAlexResponse(BaseModel):
     section_id: int = Field(..., description="섹션 번호")
     paper_info: PaperInfo = Field(..., description="논문 정보")
     reason: str = Field(..., description="추천 이유 (1-2문장, 한국어/영어)")
-    score: float = Field(..., ge=0.0, le=10.0, description="관련도 점수 (0-10)")
+    score: float = Field(..., ge=0.0, le=15.0, description="관련도 점수 (0-10, LLM이 초과 가능)")

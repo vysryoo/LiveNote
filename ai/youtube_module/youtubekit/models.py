@@ -103,7 +103,7 @@ class YouTubeResponse(BaseModel):
     section_id: int = Field(..., description="섹션 번호")
     video_info: YouTubeVideoInfo = Field(..., description="동영상 정보")
     reason: str = Field(..., description="추천 이유 (1-2문장)")
-    score: float = Field(..., ge=0.0, le=10.0, description="관련도 점수 (0-10)")
+    score: float = Field(..., ge=0.0, le=15.0, description="관련도 점수 (0-10, LLM이 초과 가능)")
     
     @field_validator('reason')
     @classmethod
