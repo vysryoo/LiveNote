@@ -63,6 +63,10 @@ def create_app(
     app = FastAPI(
         title="LiveNote AI Gateway",
         version="1.0.0",
+        description="LiveNote AI 서비스를 위한 통합 API Gateway",
+        docs_url="/docs",
+        redoc_url="/redoc",
+        openapi_url="/openapi.json",
         lifespan=lifespan
     )
     

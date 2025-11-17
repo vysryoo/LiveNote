@@ -64,8 +64,8 @@ case $choice in
         docker-compose up -d --build
         echo ""
         echo "✅ 서버 실행 완료!"
-        echo "   • 상태 확인: curl http://localhost:8000/health"
-        echo "   • API 문서: http://localhost:8000/docs"
+        echo "   • 상태 확인: curl http://localhost:8003/health"
+        echo "   • API 문서: http://localhost:8003/docs"
         echo "   • 로그 보기: docker-compose logs -f"
         echo "   • 중지: docker-compose down"
         ;;
