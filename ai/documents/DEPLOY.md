@@ -14,7 +14,7 @@ sudo service docker start
 sudo usermod -a -G docker ec2-user
 
 # 재로그인 후
-docker pull yourusername/livenote-api:latest
+docker pull hwkimcode/livenote_ai_api:latest
 
 # .env 파일 준비
 cat > .env << 'EOF'
@@ -30,7 +30,7 @@ docker run -d \
   --env-file .env \
   -v ./server_storage:/app/server_storage \
   --restart unless-stopped \
-  yourusername/livenote-api:latest
+  hwkimcode/livenote_ai_api:latest
 
 # 보안 그룹에서 8003 포트 열기
 # 확인: http://your-ec2-ip:8003/health
@@ -79,7 +79,7 @@ echo '/swapfile swap swap defaults 0 0' | sudo tee -a /etc/fstab
 ### 1. Docker Hub에서 받기 (이미지 공유 후)
 ```bash
 # 이미지 다운로드
-docker pull yourusername/livenote-api:latest
+docker pull hwkimcode/livenote_ai_api:latest
 
 # .env 파일 준비
 cat > .env << 'EOF'
@@ -95,7 +95,7 @@ docker run -d \
   --env-file .env \
   -v ./server_storage:/app/server_storage \
   --restart unless-stopped \
-  yourusername/livenote-api:latest
+  hwkimcode/livenote_ai_api:latest
 
 # 확인
 curl http://localhost:8003/health
@@ -115,7 +115,7 @@ docker run -d \
   --env-file .env \
   -v ./server_storage:/app/server_storage \
   --restart unless-stopped \
-  livenote-gateway
+  livenote_ai_api:latest
 ```
 
 ## 이미지 빌드 & 공유 (개발자용)
@@ -129,18 +129,18 @@ docker-compose build
 docker login
 
 # 3. 태그
-docker tag livenote-gateway yourusername/livenote-api:latest
-docker tag livenote-gateway yourusername/livenote-api:v1.0.0
+docker tag livenote_ai_api:latest hwkimcode/livenote_ai_api:latest
+docker tag livenote_ai_api:latest hwkimcode/livenote_ai_api:v1.0.0
 
 # 4. 푸시
-docker push yourusername/livenote-api:latest
-docker push yourusername/livenote-api:v1.0.0
+docker push hwkimcode/livenote_ai_api:latest
+docker push hwkimcode/livenote_ai_api:v1.0.0
 ```
 
 ### tar 파일로 저장
 ```bash
 # 이미지 저장 (압축)
-docker save livenote-gateway | gzip > livenote-api.tar.gz
+docker save livenote_ai_api:latest | gzip > livenote_ai_api.tar.gz
 
 # 로드
 gunzip -c livenote-api.tar.gz | docker load
@@ -184,7 +184,7 @@ docker run -d \
 version: '3.8'
 services:
   livenote-api:
-    image: yourusername/livenote-api:latest
+    image: hwkimcode/livenote_ai_api:latest
     container_name: livenote-gateway
     ports:
       - "8003:8003"
