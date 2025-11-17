@@ -61,3 +61,4 @@ test_result/
 *.env
 !.env.example
 AI서버명세서.txt
+sireal-key.pem
