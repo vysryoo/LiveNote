@@ -1,11 +1,33 @@
+#spring:
+#  datasource:
+#    url: jdbc:mysql://localhost:3306/livenote?serverTimezone=Asia/Seoul
+#    username: root
+#    password: 1017
+
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/livenote?serverTimezone=Asia/Seoul
-    username: root
-    password: 1017
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+ai:
+  server:
+    url: ${AI_SERVER_URL}
+
+openai:
+  api:
+    key: ${OPENAI_API_KEY}
+
+jwt:
+  secret: ${JWT_SECRET}
+
+
   jpa:
-    hibernate.ddl-auto: create
-    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
   servlet:
     multipart:
       max-file-size: 200MB
