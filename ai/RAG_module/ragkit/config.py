@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 def _default_persist_dir() -> str:
-    return os.getenv("RAG_PERSIST_DIR", "./test_chroma_data")
+    return os.getenv("RAG_PERSIST_DIR", "server_storage/chroma_data")
 
 
 def _default_embedding_model() -> str:
