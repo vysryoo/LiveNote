@@ -1,804 +1,607 @@
-예상 질문/답변을 생성
-- method : POST
-- path : /qa/generate
+# LiveNote AI Gateway - API 명세서
 
-**Request Body (예시)**
+## 목차
+- [1. Health 체크](#1-health-체크)
+- [2. RAG 업서트](#2-rag-업서트)
+  - [2.1 PDF 업서트](#21-pdf-업서트)
+  - [2.2 텍스트 업서트](#22-텍스트-업서트)
+- [3. QA 생성](#3-qa-생성)
+- [4. REC 추천](#4-rec-추천)
+- [5. 공통 사항](#5-공통-사항)
 
+---
+
+## 1. Health 체크
+
+### 형식
+- **Content-Type**: N/A (요청 본문 없음)
+
+### HTTP 메서드
+```
+GET /health
+```
+
+### 본문 예시
+요청 본문 없음
+
+### 입력 필드 설명
+입력 필드 없음
+
+### 출력 필드 설명
+
+| 필드명 | 타입 | 설명 |
+|--------|------|------|
+| status | string | 서버 상태. 정상일 경우 `"ok"` |
+
+### 응답
+
+**예시 1: 정상 응답**
 ```json
 {
-  "lecture_id": "session_abc123",
-  "section_id": 3,
-  "section_summary": "스택의 실전 응용: 괄호 검사, 후위 표기법 계산...",
-  "subject": "CS",
-  "language": "ko",
-  "question_types": ["개념", "응용", "심화"],
-  "qa_count": 3,
-  "rag_context": {
-    "chunks": [
-      { "text": "스택은 LIFO 구조입니다...", "score": 0.92, "metadata": {"section_id": 1} },
-      { "text": "큐는 FIFO 구조입니다...", "score": 0.65, "metadata": {"section_id": 2} }
-    ]
-  },
-  "previous_qa": [
-    { "type": "개념", "question": "배열이란 무엇인가요?", "answer": "배열은 같은 타입의 데이터를..." }
+  "status": "ok"
+}
+```
+
+**예시 2: 서버 오류 (500)**
+```json
+{
+  "detail": "Internal Server Error"
+}
+```
+
+### 주의 사항
+- 서버가 실행 중이지 않으면 연결 거부 오류가 발생합니다
+- 이 엔드포인트는 인증이 필요 없습니다
+
+### 참고
+- 로드 밸런서나 모니터링 도구에서 헬스 체크용으로 사용됩니다
+- 응답 시간이 느리면 서버 과부하 상태일 수 있습니다
+
+---
+
+## 2. RAG 업서트
+
+### 2.1 PDF 업서트
+
+#### 형식
+- **Content-Type**: `multipart/form-data`
+
+#### HTTP 메서드
+```
+POST /rag/pdf-upsert
+```
+
+#### 본문 예시
+
+**예시 1: 기본 PDF 업로드**
+```
+lecture_id: "lec-001"
+file: [PDF 파일 바이너리]
+```
+
+**예시 2: 메타데이터 포함 업로드**
+```
+lecture_id: "lec-002"
+file: [PDF 파일 바이너리]
+base_metadata: {"subject": "데이터구조", "professor": "홍길동", "year": 2024}
+```
+
+#### 입력 필드 설명
+
+| 필드명 | 타입 | 필수 | 설명 |
+|--------|------|------|------|
+| lecture_id | string | 예 | 강의를 식별하는 고유 ID. 공백 포함 불가, 영문/숫자/하이픈 권장 |
+| file | file (PDF) | 예 | 업로드할 PDF 파일. 최대 크기는 서버 설정에 따름 |
+| base_metadata | string(JSON) | 아니오 | 모든 페이지에 공통으로 적용할 메타데이터. JSON 문자열 형식 |
+
+#### 출력 필드 설명
+
+| 필드명 | 타입 | 설명 |
+|--------|------|------|
+| collection_id | string | 저장된 Chroma 컬렉션 이름. 형식: `lecture_<lecture_id>` |
+| result.collection_id | string | 실제 업서트된 컬렉션 ID (확인용) |
+| result.count | int | 업서트된 PDF 페이지 수 |
+| result.embedding_dim | int | 임베딩 벡터 차원 (OpenAI text-embedding-3-large: 3072) |
+
+#### 응답
+
+**예시 1: 성공 응답 (3페이지 PDF)**
+```json
+{
+  "collection_id": "lecture_lec-001",
+  "result": {
+    "collection_id": "lecture_lec-001",
+    "count": 3,
+    "embedding_dim": 3072
+  }
+}
+```
+
+**예시 2: 성공 응답 (10페이지 PDF, 메타데이터 포함)**
+```json
+{
+  "collection_id": "lecture_lec-002",
+  "result": {
+    "collection_id": "lecture_lec-002",
+    "count": 10,
+    "embedding_dim": 3072
+  }
+}
+```
+
+#### 주의 사항
+- PDF 파일이 아닌 경우 HTTP 400 오류 발생
+- 빈 PDF 파일 업로드 시 HTTP 400 오류 발생
+- `base_metadata`가 올바른 JSON 형식이 아니면 HTTP 400 오류 발생
+- 동일한 `lecture_id`로 재업로드 시 기존 데이터를 덮어씁니다
+- 텍스트가 없는 이미지 PDF는 추출 결과가 없을 수 있습니다
+
+#### 참고
+- PDF 추출에는 `PyMuPDF(fitz)` 라이브러리를 사용합니다
+- 각 페이지는 별도 청크로 저장되며 `page` 메타데이터가 자동 부여됩니다
+- 대용량 PDF (100페이지 이상)는 처리 시간이 길어질 수 있습니다
+- 암호화된 PDF는 지원하지 않습니다
+
+---
+
+### 2.2 텍스트 업서트
+
+#### 형식
+- **Content-Type**: `application/json`
+
+#### HTTP 메서드
+```
+POST /rag/text-upsert
+```
+
+#### 본문 예시
+
+**예시 1: 기본 텍스트 업로드**
+```json
+{
+  "lecture_id": "001",
+  "items": [
+    {"text": "스택은 LIFO(Last In First Out) 구조입니다."},
+    {"text": "큐는 FIFO(First In First Out) 구조입니다."}
   ]
 }
 ```
 
-**Response Body (예시)**
-
+**예시 2: 메타데이터 포함 업로드**
 ```json
 {
-  "lecture_id": "session_abc123",
-  "section_id": 3,
-	"data" : 
-	[
-	  { "type": "개념", "question": "스택에서 괄호 검사는 어떻게 동작하나요?", "answer": "여는 괄,...(2~3문장)" },
-	  { "type": "응용", "question": "후위 표기법 계산을 스택으로 어떻게 구현하나요?", "answer": "숫자는 push..." },
-	  { "type": "심화", "question": "왜 괄호 검사에 스택을 사용하나요?", "answer": "LIFO 특성이..." }
-	]
-}
-```
-
-- 400 잘못된 요청
-
-```json
-{
-  "error": "섹션 요약이 너무 짧습니다",
-  "detail": { "field": "section_summary", "min_length": 10, "received_length": 7 }
-}
-```
-
-- 500 서버오류
-
-```json
-{
-  "error": "질문 생성 중 오류가 발생했습니다",
-  "detail": { "message": "OpenAI timeout" }
-}
-```
-
-| 필드 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| lecture_id | string | ✅ | 세션 식별자 |
-| section_id | integer | ✅ | 현재 섹션 번호 |
-| section_summary | string | ✅ | 현재 섹션 요약. (10자 이상) |
-| subject | string | ❌ | 과목/도메인 키 |
-| language | string | ❌ | 응답 언어(디폴트 ko) |
-| question_types | string[] | ❌ | 생성할 질문 유형 목록(`개념`, `응용`, `비교` 을 기본으로 사용하면됨!) |
-| qa_count | integer | ❌ | 생성 개수(기본 3~5권장) |
-| rag_context | object[] | ❌ | RAG 검색 결과(텍스트, 점수, 메타데이터) |
-| previous_qa | object[] | ❌ | 중복 방지용 과거 QA |
-
-| 필드명 | 타입 | 설명 |
-| --- | --- | --- |
-| lecture_id | string | 섹션 식별자 |
-| section_id | integer | 현재 섹션 번호 |
-| data.type | string | 질문 유형(개념/응용/비교/심화/실습) |
-| data.question | string | 생성된 질문 |
-| data.answer | string | 생성된 답변(2~3문장) |
-
----
-
-텍스트 업서트(요약저장)
-
-- Method: POST
-- Path: /rag/upsert-text
-- Headers: Content-Type: application/json
-
-**Request Body (예시)**
-
-```json
-{
-  "collection_id": "session_abc123", //lecture_id 그대로 써도 됨. 같은 PK임.
+  "lecture_id": "002",
   "items": [
     {
-      "text": "스택은 LIFO 구조입니다. push와 pop으로 데이터를 관리하며...",
-      "metadata": {
-        "section_id": 1,
-        "timestamp": 1703001234567,
-        "duration": 60,
-        "subject": "CS"
-      }
-    }
-  ]
-}
-
-```
-
-**Response Body (예시)**
-
-```json
-{
-  "collection_id": "session_abc123",
-  "count": 1,
-  "embedding_dim": 3072
-}
-
-```
-
-- 400 잘못된 요청
-
-```json
-{
-  "error": "잘못된 요청 본문입니다",
-  "detail": {
-    "field": "items[0].text",
-    "message": "텍스트는 비어 있을 수 없습니다"
-  }
-}
-
-```
-
-- 500 서버오류
-
-```json
-{
-  "error": "업서트 처리 중 오류가 발생했습니다",
-  "detail": { "message": "OpenAI timeout" }
-}
-```
-
-- 입력필드 상세
-
-| 필드 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| collection_id | string | ✅ | 저장 대상 컬렉션 ID. 실시간 세션은 lecture_ID 사용 권장(e.g., session_abc123). 영문/숫자/하이픈/언더스코어만 허용. |
-| items | object[] | ✅ | 업서트할 청크 목록. 최소 1개. |
-| items[].text | string | ✅ | 저장할 섹션 요약 텍스트(비어있으면 안 됨). |
-| items[].metadata | object | ❌ | 검색/필터용 메타데이터(자유 필드). 아래 권장 키 사용 가능. |
-| └ section_id | integer | 권장 | 섹션 번호(1부터). |
-| └ type | string | 권장 | “summary”로 기본 저장됨.
-”lecture note”는 강의노트.
-같은 콜렉션에서 종류 구분 용도. |
-| └ timestamp | integer | 권장 | 밀리초 epoch(예: 1703001234567). |
-| └ duration | integer | 권장 | 섹션 길이(초). |
-| └ subject | string | 권장 | 과목 키(e.g., CS). |
-- 출력필드 상세
-    
-    
-    | 필드명 | 타입 | 설명 |
-    | --- | --- | --- |
-    | collection_id | string | 저장된 컬렉션 ID(Echo). |
-    | count | integer | 저장(업서트)된 청크 수. |
-    | embedding_dim | integer | 임베딩 벡터 차원(정보용, 예: 3072). |
-
-유의사항
-
-- 이 엔드포인트는 실시간 섹션 요약 저장용입니다(PDF 업로드 아님).
-- collection_id는 세션 단위로 고정 사용을 권장합니다(예: session_abc123). 혹은 lectureID
-- metadata는 자유 확장 가능하며, 인덱싱/필터링에 활용됩니다.
-- 내부적으로 임베딩 생성 후 벡터DB(ChromaDB)에 텍스트와 메타데이터를 함께 저장합니다.
-- 내부 개별 ID는 자동 생성되며 응답에는 포함하지 않습니다.
-
-검증/규칙 요약
-
-- collection_id가 비어있거나 허용 문자 집합을 벗어나면 400.
-- items가 비어있거나 items[].text가 비어있으면 400.
-- 서버 측 임베딩/벡터DB 오류 시 500.
-
----
-
-PDF 업서트(강의노트 저장)
-
-- method : POST
-- path : /rag/upsert-pdf
-
-Request Body (예시)
-
-```json
-{
-  "collection_id": "lecture_notes_cs",
-  "pdf_path": "/data/notes/data_structure.pdf",
-  "metadata": {
-    "subject": "CS",
-    "course": "데이터구조",
-    "language": "ko"
-  }
-}
-
-```
-
-Response Body (예시)
-
-```json
-{
-  "collection_id": "lecture_notes_cs",
-  "count": 20,
-  "embedding_dim": 3072
-}
-
-```
-
-- 400 잘못된 요청
-
-```json
-{
-  "error": "잘못된 요청 본문입니다",
-  "detail": {
-    "field": "pdf_path",
-    "message": "파일을 찾을 수 없습니다 또는 비어 있습니다"
-  }
-}
-
-```
-
-- 500 서버오류
-
-```json
-{
-  "error": "업서트 처리 중 오류가 발생했습니다",
-  "detail": { "message": "OpenAI timeout" }
-}
-
-```
-
-### 2) 입력필드
-
-| 필드 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| collection_id | string | ✅ | 강의/노트 컬렉션 식별자. 내부적으로 collection_id로 사용. 외부에서는 lecture_id 써도 무관. 같은 pk |
-| pdf_path | string | ✅ | AI 서버가 직접 읽을 수 있는 PDF 파일 경로(절대 경로 권장). |
-| metadata | object | ❌ | 모든 페이지에 공통 적용할 메타데이터. |
-| └subject | string | 선택 | 과목 키(예: CS). |
-| └type | string | 권장 | ”lecture note”로 기본 저장됨.
-“summary”는 강의노트.
-같은 콜렉션에서 종류 구분 용도. |
-| └course | string | 선택 | 강좌명/코스명. |
-| └language | string | 선택 | 문서 언어(예: ko, en). |
-- 출력필드 상세
-    
-    
-    | 필드명 | 타입 | 설명 |
-    | --- | --- | --- |
-    | collection_id | string | 저장된 컬렉션 ID(Echo). |
-    | count | integer | 저장(업서트)된 페이지 수. |
-    | embedding_dim | integer | 임베딩 벡터 차원(정보용, 예: 3072). |
-
-검증/규칙 요약
-
-- lecture_id는 비어 있으면 안 됨(영문/숫자/하이픈/언더스코어 사용 권장).
-- pdf_path가 비어있거나 파일이 존재하지 않으면 400.
-- 내부 임베딩/벡터DB 오류는 500.
-
-비고
-
-- 이 엔드포인트는 강의노트 PDF 저장용입니다(요약 텍스트 저장 아님).
-- 파일 바이너리 업로드가 아닌 경로 기반(JSON) 입력만 처리합니다.
-- 응답의 collection_id는 요청 lecture_id와 동일합니다.
-
----
-
-검색(retrieve)
-
-- Method: POST
-- Path: /rag/retrieve
-- Headers: Content-Type: application/json
-
-Request Body (예시)
-
-```json
-{
-  "collection_id": "session_abc123",
-  "query": "스택의 실전 응용: 괄호 검사...",
-  "top_k": 3,
-  "filters": {
-    "subject": "CS",
-    "min_timestamp": 1703000000000
-  }
-}
-```
-
-Response Body (예시)
-
-```json
-{
-  "collection_id": "session_abc123",
-  "query": "스택의 실전 응용: 괄호 검사...",
-  "top_k": 3,
-  "chunks": [
-    { "id": "7f3e9a2b1c4d5e", "text": "스택은 LIFO 구조입니다...", "score": 0.92, "metadata": { "section_id": 1 } },
-    { "id": "auto_...", "text": "스택의 실전 응용: 괄호 검사...", "score": 0.88, "metadata": { "section_id": 3 } },
-    { "id": "auto_...", "text": "큐는 FIFO 구조입니다...", "score": 0.65, "metadata": { "type": "lecture note" } }
-  ]
-}
-
-```
-
-- 400 잘못된 요청
-
-```json
-{
-  "error": "잘못된 요청 본문입니다",
-  "detail": { "field": "query", "message": "쿼리는 비어 있을 수 없습니다" }
-}
-
-```
-
-- 400 파라미터 충돌
-
-```json
-{
-  "error": "컬렉션 파라미터 오류",
-  "detail": { "message": "collection_id 또는 collections 중 하나만 제공하세요" }
-}
-
-```
-
-- 500 서버오류
-
-```json
-{
-  "error": "검색 처리 중 오류가 발생했습니다",
-  "detail": { "message": "timeout" }
-}
-
-```
-
-### 2) 입력필드
-
-| 필드 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| collection_id | string | ✅ | 강의/노트 컬렉션 식별자. 내부적으로 collection_id로 사용. 외부에서는 lecture_id 써도 무관. 같은 pk |
-| query | string | ✅ | 검색 쿼리 텍스트 |
-| top_k | interger | ✅ | 반환할 개수(2,3 권장). 관련된 내용 몇개까지 긁어올지 내용입니다. |
-| filters | object | 선택 | 메타데이터 기반 필터. |
-| filters.subject | string | 선택 | metadata.subject 일치 필터 |
-| filter.confidence | number | 선택 |  score >= confidence 인 것만 뽑아옴. top_K 안 지켜질 수 있음. |
-| filters.section_id | integer | 선택 | 특정 섹션만. |
-| filters.min_timestamp | integer | 선택 | 최소 타임스탬프 |
-| filters.max_timestamp | integer | 선택 | 최대 타임스탬프 |
-| filters.custom | object | 선택 |  임의의 키=값 일치 필터(Chroma where로 전달). |
-- 출력필드 상세
-    
-    
-    | 필드명 | 타입 | 설명 |
-    | --- | --- | --- |
-    | collection_id | string | 요청 echo(단일 요청 시) |
-    | query | string | 요청 쿼리 echo |
-    | top_k | integer | 요청된 상위 개수(필터 후 상한) |
-    | chunks | object[] | 결과 목록(점수 내림차순). |
-    | .chunks[].text:  | string | 원문 텍스트. |
-    | chunks[].score:  —  | number | 유사도 점수(1/(1+distance)). |
-    | chunks[].metadata  | object | 저장된 메타데이터 그대로 반환. |
-
-유의사항
-
-- collection_id 비우면400.
-- collection_id는 영문/숫자/하이픈/언더스코어만 권장(기타 문자는 400 처리 권장).
-- 점수는 Chroma distance를 1/(1+distance)로 변환한 유사도이며 높을수록 유사함.
-- filters.subject/section_id/custom은 동등 비교로 처리(Chroma where). min/max_timestamp는 검색 후 메모리에서 후필터링.
-- 결과는 점수 내림차순 정렬 후 top_k 적용. 멀티 컬렉션의 경우 컬렉션별 검색→병합→정렬→top_k 적용.
-
-검증/규칙 요약
-
-- query가 비어 있으면 400.
-- collection_id와 collections를 동시에 제공하면 400.
-- collections가 비어 있거나 유효하지 않으면 400.
-- 서버 측 임베딩/벡터DB 오류 시 500.
-
----
-유튜브 학습 영상 추천
-
-- Method: POST
-- Path: /youtube/recommend
-- Headers: Content-Type: application/json
-
-Request Body (예시)
-
-```json
-{
-  "lecture_id": "lecture_cs101",
-  "section_id": 3,
-  "lecture_summary": "스택 오버플로 방지와 재귀 호출 스택 동작을 정리한 섹션입니다.",
-  "language": "ko",
-  "top_k": 3,
-  "verify_yt": true,
-  "yt_lang": "en",
-  "min_score": 6.0,
-  "exclude_titles": [
-    "Stack Data Structure Basics"
-  ],
-  "previous_summaries": [
-    {
-      "section_id": 1,
-      "summary": "스택은 LIFO 구조이며 push/pop 연산으로 동작합니다.",
-      "timestamp": 1703000600000
-    }
-  ],
-  "rag_context": [
-    {
-      "text": "호출 스택과 재귀 함수의 종료 조건 설명",
-      "score": 0.88,
-      "source": "lecture_notes.pdf#page=5",
-      "metadata": { "section_id": 2 }
-    }
-  ]
-}
-```
-
-Response Body (예시)
-
-```json
-{
-  "lecture_id": "lecture_cs101",
-  "section_id": 3,
-  "videos": [
-    {
-      "score": 8.9,
-      "reason": "재귀 호출에서 스택 프레임이 어떻게 관리되는지 실습 코드로 확인할 수 있습니다.",
-      "video_info": {
-        "title": "Preventing Stack Overflow in Recursive Functions",
-        "url": "https://www.youtube.com/watch?v=abcd1234",
-        "extract": "Explains recursion call stacks, overflow scenarios, and mitigation patterns.",
-        "lang": "en"
-      }
+      "text": "이진 탐색 트리는 각 노드가 최대 2개의 자식을 갖습니다.",
+      "section_id": "1",
+      "metadata": {"topic": "트리", "difficulty": "중"}
     },
     {
-      "score": 8.3,
-      "reason": "스택 기반 수식 계산 사례를 시각적으로 설명합니다.",
-      "video_info": {
-        "title": "Stack Applications: Postfix Evaluation",
-        "url": "https://www.youtube.com/watch?v=wxyz5678",
-        "extract": "Walks through postfix evaluation using stack operations with sample code.",
-        "lang": "en"
-      }
+      "text": "AVL 트리는 자가 균형 이진 탐색 트리입니다.",
+      "section_id": "2",
+      "metadata": {"topic": "트리", "difficulty": "상"}
     }
   ]
 }
 ```
 
-- 400 잘못된 요청
+#### 입력 필드 설명
 
+| 필드명 | 타입 | 필수 | 설명 |
+|--------|------|------|------|
+| lecture_id | string | 예 | 강의 ID. PDF 업서트와 동일한 ID 사용 시 동일 컬렉션에 저장됨 |
+| items | array | 예 | 업서트할 텍스트 항목 배열. 최소 1개 이상 |
+| items[].text | string | 예 | 저장할 텍스트 내용. 최소 10자 권장 |
+| items[].id | string | 아니오 | 사용자 정의 문서 ID. 없으면 `uuid4()` 자동 생성 |
+| items[].section_id | string | 아니오 | 섹션 ID. metadata에 `section_id` 키로 자동 병합됨 |
+| items[].metadata | object | 아니오 | 추가 메타데이터. 없으면 `{"source": "text"}` 자동 부여 |
+
+#### 출력 필드 설명
+
+| 필드명 | 타입 | 설명 |
+|--------|------|------|
+| collection_id | string | 저장된 컬렉션 ID. 형식: `lecture_<lecture_id>` |
+| result.collection_id | string | 실제 업서트된 컬렉션 ID (확인용) |
+| result.count | int | 업서트된 텍스트 문서 수 |
+| result.embedding_dim | int | 임베딩 벡터 차원 (OpenAI text-embedding-3-large: 3072) |
+
+#### 응답
+
+**예시 1: 성공 응답 (2개 항목)**
 ```json
 {
-  "error": "lecture_summary 길이가 너무 짧습니다",
-  "detail": {
-    "field": "lecture_summary",
-    "min_length": 10,
-    "received_length": 6
+  "collection_id": "lecture_001",
+  "result": {
+    "collection_id": "lecture_001",
+    "count": 2,
+    "embedding_dim": 3072
   }
 }
 ```
 
-- 500 서버오류
-
+**예시 2: 성공 응답 (메타데이터 포함, 5개 항목)**
 ```json
 {
-  "error": "YouTube 추천 중 외부 API 오류가 발생했습니다",
-  "detail": { "message": "YouTube Data API quota exhausted" }
+  "collection_id": "lecture_002",
+  "result": {
+    "collection_id": "lecture_002",
+    "count": 5,
+    "embedding_dim": 3072
+  }
 }
 ```
 
-### 1) 입력필드
+#### 주의 사항
+- `items` 배열이 비어있으면 HTTP 400 오류 발생
+- `text` 필드가 비어있거나 너무 짧으면 임베딩 품질이 낮아질 수 있습니다
+- 동일한 `lecture_id`로 여러 번 호출 시 기존 데이터에 추가됩니다 (덮어쓰지 않음)
+- `metadata`가 비어있으면 자동으로 `{"source": "text"}` 부여
+- `section_id` 값은 metadata에도 병합되어 저장됩니다
 
-| 필드 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| lecture_id | string | ✅ | 강의 세션 식별자. 기존 session_id 대신 사용. |
-| section_id | integer | ✅ | 현재 섹션 번호(1 이상). |
-| lecture_summary | string | ✅ | 현재 섹션 요약(최소 10자). |
-| language | string | ❌ | 추천 설명 언어 (`ko`/`en`, 기본 `ko`). |
-| top_k | integer | ❌ | 반환할 영상 수(1~10, 기본 5). |
-| verify_yt | boolean | ❌ | True면 LLM 검증, False면 휴리스틱 검증(기본 False). |
-| previous_summaries | object[] | ❌ | 이전 섹션 요약 리스트(컨텍스트 보강). |
-| └ section_id | integer | ❌ | 이전 섹션 번호. |
-| └ summary | string | ❌ | 이전 섹션 요약 텍스트. |
-| └ timestamp | integer | ❌ | 요약 생성 시각(ms, 선택). |
-| rag_context | object[] | ❌ | RAG 검색 결과 청크 목록. text 또는 content 제공. |
-| └ text | string | ❌ | 청크 본문. content가 존재하면 자동으로 사용. |
-| └ score | number | ❌ | 유사도 점수(0~1 권장). |
-| └ source | string | ❌ | 출처 정보(파일명, 문서 페이지 등). |
-| └ metadata | object | ❌ | 추가 메타데이터. |
-| yt_lang | string | ❌ | YouTube 검색 언어(기본 `en`). |
-| exclude_titles | string[] | ❌ | 제외할 영상 제목 목록. |
-| min_score | number | ❌ | 추천 최소 점수(0~10, 기본 5.0). |
-
-- 출력필드 상세
-
-| 필드명 | 타입 | 설명 |
-| --- | --- | --- |
-| lecture_id | string | 요청 echo. |
-| section_id | integer | 요청 섹션 번호 echo. |
-| videos | object[] | 추천된 영상 리스트. (최대 top_k) |
-| videos[].video_info.title | string | 영상 제목. |
-| videos[].video_info.url | string | 영상 URL. |
-| videos[].video_info.extract | string | 2~3문장 요약. |
-| videos[].video_info.lang | string | 영상 언어 코드. |
-| videos[].reason | string | 추천 이유(1~2문장). |
-| videos[].score | number | 관련도 점수(0.0~10.0). |
-
-유의사항
-
-- YouTube Data API 키와 OpenAI API 키가 환경변수로 설정돼 있어야 정상 동작합니다.
-- verify_yt=False일 때는 휴리스틱 점수만 사용하므로 품질이 낮을 수 있습니다.
-- 최소 점수(min_score)보다 낮은 영상은 응답에서 자동 제거됩니다.
+#### 참고
+- 텍스트 업서트는 PDF 업서트보다 훨씬 빠릅니다
+- STT(음성→텍스트) 결과나 강의 요약을 저장하는 용도로 적합합니다
+- 메타데이터는 추후 필터링 검색에 활용할 수 있습니다
+- 대량 업서트 시 배치 크기는 100~200개 권장 (메모리 효율)
 
 ---
 
-위키피디아 문서 추천
+## 3. QA 생성
 
-- Method: POST
-- Path: /wiki/recommend
-- Headers: Content-Type: application/json
+### 형식
+- **Content-Type**: `application/json`
+- **Response**: `text/event-stream` (SSE)
 
-Request Body (예시)
+### HTTP 메서드
+```
+POST /qa/generate
+```
 
+### 본문 예시
+
+**예시 1: 기본 QA 생성**
 ```json
 {
-  "lecture_id": "lecture_cs101",
-  "section_id": 3,
-  "lecture_summary": "스택을 활용한 괄호 검사와 후위 표기법 계산을 설명한 섹션입니다.",
-  "language": "ko",
-  "top_k": 4,
-  "verify_wiki": true,
-  "wiki_lang": "en",
-  "fallback_to_ko": true,
-  "min_score": 5.5,
-  "previous_summaries": [
-    {
-      "section_id": 2,
-      "summary": "큐는 FIFO 구조이며 버퍼 관리에 사용됩니다."
-    }
-  ],
-  "rag_context": [
-    {
-      "text": "자료구조에서 스택과 큐의 차이점을 정리한 표",
-      "score": 0.91,
-      "metadata": { "section_id": 2 }
-    }
-  ],
-  "exclude_titles": [
-    "Stack (abstract data type)"
-  ]
+  "lecture_id": "001",
+  "section_id": 1,
+  "section_summary": "스택과 큐의 차이점을 설명하고, 각각의 사용 사례를 다룹니다."
 }
 ```
 
-Response Body (예시)
-
+**예시 2: 과목 정보 및 이전 QA 포함**
 ```json
 {
-  "lecture_id": "lecture_cs101",
+  "lecture_id": "002",
   "section_id": 3,
-  "pages": [
+  "section_summary": "이진 탐색 트리의 삽입, 삭제, 검색 연산을 구현하고 시간 복잡도를 분석합니다.",
+  "subject": "자료구조",
+  "previous_qa": [
     {
-      "score": 9.1,
-      "reason": "스택 기반 괄호 검사 알고리즘과 후위 표기법 평가 과정을 모두 설명합니다.",
-      "page_info": {
-        "title": "Stack (abstract data type)",
-        "url": "https://en.wikipedia.org/wiki/Stack_(abstract_data_type)",
-        "extract": "Defines stack operations and covers algorithmic use cases such as parsing and expression evaluation.",
-        "lang": "en",
-        "page_id": 12345
-      }
+      "type": "개념",
+      "question": "트리의 기본 개념은 무엇인가요?",
+      "answer": "트리는 계층적 구조를 가진 자료구조로, 루트 노드를 시작으로 부모-자식 관계를 형성합니다."
     },
     {
-      "score": 8.6,
-      "reason": "후위 표기법 계산 예제를 제공해 학습 흐름을 보완합니다.",
-      "page_info": {
-        "title": "Reverse Polish notation",
-        "url": "https://en.wikipedia.org/wiki/Reverse_Polish_notation",
-        "extract": "Explains postfix notation, evaluation rules, and historic usage in computing.",
-        "lang": "en",
-        "page_id": 67890
-      }
+      "type": "응용",
+      "question": "이진 트리는 어떤 상황에서 사용하나요?",
+      "answer": "이진 트리는 검색, 정렬, 우선순위 큐 구현 등에 활용됩니다."
     }
   ]
 }
 ```
 
-- 400 잘못된 요청
+### 입력 필드 설명
 
-```json
-{
-  "error": "lecture_summary가 최소 길이 요건을 충족하지 않습니다",
-  "detail": {
-    "field": "lecture_summary",
-    "min_length": 10,
-    "received_length": 8
-  }
-}
+| 필드명 | 타입 | 필수 | 설명 |
+|--------|------|------|------|
+| lecture_id | string | 예 | RAG 컬렉션과 매핑되는 강의 ID. 사전에 업서트된 ID여야 함 |
+| section_id | int | 예 | 섹션 번호. 1 이상의 정수 |
+| section_summary | string | 예 | 섹션 요약 내용. 최소 10자 이상 권장 |
+| subject | string | 아니오 | 과목 정보 (예: "자료구조", "운영체제"). 질문 생성 시 컨텍스트로 활용 |
+| previous_qa | array | 아니오 | 중복 방지를 위한 이전 QA 목록. 각 항목은 type, question, answer 포함 |
+| previous_qa[].type | string | 예 | 질문 유형 (개념/응용/비교/심화/실습) |
+| previous_qa[].question | string | 예 | 이전 질문 내용 |
+| previous_qa[].answer | string | 예 | 이전 답변 내용 |
+
+### 출력 이벤트 설명
+
+| 이벤트 타입 | 주요 필드 | 설명 |
+|------------|-----------|------|
+| qa_context | collection_id, chunk_count | QA 생성 전 사용된 컬렉션 ID 및 검색된 청크 수 |
+| qa_partial | type, qa{question, answer}, index | 각 질문 유형별 생성 결과. 완료 순서대로 전송 |
+| qa_error | type, error | 특정 유형 생성 실패 시 오류 정보 |
+| qa_complete | total, duration_ms | 전체 생성 완료. 생성된 질문 수와 총 소요 시간 |
+
+### 응답
+
+**예시 1: 정상 SSE 스트림 (3개 질문 생성)**
+```
+event: qa_context
+data: {"event":"context_ready","collection_id":"lecture_001","chunk_count":2}
+
+event: qa_partial
+data: {"type":"개념","qa":{"type":"개념","question":"스택과 큐의 주요 차이점은 무엇인가요?","answer":"스택은 LIFO(Last In First Out) 방식으로 마지막에 들어간 데이터가 먼저 나오는 구조이고, 큐는 FIFO(First In First Out) 방식으로 먼저 들어간 데이터가 먼저 나오는 구조입니다."},"index":1}
+
+event: qa_partial
+data: {"type":"응용","qa":{"type":"응용","question":"웹 브라우저의 뒤로가기 기능은 스택과 큐 중 어느 자료구조를 사용하나요?","answer":"웹 브라우저의 뒤로가기 기능은 스택을 사용합니다. 가장 최근에 방문한 페이지부터 역순으로 돌아가야 하므로 LIFO 구조가 적합합니다."},"index":2}
+
+event: qa_partial
+data: {"type":"심화","qa":{"type":"심화","question":"우선순위 큐를 구현할 때 힙(Heap) 자료구조를 사용하는 이유는 무엇인가요?","answer":"힙은 삽입과 삭제 연산이 O(log n) 시간 복잡도를 가지므로, 우선순위 큐의 핵심 연산인 최댓값/최솟값 추출을 효율적으로 수행할 수 있습니다."},"index":3}
+
+event: qa_complete
+data: {"total":3,"duration_ms":4521}
 ```
 
-- 500 서버오류
+**예시 2: 일부 실패 포함 SSE 스트림**
+```
+event: qa_context
+data: {"event":"context_ready","collection_id":"lecture_002","chunk_count":3}
 
-```json
-{
-  "error": "Wikipedia 추천 중 외부 API 오류가 발생했습니다",
-  "detail": { "message": "MediaWiki API timeout" }
-}
+event: qa_partial
+data: {"type":"개념","qa":{"type":"개념","question":"이진 탐색 트리의 정의는 무엇인가요?","answer":"이진 탐색 트리는 각 노드가 최대 2개의 자식을 가지며, 왼쪽 서브트리의 모든 값은 부모 노드보다 작고 오른쪽 서브트리의 모든 값은 부모 노드보다 큰 특성을 만족하는 트리입니다."},"index":1}
+
+event: qa_error
+data: {"type":"응용","error":"OpenAI API rate limit exceeded"}
+
+event: qa_partial
+data: {"type":"심화","qa":{"type":"심화","question":"AVL 트리에서 회전(Rotation) 연산이 필요한 이유는 무엇인가요?","answer":"AVL 트리는 모든 노드의 왼쪽과 오른쪽 서브트리 높이 차이가 1 이하여야 하는 균형 조건을 유지해야 합니다. 회전 연산은 삽입/삭제 후 이 균형을 복구하는 데 사용됩니다."},"index":2}
+
+event: qa_complete
+data: {"total":2,"duration_ms":5128}
 ```
 
-### 1) 입력필드
+### 주의 사항
+- `lecture_id`에 해당하는 컬렉션이 없으면 HTTP 404 오류 발생
+- `section_summary`가 10자 미만이면 품질 낮은 질문이 생성될 수 있습니다
+- 질문 유형 순서는 LLM 응답 속도에 따라 달라지며 보장되지 않습니다
+- `previous_qa`에 이전 질문을 포함하면 중복 질문 생성을 방지할 수 있습니다
+- OpenAI API 오류 시 일부 질문만 생성될 수 있습니다 (qa_error 이벤트 확인)
+- SSE 연결이 끊기면 클라이언트에서 재시도 로직 구현 필요
 
-| 필드 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| lecture_id | string | ✅ | 강의 세션 식별자. |
-| section_id | integer | ✅ | 현재 섹션 번호(1 이상). |
-| lecture_summary | string | ✅ | 현재 섹션 요약(최소 10자). |
-| language | string | ❌ | 응답 언어(`ko`/`en`, 기본 `en`). |
-| top_k | integer | ❌ | 반환할 문서 수(1~10, 기본 5). |
-| verify_wiki | boolean | ❌ | True면 LLM 검증, False면 휴리스틱(기본 True). |
-| previous_summaries | object[] | ❌ | 이전 섹션 요약 리스트. |
-| └ section_id | integer | ❌ | 이전 섹션 번호. |
-| └ summary | string | ❌ | 이전 섹션 요약. |
-| └ timestamp | integer | ❌ | 요약 생성 시각(ms, 선택). |
-| rag_context | object[] | ❌ | RAG 검색 결과 청크 목록. |
-| └ text | string | ❌ | 청크 본문. |
-| └ score | number | ❌ | 유사도 점수. |
-| └ metadata | object | ❌ | 추가 메타데이터. |
-| wiki_lang | string | ❌ | Wikipedia 검색 언어(기본 `en`). |
-| fallback_to_ko | boolean | ❌ | 영문 결과 부족 시 한국어 보충 여부(기본 True). |
-| exclude_titles | string[] | ❌ | 제외할 문서 제목 리스트. |
-| min_score | number | ❌ | 추천 최소 점수(0~10, 기본 5.0). |
-
-- 출력필드 상세
-
-| 필드명 | 타입 | 설명 |
-| --- | --- | --- |
-| lecture_id | string | 요청 echo. |
-| section_id | integer | 요청 섹션 번호 echo. |
-| pages | object[] | 추천된 위키 문서 리스트. |
-| pages[].page_info.title | string | 문서 제목. |
-| pages[].page_info.url | string | 문서 URL. |
-| pages[].page_info.extract | string | Wikipedia에서 가져온 요약(3문장 내외). |
-| pages[].page_info.lang | string | 문서 언어 코드. |
-| pages[].page_info.page_id | integer | Wikipedia 페이지 ID. |
-| pages[].reason | string | 추천 이유(1~2문장). |
-| pages[].score | number | 관련도 점수(0.0~10.0). |
-
-유의사항
-
-- verify_wiki=True일 때 OpenAI API 키가 필수입니다.
-- fallback_to_ko=True면 영문 결과 부족 시 한국어 검색을 자동 수행합니다.
-- min_score 아래 문서는 제거되며, 남는 문서가 없으면 빈 배열을 반환합니다.
+### 참고
+- 질문 유형은 `server/config.py`의 `QASettings.question_types`에서 설정 (기본: 개념/응용/심화)
+- 생성되는 질문 수는 `qa_top_k` 설정으로 조정 가능 (기본: 3개)
+- RAG 검색에 사용되는 청크 수는 `RAGSettings.qa_retrieve_top_k`로 조정 (기본: 2개)
+- 비동기 처리로 여러 질문을 동시에 생성하므로 순차 생성보다 빠릅니다
+- `previous_qa`는 동일 섹션에서 여러 번 호출할 때 유용합니다 (추가 질문 생성 시)
 
 ---
 
-학술 논문 추천 (OpenAlex)
+## 4. REC 추천
 
-- Method: POST
-- Path: /openalex/recommend
-- Headers: Content-Type: application/json
+### 형식
+- **Content-Type**: `application/json`
+- **Response**: `text/event-stream` (SSE)
 
-Request Body (예시)
+### HTTP 메서드
+```
+POST /rec/recommend
+```
 
+### 본문 예시
+
+**예시 1: 기본 추천 요청**
 ```json
 {
-  "lecture_id": "lecture_cs101",
+  "lecture_id": "001",
+  "section_id": 1,
+  "section_summary": "스택과 큐의 차이점을 설명하고 활용 사례를 다룹니다.",
+  "previous_summaries": [],
+  "yt_exclude": [],
+  "wiki_exclude": [],
+  "paper_exclude": [],
+  "google_exclude": []
+}
+```
+
+**예시 2: 이전 섹션 및 제외 항목 포함 요청**
+```json
+{
+  "lecture_id": "002",
   "section_id": 3,
-  "section_summary": "스택의 실전 응용과 함수 호출 스택의 구조를 설명한 섹션입니다.",
-  "language": "ko",
-  "top_k": 5,
-  "verify_openalex": true,
-  "year_from": 2018,
-  "sort_by": "hybrid",
-  "min_score": 6.0,
-  "exclude_ids": [
-    "https://openalex.org/W123456789"
-  ],
+  "section_summary": "이진 탐색 트리의 삽입, 삭제, 검색 연산을 구현합니다.",
   "previous_summaries": [
-    {
-      "section_id": 1,
-      "summary": "스택의 기본 개념과 push/pop 연산을 다룹니다.",
-      "timestamp": 1703000300000
-    }
+    {"section_id": 1, "summary": "트리의 기본 개념과 용어"},
+    {"section_id": 2, "summary": "이진 트리의 순회 방법"}
   ],
-  "rag_context": [
-    {
-      "text": "스택 기반 후위 표기법 계산 알고리즘",
-      "score": 0.93,
-      "metadata": { "section_id": 2 }
-    }
-  ]
+  "yt_exclude": ["Binary Search Tree Basics"],
+  "wiki_exclude": ["이진 트리"],
+  "paper_exclude": ["W2103456789"],
+  "google_exclude": ["https://example.com/old-tutorial"]
 }
 ```
 
-Response Body (예시)
+### 입력 필드 설명
 
-```json
-{
-  "lecture_id": "lecture_cs101",
-  "section_id": 3,
-  "papers": [
-    {
-      "score": 9.3,
-      "reason": "스택을 활용한 식 평가 알고리즘을 논문 수준으로 정리한 자료입니다.",
-      "paper_info": {
-        "title": "Stack-Based Algorithms for Expression Evaluation",
-        "url": "https://doi.org/10.1145/1234567",
-        "abstract": "Presents stack-based parsing and evaluation strategies for arithmetic expressions.",
-        "year": 2021,
-        "cited_by_count": 134,
-        "authors": [
-          "Jane Doe",
-          "John Smith"
-        ]
-      }
-    },
-    {
-      "score": 8.7,
-      "reason": "재귀 호출과 스택 프레임 분석을 다뤄 강의 심화 학습에 적합합니다.",
-      "paper_info": {
-        "title": "Analyzing Call Stack Behavior in Modern Languages",
-        "url": "https://openalex.org/W987654321",
-        "abstract": "Analyzes call stack growth, overflow mitigation, and debugging techniques.",
-        "year": 2019,
-        "cited_by_count": 82,
-        "authors": [
-          "Alice Kim",
-          "Robert Lee"
-        ]
-      }
-    }
-  ]
-}
+| 필드명 | 타입 | 필수 | 설명 |
+|--------|------|------|------|
+| lecture_id | string | 예 | RAG 컬렉션과 매핑되는 강의 ID. 사전에 업서트된 ID여야 함 |
+| section_id | int | 예 | 섹션 번호. 1 이상의 정수 |
+| section_summary | string | 예 | 현재 섹션 요약 내용 |
+| previous_summaries | array | 아니오 | 이전 섹션 요약 목록. `section_id`는 1 이상이어야 함 |
+| yt_exclude | array[string] | 아니오 | 추천에서 제외할 유튜브 영상 제목 목록 |
+| wiki_exclude | array[string] | 아니오 | 추천에서 제외할 위키피디아 문서 제목 목록 |
+| paper_exclude | array[string] | 아니오 | 추천에서 제외할 논문 ID(OpenAlex ID) 목록 |
+| google_exclude | array[string] | 아니오 | 추천에서 제외할 구글 검색 결과 URL 목록 |
+
+### 출력 이벤트 설명
+
+| 이벤트 타입 | 주요 필드 | 설명 |
+|------------|-----------|------|
+| rec_context | collection_id, chunk_count | 추천 생성 전 사용된 컬렉션 ID 및 검색된 청크 수 |
+| rec_partial | source, count, items[], elapsed_ms | 각 Provider의 추천 결과. 완료 순서대로 전송 (source: openalex/wiki/youtube/google) |
+| rec_error | source, error, elapsed_ms | 특정 Provider 실패 시 오류 정보 |
+| rec_complete | completed_sources, duration_ms | 전체 완료. 성공한 Provider 수와 총 소요 시간 |
+
+**items[] 구조 (Provider별 차이)**:
+- **OpenAlex**: `{id, title, authors, year, cited_by_count, publication_date, url, abstract, score, reason}`
+- **Wikipedia**: `{title, url, language, extract, score, reason}`
+- **YouTube**: `{video_id, title, channel_title, published_at, view_count, url, description, score, reason}`
+- **Google**: `{title, url, snippet, score, reason}`
+
+### 응답
+
+**예시 1: 정상 SSE 스트림 (4개 Provider 모두 성공)**
+```
+event: rec_context
+data: {"event":"context_ready","collection_id":"lecture_001","chunk_count":3}
+
+event: rec_partial
+data: {"source":"wiki","count":2,"items":[{"title":"스택 (자료 구조)","url":"https://ko.wikipedia.org/wiki/%EC%8A%A4%ED%83%9D_(%EC%9E%90%EB%A3%8C_%EA%B5%AC%EC%A1%B0)","language":"ko","extract":"스택(stack)은 제한적으로 접근할 수 있는 나열 구조이다...","score":85.5,"reason":"스택의 개념과 구현을 잘 설명함"},{"title":"큐 (자료 구조)","url":"https://ko.wikipedia.org/wiki/%ED%81%90_(%EC%9E%90%EB%A3%8C_%EA%B5%AC%EC%A1%B0)","language":"ko","extract":"큐(queue)는 컴퓨터의 기본적인 자료 구조의 한가지로...","score":82.0,"reason":"큐의 기본 개념과 활용 사례 포함"}],"elapsed_ms":1234}
+
+event: rec_partial
+data: {"source":"youtube","count":2,"items":[{"video_id":"XYZ123","title":"Stack and Queue Explained","channel_title":"CS Academy","published_at":"2024-01-15T10:00:00Z","view_count":150000,"url":"https://www.youtube.com/watch?v=XYZ123","description":"Learn the differences between stack and queue...","score":78.5,"reason":"시각적 설명이 우수하고 예제가 풍부함"},{"video_id":"ABC456","title":"Data Structures: Stacks & Queues","channel_title":"Tech Tutorials","published_at":"2024-02-20T14:30:00Z","view_count":95000,"url":"https://www.youtube.com/watch?v=ABC456","description":"Complete guide to stack and queue implementation...","score":75.0,"reason":"구현 코드 예제 포함"}],"elapsed_ms":2156}
+
+event: rec_partial
+data: {"source":"openalex","count":2,"items":[{"id":"W2103456789","title":"Efficient Stack and Queue Implementations","authors":["John Smith","Jane Doe"],"year":2023,"cited_by_count":45,"publication_date":"2023-05-10","url":"https://openalex.org/W2103456789","abstract":"This paper presents novel implementations of stack and queue...","score":88.0,"reason":"최신 연구이며 인용 횟수가 높음"},{"id":"W1987654321","title":"Comparative Analysis of Stack-Based Algorithms","authors":["Alice Brown"],"year":2022,"cited_by_count":32,"publication_date":"2022-09-15","url":"https://openalex.org/W1987654321","abstract":"We compare various stack-based algorithms...","score":80.5,"reason":"알고리즘 비교 분석이 상세함"}],"elapsed_ms":3421}
+
+event: rec_partial
+data: {"source":"google","count":2,"items":[{"title":"Stack vs Queue: Complete Guide","url":"https://www.geeksforgeeks.org/stack-vs-queue/","snippet":"Learn the key differences between stack and queue data structures...","score":90.0,"reason":"실무 예제와 코드 구현이 포함됨"},{"title":"Understanding Stacks and Queues","url":"https://www.tutorialspoint.com/data_structures/stack_queue.htm","snippet":"A comprehensive tutorial on stack and queue operations...","score":85.5,"reason":"초보자 친화적인 설명"}],"elapsed_ms":1876}
+
+event: rec_complete
+data: {"completed_sources":4,"duration_ms":5421}
 ```
 
-- 400 잘못된 요청
+**예시 2: 일부 Provider 실패 포함 SSE 스트림**
+```
+event: rec_context
+data: {"event":"context_ready","collection_id":"lecture_002","chunk_count":3}
 
-```json
-{
-  "error": "section_summary가 최소 길이 요건을 충족하지 않습니다",
-  "detail": {
-    "field": "section_summary",
-    "min_length": 10,
-    "received_length": 5
-  }
-}
+event: rec_partial
+data: {"source":"wiki","count":1,"items":[{"title":"이진 탐색 트리","url":"https://ko.wikipedia.org/wiki/%EC%9D%B4%EC%A7%84_%ED%83%90%EC%83%89_%ED%8A%B8%EB%A6%AC","language":"ko","extract":"이진 탐색 트리(binary search tree)는...","score":87.0,"reason":"개념 설명이 명확함"}],"elapsed_ms":1123}
+
+event: rec_error
+data: {"source":"youtube","error":"YouTube API quota exceeded","elapsed_ms":456}
+
+event: rec_partial
+data: {"source":"openalex","count":2,"items":[{"id":"W3012345678","title":"Binary Search Trees: A Survey","authors":["Bob Johnson"],"year":2024,"cited_by_count":12,"publication_date":"2024-03-01","url":"https://openalex.org/W3012345678","abstract":"This survey covers recent advances in binary search tree...","score":82.5,"reason":"최신 서베이 논문"}],"elapsed_ms":2987}
+
+event: rec_partial
+data: {"source":"google","count":2,"items":[{"title":"Binary Search Tree Implementation","url":"https://www.programiz.com/dsa/binary-search-tree","snippet":"Learn how to implement binary search tree with examples...","score":88.5,"reason":"코드 예제가 명확함"}],"elapsed_ms":1654}
+
+event: rec_complete
+data: {"completed_sources":3,"duration_ms":4987}
 ```
 
-- 500 서버오류
+### 주의 사항
+- `lecture_id`에 해당하는 컬렉션이 없으면 HTTP 404 오류 발생
+- `previous_summaries`의 `section_id`는 1 이상이어야 하며, 현재 `section_id`보다 작아야 합니다
+- Provider별 API 키가 없거나 할당량 초과 시 해당 Provider는 `rec_error` 이벤트 발생
+- 4개 Provider가 모두 실패하면 `completed_sources: 0`으로 종료됩니다
+- exclude 배열에 너무 많은 항목이 있으면 추천 결과가 적어질 수 있습니다
 
-```json
-{
-  "error": "OpenAlex 추천 처리 중 외부 API 오류가 발생했습니다",
-  "detail": { "message": "OpenAlex service unavailable" }
-}
-```
-
-### 1) 입력필드
-
-| 필드 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| lecture_id | string | ✅ | 강의 세션 식별자. (기존 session_id 대체) |
-| section_id | integer | ✅ | 현재 섹션 번호(1 이상). |
-| section_summary | string | ✅ | 현재 섹션 요약(최소 10자). |
-| language | string | ❌ | 응답 언어(`ko`/`en`, 기본 `ko`). |
-| top_k | integer | ❌ | 반환할 논문 수(1~10, 기본 5). |
-| verify_openalex | boolean | ❌ | True면 LLM 검증, False면 휴리스틱(기본 True). |
-| previous_summaries | object[] | ❌ | 이전 섹션 요약 리스트. |
-| └ section_id | integer | ❌ | 이전 섹션 번호. |
-| └ summary | string | ❌ | 이전 섹션 요약. |
-| └ timestamp | integer | ❌ | 요약 생성 시각(ms, 선택). |
-| rag_context | object[] | ❌ | RAG 검색 결과 청크 목록. |
-| └ text | string | ❌ | 청크 본문. |
-| └ score | number | ❌ | 유사도 점수. |
-| └ metadata | object | ❌ | 추가 메타데이터. |
-| year_from | integer | ❌ | 검색 시작 연도(YYYY, 기본 2015). |
-| exclude_ids | string[] | ❌ | 제외할 논문 ID/URL 목록. |
-| sort_by | string | ❌ | 정렬 기준(`relevance`, `cited_by_count`, `hybrid`). |
-| min_score | number | ❌ | 추천 최소 점수(0~10, 기본 5.0). |
-
-- 출력필드 상세
-
-| 필드명 | 타입 | 설명 |
-| --- | --- | --- |
-| lecture_id | string | 요청 echo. |
-| section_id | integer | 요청 섹션 번호 echo. |
-| papers | object[] | 추천된 논문 리스트. |
-| papers[].paper_info.title | string | 논문 제목. |
-| papers[].paper_info.url | string | 논문 URL (DOI/OpenAlex). |
-| papers[].paper_info.abstract | string | 논문 초록 요약. |
-| papers[].paper_info.year | integer | 출판 연도(선택). |
-| papers[].paper_info.cited_by_count | integer | 인용 수. |
-| papers[].paper_info.authors | string[] | 저자 이름 목록. |
-| papers[].reason | string | 추천 이유(1~2문장). |
-| papers[].score | number | 관련도 점수(0.0~10.0). |
-
-유의사항
-
-- FastAPI 래퍼에서는 기존 session_id 대신 lecture_id 필드를 사용합니다.
-- verify_openalex=True일 때 OpenAI API 키가 필요합니다.
-- year_from 필터로 최신 논문을 우선 추천할 수 있으며, min_score 미만 논문은 제거됩니다.
+### 참고
+- 4개 Provider(OpenAlex, Wiki, YouTube, Google)는 병렬로 실행되며 완료 순서는 보장되지 않습니다
+- 각 Provider의 상세 동작은 다음 문서를 참조하세요:
+  - OpenAlex: `documents/REC_OPENALEX_동작과정.md`
+  - YouTube: `documents/REC_YOUTUBE_동작과정.md`
+  - Google: `documents/REC_GOOGLE_동작과정.md`
+  - Wikipedia: `documents/REC_WIKI_동작과정.md`
+- Provider별 `top_k`, `verify`, `min_score` 등은 `server/config.py`에서 조정 가능
+- RAG 검색에 사용되는 청크 수는 `RAGSettings.rec_retrieve_top_k`로 조정 (기본: 3개)
 
 ---
+
+## 5. 공통 사항
+
+### 5.1 HTTP 상태 코드
+
+| 코드 | 의미 | 발생 상황 |
+|------|------|-----------|
+| 200 | OK | 요청 성공 (업서트 완료) |
+| 400 | Bad Request | 잘못된 입력 (필수 필드 누락, 형식 오류) |
+| 404 | Not Found | 존재하지 않는 컬렉션 (lecture_id) |
+| 422 | Unprocessable Entity | 유효성 검증 실패 (Pydantic 모델) |
+| 500 | Internal Server Error | 서버 내부 오류 (OpenAI/Chroma 오류 등) |
+
+### 5.2 오류 응답 형식
+
+**JSON 오류 응답**:
+```json
+{
+  "detail": "Collection lecture_999 does not exist"
+}
+```
+
+**SSE 오류 이벤트**:
+```
+event: qa_error
+data: {"type":"응용","error":"OpenAI API rate limit exceeded"}
+```
+
+### 5.3 SSE 연결
+
+**cURL 예시**:
+```bash
+curl -v -N -X POST http://127.0.0.1:8000/qa/generate \
+  -H "Content-Type: application/json" \
+  -d '{"lecture_id":"001","section_id":1,"section_summary":"..."}'
+```
+
+**JavaScript 예시**:
+```javascript
+const eventSource = new EventSource('http://127.0.0.1:8000/qa/generate', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    lecture_id: '001',
+    section_id: 1,
+    section_summary: '스택과 큐의 차이점'
+  })
+});
+
+eventSource.addEventListener('qa_partial', (e) => {
+  const data = JSON.parse(e.data);
+  console.log('질문 생성:', data);
+});
+
+eventSource.addEventListener('qa_complete', (e) => {
+  const data = JSON.parse(e.data);
+  console.log('완료:', data);
+  eventSource.close();
+});
+```
+
+### 5.4 타임아웃 및 재시도
+
+- **연결 타임아웃**: 30초 (서버 설정)
+- **읽기 타임아웃**: 120초 (SSE 스트림)
+- **재시도 정책**:
+  - 업서트: 즉시 재시도 가능
+  - QA/REC: 3초 대기 후 재시도 권장 (OpenAI rate limit 고려)
+
+### 5.5 동시성 제한
+
+- **업서트**: 제한 없음 (단, Chroma 락 발생 가능)
+- **QA 생성**: 동시 10개 요청 권장
+- **REC 추천**: 동시 5개 요청 권장 (4개 Provider × 동시성)
+
+### 5.6 데이터 크기 제한
+
+- **PDF 파일**: 최대 100MB (서버 설정 조정 가능)
+- **텍스트 항목**: 항목당 최대 10,000자 권장
+- **배열 크기**: 
+  - `items[]`: 최대 500개
+  - `previous_summaries[]`: 최대 10개
+  - `*_exclude[]`: 각각 최대 50개
+
+### 5.7 보안 고려사항
+
+- 현재 버전은 인증 미구현 (내부 네트워크 전용)
+- 운영 환경 배포 시 JWT 또는 API 키 인증 추가 권장
+- CORS 설정은 `server/app.py`에서 조정 가능
+- HTTPS 사용 권장 (API 키 노출 방지)
+
+### 5.8 로깅 및 디버깅
+
+- 서버 로그: `uvicorn server.main:app --log-level info`
+- 각 모듈 로그: Python `logging` 모듈 사용
+- 디버그 모드: `--log-level debug` (상세 로그 출력)
+- 로그 파일: 기본적으로 stdout (파일 로깅은 별도 설정 필요)
+
+---
+
+**문서 버전**: 1.0  
+**작성일**: 2025년 11월 15일  
+**기준 코드**: module_intergration v1.0
