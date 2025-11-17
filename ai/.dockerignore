@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+*.egg
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitmodules
+
+# Environment & Config
+.env
+.env.*
+!.env.example
+
+# Test & Documentation
+tests/
+test_*.py
+*_test.py
+pytest.ini
+*.md
+!README.md
+
+# Logs
+*.log
+
+# Data (depending on your strategy)
+server_storage/uploads/
+server_storage/chroma_data/
+server_storage/chroma_data_real/
+test_data/
+test_result/
+
+# Submodule specific venvs
+cap1_*/.venv/
+cap1_*/.env
+cap1_*/tests/
+cap1_*/test_*.py
