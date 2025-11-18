@@ -60,3 +60,29 @@ jobs:
           file: ./src/Dockerfile           # 네 Dockerfile 경로
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:latest
+
+      # 8. EC2 SSH 접속 후 Docker 이미지 pull & 새 컨테이너 실행
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            echo "🔹 Docker Hub 로그인"
+            sudo docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+
+            echo "🔹 최신 이미지 pull"
+            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:latest
+
+            echo "🔹 기존 컨테이너 종료 및 삭제"
+            sudo docker stop livenote || true
+            sudo docker rm livenote || true
+
+            echo "🔹 새 컨테이너 실행"
+            sudo docker run -d \
+              --name livenote \
+              -p 8080:8080 \
+              ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:latest
+
+            echo "🎉 배포 완료!"
