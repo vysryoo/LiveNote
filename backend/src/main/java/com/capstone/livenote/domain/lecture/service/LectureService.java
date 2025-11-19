@@ -45,12 +45,24 @@ public class LectureService {
     public void delete(Long id){
         lectureRepo.deleteById(id);
     }
+//    @Transactional
+//    public void startProcessing(Long id){
+//        lectureRepo.updateStatus(id, Lecture.Status.RECORDING);
+//    }
+//    @Transactional
+//    public void complete(Long id){
+//        lectureRepo.updateStatus(id, Lecture.Status.COMPLETED);
+//    }
+
     @Transactional
-    public void startProcessing(Long id){
+    public void startRecording(Long id) {
         lectureRepo.updateStatus(id, Lecture.Status.RECORDING);
     }
+
+    // 강의 종료 (녹음 끝 + 상태 COMPLETED)
     @Transactional
-    public void complete(Long id){
+    public void endLecture(Long id) {
         lectureRepo.updateStatus(id, Lecture.Status.COMPLETED);
     }
+
 }

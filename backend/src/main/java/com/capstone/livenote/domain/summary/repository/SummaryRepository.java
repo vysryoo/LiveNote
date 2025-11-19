@@ -16,6 +16,4 @@ public interface SummaryRepository extends JpaRepository<Summary, Long> {
     List<Summary> findByLectureIdAndSectionIndexGreaterThanOrderBySectionIndexAsc(
             Long lectureId, Integer sinceSection);
 
-    //Optional<Summary> findByLectureIdAndChunkIndex(Long lectureId, Integer chunkIndex);
-
 }

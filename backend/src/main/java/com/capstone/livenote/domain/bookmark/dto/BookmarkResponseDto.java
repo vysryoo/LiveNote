@@ -12,7 +12,7 @@ public class BookmarkResponseDto {
     private Long id;
     private Long lectureId;
     private Integer sectionIndex;
-    private String targetType; // "resource" / "qna"
+    private Bookmark.TargetType targetType; // "resource" / "qna"
     private Long targetId;
 
     public static BookmarkResponseDto from(Bookmark b) {
@@ -20,7 +20,7 @@ public class BookmarkResponseDto {
                 b.getId(),
                 b.getLectureId(),
                 b.getSectionIndex(),
-                b.getTargetType().name().toLowerCase(),
+                b.getTargetType(),
                 b.getTargetId()
         );
     }
