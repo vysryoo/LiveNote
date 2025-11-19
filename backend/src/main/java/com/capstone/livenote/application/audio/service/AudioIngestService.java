@@ -18,7 +18,7 @@ import java.io.IOException;
  * 플로우:
  * 1. 오디오 파일 저장 (로컬)
  * 2. OpenAI Whisper로 STT 처리
- * 3. Transcript 저장 (TranscriptService 위임)
+ * 3. Transcript 저장
  */
 @Service
 @RequiredArgsConstructor

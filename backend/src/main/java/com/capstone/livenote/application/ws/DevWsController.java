@@ -1,5 +1,6 @@
 package com.capstone.livenote.application.ws;
 
+import com.capstone.livenote.domain.summary.dto.SummaryResponseDto;
 import com.capstone.livenote.domain.transcript.dto.TranscriptResponseDto;
 import com.capstone.livenote.global.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -28,8 +29,12 @@ public class DevWsController {
     // 2) 요약/리소스/QnA도 필요하면 비슷하게
     @PostMapping("/lectures/{lectureId}/summary")
     public ApiResponse<Void> pushSummary(@PathVariable Long lectureId) {
-        var summary = Map.of("sectionIndex", 3, "text", "테스트 요약입니다.");
-        streamGateway.sendSummary(lectureId, summary);
+        streamGateway.sendSummary(
+                lectureId,
+                3,                        // sectionIndex (테스트용)
+                "테스트 요약입니다.",        // text
+                "FINAL"                  // phase: "PARTIAL" or "FINAL"
+        );
         return ApiResponse.ok();
     }
 }

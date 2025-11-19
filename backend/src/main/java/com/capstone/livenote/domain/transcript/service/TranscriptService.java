@@ -8,66 +8,52 @@ import com.capstone.livenote.domain.transcript.repository.TranscriptRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.capstone.livenote.application.ai.service.SectionAggregationService;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// STT 저장, 섹션/요약 트리거만
 @Service
 @RequiredArgsConstructor
 public class TranscriptService {
+
     private final TranscriptRepository transcriptRepository;
-    private final SummaryService summaryService; // 30초 요약 업서트용
-    //private final StreamGateway streamGateway;
+    // private final SummaryService summaryService;      // 예전 30초 요약용 (사용 안 하면 삭제해도 됨)
+    private final SectionAggregationService sectionAggregationService;
 
     @Transactional(readOnly = true)
-    public List<Transcript> findSince(Long lectureId, Integer sinceSec){
+    public List<Transcript> findSince(Long lectureId, Integer sinceSec) {
         if (sinceSec == null) {
             return transcriptRepository.findByLectureIdOrderByStartSecAsc(lectureId);
         }
         return transcriptRepository.findByLectureIdAndStartSecGreaterThanOrderByStartSecAsc(lectureId, sinceSec);
     }
 
-
     /**
      * STT 결과 저장 및 후속 처리
      * 플로우:
      * 1. Transcript 저장
-     * 2. WebSocket으로 실시간 전송
-     * 3. 30초 윈도우 요약 트리거
+     * 2. (섹션/요약/AI 요청 로직) 트리거
+     * 3. 저장된 내용을 DTO로 반환 → 호출한 쪽에서 WebSocket push
      */
     @Transactional
-    public void saveFromStt(Long lectureId, Integer startSec, Integer endSec, String text) {
-        int sectionIndex = Math.floorDiv(startSec, 30);
-
-        // 1) Transcript 저장
-        Transcript saved = transcriptRepository.save(
+    public TranscriptResponseDto saveFromStt(Long lectureId, int startSec, int endSec, String text) {
+        // 1) Transcript 엔티티 저장
+        Transcript t = transcriptRepository.save(
                 Transcript.builder()
                         .lectureId(lectureId)
-                        .sectionIndex(sectionIndex)
                         .startSec(startSec)
                         .endSec(endSec)
                         .text(text)
                         .build()
         );
 
-        System.out.println("[TranscriptService] Saved transcript: id=" + saved.getId() +
-                " section=" + sectionIndex);
+        // 2) 섹션/요약/AI 요청 로직 트리거
+        sectionAggregationService.onNewTranscript(lectureId, startSec, endSec, text);
 
-        // 2) WebSocket으로 실시간 전송
-        Map<String, Object> transcriptData = new HashMap<>();
-        transcriptData.put("id", saved.getId());
-        transcriptData.put("lectureId", saved.getLectureId());
-        transcriptData.put("sectionIndex", saved.getSectionIndex());
-        transcriptData.put("startSec", saved.getStartSec());
-        transcriptData.put("endSec", saved.getEndSec());
-        transcriptData.put("text", saved.getText());
-
-        //streamGateway.sendTranscript(lectureId, transcriptData, true);
-
-        // 3) 30초 윈도우 요약 생성 트리거
-        int windowStart = sectionIndex * 30;
-        int windowEnd = (sectionIndex + 1) * 30;
-        summaryService.summarizeWindow(lectureId, windowStart, windowEnd);
+        // 3) 호출한 쪽(AudioWebSocketHandler 등)에서 WebSocket 전송하도록 DTO 반환
+        return TranscriptResponseDto.from(t);
     }
 }
