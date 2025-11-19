@@ -1,16 +1,20 @@
 package com.capstone.livenote.domain.summary.dto;
 
 import com.capstone.livenote.domain.summary.entity.Summary;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.*;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class SummaryResponseDto {
+    public enum Phase { PARTIAL, FINAL }
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long lectureId;
     private Integer sectionIndex;
@@ -18,16 +22,17 @@ public class SummaryResponseDto {
     private Integer endSec;
     private String text;
 
-
+    private Phase phase;
 
     public static SummaryResponseDto from(Summary s) {
-        return new SummaryResponseDto(
-                s.getId(),
-                s.getLectureId(),
-                s.getSectionIndex(),
-                s.getStartSec(),
-                s.getEndSec(),
-                s.getText()
-        );
+        return SummaryResponseDto.builder()
+                .id(s.getId())
+                .lectureId(s.getLectureId())
+                .sectionIndex(s.getSectionIndex())
+                .startSec(s.getStartSec())
+                .endSec(s.getEndSec())
+                .text(s.getText())
+                .phase(Phase.FINAL)   // DB에 있는 건 전부 FINAL
+                .build();
     }
 }

@@ -3,6 +3,7 @@ package com.capstone.livenote.application.ws;
 import com.capstone.livenote.application.openai.service.OpenAiSttService;
 import com.capstone.livenote.domain.lecture.entity.Lecture;
 import com.capstone.livenote.domain.lecture.repository.LectureRepository;
+import com.capstone.livenote.domain.transcript.dto.TranscriptResponseDto;
 import com.capstone.livenote.domain.transcript.service.TranscriptService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,9 +25,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * 프론트엔드에서 실시간으로 오디오 청크를 WebSocket으로 전송하면
  * 1. OpenAI Whisper로 STT 처리
  * 2. Transcript 저장
- * 3. 30초마다 요약 생성
- * 4. AI 서버로 요약 전송
- * 5. 결과를 WebSocket으로 실시간 전송
+ * 3. 섹션/요약/AI 서버 트리거 (TranscriptService 내부)
+ * 4. STOMP(WebSocket)으로 실시간 전사 전송(StreamGateway)
+ * 5. 이 WebSocket 연결로도 ACK 전송
  */
 @Component
 @RequiredArgsConstructor
@@ -36,6 +37,7 @@ public class AudioWebSocketHandler extends AbstractWebSocketHandler {
     private final TranscriptService transcriptService;
     private final LectureRepository lectureRepository;
     private final ObjectMapper objectMapper;
+    //private final StreamGateway streamGateway;
 
     // 세션별 강의 정보 저장
     private final Map<String, SessionInfo> sessions = new ConcurrentHashMap<>();
@@ -100,11 +102,14 @@ public class AudioWebSocketHandler extends AbstractWebSocketHandler {
             System.out.println("[AudioWebSocket] STT 완료: " +
                     transcriptText.substring(0, Math.min(50, transcriptText.length())));
 
-            // 4. Transcript 저장 + 요약 트리거 + WebSocket 전송
-            // (TranscriptService가 자동으로 StreamGateway를 통해 STOMP로 전송)
-            transcriptService.saveFromStt(info.lectureId, startSec, endSec, transcriptText);
+            // 4. Transcript 저장 + 섹션/요약/AI 트리거
+            TranscriptResponseDto dto =
+                    transcriptService.saveFromStt(info.lectureId, startSec, endSec, transcriptText);
 
-            // 5. 처리 완료 응답 (이 WebSocket 연결로도 ACK 전송)
+            // 5. STOMP(WebSocket)으로 실시간 전사 전송
+            //streamGateway.sendTranscript(info.lectureId, dto, false);
+
+            // 6. 처리 완료 응답 (이 WebSocket 연결로도 ACK 전송)
             session.sendMessage(new TextMessage(objectMapper.writeValueAsString(Map.of(
                     "type", "chunk_ack",
                     "chunkSeq", chunkSeq,
@@ -112,7 +117,7 @@ public class AudioWebSocketHandler extends AbstractWebSocketHandler {
                     "endSec", endSec
             ))));
 
-            // 6. 다음 청크 시퀀스 증가
+            // 7. 다음 청크 시퀀스 증가
             info.chunkSeq++;
 
         } catch (Exception e) {

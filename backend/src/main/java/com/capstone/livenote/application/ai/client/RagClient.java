@@ -17,85 +17,45 @@ public class RagClient {
 
     private final WebClient webClient;
 
-    @Value("${app.ai.base-url}")
+    @Value("${ai.server.url}")
     private String baseUrl;
 
-    /**
-     * Summary 텍스트를 RAG 인덱스에 업서트
-     */
-    public void upsertSummary(Long lectureId, Long summaryId, Integer sectionIndex, String text) {
-        try {
-            var body = Map.of(
-                    "lectureId", lectureId,
-                    "summaryId", summaryId,
-                    "sectionIndex", sectionIndex,
-                    "text", text
-            );
+    @Value("${app.callback-base-url}")
+    private String callbackBaseUrl;
 
-            webClient.post()
-                    .uri(baseUrl + "/rag/text-upsert")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(body)
-                    .retrieve()
-                    .toBodilessEntity()
-                    .block();
-
-            System.out.println("[RagClient] Summary upserted: summaryId=" + summaryId);
-
-        } catch (Exception e) {
-            System.err.println("[RagClient] RAG 업서트 실패: " + e.getMessage());
-        }
+    private String callback(String type) {
+        return callbackBaseUrl + "/api/ai/callback?type=" + type;
     }
 
-    /**
-     * QnA 생성 요청
-     */
     public void requestQnaGeneration(Long lectureId, Long summaryId, Integer sectionIndex) {
-        try {
-            var body = Map.of(
-                    "lectureId", lectureId,
-                    "summaryId", summaryId,
-                    "sectionIndex", sectionIndex
-            );
+        var body = Map.of(
+                "lectureId", lectureId,
+                "summaryId", summaryId,
+                "sectionIndex", sectionIndex,
+                "callbackUrl", callback("qna")
+        );
 
-            webClient.post()
-                    .uri(baseUrl + "/qa/generate")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(body)
-                    .retrieve()
-                    .toBodilessEntity()
-                    .block();
-
-            System.out.println("[RagClient] QnA generation requested: summaryId=" + summaryId);
-
-        } catch (Exception e) {
-            System.err.println("[RagClient] QnA 생성 요청 실패: " + e.getMessage());
-        }
+        webClient.post()
+                .uri(baseUrl + "/qa/generate")
+                .bodyValue(body)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
     }
 
-    /**
-     * 추천 자료 생성 요청
-     */
     public void requestResourceRecommendation(Long lectureId, Long summaryId, Integer sectionIndex) {
-        try {
-            var body = Map.of(
-                    "lectureId", lectureId,
-                    "summaryId", summaryId,
-                    "sectionIndex", sectionIndex
-            );
+        var body = Map.of(
+                "lectureId", lectureId,
+                "summaryId", summaryId,
+                "sectionIndex", sectionIndex,
+                "callbackUrl", callback("resources")
+        );
 
-            webClient.post()
-                    .uri(baseUrl + "/rec/recommend")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(body)
-                    .retrieve()
-                    .toBodilessEntity()
-                    .block();
-
-            System.out.println("[RagClient] Resource recommendation requested: summaryId=" + summaryId);
-
-        } catch (Exception e) {
-            System.err.println("[RagClient] 추천 자료 요청 실패: " + e.getMessage());
-        }
+        webClient.post()
+                .uri(baseUrl + "/rec/recommend")
+                .bodyValue(body)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
     }
 }
