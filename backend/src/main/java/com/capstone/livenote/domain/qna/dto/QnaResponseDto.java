@@ -14,7 +14,7 @@ public class QnaResponseDto {
     private Long id;
     private Long lectureId;
     private Integer sectionIndex;
-    private String type;
+    private Qna.Type type;
     private String question;
     private String answer;
 
@@ -23,7 +23,7 @@ public class QnaResponseDto {
                 q.getId(),
                 q.getLectureId(),
                 q.getSectionIndex(),
-                q.getType().name().toLowerCase(),
+                q.getType(),
                 q.getQuestion(),
                 q.getAnswer()
         );

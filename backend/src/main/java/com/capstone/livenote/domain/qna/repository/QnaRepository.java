@@ -14,4 +14,8 @@ public interface QnaRepository extends JpaRepository<Qna, Long> {
 
     List<Qna> findByLectureIdAndSectionIndexOrderByIdAsc(Long lectureId, Integer sectionIndex);
 
+    List<Qna> findByLectureIdOrderBySectionIndexAsc(Long lectureId);
+
+    List<Qna> findByLectureIdAndSectionIndex(Long lectureId, Integer sectionIndex);
+
 }

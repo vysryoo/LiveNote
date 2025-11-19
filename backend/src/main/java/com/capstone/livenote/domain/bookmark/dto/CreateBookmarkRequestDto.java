@@ -1,5 +1,6 @@
 package com.capstone.livenote.domain.bookmark.dto;
 
+import com.capstone.livenote.domain.bookmark.entity.Bookmark;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,6 +12,6 @@ import lombok.Setter;
 public class CreateBookmarkRequestDto {
     private Long lectureId;
     private Integer sectionIndex;
-    private String targetType;    // "resource" | "qna"
+    private Bookmark.TargetType targetType;    // "resource" | "qna"
     private Long targetId;
 }

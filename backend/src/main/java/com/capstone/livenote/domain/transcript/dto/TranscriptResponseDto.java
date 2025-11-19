@@ -1,5 +1,6 @@
 package com.capstone.livenote.domain.transcript.dto;
 
+import com.capstone.livenote.domain.transcript.entity.Transcript;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,4 +17,15 @@ public class TranscriptResponseDto {
     private Integer startSec;
     private Integer endSec;
     private String text;
+
+    public static TranscriptResponseDto from(Transcript t) {
+        return new TranscriptResponseDto(
+                t.getId(),
+                t.getLectureId(),
+                t.getSectionIndex(),
+                t.getStartSec(),
+                t.getEndSec(),
+                t.getText()
+        );
+    }
 }

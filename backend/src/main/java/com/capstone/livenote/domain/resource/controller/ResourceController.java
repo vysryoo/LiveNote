@@ -5,12 +5,17 @@ import com.capstone.livenote.domain.resource.dto.ResourceResponseDto;
 import com.capstone.livenote.domain.resource.entity.Resource;
 import com.capstone.livenote.domain.resource.repository.ResourceRepository;
 import com.capstone.livenote.domain.resource.service.ResourceService;
+import com.capstone.livenote.domain.summary.entity.Summary;
+import com.capstone.livenote.domain.summary.repository.SummaryRepository;
 import com.capstone.livenote.global.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Resource API", description = "강의 섹션별 추천 자료를 조회하는 API")
 @RestController
 @RequestMapping("/api/resources")
 public class ResourceController {
@@ -19,6 +24,8 @@ public class ResourceController {
     private ResourceService resourceService;
     @Autowired
     private ResourceRepository resourceRepository;
+    @Autowired
+    private SummaryRepository summaryRepository;
 
     // === AI 서버에서 추천자료 콜백 ===
     @PostMapping("/callback")
@@ -40,41 +47,25 @@ public class ResourceController {
         return ApiResponse.ok();
     }
 
-    // === 특정 요약(summary) 기준 추천자료 조회 ===
-//    @GetMapping
-//    public ApiResponse<List<ResourceResponseDto>> getResources(
-//            @RequestParam Long summaryId,
-//            @RequestParam(required = false) String type
-//    ) {
-//        var list = resourceService.bySummary(summaryId, type);
-//        var dtoList = list.stream()
-//                .map(r -> new ResourceResponseDto(
-//                        r.getId(),
-//                        r.getLectureId(),
-//                        r.getSummaryId(),
-//                        r.getSectionIndex(),
-//                        r.getType().name().toLowerCase(),
-//                        r.getTitle(),
-//                        r.getUrl(),
-//                        r.getThumbnail(),
-//                        r.getScore(),
-//                        r.getText()
-//                ))
-//                .toList();
-//        return ApiResponse.ok(dtoList);
-//    }
-
-    // 요약 기준 자료 조회
-    @GetMapping("/api/summaries/{summaryId}/resources")
-    public ApiResponse<List<ResourceResponseDto>> bySummary(
-            @PathVariable Long summaryId,
+    @Operation(summary = "추천 자료 조회 ")
+    @GetMapping
+    public ApiResponse<List<ResourceResponseDto>> getResources(
+            @RequestParam Long lectureId,
+            @RequestParam Integer sectionIndex,
             @RequestParam(required = false) String type
     ) {
-        var list = resourceService.bySummary(summaryId, type);
-        return ApiResponse.ok(
-                list.stream()
-                        .map(ResourceResponseDto::from)
-                        .toList()
-        );
+        // 1) lectureId + sectionIndex 에 해당하는 Summary 찾기
+        Summary summary = summaryRepository
+                .findByLectureIdAndSectionIndex(lectureId, sectionIndex)
+                .orElseThrow(() -> new IllegalArgumentException("요약을 찾을 수 없습니다."));
+
+        // 2) summaryId 기준으로 Resource 조회
+        var list = resourceService.bySummary(summary.getId(), type)
+                .stream()
+                .map(ResourceResponseDto::from)
+                .toList();
+
+        return ApiResponse.ok(list);
     }
+
 }

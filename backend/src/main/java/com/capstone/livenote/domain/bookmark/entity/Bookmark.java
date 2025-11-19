@@ -4,7 +4,6 @@ import com.capstone.livenote.domain.lecture.entity.Lecture;
 import com.capstone.livenote.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.tool.schema.TargetType;
 
 @Entity
 // 중복방지 + 검색속도

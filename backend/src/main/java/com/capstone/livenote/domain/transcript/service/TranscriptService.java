@@ -31,7 +31,6 @@ public class TranscriptService {
 
     /**
      * STT 결과 저장 및 후속 처리
-     *
      * 플로우:
      * 1. Transcript 저장
      * 2. WebSocket으로 실시간 전송
