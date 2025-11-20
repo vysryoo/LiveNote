@@ -21,6 +21,14 @@ public class QnaService {
         return repo.findByLectureIdAndSectionIndexOrderByIdAsc(lectureId, sectionIndex);
     }
 
+    public List<Qna> findByLectureWithinSections(Long lectureId, Integer startInclusive, Integer endInclusive) {
+        return repo.findByLectureIdAndSectionIndexBetweenOrderBySectionIndexAsc(
+                lectureId,
+                startInclusive,
+                endInclusive
+        );
+    }
+
     public Qna save(Qna qna) {
         return repo.save(qna);
     }

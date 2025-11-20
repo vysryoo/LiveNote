@@ -13,6 +13,7 @@ import lombok.Setter;
 public class QnaResponseDto {
     private Long id;
     private Long lectureId;
+    private Long summaryId;
     private Integer sectionIndex;
     private Qna.Type type;
     private String question;
@@ -22,6 +23,7 @@ public class QnaResponseDto {
         return new QnaResponseDto(
                 q.getId(),
                 q.getLectureId(),
+                q.getSummaryId(),
                 q.getSectionIndex(),
                 q.getType(),
                 q.getQuestion(),

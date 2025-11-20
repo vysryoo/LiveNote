@@ -2,7 +2,6 @@ package com.capstone.livenote.application.ai.service;
 
 import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.application.openai.service.OpenAiSummaryService;
-import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.summary.entity.Summary;
 import com.capstone.livenote.domain.summary.service.SummaryService;
 import lombok.AllArgsConstructor;
@@ -29,6 +28,7 @@ public class SectionAggregationService {
     private final OpenAiSummaryService openAiSummaryService;
     private final SummaryService summaryService;
     private final RagClient ragClient;
+    private final AiRequestService aiRequestService;
     //private final StreamGateway streamGateway;
 
     private final Map<Long, SectionState> states = new ConcurrentHashMap<>();
@@ -96,8 +96,18 @@ public class SectionAggregationService {
 
 
         // partial 기반 자료 2개 / QnA 2개 요청
-        ragClient.requestResourceRecommendation(lectureId, null, state.sectionIndex);
-        ragClient.requestQnaGeneration(lectureId, null, state.sectionIndex);
+        aiRequestService.requestResourcesWithSummary(
+                lectureId,
+                null,
+                state.sectionIndex,
+                partialSummary
+        );
+        aiRequestService.requestQnaWithSummary(
+                lectureId,
+                null,
+                state.sectionIndex,
+                partialSummary
+        );
     }
 
     /**
@@ -121,7 +131,9 @@ public class SectionAggregationService {
                 finalSummary
         );
 
+        // 최종 요약을 RAG 인덱스에 업서트
+        ragClient.upsertSummaryText(lectureId, summary);
+
     }
 
 }
-

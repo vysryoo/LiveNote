@@ -27,8 +27,9 @@ public class QnaCallbackService {
                 .map(item -> qnaRepository.save(
                         Qna.builder()
                                 .lectureId(dto.getLectureId())
+                                .summaryId(dto.getSummaryId())
                                 .sectionIndex(dto.getSectionIndex())
-                                .type(Qna.Type.valueOf(item.getType().toUpperCase()))
+                                .type(resolveType(item.getType()))
                                 .question(item.getQuestion())
                                 .answer(item.getAnswer())
                                 .build()
@@ -39,5 +40,18 @@ public class QnaCallbackService {
                 .toList();
 
         streamGateway.sendQna(dto.getLectureId(), dto.getSectionIndex(), items);
+    }
+
+    private Qna.Type resolveType(String raw) {
+        if (raw == null) {
+            return Qna.Type.CONCEPT;
+        }
+        return switch (raw.trim().toUpperCase()) {
+            case "APPLICATION", "응용" -> Qna.Type.APPLICATION;
+            case "ADVANCED", "심화" -> Qna.Type.ADVANCED;
+            case "COMPARISON", "비교" -> Qna.Type.COMPARISON;
+            case "CONCEPT", "개념" -> Qna.Type.CONCEPT;
+            default -> Qna.Type.CONCEPT;
+        };
     }
 }

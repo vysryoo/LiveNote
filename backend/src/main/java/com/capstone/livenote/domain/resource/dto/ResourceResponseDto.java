@@ -1,6 +1,7 @@
 package com.capstone.livenote.domain.resource.dto;
 
 import com.capstone.livenote.domain.resource.entity.Resource;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,6 +20,8 @@ public class ResourceResponseDto {
     private String thumbnail;
     private Double score;
     private String text;
+    private String reason;
+    private JsonNode detail;
 
     public static ResourceResponseDto from(Resource r) {
         return new ResourceResponseDto(
@@ -31,7 +34,9 @@ public class ResourceResponseDto {
                 r.getUrl(),
                 r.getThumbnail(),
                 r.getScore(),
-                r.getText()
+                r.getText(),
+                r.getReason(),
+                r.getDetail()
         );
     }
 }
