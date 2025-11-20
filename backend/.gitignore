@@ -213,3 +213,4 @@ src/main/resources/env.properties
 .env
 *.env
 
+# local db dump (if you export inside backend)
