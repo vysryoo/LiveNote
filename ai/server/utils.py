@@ -11,6 +11,7 @@ from cap1_openalex_module.openalexkit.models import RAGChunk as OpenAlexRAGChunk
 from cap1_wiki_module.wikikit.models import RAGChunk as WikiRAGChunk
 from cap1_youtube_module.youtubekit.models import RAGChunk as YouTubeRAGChunk
 from cap1_google_module.googlekit.models import RAGChunk as GoogleRAGChunk
+from pydantic import BaseModel, ConfigDict
 
 
 def build_collection_id(prefix: str, lecture_id: str) -> str:
@@ -86,3 +87,14 @@ def format_sse(data: dict, event: str | None = None) -> bytes:
         payload = ""
     payload += f"data: {serialized}\n\n"
     return payload.encode("utf-8")
+
+
+def to_camel(string: str) -> str:
+    """snake_case → camelCase 변환"""
+    parts = string.split("_")
+    return parts[0] + "".join(word.capitalize() for word in parts[1:])
+
+
+class CamelModel(BaseModel):
+    """camelCase 요청/응답을 위한 베이스 모델"""
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
