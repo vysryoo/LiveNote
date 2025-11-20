@@ -7,6 +7,7 @@ import com.capstone.livenote.domain.qna.entity.Qna;
 import com.capstone.livenote.domain.qna.repository.QnaRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class QnaCallbackService {
 
     private final QnaRepository qnaRepository;
@@ -22,6 +24,10 @@ public class QnaCallbackService {
 
     @Transactional
     public void handleQnaCallback(QnaCallbackDto dto) {
+
+        log.info("QnA callback: lectureId={} section={} summaryId={} size={}",
+                dto.getLectureId(), dto.getSectionIndex(), dto.getSummaryId(),
+                dto.getQnaList() == null ? 0 : dto.getQnaList().size());
 
         List<Qna> saved = dto.getQnaList().stream()
                 .map(item -> qnaRepository.save(

@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 
 // AI 쪽에서 백엔드로 결과 보내기
@@ -22,6 +23,7 @@ import java.util.Map;
         name = "AI 콜백 API",
         description = "AI 서버가 백엔드로 QnA / 자료추천 결과를 전달"
 )
+@Slf4j
 public class AiCallbackController {
 
     private final QnaCallbackService qnaCallbackService;
@@ -35,6 +37,7 @@ public class AiCallbackController {
             @RequestParam String type,
             @RequestBody Map<String, Object> payload
     ) {
+        log.info("AI callback received type={}, keys={}", type, payload.keySet());
         switch (type) {
 
             case "qna" -> {

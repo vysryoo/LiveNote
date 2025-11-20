@@ -208,3 +208,8 @@ gradle-app.setting
 # 환경변수/설정 파일 제외하기)
 src/main/resources/application.yml
 src/main/resources/env.properties
+
+# local env/creds
+.env
+*.env
+

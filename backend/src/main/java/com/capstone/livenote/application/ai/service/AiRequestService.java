@@ -12,6 +12,7 @@ import com.capstone.livenote.domain.resource.service.ResourceService;
 import com.capstone.livenote.domain.summary.entity.Summary;
 import com.capstone.livenote.domain.summary.service.SummaryService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -26,6 +27,7 @@ import static com.capstone.livenote.application.ai.dto.AiRequestPayloads.Resourc
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AiRequestService {
 
     private final RagClient ragClient;
@@ -45,6 +47,14 @@ public class AiRequestService {
                 sectionIndex,
                 summary.getText()
         );
+        log.info("AI resource request: lectureId={} section={} prevSummaries={} excludes(y/w/p/g)={}/{}/{}/{}",
+                lectureId,
+                sectionIndex,
+                payload.getPreviousSummaries().size(),
+                payload.getYtExclude().size(),
+                payload.getWikiExclude().size(),
+                payload.getPaperExclude().size(),
+                payload.getGoogleExclude().size());
         ragClient.requestResourceRecommendation(payload);
     }
 
@@ -64,12 +74,20 @@ public class AiRequestService {
                 sectionIndex,
                 summary.getText()
         );
+        log.info("AI QnA request: lectureId={} section={} prevQa={}",
+                lectureId,
+                sectionIndex,
+                payload.getPreviousQa().size());
         ragClient.requestQnaGeneration(payload);
     }
 
     public void requestQnaWithSummary(Long lectureId, Long summaryId, Integer sectionIndex, String sectionSummary) {
         Lecture lecture = lectureService.get(lectureId);
         var payload = buildQnaPayload(lecture, summaryId, sectionIndex, sectionSummary);
+        log.info("AI QnA request(custom summary): lectureId={} section={} prevQa={}",
+                lectureId,
+                sectionIndex,
+                payload.getPreviousQa().size());
         ragClient.requestQnaGeneration(payload);
     }
 

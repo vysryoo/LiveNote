@@ -10,12 +10,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ResourceCallbackService {
 
     private final ResourceRepository resourceRepository;
@@ -24,6 +26,10 @@ public class ResourceCallbackService {
 
     @Transactional
     public void handleResourceCallback(ResourceCallbackDto dto) {
+
+        log.info("Resource callback: lectureId={} section={} summaryId={} size={}",
+                dto.getLectureId(), dto.getSectionIndex(), dto.getSummaryId(),
+                dto.getResources() == null ? 0 : dto.getResources().size());
 
         List<Resource> saved = dto.getResources().stream()
                 .map(item -> Resource.builder()
