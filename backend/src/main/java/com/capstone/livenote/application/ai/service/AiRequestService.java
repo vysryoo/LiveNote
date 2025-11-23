@@ -47,7 +47,7 @@ public class AiRequestService {
                 sectionIndex,
                 summary.getText()
         );
-        log.info("AI resource request: lectureId={} section={} prevSummaries={} excludes(y/w/p/g)={}/{}/{}/{}",
+        log.info("🔄 [AI Request] Resource recommendation: lectureId={} section={} prevSummaries={} excludes(y/w/p/g)={}/{}/{}/{}",
                 lectureId,
                 sectionIndex,
                 payload.getPreviousSummaries().size(),
@@ -74,7 +74,7 @@ public class AiRequestService {
                 sectionIndex,
                 summary.getText()
         );
-        log.info("AI QnA request: lectureId={} section={} prevQa={}",
+        log.info("🔄 [AI Request] QnA generation: lectureId={} section={} prevQa={}",
                 lectureId,
                 sectionIndex,
                 payload.getPreviousQa().size());
@@ -84,7 +84,7 @@ public class AiRequestService {
     public void requestQnaWithSummary(Long lectureId, Long summaryId, Integer sectionIndex, String sectionSummary) {
         Lecture lecture = lectureService.get(lectureId);
         var payload = buildQnaPayload(lecture, summaryId, sectionIndex, sectionSummary);
-        log.info("AI QnA request(custom summary): lectureId={} section={} prevQa={}",
+        log.info("🔄 [AI Request] QnA generation (custom summary): lectureId={} section={} prevQa={}",
                 lectureId,
                 sectionIndex,
                 payload.getPreviousQa().size());

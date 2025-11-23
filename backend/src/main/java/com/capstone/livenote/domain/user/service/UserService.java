@@ -6,27 +6,35 @@ import com.capstone.livenote.domain.user.dto.SignupRequestDto;
 import com.capstone.livenote.domain.user.dto.UserViewDto;
 import com.capstone.livenote.domain.user.entity.User;
 import com.capstone.livenote.domain.user.repository.UserRepository;
+import com.capstone.livenote.global.security.JwtTokenProvider;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
-    //private final JwtProvider jwt;
-    private final PasswordEncoder encoder = new BCryptPasswordEncoder(); // 간단 사용
+    private final PasswordEncoder encoder;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Transactional
     public AuthResponseDto signup(SignupRequestDto req) {
+        log.info("💾 [DB WRITE] Creating new user: loginId={} email={}", req.getLoginId(), req.getEmail());
+        
         if (userRepository.existsByLoginId(req.getLoginId())) {
+            log.warn("❌ Signup failed: duplicated loginId={}", req.getLoginId());
             throw new IllegalArgumentException("duplicated loginId");
         }
         if (req.getEmail() != null && userRepository.existsByEmail(req.getEmail())) {
+            log.warn("❌ Signup failed: duplicated email={}", req.getEmail());
             throw new IllegalArgumentException("duplicated email");
         }
 
@@ -39,19 +47,12 @@ public class UserService {
                 .build();
 
         User saved = userRepository.save(user);
-
-        //String token = jwt.generateToken(saved.getId(), saved.getLoginId());
-
-        // 임시토큰
-        String dummyToken = "temp-token-" + saved.getId();
-
-//        return new AuthResponseDto(
-//                token,
-//                new UserViewDto(saved.getId(), saved.getLoginId(), saved.getName(), saved.getEmail(), saved.getUiLanguage())
-//        );
+        log.info("✅ [DB WRITE] User created: id={} loginId={}", saved.getId(), saved.getLoginId());
+        
+        String token = jwtTokenProvider.createToken(saved.getId());
 
         return new AuthResponseDto(
-                dummyToken,
+                token,
                 new UserViewDto(
                         saved.getId(),
                         saved.getLoginId(),
@@ -64,23 +65,24 @@ public class UserService {
 
     @Transactional
     public AuthResponseDto login(LoginRequestDto req) {
+        log.info("📂 [DB READ] User login attempt: loginId={}", req.getLoginId());
+        
         User user = userRepository.findByLoginId(req.getLoginId())
-                .orElseThrow(() -> new EntityNotFoundException("no user"));
+                .orElseThrow(() -> {
+                    log.warn("❌ Login failed: user not found loginId={}", req.getLoginId());
+                    return new EntityNotFoundException("no user");
+                });
 
         if (!encoder.matches(req.getPassword(), user.getPassword())) {
+            log.warn("❌ Login failed: invalid password for loginId={}", req.getLoginId());
             throw new IllegalArgumentException("bad credential");
         }
 
-//        String token = jwt.generateToken(user.getId(), user.getLoginId());
-//
-//        return new AuthResponseDto(
-//                token,
-//                new UserViewDto(user.getId(), user.getLoginId(), user.getName(), user.getEmail(), user.getUiLanguage())
-//        );
-        String dummyToken = "temp-token-" + user.getId();
+        log.info("✅ [DB READ] User logged in: id={} loginId={}", user.getId(), user.getLoginId());
+        String token = jwtTokenProvider.createToken(user.getId());
 
         return new AuthResponseDto(
-                dummyToken,
+                token,
                 new UserViewDto(
                         user.getId(),
                         user.getLoginId(),
@@ -89,5 +91,17 @@ public class UserService {
                         user.getUiLanguage()
                 )
         );
+    }
+
+    @Transactional
+    public Optional<User> findById(Long id) {
+        log.info("📂 [DB READ] Fetching user: userId={}", id);
+        Optional<User> user = userRepository.findById(id);
+        if (user.isPresent()) {
+            log.info("✅ [DB READ] User found: id={} loginId={}", user.get().getId(), user.get().getLoginId());
+        } else {
+            log.warn("❌ [DB READ] User not found: userId={}", id);
+        }
+        return user;
     }
 }

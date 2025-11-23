@@ -5,6 +5,7 @@ import com.capstone.livenote.domain.summary.entity.Summary;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
@@ -23,6 +24,7 @@ import java.util.Map;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class RagClient {
 
     private final WebClient webClient;
@@ -48,13 +50,32 @@ public class RagClient {
         body.put("previousQa", payload.getPreviousQa());
         body.put("callbackUrl", callback("qna"));
 
-        webClient.post()
-                .uri(baseUrl + "/qa/generate")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(body)
-                .retrieve()
-                .toBodilessEntity()
-                .block();
+        String url = baseUrl + "/qa/generate";
+        log.info("🤖 [AI Server Call] QnA Generation Request:");
+        log.info("   └─ URL: POST {}", url);
+        log.info("   └─ lectureId: {}", payload.getLectureId());
+        log.info("   └─ summaryId: {}", payload.getSummaryId());
+        log.info("   └─ sectionIndex: {}", payload.getSectionIndex());
+        log.info("   └─ subject: {}", payload.getSubject());
+        log.info("   └─ sectionSummary length: {} chars", 
+                payload.getSectionSummary() != null ? payload.getSectionSummary().length() : 0);
+        log.info("   └─ previousQa count: {}", 
+                payload.getPreviousQa() != null ? payload.getPreviousQa().size() : 0);
+        log.info("   └─ callbackUrl: {}", callback("qna"));
+
+        try {
+            webClient.post()
+                    .uri(url)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(body)
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+            log.info("✅ [AI Server Call] QnA request sent successfully");
+        } catch (Exception e) {
+            log.error("❌ [AI Server Call] QnA request failed: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     public void requestResourceRecommendation(AiRequestPayloads.ResourceRecommendPayload payload) {
@@ -70,13 +91,36 @@ public class RagClient {
         body.put("googleExclude", payload.getGoogleExclude());
         body.put("callbackUrl", callback("resources"));
 
-        webClient.post()
-                .uri(baseUrl + "/rec/recommend")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(body)
-                .retrieve()
-                .toBodilessEntity()
-                .block();
+        String url = baseUrl + "/rec/recommend";
+        log.info("🤖 [AI Server Call] Resource Recommendation Request:");
+        log.info("   └─ URL: POST {}", url);
+        log.info("   └─ lectureId: {}", payload.getLectureId());
+        log.info("   └─ summaryId: {}", payload.getSummaryId());
+        log.info("   └─ sectionIndex: {}", payload.getSectionIndex());
+        log.info("   └─ sectionSummary length: {} chars", 
+                payload.getSectionSummary() != null ? payload.getSectionSummary().length() : 0);
+        log.info("   └─ previousSummaries count: {}", 
+                payload.getPreviousSummaries() != null ? payload.getPreviousSummaries().size() : 0);
+        log.info("   └─ excludes: yt={}, wiki={}, paper={}, google={}",
+                payload.getYtExclude() != null ? payload.getYtExclude().size() : 0,
+                payload.getWikiExclude() != null ? payload.getWikiExclude().size() : 0,
+                payload.getPaperExclude() != null ? payload.getPaperExclude().size() : 0,
+                payload.getGoogleExclude() != null ? payload.getGoogleExclude().size() : 0);
+        log.info("   └─ callbackUrl: {}", callback("resources"));
+
+        try {
+            webClient.post()
+                    .uri(url)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(body)
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+            log.info("✅ [AI Server Call] Resource request sent successfully");
+        } catch (Exception e) {
+            log.error("❌ [AI Server Call] Resource request failed: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     public void upsertSummaryText(Long lectureId, Summary summary) {
@@ -99,13 +143,29 @@ public class RagClient {
                 "items", List.of(item)
         );
 
-        webClient.post()
-                .uri(baseUrl + "/rag/text-upsert")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(body)
-                .retrieve()
-                .toBodilessEntity()
-                .block();
+        String url = baseUrl + "/rag/text-upsert";
+        log.info("🤖 [AI Server Call] RAG Text Upsert Request:");
+        log.info("   └─ URL: POST {}", url);
+        log.info("   └─ lectureId: {}", lectureId);
+        log.info("   └─ summaryId: {}", summary.getId());
+        log.info("   └─ sectionIndex: {}", summary.getSectionIndex());
+        log.info("   └─ startSec: {}, endSec: {}", summary.getStartSec(), summary.getEndSec());
+        log.info("   └─ text length: {} chars", 
+                summary.getText() != null ? summary.getText().length() : 0);
+
+        try {
+            webClient.post()
+                    .uri(url)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(body)
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+            log.info("✅ [AI Server Call] RAG text upsert completed successfully");
+        } catch (Exception e) {
+            log.error("❌ [AI Server Call] RAG text upsert failed: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     public void upsertPdf(Long lectureId, MultipartFile pdfFile, Map<String, Object> metadata) {
@@ -116,13 +176,27 @@ public class RagClient {
             builder.part("base_metadata", toJson(metadata));
         }
 
-        webClient.post()
-                .uri(baseUrl + "/rag/pdf-upsert")
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(BodyInserters.fromMultipartData(builder.build()))
-                .retrieve()
-                .toBodilessEntity()
-                .block();
+        String url = baseUrl + "/rag/pdf-upsert";
+        log.info("🤖 [AI Server Call] RAG PDF Upsert Request:");
+        log.info("   └─ URL: POST {}", url);
+        log.info("   └─ lectureId: {}", lectureId);
+        log.info("   └─ filename: {}", pdfFile.getOriginalFilename());
+        log.info("   └─ fileSize: {} bytes", pdfFile.getSize());
+        log.info("   └─ metadata: {}", metadata != null ? metadata.keySet() : "none");
+
+        try {
+            webClient.post()
+                    .uri(url)
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(BodyInserters.fromMultipartData(builder.build()))
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+            log.info("✅ [AI Server Call] PDF upsert completed successfully");
+        } catch (Exception e) {
+            log.error("❌ [AI Server Call] PDF upsert failed: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     private String toJson(Map<String, Object> metadata) {
