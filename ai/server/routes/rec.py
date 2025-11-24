@@ -141,7 +141,7 @@ async def recommend_resources(
         GooglePreviousSummary(
             section_id=ps.section_index + 1,
             summary=ps.summary,
-            timestamp=ps.timestamp,
+            timestamp=str(ps.timestamp) if ps.timestamp is not None else None,
         )
         for ps in request.previous_summaries
     ]
