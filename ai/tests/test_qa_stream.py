@@ -41,7 +41,9 @@ async def test_qa_generate_uses_default_question_types(async_client, test_contex
     assert qa_request.qa_count == len(test_context.settings.qa.question_types)
 
     assert callback_recorder
-    qna_types = [item["type"] for item in callback_recorder[-1]["json"]["qnaList"]]
+    qna_types = []
+    for payload in callback_recorder:
+        qna_types.extend([item["type"] for item in payload["json"]["qnaList"]])
     assert qna_types == [QnAType.APPLICATION.value, QnAType.COMPARISON.value]
 
 
@@ -68,7 +70,9 @@ async def test_qa_generate_respects_question_types_override(async_client, test_c
     assert qa_request.question_types == ["개념", "심화"]
     assert qa_request.qa_count == 2
 
-    qna_types = [item["type"] for item in callback_recorder[-1]["json"]["qnaList"]]
+    qna_types = []
+    for payload in callback_recorder:
+        qna_types.extend([item["type"] for item in payload["json"]["qnaList"]])
     assert qna_types == [QnAType.CONCEPT.value, QnAType.ADVANCED.value]
 
 

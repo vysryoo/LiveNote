@@ -76,7 +76,8 @@ usage() {
   5. REC 모든 provider
   6. REC WIKI+VIDEO만
   7. QA 이전 질문 제공 (개념 타입 중복 방지)
-  8. REC 논문 제외 목록 추가
+  8. REC 논문 제외 목록 추가 (PAPER only)
+  9. REC 위키 제외 목록 추가 (WIKI only)
 EOF
 }
 
@@ -85,7 +86,7 @@ if [ "$#" -eq 0 ]; then
   echo
   read -r -p "몇 번을 실행하시겠습니까? (예: 1 3 5, 엔터=전체) > " USER_INPUT || true
   if [ -z "${USER_INPUT}" ]; then
-    SELECTED=("1" "2" "3" "4" "5" "6")
+    SELECTED=("1" "2" "3" "4" "5" "6" "7" "8" "9")
   else
     # 공백 구분 숫자 배열
     SELECTED=(${USER_INPUT})
@@ -202,7 +203,27 @@ PAYLOAD_REC_EXCLUDE_PAPER=$(cat <<JSON
     "https://doi.org/10.1109/pact.2003.1237999",
     "https://openalex.org/W87616783"
   ],
-  "google_exclude": []
+  "google_exclude": [],
+  "resource_types": ["PAPER"]
+}
+JSON
+)
+PAYLOAD_REC_WIKI_EXCLUDE=$(cat <<JSON
+{
+  "lecture_id": ${LECTURE_ID},
+  "summary_id": ${SUMMARY_ID}05,
+  "section_index": 4,
+  "section_summary": "${SECTION_SUMMARY}",
+  "callback_url": "${CALLBACK_REC}",
+  "previous_summaries": [],
+  "yt_exclude": [],
+  "wiki_exclude": [
+    "Simultaneous multithreading",
+    "Hyper-threading"
+  ],
+  "paper_exclude": [],
+  "google_exclude": [],
+  "resource_types": ["WIKI"]
 }
 JSON
 )
@@ -216,7 +237,8 @@ for CASE in "${SELECTED[@]}"; do
     5) call_api "05) REC recommend (all providers)" "${PAYLOAD_REC_ALL}" "${BASE_URL}/rec/recommend" ;;
     6) call_api "06) REC recommend (WIKI + VIDEO only)" "${PAYLOAD_REC_FILTERED}" "${BASE_URL}/rec/recommend" ;;
     7) call_api "07) QA generate (with previous CONCEPT to avoid duplicates)" "${PAYLOAD_QA_PREVIOUS}" "${BASE_URL}/qa/generate" ;;
-    8) call_api "08) REC recommend (paper excludes applied)" "${PAYLOAD_REC_EXCLUDE_PAPER}" "${BASE_URL}/rec/recommend" ;;
+    8) call_api "08) REC recommend (paper excludes applied, PAPER only)" "${PAYLOAD_REC_EXCLUDE_PAPER}" "${BASE_URL}/rec/recommend" ;;
+    9) call_api "09) REC recommend (WIKI excludes applied, WIKI only)" "${PAYLOAD_REC_WIKI_EXCLUDE}" "${BASE_URL}/rec/recommend" ;;
     *) echo "[!] 알 수 없는 케이스 번호: ${CASE}" ;;
   esac
 done
