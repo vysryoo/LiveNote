@@ -7,6 +7,8 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
+from .models import QnAType
+
 
 class RAGSettings(BaseModel):
     """RAG 관련 설정"""
@@ -23,8 +25,13 @@ class QASettings(BaseModel):
     """QA 서비스 설정"""
     
     language: str = Field(default="ko", description="QA 생성 언어")
-    question_types: List[str] = Field(
-        default_factory=lambda: ["응용", "비교", "개념", "심화"],
+    question_types: List[QnAType] = Field(
+        default_factory=lambda: [
+            QnAType.CONCEPT,
+            QnAType.APPLICATION,
+            QnAType.COMPARISON,
+            QnAType.ADVANCED,
+        ],
         description="생성할 질문 유형"
     )
     qa_top_k: int = Field(default=4, ge=1, description="QA 생성 개수")

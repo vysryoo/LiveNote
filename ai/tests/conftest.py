@@ -16,6 +16,7 @@ if str(ROOT_DIR) not in sys.path:
 
 from server.app import create_app
 from server.config import AppSettings
+from server.models import QnAType
 
 
 @dataclass
@@ -77,6 +78,24 @@ class YouTubeResponse(SimpleModel):
     lecture_id: str
     section_id: int
     video_info: YouTubeVideoInfo
+    reason: str
+    score: float
+
+
+@dataclass
+class GoogleSearchResult(SimpleModel):
+    url: str
+    title: str
+    snippet: str
+    display_link: str = ""
+    lang: str = "en"
+
+
+@dataclass
+class GoogleResponse(SimpleModel):
+    lecture_id: str
+    section_id: int
+    search_result: GoogleSearchResult
     reason: str
     score: float
 
@@ -197,6 +216,21 @@ class StubYouTubeService:
         return list(self.responses)
 
 
+class StubGoogleService:
+    """Google 서비스 스텁"""
+
+    def __init__(self):
+        self.responses: List[GoogleResponse] = []
+        self.delay: float = 0.0
+        self.requests: List[Any] = []
+
+    async def recommend_results(self, request):
+        self.requests.append(request)
+        if self.delay:
+            await asyncio.sleep(self.delay)
+        return list(self.responses)
+
+
 @dataclass
 class TestContext:
     """테스트에서 사용할 스텁 모음"""
@@ -206,6 +240,7 @@ class TestContext:
     openalex: StubOpenAlexService = field(default_factory=StubOpenAlexService)
     wiki: StubWikiService = field(default_factory=StubWikiService)
     youtube: StubYouTubeService = field(default_factory=StubYouTubeService)
+    google: StubGoogleService = field(default_factory=StubGoogleService)
     settings: AppSettings = field(default_factory=AppSettings)
 
 
@@ -217,7 +252,7 @@ def test_context() -> TestContext:
     ctx.settings.rag.qa_retrieve_top_k = 2
     ctx.settings.rag.rec_retrieve_top_k = 3
     ctx.settings.qa.language = "ko"
-    ctx.settings.qa.question_types = ["응용", "비교", "심화"]
+    ctx.settings.qa.question_types = [QnAType.APPLICATION, QnAType.COMPARISON, QnAType.ADVANCED]
     ctx.settings.qa.qa_top_k = 3
     ctx.settings.rec.openalex.top_k = 2
     ctx.settings.rec.openalex.verify = True
@@ -243,6 +278,7 @@ def fastapi_app(test_context: TestContext) -> FastAPI:
         openalex_service=test_context.openalex,
         wiki_service=test_context.wiki,
         youtube_service=test_context.youtube,
+        google_service=test_context.google,
     )
 
 
@@ -251,3 +287,44 @@ async def async_client(fastapi_app: FastAPI):
     transport = ASGITransport(app=fastapi_app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         yield client
+
+
+@pytest.fixture
+def callback_recorder(monkeypatch):
+    """
+    httpx.AsyncClient을 대체해 콜백 요청을 캡처합니다.
+    """
+    captured: List[Dict[str, Any]] = []
+
+    class _RecorderClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def post(self, url, json):
+            captured.append({"url": url, "json": json})
+            return type("Resp", (), {"status_code": 200})
+
+    monkeypatch.setattr("server.routes.qa.httpx.AsyncClient", _RecorderClient)
+    monkeypatch.setattr("server.routes.rec.httpx.AsyncClient", _RecorderClient)
+    return captured
+
+
+def pytest_configure(config):
+    """anyio 백엔드를 asyncio로 제한하여 trio 관련 의존성 오류를 방지"""
+    config.option.anyio_backend = ["asyncio"]
+
+
+@pytest.fixture(autouse=True)
+def skip_trio_backend(request):
+    """anyio가 trio 백엔드로 파라미터라이즈될 때는 스킵"""
+    callspec = getattr(request.node, "callspec", None)
+    if callspec:
+        backend = callspec.params.get("anyio_backend")
+        if backend == "trio":
+            pytest.skip("trio backend is not supported in this test suite")

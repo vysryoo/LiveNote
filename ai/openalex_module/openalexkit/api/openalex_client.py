@@ -108,7 +108,7 @@ class OpenAlexAPIClient:
             
             # 파싱 및 필터링
             papers = []
-            exclude_set = set(exclude_ids or [])
+            exclude_tokens = [e.lower() for e in (exclude_ids or [])]
             
             for work in works:
                 paper = self._parse_paper(work)
@@ -116,10 +116,13 @@ class OpenAlexAPIClient:
                 if paper is None:
                     continue
                 
-                # 제외 ID 체크
-                if paper.get("id") in exclude_set:
-                    logger.debug(f"⏭️  제외됨 (exclude_ids): {paper.get('title', '')[:50]}")
-                    continue
+                # 제외 ID/URL/DOI 체크 (부분 포함 매칭)
+                if exclude_tokens:
+                    pid = (paper.get("id") or "").lower()
+                    purl = (paper.get("url") or "").lower()
+                    if any(tok in pid or tok in purl for tok in exclude_tokens):
+                        logger.debug(f"⏭️  제외됨 (exclude_tokens): {paper.get('title', '')[:80]}")
+                        continue
                 
                 papers.append(paper)
             

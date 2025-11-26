@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-import json
+import asyncio
 from typing import List, Tuple
 
 import pytest
 
+pytestmark = pytest.mark.anyio("asyncio")
+
+from server.models import ResourceType
 from tests.conftest import (
+    GoogleResponse,
+    GoogleSearchResult,
     OpenAlexResponse,
     PaperInfo,
     StubRetrievedChunk,
@@ -16,29 +21,14 @@ from tests.conftest import (
 )
 
 
-async def collect_sse(response) -> List[Tuple[str, dict]]:
-    events: List[Tuple[str, dict]] = []
-    current = None
-    async for line in response.aiter_lines():
-        if not line:
-            continue
-        if line.startswith("event:"):
-            current = line.split(":", 1)[1].strip()
-        elif line.startswith("data:"):
-            data = json.loads(line.split(":", 1)[1].strip())
-            events.append((current, data))
-    return events
-
-
-def prepare_chunks():
+def prepare_chunks() -> List[StubRetrievedChunk]:
     return [
         StubRetrievedChunk(id="c1", text="알고리즘 분석 내용", score=0.9, metadata={"section_id": "1"}),
         StubRetrievedChunk(id="c2", text="자료 구조 관련 설명", score=0.85, metadata={"section_id": "2"}),
-        StubRetrievedChunk(id="c3", text="성능 최적화 사례", score=0.8, metadata={"section_id": "3"}),
     ]
 
 
-def build_default_responses():
+def build_default_responses() -> Tuple[list, list, list, list]:
     openalex_items = [
         OpenAlexResponse(
             lecture_id="lec",
@@ -84,145 +74,160 @@ def build_default_responses():
             score=7.2,
         )
     ]
-    return openalex_items, wiki_items, yt_items
+    google_items = [
+        GoogleResponse(
+            lecture_id="lec",
+            section_id=1,
+            search_result=GoogleSearchResult(
+                url="http://example.com/blog",
+                title="Blog 1",
+                snippet="Snippet 1",
+                display_link="example.com",
+                lang="en",
+            ),
+            reason="검색 결과",
+            score=6.0,
+        )
+    ]
+    return openalex_items, wiki_items, yt_items, google_items
 
 
-@pytest.mark.anyio
-async def test_rec_stream_orders_partial_events(async_client, test_context):
+@pytest.mark.anyio("asyncio")
+async def test_rec_recommend_defaults_use_all_providers(async_client, test_context, callback_recorder):
     test_context.rag.retrieve_result = prepare_chunks()
-    oa_items, wiki_items, yt_items = build_default_responses()
+    oa_items, wiki_items, yt_items, google_items = build_default_responses()
     test_context.openalex.responses = oa_items
     test_context.wiki.responses = wiki_items
     test_context.youtube.responses = yt_items
-    test_context.openalex.delay = 0.03
-    test_context.wiki.delay = 0.0
-    test_context.youtube.delay = 0.01
-    
+    test_context.google.responses = google_items
+
     payload = {
-        "lecture_id": "lec",
-        "section_id": 1,
+        "lecture_id": 1,
+        "summary_id": 10,
+        "section_index": 0,
         "section_summary": "자료구조와 알고리즘을 설명하는 강의",
-        "previous_summaries": [
-            {"section_id": 1, "summary": "스택 소개", "timestamp": 111},
-            {"section_id": 2, "summary": "큐 소개", "timestamp": 222},
-        ],
-        "yt_exclude": [],
-        "wiki_exclude": [],
-        "paper_exclude": [],
+        "callback_url": "http://example.com/rec",
+        "previous_summaries": [],
+        "yt_exclude": ["old_video"],
+        "wiki_exclude": ["old_wiki"],
+        "paper_exclude": ["old_paper"],
+        "google_exclude": ["http://old.example.com"],
     }
-    async with async_client.stream("POST", "/rec/recommend", json=payload) as response:
-        assert response.status_code == 200
-        events = await collect_sse(response)
-    
-    assert events[0][0] == "rec_context"
-    partial_events = [evt for evt in events if evt[0] == "rec_partial"]
-    sources = [evt[1]["source"] for evt in partial_events]
-    assert sources == ["wiki", "youtube", "openalex"]
-    assert test_context.rag.retrieve_calls[-1]["top_k"] == test_context.settings.rag.rec_retrieve_top_k
+    response = await async_client.post("/rec/recommend", json=payload)
+    assert response.status_code == 202
+    await asyncio.sleep(0.05)
+
+    assert test_context.openalex.requests and test_context.wiki.requests
+    assert test_context.youtube.requests and test_context.google.requests
+    assert test_context.openalex.requests[-1].exclude_ids == ["old_paper"]
+    assert test_context.wiki.requests[-1].exclude_titles == ["old_wiki"]
+    assert test_context.youtube.requests[-1].exclude_titles == ["old_video"]
+    assert test_context.google.requests[-1].exclude_urls == ["http://old.example.com"]
+
+    types = {item["json"]["resources"][0]["type"] for item in callback_recorder}
+    assert types == {
+        ResourceType.PAPER.value,
+        ResourceType.WIKI.value,
+        ResourceType.VIDEO.value,
+        ResourceType.BLOG.value,
+    }
 
 
-@pytest.mark.anyio
-async def test_rec_stream_returns_complete(async_client, test_context):
+@pytest.mark.anyio("asyncio")
+async def test_rec_recommend_filters_by_resource_types(async_client, test_context, callback_recorder):
     test_context.rag.retrieve_result = prepare_chunks()
-    oa_items, wiki_items, yt_items = build_default_responses()
-    test_context.openalex.responses = oa_items
+    _, wiki_items, yt_items, _ = build_default_responses()
     test_context.wiki.responses = wiki_items
     test_context.youtube.responses = yt_items
-    
+
     payload = {
-        "lecture_id": "lec",
-        "section_id": 3,
+        "lecture_id": 2,
+        "summary_id": 11,
+        "section_index": 1,
         "section_summary": "최적화 전략을 제시하는 강의",
+        "callback_url": "http://example.com/rec",
         "previous_summaries": [],
-        "yt_exclude": [],
-        "wiki_exclude": [],
-        "paper_exclude": [],
+        "yt_exclude": ["skip video"],
+        "wiki_exclude": ["skip wiki"],
+        "paper_exclude": ["should_ignore"],
+        "google_exclude": ["should_ignore"],
+        "resource_types": [ResourceType.WIKI.value, ResourceType.VIDEO.value],
     }
-    async with async_client.stream("POST", "/rec/recommend", json=payload) as response:
-        events = await collect_sse(response)
-    
-    complete = [evt for evt in events if evt[0] == "rec_complete"]
-    assert complete
-    assert complete[0][1]["completed_sources"] == 3
+    response = await async_client.post("/rec/recommend", json=payload)
+    assert response.status_code == 202
+    await asyncio.sleep(0.05)
+
+    assert not test_context.openalex.requests
+    assert not test_context.google.requests
+    assert test_context.wiki.requests and test_context.youtube.requests
+    assert test_context.wiki.requests[-1].exclude_titles == ["skip wiki"]
+    assert test_context.youtube.requests[-1].exclude_titles == ["skip video"]
+
+    types = {item["json"]["resources"][0]["type"] for item in callback_recorder}
+    assert types == {ResourceType.WIKI.value, ResourceType.VIDEO.value}
 
 
-@pytest.mark.anyio
-async def test_rec_stream_handles_errors(async_client, test_context, monkeypatch):
+@pytest.mark.anyio("asyncio")
+async def test_rec_recommend_rejects_invalid_resource_type(async_client):
+    payload = {
+        "lecture_id": 3,
+        "summary_id": 12,
+        "section_index": 2,
+        "section_summary": "네트워크 최적화 기법을 다룬다.",
+        "callback_url": "http://example.com/rec",
+        "previous_summaries": [],
+        "resource_types": ["INVALID"],
+    }
+    response = await async_client.post("/rec/recommend", json=payload)
+    assert response.status_code == 422
+
+
+@pytest.mark.anyio("asyncio")
+async def test_rec_recommend_handles_provider_failure(async_client, test_context, callback_recorder, monkeypatch):
     test_context.rag.retrieve_result = prepare_chunks()
-    
+    _, wiki_items, _, _ = build_default_responses()
+    test_context.wiki.responses = wiki_items
+
     async def failing_openalex(request):
         raise RuntimeError("OpenAlex down")
-    
+
     monkeypatch.setattr(test_context.openalex, "recommend_papers", failing_openalex)
-    oa_items, wiki_items, yt_items = build_default_responses()
-    test_context.wiki.responses = wiki_items
-    test_context.youtube.responses = yt_items
-    
+
     payload = {
-        "lecture_id": "lec",
-        "section_id": 4,
+        "lecture_id": 4,
+        "summary_id": 13,
+        "section_index": 3,
         "section_summary": "알고리즘 복잡도 분석",
+        "callback_url": "http://example.com/rec",
         "previous_summaries": [],
-        "yt_exclude": [],
-        "wiki_exclude": [],
-        "paper_exclude": [],
+        "resource_types": [ResourceType.PAPER.value, ResourceType.WIKI.value],
     }
-    async with async_client.stream("POST", "/rec/recommend", json=payload) as response:
-        events = await collect_sse(response)
-    errors = [evt for evt in events if evt[0] == "rec_error"]
-    assert errors
-    assert errors[0][1]["source"] == "openalex"
+    response = await async_client.post("/rec/recommend", json=payload)
+    assert response.status_code == 202
+    await asyncio.sleep(0.05)
+
+    # 실패한 provider도 빈 리소스로 콜백하고, 다른 provider는 정상 응답
+    types_by_payload = [res["json"]["resources"] for res in callback_recorder]
+    assert any(payload == [] for payload in types_by_payload)
+    assert any(
+        resources and resources[0]["type"] == ResourceType.WIKI.value
+        for resources in types_by_payload
+    )
 
 
-@pytest.mark.anyio
-async def test_rec_stream_applies_config(async_client, test_context):
-    test_context.rag.retrieve_result = prepare_chunks()
-    oa_items, wiki_items, yt_items = build_default_responses()
-    test_context.openalex.responses = oa_items
-    test_context.wiki.responses = wiki_items
-    test_context.youtube.responses = yt_items
-    
-    payload = {
-        "lecture_id": "lec",
-        "section_id": 5,
-        "section_summary": "데이터 시각화와 분석을 다룬다.",
-        "previous_summaries": [
-            {"section_id": 3, "summary": "이전 요약"},
-        ],
-        "yt_exclude": ["Old video"],
-        "wiki_exclude": ["Old wiki"],
-        "paper_exclude": ["old-id"],
-    }
-    await async_client.post("/rec/recommend", json=payload)
-    oa_request = test_context.openalex.requests[-1]
-    wiki_request = test_context.wiki.requests[-1]
-    yt_request = test_context.youtube.requests[-1]
-    
-    assert oa_request.top_k == test_context.settings.rec.openalex.top_k
-    assert oa_request.sort_by == "hybrid"
-    assert wiki_request.verify_wiki == test_context.settings.rec.wiki.verify
-    assert wiki_request.wiki_lang == "en"
-    assert yt_request.verify_yt == test_context.settings.rec.youtube.verify
-    assert yt_request.yt_lang == "en"
-    assert oa_request.exclude_ids == ["old-id"]
-    assert wiki_request.exclude_titles == ["Old wiki"]
-    assert yt_request.exclude_titles == ["Old video"]
-
-
-@pytest.mark.anyio
-async def test_rec_stream_requires_rag(async_client, test_context, monkeypatch):
+@pytest.mark.anyio("asyncio")
+async def test_rec_recommend_requires_rag(async_client, test_context, monkeypatch):
     def raise_error(*args, **kwargs):
         raise RuntimeError("rag failure")
-    
+
     monkeypatch.setattr(test_context.rag, "retrieve", raise_error)
     payload = {
-        "lecture_id": "lec",
-        "section_id": 6,
+        "lecture_id": 5,
+        "summary_id": 14,
+        "section_index": 4,
         "section_summary": "네트워크 최적화 기법을 다룬다.",
+        "callback_url": "http://example.com/rec",
         "previous_summaries": [],
-        "yt_exclude": [],
-        "wiki_exclude": [],
-        "paper_exclude": [],
     }
     response = await async_client.post("/rec/recommend", json=payload)
     assert response.status_code == 400
