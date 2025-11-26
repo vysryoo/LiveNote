@@ -13,7 +13,7 @@ else
 fi
 
 HOST=${HOST:-127.0.0.1}
-PORT=${PORT:-8000}
+PORT=${PORT:-8003}
 UVICORN_BIN="${VENV_DIR}/bin/uvicorn"
 APP="server.main:app"
 LOG_FILE="${ROOT_DIR}/tmp_uvicorn.log"

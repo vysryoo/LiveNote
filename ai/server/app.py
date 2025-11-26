@@ -36,16 +36,17 @@ def create_app(
     """FastAPI 앱 생성"""
     base_settings = settings or AppSettings()
     
+    # 서비스 인스턴스를 한 번만 준비해 재사용
+    _rag = _ensure_service(rag_service, "cap1_RAG_module.ragkit.service.RAGService")
+    _qa = _ensure_service(qa_service, "cap1_QA_module.qakit.service.QAService")
+    _openalex = _ensure_service(openalex_service, "cap1_openalex_module.openalexkit.service.OpenAlexService")
+    _wiki = _ensure_service(wiki_service, "cap1_wiki_module.wikikit.service.WikiService")
+    _youtube = _ensure_service(youtube_service, "cap1_youtube_module.youtubekit.service.YouTubeService")
+    _google = _ensure_service(google_service, "cap1_google_module.googlekit.service.GoogleService")
+    _openalex_owned = openalex_service is None
+    
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        # 서비스 및 설정 초기화 (지연 로딩)
-        _rag = _ensure_service(rag_service, "cap1_RAG_module.ragkit.service.RAGService")
-        _qa = _ensure_service(qa_service, "cap1_QA_module.qakit.service.QAService")
-        _openalex = _ensure_service(openalex_service, "cap1_openalex_module.openalexkit.service.OpenAlexService")
-        _wiki = _ensure_service(wiki_service, "cap1_wiki_module.wikikit.service.WikiService")
-        _youtube = _ensure_service(youtube_service, "cap1_youtube_module.youtubekit.service.YouTubeService")
-        _google = _ensure_service(google_service, "cap1_google_module.googlekit.service.GoogleService")
-        
         app.state.app_settings = base_settings
         app.state.rag_service = _rag
         app.state.qa_service = _qa
@@ -57,7 +58,7 @@ def create_app(
         try:
             yield
         finally:
-            if openalex_service is None and hasattr(_openalex, "close"):
+            if _openalex_owned and hasattr(_openalex, "close"):
                 await _openalex.close()
     
     app = FastAPI(
@@ -73,6 +74,15 @@ def create_app(
     app.include_router(rag_router)
     app.include_router(qa_router)
     app.include_router(rec_router)
+
+    # 테스트나 수동 호출 시 lifespan이 실행되지 않아도 안전하도록 기본 상태를 설정
+    app.state.app_settings = base_settings
+    app.state.rag_service = _rag
+    app.state.qa_service = _qa
+    app.state.openalex_service = _openalex
+    app.state.wiki_service = _wiki
+    app.state.youtube_service = _youtube
+    app.state.google_service = _google
     
     @app.get("/health")
     async def health_check():

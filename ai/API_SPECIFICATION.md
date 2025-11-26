@@ -251,7 +251,8 @@ POST /rag/text-upsert
 
 ### 형식
 - **Content-Type**: `application/json`
-- **Response**: `text/event-stream` (SSE)
+- **Response**: `202 Accepted` + JSON  
+  (실제 추천 결과는 `callback_url`로 비동기 전송)
 
 ### HTTP 메서드
 ```
@@ -260,30 +261,33 @@ POST /qa/generate
 
 ### 본문 예시
 
-**예시 1: 기본 QA 생성**
+**예시 1: 기본 QA 생성 (question_types 미지정 → 설정 기본 사용, 생성 순서대로 콜백)** 
 ```json
 {
-  "lecture_id": "001",
-  "section_id": 1,
-  "section_summary": "스택과 큐의 차이점을 설명하고, 각각의 사용 사례를 다룹니다."
+  "lecture_id": 1,
+  "section_index": 0,
+  "section_summary": "스택과 큐의 차이점을 설명하고, 각각의 사용 사례를 다룹니다.",
+  "callback_url": "https://example.com/qa"
 }
 ```
 
-**예시 2: 과목 정보 및 이전 QA 포함**
+**예시 2: question_types 지정 + 과목/이전 QA 포함**
 ```json
 {
-  "lecture_id": "002",
-  "section_id": 3,
+  "lecture_id": 2,
+  "section_index": 3,
   "section_summary": "이진 탐색 트리의 삽입, 삭제, 검색 연산을 구현하고 시간 복잡도를 분석합니다.",
   "subject": "자료구조",
+  "callback_url": "https://example.com/qa",
+  "question_types": ["CONCEPT", "COMPARISON"],
   "previous_qa": [
     {
-      "type": "개념",
+      "type": "CONCEPT",
       "question": "트리의 기본 개념은 무엇인가요?",
       "answer": "트리는 계층적 구조를 가진 자료구조로, 루트 노드를 시작으로 부모-자식 관계를 형성합니다."
     },
     {
-      "type": "응용",
+      "type": "APPLICATION",
       "question": "이진 트리는 어떤 상황에서 사용하나요?",
       "answer": "이진 트리는 검색, 정렬, 우선순위 큐 구현 등에 활용됩니다."
     }
@@ -295,12 +299,15 @@ POST /qa/generate
 
 | 필드명 | 타입 | 필수 | 설명 |
 |--------|------|------|------|
-| lecture_id | string | 예 | RAG 컬렉션과 매핑되는 강의 ID. 사전에 업서트된 ID여야 함 |
-| section_id | int | 예 | 섹션 번호. 1 이상의 정수 |
+| lecture_id | int | 예 | RAG 컬렉션과 매핑되는 강의 ID. 사전에 업서트된 ID여야 함 |
+| summary_id | int | 아니오 | 요약 ID. 없으면 `null` |
+| section_index | int | 예 | 섹션 인덱스(0-base). 0 이상 정수 |
 | section_summary | string | 예 | 섹션 요약 내용. 최소 10자 이상 권장 |
 | subject | string | 아니오 | 과목 정보 (예: "자료구조", "운영체제"). 질문 생성 시 컨텍스트로 활용 |
+| callback_url | string(URL) | 예 | 생성 결과를 받을 콜백 URL (`POST`로 호출됨) |
+| question_types | array[enum] | 아니오 | 생성할 질문 유형 리스트. 미지정 시 서버 설정(`QASettings.question_types`) 기본 사용. Enum: `CONCEPT`, `APPLICATION`, `ADVANCED`, `COMPARISON` |
 | previous_qa | array | 아니오 | 중복 방지를 위한 이전 QA 목록. 각 항목은 type, question, answer 포함 |
-| previous_qa[].type | string | 예 | 질문 유형 (개념/응용/비교/심화/실습) |
+| previous_qa[].type | string | 예 | 질문 유형 (예: `CONCEPT`/`APPLICATION` 등). 구타입(개념/응용 등)도 허용하나 Enum 값 권장 |
 | previous_qa[].question | string | 예 | 이전 질문 내용 |
 | previous_qa[].answer | string | 예 | 이전 답변 내용 |
 
@@ -321,13 +328,13 @@ event: qa_context
 data: {"event":"context_ready","collection_id":"lecture_001","chunk_count":2}
 
 event: qa_partial
-data: {"type":"개념","qa":{"type":"개념","question":"스택과 큐의 주요 차이점은 무엇인가요?","answer":"스택은 LIFO(Last In First Out) 방식으로 마지막에 들어간 데이터가 먼저 나오는 구조이고, 큐는 FIFO(First In First Out) 방식으로 먼저 들어간 데이터가 먼저 나오는 구조입니다."},"index":1}
+data: {"type":"CONCEPT","qa":{"type":"CONCEPT","question":"스택과 큐의 주요 차이점은 무엇인가요?","answer":"스택은 LIFO(Last In First Out) 방식으로 마지막에 들어간 데이터가 먼저 나오는 구조이고, 큐는 FIFO(First In First Out) 방식으로 먼저 들어간 데이터가 먼저 나오는 구조입니다."},"index":1}
 
 event: qa_partial
-data: {"type":"응용","qa":{"type":"응용","question":"웹 브라우저의 뒤로가기 기능은 스택과 큐 중 어느 자료구조를 사용하나요?","answer":"웹 브라우저의 뒤로가기 기능은 스택을 사용합니다. 가장 최근에 방문한 페이지부터 역순으로 돌아가야 하므로 LIFO 구조가 적합합니다."},"index":2}
+data: {"type":"APPLICATION","qa":{"type":"APPLICATION","question":"웹 브라우저의 뒤로가기 기능은 스택과 큐 중 어느 자료구조를 사용하나요?","answer":"웹 브라우저의 뒤로가기 기능은 스택을 사용합니다. 가장 최근에 방문한 페이지부터 역순으로 돌아가야 하므로 LIFO 구조가 적합합니다."},"index":2}
 
 event: qa_partial
-data: {"type":"심화","qa":{"type":"심화","question":"우선순위 큐를 구현할 때 힙(Heap) 자료구조를 사용하는 이유는 무엇인가요?","answer":"힙은 삽입과 삭제 연산이 O(log n) 시간 복잡도를 가지므로, 우선순위 큐의 핵심 연산인 최댓값/최솟값 추출을 효율적으로 수행할 수 있습니다."},"index":3}
+data: {"type":"ADVANCED","qa":{"type":"ADVANCED","question":"우선순위 큐를 구현할 때 힙(Heap) 자료구조를 사용하는 이유는 무엇인가요?","answer":"힙은 삽입과 삭제 연산이 O(log n) 시간 복잡도를 가지므로, 우선순위 큐의 핵심 연산인 최댓값/최솟값 추출을 효율적으로 수행할 수 있습니다."},"index":3}
 
 event: qa_complete
 data: {"total":3,"duration_ms":4521}
@@ -358,6 +365,8 @@ data: {"total":2,"duration_ms":5128}
 - `previous_qa`에 이전 질문을 포함하면 중복 질문 생성을 방지할 수 있습니다
 - OpenAI API 오류 시 일부 질문만 생성될 수 있습니다 (qa_error 이벤트 확인)
 - SSE 연결이 끊기면 클라이언트에서 재시도 로직 구현 필요
+- `question_types`에 존재하지 않는 Enum 값이 들어오면 HTTP 422
+- 콜백: 각 QA가 생성되는 순서대로 `qnaList`에 1개씩 담아 여러 번 전송됩니다. 최종 전체 목록 콜백은 보내지 않습니다.
 
 ### 참고
 - 질문 유형은 `server/config.py`의 `QASettings.question_types`에서 설정 (기본: 개념/응용/심화)
@@ -372,7 +381,8 @@ data: {"total":2,"duration_ms":5128}
 
 ### 형식
 - **Content-Type**: `application/json`
-- **Response**: `text/event-stream` (SSE)
+- **Response**: `202 Accepted` + JSON  
+  (실제 추천 결과는 `callback_url`로 비동기 전송)
 
 ### HTTP 메서드
 ```
@@ -381,12 +391,13 @@ POST /rec/recommend
 
 ### 본문 예시
 
-**예시 1: 기본 추천 요청**
+**예시 1: 기본 추천 요청 (필수 필드만, resource_types 미지정 → 모든 Provider 실행)**
 ```json
 {
-  "lecture_id": "001",
-  "section_id": 1,
+  "lecture_id": 1,
+  "section_index": 0,
   "section_summary": "스택과 큐의 차이점을 설명하고 활용 사례를 다룹니다.",
+  "callback_url": "https://example.com/rec-callback",
   "previous_summaries": [],
   "yt_exclude": [],
   "wiki_exclude": [],
@@ -395,20 +406,23 @@ POST /rec/recommend
 }
 ```
 
-**예시 2: 이전 섹션 및 제외 항목 포함 요청**
+**예시 2: 이전 섹션, 제외 항목, resource_types 지정 (Wiki+YouTube만 실행)**
 ```json
 {
-  "lecture_id": "002",
-  "section_id": 3,
+  "lecture_id": 2,
+  "summary_id": 10,
+  "section_index": 2,
   "section_summary": "이진 탐색 트리의 삽입, 삭제, 검색 연산을 구현합니다.",
   "previous_summaries": [
-    {"section_id": 1, "summary": "트리의 기본 개념과 용어"},
-    {"section_id": 2, "summary": "이진 트리의 순회 방법"}
+    {"section_index": 0, "summary": "트리의 기본 개념과 용어", "timestamp": 111111},
+    {"section_index": 1, "summary": "이진 트리의 순회 방법", "timestamp": 222222}
   ],
+  "callback_url": "https://example.com/rec-callback",
   "yt_exclude": ["Binary Search Tree Basics"],
   "wiki_exclude": ["이진 트리"],
   "paper_exclude": ["W2103456789"],
-  "google_exclude": ["https://example.com/old-tutorial"]
+  "google_exclude": ["https://example.com/old-tutorial"],
+  "resource_types": ["WIKI", "VIDEO"]
 }
 ```
 
@@ -416,83 +430,148 @@ POST /rec/recommend
 
 | 필드명 | 타입 | 필수 | 설명 |
 |--------|------|------|------|
-| lecture_id | string | 예 | RAG 컬렉션과 매핑되는 강의 ID. 사전에 업서트된 ID여야 함 |
-| section_id | int | 예 | 섹션 번호. 1 이상의 정수 |
-| section_summary | string | 예 | 현재 섹션 요약 내용 |
-| previous_summaries | array | 아니오 | 이전 섹션 요약 목록. `section_id`는 1 이상이어야 함 |
+| lecture_id | int | 예 | RAG 컬렉션과 매핑되는 강의 ID. 1 이상 정수 |
+| summary_id | int | 아니오 | 요약 ID. 없으면 `null` |
+| section_index | int | 예 | 섹션 인덱스(0-base). 0 이상 정수 |
+| section_summary | string | 예 | 현재 섹션 요약 내용 (최소 10자 권장) |
+| callback_url | string(URL) | 예 | 추천 결과를 받을 콜백 URL (`POST`로 호출됨) |
+| previous_summaries | array | 아니오 | 이전 섹션 요약 목록 |
+| previous_summaries[].section_index | int | 예 | 이전 섹션 인덱스(0-base). 0 이상 정수 |
+| previous_summaries[].summary | string | 예 | 이전 섹션 요약 내용 |
+| previous_summaries[].timestamp | int | 아니오 | 해당 요약의 타임스탬프(ms). 없으면 `null` |
 | yt_exclude | array[string] | 아니오 | 추천에서 제외할 유튜브 영상 제목 목록 |
 | wiki_exclude | array[string] | 아니오 | 추천에서 제외할 위키피디아 문서 제목 목록 |
 | paper_exclude | array[string] | 아니오 | 추천에서 제외할 논문 ID(OpenAlex ID) 목록 |
 | google_exclude | array[string] | 아니오 | 추천에서 제외할 구글 검색 결과 URL 목록 |
+| resource_types | array[enum] | 아니오 | 실행할 Provider 필터. 미지정 시 모든 Provider(OpenAlex/Wiki/YouTube/Google) 실행. Enum: `PAPER`(OpenAlex), `WIKI`(Wikipedia), `VIDEO`(YouTube), `BLOG`(Google) |
 
-### 출력 이벤트 설명
+**exclude 적용 규칙 (resource_types 지정 시, Provider 단계 적용)**  
+- `PAPER` → OpenAlex 호출 시 `paper_exclude`를 `exclude_ids`로 전달  
+- `WIKI` → Wikipedia 호출 시 `wiki_exclude`를 `exclude_titles`로 전달  
+- `VIDEO` → YouTube 호출 시 `yt_exclude`를 `exclude_titles`로 전달  
+- `BLOG` → Google 호출 시 `google_exclude`를 `exclude_urls`로 전달  
+그 외 exclude 배열은 무시. 필터링은 각 Provider 내부(요청 단계)에서 수행됩니다.
 
-| 이벤트 타입 | 주요 필드 | 설명 |
-|------------|-----------|------|
-| rec_context | collection_id, chunk_count | 추천 생성 전 사용된 컬렉션 ID 및 검색된 청크 수 |
-| rec_partial | source, count, items[], elapsed_ms | 각 Provider의 추천 결과. 완료 순서대로 전송 (source: openalex/wiki/youtube/google) |
-| rec_error | source, error, elapsed_ms | 특정 Provider 실패 시 오류 정보 |
-| rec_complete | completed_sources, duration_ms | 전체 완료. 성공한 Provider 수와 총 소요 시간 |
+### 동작 방식
 
-**items[] 구조 (Provider별 차이)**:
-- **OpenAlex**: `{id, title, authors, year, cited_by_count, publication_date, url, abstract, score, reason}`
-- **Wikipedia**: `{title, url, language, extract, score, reason}`
-- **YouTube**: `{video_id, title, channel_title, published_at, view_count, url, description, score, reason}`
-- **Google**: `{title, url, snippet, score, reason}`
+1. 클라이언트가 `/rec/recommend`로 추천 요청을 보냅니다.
+2. 서버는 내부 RAG에서 컨텍스트 청크를 검색합니다.
+3. RAG 검색에 성공하면 HTTP `202 Accepted`와 함께 `collection_id`를 응답하고,  
+   이후 백그라운드에서 4개 Provider(OpenAlex, Wiki, YouTube, Google)를 비동기로 호출합니다.
+4. 각 Provider의 추천 결과는 준비되는 대로 `callback_url`로 별도 `POST` 요청으로 전달됩니다.
 
-### 응답
+### 즉시 응답 형식 (`202 Accepted`)
 
-**예시 1: 정상 SSE 스트림 (4개 Provider 모두 성공)**
-```
-event: rec_context
-data: {"event":"context_ready","collection_id":"lecture_001","chunk_count":3}
-
-event: rec_partial
-data: {"source":"wiki","count":2,"items":[{"title":"스택 (자료 구조)","url":"https://ko.wikipedia.org/wiki/%EC%8A%A4%ED%83%9D_(%EC%9E%90%EB%A3%8C_%EA%B5%AC%EC%A1%B0)","language":"ko","extract":"스택(stack)은 제한적으로 접근할 수 있는 나열 구조이다...","score":85.5,"reason":"스택의 개념과 구현을 잘 설명함"},{"title":"큐 (자료 구조)","url":"https://ko.wikipedia.org/wiki/%ED%81%90_(%EC%9E%90%EB%A3%8C_%EA%B5%AC%EC%A1%B0)","language":"ko","extract":"큐(queue)는 컴퓨터의 기본적인 자료 구조의 한가지로...","score":82.0,"reason":"큐의 기본 개념과 활용 사례 포함"}],"elapsed_ms":1234}
-
-event: rec_partial
-data: {"source":"youtube","count":2,"items":[{"video_id":"XYZ123","title":"Stack and Queue Explained","channel_title":"CS Academy","published_at":"2024-01-15T10:00:00Z","view_count":150000,"url":"https://www.youtube.com/watch?v=XYZ123","description":"Learn the differences between stack and queue...","score":78.5,"reason":"시각적 설명이 우수하고 예제가 풍부함"},{"video_id":"ABC456","title":"Data Structures: Stacks & Queues","channel_title":"Tech Tutorials","published_at":"2024-02-20T14:30:00Z","view_count":95000,"url":"https://www.youtube.com/watch?v=ABC456","description":"Complete guide to stack and queue implementation...","score":75.0,"reason":"구현 코드 예제 포함"}],"elapsed_ms":2156}
-
-event: rec_partial
-data: {"source":"openalex","count":2,"items":[{"id":"W2103456789","title":"Efficient Stack and Queue Implementations","authors":["John Smith","Jane Doe"],"year":2023,"cited_by_count":45,"publication_date":"2023-05-10","url":"https://openalex.org/W2103456789","abstract":"This paper presents novel implementations of stack and queue...","score":88.0,"reason":"최신 연구이며 인용 횟수가 높음"},{"id":"W1987654321","title":"Comparative Analysis of Stack-Based Algorithms","authors":["Alice Brown"],"year":2022,"cited_by_count":32,"publication_date":"2022-09-15","url":"https://openalex.org/W1987654321","abstract":"We compare various stack-based algorithms...","score":80.5,"reason":"알고리즘 비교 분석이 상세함"}],"elapsed_ms":3421}
-
-event: rec_partial
-data: {"source":"google","count":2,"items":[{"title":"Stack vs Queue: Complete Guide","url":"https://www.geeksforgeeks.org/stack-vs-queue/","snippet":"Learn the key differences between stack and queue data structures...","score":90.0,"reason":"실무 예제와 코드 구현이 포함됨"},{"title":"Understanding Stacks and Queues","url":"https://www.tutorialspoint.com/data_structures/stack_queue.htm","snippet":"A comprehensive tutorial on stack and queue operations...","score":85.5,"reason":"초보자 친화적인 설명"}],"elapsed_ms":1876}
-
-event: rec_complete
-data: {"completed_sources":4,"duration_ms":5421}
+**예시 1: 정상 접수**
+```json
+{
+  "status": "accepted",
+  "collection_id": "lecture_1"
+}
 ```
 
-**예시 2: 일부 Provider 실패 포함 SSE 스트림**
+**예시 2: RAG 검색 실패 (400)**
+```json
+{
+  "detail": "RAG 검색 실패: Collection lecture_999 does not exist"
+}
 ```
-event: rec_context
-data: {"event":"context_ready","collection_id":"lecture_002","chunk_count":3}
 
-event: rec_partial
-data: {"source":"wiki","count":1,"items":[{"title":"이진 탐색 트리","url":"https://ko.wikipedia.org/wiki/%EC%9D%B4%EC%A7%84_%ED%83%90%EC%83%89_%ED%8A%B8%EB%A6%AC","language":"ko","extract":"이진 탐색 트리(binary search tree)는...","score":87.0,"reason":"개념 설명이 명확함"}],"elapsed_ms":1123}
+### 콜백 요청 형식
 
-event: rec_error
-data: {"source":"youtube","error":"YouTube API quota exceeded","elapsed_ms":456}
+서버는 각 Provider별로 한 번씩(최대 4회) `callback_url`로 POST를 수행합니다.
 
-event: rec_partial
-data: {"source":"openalex","count":2,"items":[{"id":"W3012345678","title":"Binary Search Trees: A Survey","authors":["Bob Johnson"],"year":2024,"cited_by_count":12,"publication_date":"2024-03-01","url":"https://openalex.org/W3012345678","abstract":"This survey covers recent advances in binary search tree...","score":82.5,"reason":"최신 서베이 논문"}],"elapsed_ms":2987}
+#### HTTP 메서드
 
-event: rec_partial
-data: {"source":"google","count":2,"items":[{"title":"Binary Search Tree Implementation","url":"https://www.programiz.com/dsa/binary-search-tree","snippet":"Learn how to implement binary search tree with examples...","score":88.5,"reason":"코드 예제가 명확함"}],"elapsed_ms":1654}
+```
+POST {callback_url}
+```
 
-event: rec_complete
-data: {"completed_sources":3,"duration_ms":4987}
+#### 콜백 본문 예시
+
+**예시 1: 논문(OpenAlex) 추천 콜백**
+```json
+{
+  "lectureId": 1,
+  "summaryId": 10,
+  "sectionIndex": 0,
+  "resources": [
+    {
+      "type": "PAPER",
+      "title": "Efficient Stack and Queue Implementations",
+      "url": "https://openalex.org/W2103456789",
+      "description": "This paper presents novel implementations of stack and queue...",
+      "score": 88.0,
+      "reason": "최신 연구이며 인용 횟수가 높음",
+      "detail": {
+        "openalexId": "W2103456789",
+        "citedByCount": 45,
+        "publicationDate": "2023-05-10",
+        "authors": ["John Smith", "Jane Doe"]
+      }
+    }
+  ]
+}
+```
+
+**예시 2: 위키/유튜브/구글 콜백 (혼합 예시)**
+```json
+{
+  "lectureId": 1,
+  "summaryId": 10,
+  "sectionIndex": 0,
+  "resources": [
+    {
+      "type": "WIKI",
+      "title": "스택 (자료 구조)",
+      "url": "https://ko.wikipedia.org/wiki/%EC%8A%A4%ED%83%9D_(%EC%9E%90%EB%A3%8C_%EA%B5%AC%EC%A1%B0)",
+      "description": "스택(stack)은 제한적으로 접근할 수 있는 나열 구조이다...",
+      "score": 85.5,
+      "reason": "스택의 개념과 구현을 잘 설명함",
+      "detail": {
+        "language": "ko",
+        "extract": "스택(stack)은 제한적으로 접근할 수 있는 나열 구조이다..."
+      }
+    },
+    {
+      "type": "VIDEO",
+      "title": "Stack and Queue Explained",
+      "url": "https://www.youtube.com/watch?v=XYZ123",
+      "description": "Learn the differences between stack and queue...",
+      "score": 78.5,
+      "reason": "시각적 설명이 우수하고 예제가 풍부함",
+      "detail": {
+        "videoId": "XYZ123",
+        "channelTitle": "CS Academy",
+        "viewCount": 150000
+      }
+    },
+    {
+      "type": "BLOG",
+      "title": "Stack vs Queue: Complete Guide",
+      "url": "https://www.geeksforgeeks.org/stack-vs-queue/",
+      "description": "Learn the key differences between stack and queue data structures...",
+      "score": 90.0,
+      "reason": "실무 예제와 코드 구현이 포함됨",
+      "detail": {
+        "snippet": "Learn the key differences between stack and queue data structures..."
+      }
+    }
+  ]
+}
 ```
 
 ### 주의 사항
 - `lecture_id`에 해당하는 컬렉션이 없으면 HTTP 404 오류 발생
-- `previous_summaries`의 `section_id`는 1 이상이어야 하며, 현재 `section_id`보다 작아야 합니다
-- Provider별 API 키가 없거나 할당량 초과 시 해당 Provider는 `rec_error` 이벤트 발생
-- 4개 Provider가 모두 실패하면 `completed_sources: 0`으로 종료됩니다
+- `previous_summaries`의 `section_index`는 0 이상이어야 하며, 일반적으로 현재 `section_index`보다 작아야 합니다
+- Provider별 API 키가 없거나 할당량 초과 시 해당 Provider의 추천은 콜백 `resources`에 포함되지 않고 서버 로그에만 기록됩니다
+- 4개 Provider가 모두 실패한 경우에도 콜백이 0개 또는 `resources: []` 형태로 도착할 수 있습니다
 - exclude 배열에 너무 많은 항목이 있으면 추천 결과가 적어질 수 있습니다
+- `resource_types`에 존재하지 않는 Enum 값이 들어오면 HTTP 422
+- exclude는 각 Provider 요청 단계에서만 적용됩니다 (OpenAlex: `exclude_ids`, Wiki/YouTube: `exclude_titles`, Google: `exclude_urls`)
 
 ### 참고
-- 4개 Provider(OpenAlex, Wiki, YouTube, Google)는 병렬로 실행되며 완료 순서는 보장되지 않습니다
+- 4개 Provider(OpenAlex, Wiki, YouTube, Google)는 병렬로 실행되며 콜백 도착 순서는 보장되지 않습니다
 - 각 Provider의 상세 동작은 다음 문서를 참조하세요:
   - OpenAlex: `documents/REC_OPENALEX_동작과정.md`
   - YouTube: `documents/REC_YOUTUBE_동작과정.md`
@@ -510,6 +589,7 @@ data: {"completed_sources":3,"duration_ms":4987}
 | 코드 | 의미 | 발생 상황 |
 |------|------|-----------|
 | 200 | OK | 요청 성공 (업서트 완료) |
+| 202 | Accepted | 비동기 요청 접수 (QA/REC 콜백) |
 | 400 | Bad Request | 잘못된 입력 (필수 필드 누락, 형식 오류) |
 | 404 | Not Found | 존재하지 않는 컬렉션 (lecture_id) |
 | 422 | Unprocessable Entity | 유효성 검증 실패 (Pydantic 모델) |

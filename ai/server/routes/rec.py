@@ -41,6 +41,7 @@ from ..dependencies import (
     get_youtube_service,
     get_google_service,
 )
+from ..models import ResourceType
 from ..utils import (
     CamelModel,
     build_collection_id,
@@ -75,6 +76,10 @@ class RECRequest(CamelModel):
     wiki_exclude: List[str] = Field(default_factory=list, description="제외할 위키 제목")
     paper_exclude: List[str] = Field(default_factory=list, description="제외할 논문 ID")
     google_exclude: List[str] = Field(default_factory=list, description="제외할 구글 URL")
+    resource_types: Optional[List[ResourceType]] = Field(
+        default=None,
+        description="요청 리소스 유형 (미지정 시 모든 유형)"
+    )
 
     @validator("section_summary")
     def validate_section_summary(cls, value: str) -> str:
@@ -112,6 +117,13 @@ async def recommend_resources(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"RAG 검색 실패: {exc}",
         ) from exc
+
+    selected_resource_types = _select_resource_types(request.resource_types)
+    if not selected_resource_types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="요청된 리소스 유형이 없습니다."
+        )
 
     openalex_prev = [
         OpenAlexPreviousSummary(
@@ -204,83 +216,108 @@ async def recommend_resources(
         min_score=settings.rec.google.min_score,
     )
 
-    async def provider_task(source: str, coro):
+    async def provider_task(res_type: ResourceType, coro):
         try:
             result = await coro
-            await post_resources_callback(request, map_resources(source, result))
+            await post_resources_callback(request, map_resources(res_type, result))
         except Exception as exc:  # pragma: no cover - 외부 서비스 예외
-            logger.exception("REC provider %s 실패: %s", source, exc)
+            logger.exception("REC provider %s 실패: %s", res_type.value, exc)
             await post_resources_callback(request, [])
 
-    asyncio.create_task(
-        provider_task("openalex", openalex_service.recommend_papers(openalex_request))
-    )
-    asyncio.create_task(
-        provider_task("wiki", wiki_service.recommend_pages(wiki_request))
-    )
-    asyncio.create_task(
-        provider_task("youtube", youtube_service.recommend_videos(youtube_request))
-    )
-    asyncio.create_task(
-        provider_task("google", google_service.recommend_results(google_request))
-    )
+    providers = {
+        ResourceType.PAPER: lambda: openalex_service.recommend_papers(openalex_request),
+        ResourceType.WIKI: lambda: wiki_service.recommend_pages(wiki_request),
+        ResourceType.VIDEO: lambda: youtube_service.recommend_videos(youtube_request),
+        ResourceType.BLOG: lambda: google_service.recommend_results(google_request),
+    }
+
+    for res_type in selected_resource_types:
+        task_coro = providers[res_type]()
+        asyncio.create_task(provider_task(res_type, task_coro))
 
     return {"status": "accepted", "collection_id": collection_id}
 
 
-def map_resources(source: str, result: List) -> List[dict]:
+def _select_resource_types(resource_types: Optional[List[ResourceType]]) -> List[ResourceType]:
+    """요청된 리소스 유형을 정규화 (중복 제거 포함)"""
+    if resource_types is None:
+        return [
+            ResourceType.PAPER,
+            ResourceType.WIKI,
+            ResourceType.VIDEO,
+            ResourceType.BLOG,
+        ]
+    normalized: List[ResourceType] = []
+    for res_type in resource_types:
+        try:
+            enum_value = res_type if isinstance(res_type, ResourceType) else ResourceType(res_type)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"지원하지 않는 리소스 유형: {res_type}"
+            ) from exc
+        if enum_value not in normalized:
+            normalized.append(enum_value)
+    return normalized
+
+
+def map_resources(res_type: ResourceType, result: List) -> List[dict]:
     """provider 응답을 콜백용 리소스 포맷으로 변환"""
     mapped = []
-    if source == "openalex":
+    if res_type is ResourceType.PAPER:
         for item in result:  # type: OpenAlexResponse
+            detail = item.paper_info.model_dump()
             mapped.append(
                 {
-                    "type": "paper",
+                    "type": ResourceType.PAPER.value,
                     "title": item.paper_info.title,
                     "url": item.paper_info.url,
                     "description": item.paper_info.abstract,
                     "score": item.score,
                     "reason": item.reason,
-                    "detail": item.paper_info.model_dump(),
+                    "detail": detail,
                 }
             )
-    elif source == "wiki":
+    elif res_type is ResourceType.WIKI:
         for item in result:  # type: WikiResponse
+            detail = item.page_info.model_dump()
             mapped.append(
                 {
-                    "type": "wiki",
+                    "type": ResourceType.WIKI.value,
                     "title": item.page_info.title,
                     "url": item.page_info.url,
                     "description": item.page_info.extract,
                     "score": item.score,
                     "reason": item.reason,
-                    "detail": item.page_info.model_dump(),
+                    "detail": detail,
                 }
             )
-    elif source == "youtube":
+    elif res_type is ResourceType.VIDEO:
         for item in result:  # type: YouTubeResponse
+            detail = item.video_info.model_dump()
             mapped.append(
                 {
-                    "type": "video",
+                    "type": ResourceType.VIDEO.value,
                     "title": item.video_info.title,
                     "url": item.video_info.url,
                     "description": item.video_info.extract,
                     "score": item.score,
                     "reason": item.reason,
-                    "detail": item.video_info.model_dump(),
+                    "detail": detail,
                 }
             )
-    elif source == "google":
+    elif res_type is ResourceType.BLOG:
         for item in result:  # type: GoogleResponse
+            detail = item.search_result.model_dump()
             mapped.append(
                 {
-                    "type": "google",
+                    "type": ResourceType.BLOG.value,
                     "title": item.search_result.title,
                     "url": item.search_result.url,
                     "description": item.search_result.snippet,
                     "score": item.score,
                     "reason": item.reason,
-                    "detail": item.search_result.model_dump(),
+                    "detail": detail,
                 }
             )
     return mapped
