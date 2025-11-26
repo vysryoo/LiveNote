@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: livenote-backend
+  
+  datasource:
+    # H2 Database (개발용 - Supabase 연결 문제 시 임시 사용)
+    url: jdbc:h2:mem:livenote
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  h2:
+    console:
+      enabled: true
+
+  jpa:
+    hibernate:
+      ddl-auto: update  
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+  
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+
+jwt:
+  secret: livenote-secret-key-change-in-production-environment-minimum-256-bits
+  expiration: 86400000 # 24 hours in milliseconds
+
+openai:
+  api-key: 
+  chat-model: gpt-4o-mini
+  realtime-model: gpt-4o-realtime-preview-2024-10-01
+  transcription-model: gpt-4o-transcribe
+
+
+logging:
+  level:
+    com.livenote: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
+
