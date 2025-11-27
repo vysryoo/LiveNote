@@ -1,5 +1,6 @@
 package com.capstone.livenote.application.ai.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,6 +16,7 @@ public class AiRequestPayloads {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class PreviousSummaryPayload {
+        @JsonProperty("section_id")
         private Integer sectionIndex;
         private String summary;
     }

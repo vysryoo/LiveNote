@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import com.capstone.livenote.application.ai.service.SectionAggregationService;
+import org.springframework.context.annotation.Lazy;
 
 import java.util.HashMap;
 import java.util.List;
@@ -17,17 +17,23 @@ import java.util.Map;
 
 // STT 저장, 섹션/요약 트리거만
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class TranscriptService {
 
     private final TranscriptRepository transcriptRepository;
     // private final SummaryService summaryService;      // 예전 30초 요약용 (사용 안 하면 삭제해도 됨)
-    private final SectionAggregationService sectionAggregationService;
+    private final StreamGateway streamGateway; // 실시간 전송
 
     // 재시작 감지용: 강의별 raw startSec 오프셋
     private final Map<Long, Integer> baseOffsets = new HashMap<>();
     private final Map<Long, Integer> lastRawStarts = new HashMap<>();
+
+    // 순환 참조 고리 끊기
+    public TranscriptService(TranscriptRepository transcriptRepository,
+                             @Lazy StreamGateway streamGateway) {
+        this.transcriptRepository = transcriptRepository;
+        this.streamGateway = streamGateway;
+    }
 
     @Transactional(readOnly = true)
     public List<Transcript> findSince(Long lectureId, Integer sinceSec) {
@@ -74,11 +80,11 @@ public class TranscriptService {
                         .build()
         );
 
-        // 4) 섹션/요약/AI 요청 로직 트리거
-        sectionAggregationService.onNewTranscript(lectureId, sectionIndex, adjustedStart, adjustedEnd, text);
+        // 4) 저장된 전사를 모든 클라이언트에게 실시간 브로드캐스트 (WebSocket)
+        TranscriptResponseDto dto = TranscriptResponseDto.from(t);
+        streamGateway.sendTranscript(lectureId, dto, true);
 
-        // 5) 호출한 쪽(AudioWebSocketHandler 등)에서 WebSocket 전송하도록 DTO 반환
-        return TranscriptResponseDto.from(t);
+        return dto;
     }
 
     /**
@@ -118,5 +124,23 @@ public class TranscriptService {
 
         lastRawStarts.put(lectureId, rawStartSec);
         return base != null ? base : 0;
+    }
+
+
+    // 특정 섹션의 텍스트를 모두 합쳐서 반환 (요약 생성용)
+    @Transactional(readOnly = true)
+    public String getCombinedText(Long lectureId, Integer sectionIndex) {
+        // 섹션 인덱스로 조회 (repository 메서드 추가 필요)
+        List<Transcript> transcripts = transcriptRepository.findByLectureIdAndSectionIndexOrderByStartSecAsc(lectureId, sectionIndex);
+
+        if (transcripts.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (Transcript t : transcripts) {
+            sb.append(t.getText()).append(" ");
+        }
+        return sb.toString().trim();
     }
 }

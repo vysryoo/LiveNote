@@ -14,10 +14,12 @@ import org.springframework.util.Assert;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * AI 서버(FastAPI) RAG 연동 클라이언트
@@ -40,28 +42,26 @@ public class RagClient {
         return callbackBaseUrl + "/api/ai/callback?type=" + type;
     }
 
+    // 1. QnA 생성 요청 (snake_case 적용)
     public void requestQnaGeneration(AiRequestPayloads.QnaGeneratePayload payload) {
         Map<String, Object> body = new HashMap<>();
-        body.put("lectureId", payload.getLectureId());
-        body.put("summaryId", payload.getSummaryId());
-        body.put("sectionIndex", payload.getSectionIndex());
-        body.put("sectionSummary", payload.getSectionSummary());
+
+        // 명세서 "예시 1" 및 "입력 필드 설명" 기준 매핑
+        body.put("lecture_id", payload.getLectureId());       // lectureId -> lecture_id
+        //body.put("lecture_id", String.valueOf(payload.getLectureId()));
+
+        body.put("summary_id", payload.getSummaryId());       // summaryId -> summary_id
+        body.put("section_index", payload.getSectionIndex()); // sectionIndex -> section_index
+        body.put("section_summary", payload.getSectionSummary()); // sectionSummary -> section_summary
+
         body.put("subject", payload.getSubject());
-        body.put("previousQa", payload.getPreviousQa());
-        body.put("callbackUrl", callback("qna"));
+        body.put("previous_qa", payload.getPreviousQa());     // previousQa -> previous_qa
+        body.put("callback_url", callback("qna"));            // callbackUrl -> callback_url
 
         String url = baseUrl + "/qa/generate";
-        log.info("🤖 [AI Server Call] QnA Generation Request:");
-        log.info("   └─ URL: POST {}", url);
-        log.info("   └─ lectureId: {}", payload.getLectureId());
-        log.info("   └─ summaryId: {}", payload.getSummaryId());
-        log.info("   └─ sectionIndex: {}", payload.getSectionIndex());
-        log.info("   └─ subject: {}", payload.getSubject());
-        log.info("   └─ sectionSummary length: {} chars", 
-                payload.getSectionSummary() != null ? payload.getSectionSummary().length() : 0);
-        log.info("   └─ previousQa count: {}", 
-                payload.getPreviousQa() != null ? payload.getPreviousQa().size() : 0);
-        log.info("   └─ callbackUrl: {}", callback("qna"));
+
+        log.info("🤖 [AI QnA] Request: lecture_id={} section_index={} callback={}",
+                payload.getLectureId(), payload.getSectionIndex(), callback("qna"));
 
         try {
             webClient.post()
@@ -71,42 +71,111 @@ public class RagClient {
                     .retrieve()
                     .toBodilessEntity()
                     .block();
-            log.info("✅ [AI Server Call] QnA request sent successfully");
+            log.info("✅ [AI QnA] Request sent successfully");
         } catch (Exception e) {
-            log.error("❌ [AI Server Call] QnA request failed: {}", e.getMessage(), e);
+            log.error("❌ [AI QnA] Request failed: {}", e.getMessage(), e);
             throw e;
         }
     }
 
+    // 2. Resource 추천 요청 (snake_case 적용)
+//    public void requestResourceRecommendation(AiRequestPayloads.ResourceRecommendPayload payload) {
+//        Map<String, Object> body = new HashMap<>();
+//
+//        // 명세서 "예시 1" 기준 매핑
+//        // 주의: QnA는 section_index인데, REC 명세서는 section_id 라고 되어 있음. 명세서 텍스트 따름.
+//        //body.put("lecture_id", payload.getLectureId());          // lectureId -> lecture_id
+//        body.put("lecture_id", String.valueOf(payload.getLectureId()));
+//        //body.put("summary_id", payload.getSummaryId());          // 콜백 시 필요하므로 전송 (명세에 없어도 보통 허용됨)
+//        //body.put("section_id", payload.getSectionIndex());       // ★ REC 명세서는 section_id 입니다!
+//        body.put("section_id", payload.getSectionIndex() + 1);
+//        body.put("section_summary", payload.getSectionSummary());// sectionSummary -> section_summary
+//
+//        //body.put("previous_summaries", payload.getPreviousSummaries()); // previousSummaries -> previous_summaries
+//        List<Map<String, Object>> prev = payload.getPreviousSummaries().stream()
+//                .map(s -> {
+//                    Map<String, Object> m = new HashMap<>();
+//                    m.put("section_id", s.getSectionIndex() + 1); // 1-base로 변환
+//                    m.put("summary", s.getSummary());
+//                    return m;
+//                })
+//                .collect(Collectors.toList());
+//
+//        body.put("previous_summaries", prev);
+//
+//        body.put("yt_exclude", payload.getYtExclude());          // ytExclude -> yt_exclude
+//        body.put("wiki_exclude", payload.getWikiExclude());      // wikiExclude -> wiki_exclude
+//        body.put("paper_exclude", payload.getPaperExclude());    // paperExclude -> paper_exclude
+//        body.put("google_exclude", payload.getGoogleExclude());  // googleExclude -> google_exclude
+//
+//        //body.put("callback_url", callback("resources"));         // callbackUrl -> callback_url
+//
+//        String url = baseUrl + "/rec/recommend";
+//
+//        log.info("🤖 [AI Resource] Request: lecture_id={} section_id={} callback={}",
+//                payload.getLectureId(), payload.getSectionIndex(), callback("resources"));
+//
+//        try {
+//            String response = webClient.post()
+//                    .uri(url)
+//                    .contentType(MediaType.APPLICATION_JSON)
+//                    .bodyValue(body)
+//                    .retrieve()
+//                    .onStatus(
+//                            status -> status.is4xxClientError() || status.is5xxServerError(),
+//                            clientResponse -> clientResponse.bodyToMono(String.class)
+//                                    .map(errorBody -> {
+//                                        log.error("❌ [AI Resource] status={} body={}",
+//                                                clientResponse.statusCode(), errorBody);
+//                                        return new RuntimeException("AI error: " + errorBody);
+//                                    })
+//                    )
+//                    .bodyToMono(String.class)
+//                    .block();
+//
+//            log.info("✅ [AI Resource] Request sent successfully. rawResponse={}", response);
+//        } catch (Exception e) {
+//            log.error("❌ [AI Resource] Request failed: {}", e.getMessage(), e);
+//            throw e;
+//        }
+//
+//    }
+
+    // 2. Resource 추천 요청 (snake_case + 실제 필드 둘 다 보내기)
     public void requestResourceRecommendation(AiRequestPayloads.ResourceRecommendPayload payload) {
         Map<String, Object> body = new HashMap<>();
-        body.put("lectureId", payload.getLectureId());
-        body.put("summaryId", payload.getSummaryId());
+
+        body.put("lecture_id", String.valueOf(payload.getLectureId()));
+
+        // 명세서용(1-base)
+        body.put("section_id", payload.getSectionIndex() + 1);
+        // 실제 FastAPI 코드가 요구하는 필드 (0-base일 가능성 높음)
         body.put("sectionIndex", payload.getSectionIndex());
-        body.put("sectionSummary", payload.getSectionSummary());
-        body.put("previousSummaries", payload.getPreviousSummaries());
-        body.put("ytExclude", payload.getYtExclude());
-        body.put("wikiExclude", payload.getWikiExclude());
-        body.put("paperExclude", payload.getPaperExclude());
-        body.put("googleExclude", payload.getGoogleExclude());
+
+        body.put("section_summary", payload.getSectionSummary());
+
+        // previous_summaries 변환
+        List<Map<String, Object>> prev = payload.getPreviousSummaries().stream()
+                .map(s -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("section_id", s.getSectionIndex() + 1);
+                    m.put("summary", s.getSummary());
+                    return m;
+                })
+                .collect(Collectors.toList());
+        body.put("previous_summaries", prev);
+
+        body.put("yt_exclude", payload.getYtExclude());
+        body.put("wiki_exclude", payload.getWikiExclude());
+        body.put("paper_exclude", payload.getPaperExclude());
+        body.put("google_exclude", payload.getGoogleExclude());
+
+        // 🔥 여기 중요: 명세에는 없는데 실제 서버는 callbackUrl 필수
         body.put("callbackUrl", callback("resources"));
 
         String url = baseUrl + "/rec/recommend";
-        log.info("🤖 [AI Server Call] Resource Recommendation Request:");
-        log.info("   └─ URL: POST {}", url);
-        log.info("   └─ lectureId: {}", payload.getLectureId());
-        log.info("   └─ summaryId: {}", payload.getSummaryId());
-        log.info("   └─ sectionIndex: {}", payload.getSectionIndex());
-        log.info("   └─ sectionSummary length: {} chars", 
-                payload.getSectionSummary() != null ? payload.getSectionSummary().length() : 0);
-        log.info("   └─ previousSummaries count: {}", 
-                payload.getPreviousSummaries() != null ? payload.getPreviousSummaries().size() : 0);
-        log.info("   └─ excludes: yt={}, wiki={}, paper={}, google={}",
-                payload.getYtExclude() != null ? payload.getYtExclude().size() : 0,
-                payload.getWikiExclude() != null ? payload.getWikiExclude().size() : 0,
-                payload.getPaperExclude() != null ? payload.getPaperExclude().size() : 0,
-                payload.getGoogleExclude() != null ? payload.getGoogleExclude().size() : 0);
-        log.info("   └─ callbackUrl: {}", callback("resources"));
+
+        log.info("🤖 [AI Resource] Request body = {}", body);
 
         try {
             webClient.post()
@@ -116,15 +185,23 @@ public class RagClient {
                     .retrieve()
                     .toBodilessEntity()
                     .block();
-            log.info("✅ [AI Server Call] Resource request sent successfully");
+            log.info("✅ [AI Resource] Request sent successfully");
+        } catch (WebClientResponseException e) {
+            // 🔥 AI 서버가 보낸 에러 응답 body 로그
+            log.error("❌ [AI Resource] status={} body={}",
+                    e.getStatusCode().value(),
+                    e.getResponseBodyAsString());
+            throw e;
         } catch (Exception e) {
-            log.error("❌ [AI Server Call] Resource request failed: {}", e.getMessage(), e);
+            log.error("❌ [AI Resource] Request failed (non-HTTP error): {}", e.getMessage(), e);
             throw e;
         }
     }
 
+
     public void upsertSummaryText(Long lectureId, Summary summary) {
         Assert.notNull(summary, "summary is required");
+
         Map<String, Object> metadata = Map.of(
                 "summaryId", summary.getId(),
                 "sectionIndex", summary.getSectionIndex(),
@@ -134,24 +211,23 @@ public class RagClient {
 
         Map<String, Object> item = new HashMap<>();
         item.put("text", summary.getText());
-        item.put("id", summary.getId() != null ? summary.getId().toString() : null);
-        item.put("section_id", summary.getSectionIndex());
+
+        // ✅ id: null이면 아예 안 넣기
+        if (summary.getId() != null) {
+            item.put("id", summary.getId().toString());
+        }
+
+        // ✅ section_id 는 문자열로 보내기
+        item.put("section_id", String.valueOf(summary.getSectionIndex()));
         item.put("metadata", metadata);
 
-        Map<String, Object> body = Map.of(
-                "lecture_id", lectureId.toString(),
-                "items", List.of(item)
-        );
+        Map<String, Object> body = new HashMap<>();
+        body.put("lecture_id", String.valueOf(lectureId));
+        body.put("items", List.of(item));
 
         String url = baseUrl + "/rag/text-upsert";
-        log.info("🤖 [AI Server Call] RAG Text Upsert Request:");
-        log.info("   └─ URL: POST {}", url);
-        log.info("   └─ lectureId: {}", lectureId);
-        log.info("   └─ summaryId: {}", summary.getId());
-        log.info("   └─ sectionIndex: {}", summary.getSectionIndex());
-        log.info("   └─ startSec: {}, endSec: {}", summary.getStartSec(), summary.getEndSec());
-        log.info("   └─ text length: {} chars", 
-                summary.getText() != null ? summary.getText().length() : 0);
+
+        log.info("🤖 [AI Server Call] RAG Text Upsert Request body = {}", body);
 
         try {
             webClient.post()
@@ -162,11 +238,17 @@ public class RagClient {
                     .toBodilessEntity()
                     .block();
             log.info("✅ [AI Server Call] RAG text upsert completed successfully");
+        } catch (WebClientResponseException e) {
+            // ✅ 어디서 터지는지 AI가 준 detail 까지 찍기
+            log.error("❌ [AI Server Call] RAG text upsert failed: status={} body={}",
+                    e.getStatusCode(), e.getResponseBodyAsString());
+            throw e;
         } catch (Exception e) {
             log.error("❌ [AI Server Call] RAG text upsert failed: {}", e.getMessage(), e);
             throw e;
         }
     }
+
 
     public void upsertPdf(Long lectureId, MultipartFile pdfFile, Map<String, Object> metadata) {
         MultipartBodyBuilder builder = new MultipartBodyBuilder();

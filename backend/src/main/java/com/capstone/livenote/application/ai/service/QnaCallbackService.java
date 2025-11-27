@@ -33,7 +33,7 @@ public class QnaCallbackService {
                 .map(item -> qnaRepository.save(
                         Qna.builder()
                                 .lectureId(dto.getLectureId())
-                                .summaryId(dto.getSummaryId())
+                                .summaryId((dto.getSummaryId() == null || dto.getSummaryId() == 0L) ? null : dto.getSummaryId())
                                 .sectionIndex(dto.getSectionIndex())
                                 .type(resolveType(item.getType()))
                                 .question(item.getQuestion())

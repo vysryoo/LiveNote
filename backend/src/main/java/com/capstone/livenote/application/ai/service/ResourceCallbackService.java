@@ -34,7 +34,7 @@ public class ResourceCallbackService {
         List<Resource> saved = dto.getResources().stream()
                 .map(item -> Resource.builder()
                         .lectureId(dto.getLectureId())
-                        .summaryId(dto.getSummaryId())
+                        .summaryId((dto.getSummaryId() == null || dto.getSummaryId() == 0L) ? null : dto.getSummaryId())
                         .sectionIndex(dto.getSectionIndex())
                         .type(Resource.Type.fromString(item.getType()))
                         .title(item.getTitle())

@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -78,6 +79,25 @@ public class StreamGateway {
     public void sendError(Long lectureId, String error) {
         tmpl.convertAndSend("/topic/lectures/" + lectureId + "/error",
                 Map.of("type", "error", "message", error));
+    }
+
+    // 스트리밍 토큰 전송 메소드
+    public void sendStreamToken(Long lectureId, String type, String cardId, String token, boolean isComplete, Object data) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("type", type);         // "qna_stream" or "resource_stream"
+        payload.put("cardId", cardId);
+        payload.put("isComplete", isComplete);
+
+        if (isComplete) {
+            // 완료 시 최종 데이터 포함
+            payload.put("data", data);
+        } else {
+            // 진행 중일 땐 토큰만 포함
+            payload.put("token", token);
+        }
+
+        // 스트리밍 전용 토픽 경로로 전송
+        tmpl.convertAndSend("/topic/lectures/" + lectureId + "/stream", payload);
     }
 }
 

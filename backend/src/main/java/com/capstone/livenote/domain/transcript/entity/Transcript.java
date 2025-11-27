@@ -24,7 +24,8 @@ public class Transcript {
     @Column(name = "end_sec", nullable = false)
     private Integer endSec;
 
-    @Lob @Column(nullable = false)
+    @Lob
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String text;
 
 }

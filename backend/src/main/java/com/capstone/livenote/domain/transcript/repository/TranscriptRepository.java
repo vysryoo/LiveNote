@@ -34,4 +34,6 @@ public interface TranscriptRepository extends JpaRepository<Transcript, Long>
     @Query("SELECT MAX(t.endSec) FROM Transcript t WHERE t.lectureId = :lectureId")
     Integer findMaxEndSecByLectureId(@Param("lectureId") Long lectureId);
 
+
+    List<Transcript> findByLectureIdAndSectionIndexOrderByStartSecAsc(Long lectureId, Integer sectionIndex);
 }
