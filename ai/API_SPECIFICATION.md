@@ -322,22 +322,40 @@ POST /qa/generate
 
 ### 응답
 
-**예시: 단일 QA 콜백들이 순서대로 도착 (각 콜백은 qnaList에 1개만 포함)**
+**예시 1: 정상 SSE 스트림 (3개 질문 생성)**
 ```
 event: qa_context
 data: {"event":"context_ready","collection_id":"lecture_001","chunk_count":2}
 
 event: qa_partial
-data: {"type":"CONCEPT","qa":{"type":"CONCEPT","question":"하이퍼 스레딩이란 무엇인가요?","answer":"하이퍼 스레딩은 하나의 물리적 CPU 코어가 두 개의 명령 흐름을 번갈아 처리해 자원을 효율적으로 사용하는 SMT 기술입니다."},"index":1}
+data: {"type":"CONCEPT","qa":{"type":"CONCEPT","question":"스택과 큐의 주요 차이점은 무엇인가요?","answer":"스택은 LIFO(Last In First Out) 방식으로 마지막에 들어간 데이터가 먼저 나오는 구조이고, 큐는 FIFO(First In First Out) 방식으로 먼저 들어간 데이터가 먼저 나오는 구조입니다."},"index":1}
 
 event: qa_partial
-data: {"type":"APPLICATION","qa":{"type":"APPLICATION","question":"하이퍼 스레딩 CPU가 실제로 성능을 높이는 사례는?","answer":"웹 서버처럼 동시 요청이 많은 환경에서 코어 유휴 시간을 줄여 처리량을 높일 수 있습니다."},"index":2}
+data: {"type":"APPLICATION","qa":{"type":"APPLICATION","question":"웹 브라우저의 뒤로가기 기능은 스택과 큐 중 어느 자료구조를 사용하나요?","answer":"웹 브라우저의 뒤로가기 기능은 스택을 사용합니다. 가장 최근에 방문한 페이지부터 역순으로 돌아가야 하므로 LIFO 구조가 적합합니다."},"index":2}
 
 event: qa_partial
-data: {"type":"ADVANCED","qa":{"type":"ADVANCED","question":"하이퍼 스레딩과 멀티프로세싱의 차이는 무엇인가요?","answer":"하이퍼 스레딩은 단일 코어의 SMT 구현이고, 멀티프로세싱은 여러 독립 프로세스를 병렬로 실행합니다."},"index":3}
+data: {"type":"ADVANCED","qa":{"type":"ADVANCED","question":"우선순위 큐를 구현할 때 힙(Heap) 자료구조를 사용하는 이유는 무엇인가요?","answer":"힙은 삽입과 삭제 연산이 O(log n) 시간 복잡도를 가지므로, 우선순위 큐의 핵심 연산인 최댓값/최솟값 추출을 효율적으로 수행할 수 있습니다."},"index":3}
 
 event: qa_complete
 data: {"total":3,"duration_ms":4521}
+```
+
+**예시 2: 일부 실패 포함 SSE 스트림**
+```
+event: qa_context
+data: {"event":"context_ready","collection_id":"lecture_002","chunk_count":3}
+
+event: qa_partial
+data: {"type":"개념","qa":{"type":"개념","question":"이진 탐색 트리의 정의는 무엇인가요?","answer":"이진 탐색 트리는 각 노드가 최대 2개의 자식을 가지며, 왼쪽 서브트리의 모든 값은 부모 노드보다 작고 오른쪽 서브트리의 모든 값은 부모 노드보다 큰 특성을 만족하는 트리입니다."},"index":1}
+
+event: qa_error
+data: {"type":"응용","error":"OpenAI API rate limit exceeded"}
+
+event: qa_partial
+data: {"type":"심화","qa":{"type":"심화","question":"AVL 트리에서 회전(Rotation) 연산이 필요한 이유는 무엇인가요?","answer":"AVL 트리는 모든 노드의 왼쪽과 오른쪽 서브트리 높이 차이가 1 이하여야 하는 균형 조건을 유지해야 합니다. 회전 연산은 삽입/삭제 후 이 균형을 복구하는 데 사용됩니다."},"index":2}
+
+event: qa_complete
+data: {"total":2,"duration_ms":5128}
 ```
 
 ### 주의 사항
