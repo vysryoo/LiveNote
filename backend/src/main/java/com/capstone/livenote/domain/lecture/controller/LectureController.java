@@ -1,8 +1,10 @@
 package com.capstone.livenote.domain.lecture.controller;
 
+import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.application.audio.service.AudioIngestService;
 import com.capstone.livenote.domain.lecture.dto.CreateLectureRequestDto;
 import com.capstone.livenote.domain.lecture.dto.LectureResponseDto;
+import com.capstone.livenote.domain.lecture.dto.SessionDetailResponse;
 import com.capstone.livenote.domain.lecture.service.LectureService;
 import com.capstone.livenote.domain.qna.dto.QnaResponseDto;
 import com.capstone.livenote.domain.qna.service.QnaService;
@@ -17,8 +19,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.util.List;
@@ -36,8 +44,21 @@ public class LectureController {
     private final TranscriptService trQuery;
     private final SummaryService smQuery;
     private final QnaService qnaService;
+    private final RagClient ragClient;
 
-    private Long currentUserId(){ return 1L; } // 임시. 실제는 SecurityContext에서 꺼내기
+    private Long currentUserId(){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "not authenticated");
+        }
+        
+        String userIdStr = authentication.getName();
+        try {
+            return Long.parseLong(userIdStr);
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "invalid user id");
+        }
+    }
 
     // 강의 조회
     @Operation(summary = "현재 사용자의 최근 강의 목록을 조회")
@@ -56,6 +77,14 @@ public class LectureController {
     public ApiResponse<LectureResponseDto> get(@PathVariable Long lectureId){
         var l = lectureService.get(lectureId);
         return ApiResponse.ok(LectureResponseDto.from(l));
+    }
+
+    // 강의 상세 정보 조회 (transcripts, summaries, resources, qna, bookmarks 포함)
+    @Operation(summary = "강의의 모든 상세 정보 조회 (transcripts, summaries, resources, qna, bookmarks 포함)")
+    @GetMapping("/{lectureId}/detail")
+    public ApiResponse<SessionDetailResponse> getDetail(@PathVariable Long lectureId){
+        var detail = lectureService.getSessionDetail(lectureId);
+        return ApiResponse.ok(detail);
     }
 
     // 강의 생성
@@ -112,6 +141,27 @@ public class LectureController {
     }
 
 
+    // PDF 업로드 및 RAG 업서트 요청
+    @Operation(summary = "강의 PDF 자료 업로드 (RAG 업서트)")
+    @PostMapping(value = "/{lectureId}/pdf", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<String> uploadPdf(
+            @PathVariable Long lectureId,
+            @RequestPart("file") MultipartFile file
+    ) {
+        // 1. 사용자 권한 검증 (선택 사항이나 권장)
+        //Long userId = currentUserId();
+        // lectureService.validateOwner(lectureId, userId); // 필요 시 추가
+
+        // 2. AI 서버로 전송하여 RAG 업서트 수행 및 collectionId 획득
+        // (RagClient.upsertPdf는 이제 String collectionId를 반환해야 함)
+        String collectionId = ragClient.upsertPdf(lectureId, file, null);
+
+        // 3. DB에 collectionId 업데이트
+        lectureService.updateCollectionId(lectureId, collectionId);
+
+        return ApiResponse.ok(collectionId);
+    }
+
     // 전사
 //    @Operation(summary = "전사 목록 조회 (내부용)", hidden = true)
 //    @GetMapping("/{lectureId}/transcripts")
@@ -149,4 +199,3 @@ public class LectureController {
 //    }
 
 }
-

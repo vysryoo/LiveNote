@@ -4,11 +4,12 @@ import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.application.openai.service.OpenAiSummaryService;
 import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.summary.entity.Summary;
+import com.capstone.livenote.domain.summary.repository.SummaryRepository;
 import com.capstone.livenote.domain.summary.service.SummaryService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -22,14 +23,31 @@ import java.util.concurrent.ConcurrentHashMap;
  *      * 30초 누적 시: final(최종) 요약 생성 + Summary 엔티티 저장 + 프론트로 푸시
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class SectionAggregationService {
 
     private final OpenAiSummaryService openAiSummaryService;
     private final SummaryService summaryService;
+    private final SummaryRepository summaryRepository;
     private final RagClient ragClient;
-    //private final StreamGateway streamGateway;
+    private final AiRequestService aiRequestService;
+    private final StreamGateway streamGateway;
+
+    public SectionAggregationService(
+            OpenAiSummaryService openAiSummaryService,
+            SummaryService summaryService,
+            SummaryRepository summaryRepository,
+            RagClient ragClient,
+            AiRequestService aiRequestService,
+            @Lazy StreamGateway streamGateway
+    ) {
+        this.openAiSummaryService = openAiSummaryService;
+        this.summaryService = summaryService;
+        this.summaryRepository = summaryRepository;
+        this.ragClient = ragClient;
+        this.aiRequestService = aiRequestService;
+        this.streamGateway = streamGateway;
+    }
 
     private final Map<Long, SectionState> states = new ConcurrentHashMap<>();
 
@@ -43,14 +61,26 @@ public class SectionAggregationService {
     }
 
 
-    public void onNewTranscript(Long lectureId, int startSec, int endSec, String text) {
-        int delta = endSec - startSec; // 이번 청크의 길이(초) – 5초 고정이라면 5
+    public void onNewTranscript(Long lectureId, int sectionIndex, int startSec, int endSec, String text) {
+        int delta = endSec - startSec;
 
         // 강의별 섹션 상태 조회/초기화
         SectionState state = states.computeIfAbsent(
                 lectureId,
-                id -> new SectionState(0, 0, false, new StringBuilder())
+                id -> {
+                    log.info("[SectionAgg] ✅ Initializing new section state for lectureId={} sectionIndex={}",
+                            lectureId, sectionIndex);
+                    return new SectionState(sectionIndex, 0, false, new StringBuilder());
+                }
         );
+
+        // 섹션이 바뀔면 새 상태로 초기화
+        if (state.sectionIndex != sectionIndex) {
+            log.info("[SectionAgg] 🔄 Section changed: lectureId={} from section {} to {}",
+                    lectureId, state.sectionIndex, sectionIndex);
+            state = new SectionState(sectionIndex, 0, false, new StringBuilder());
+            states.put(lectureId, state);
+        }
 
         state.elapsedSec += delta;
         state.buffer.append(' ').append(text);
@@ -83,36 +113,51 @@ public class SectionAggregationService {
      * 15초 시점 처리:
      *  - OpenAI로 임시 요약(partial) 생성
      *  - 요약은 DB에 저장하지 않음
+     *  - STOMP로 프론트에 partial 요약 push
      *  - 동시에 2개 자료 / 2개 QnA 생성 요청을 AI 서버(RAG)에 보냄
-     *  - (실시간 WebSocket 푸시는 AI 콜백에서 처리)
      */
     private void handlePartial(Long lectureId, SectionState state) {
         String text = state.buffer.toString();
 
         String partialSummary = openAiSummaryService.summarize(text);
 
-        log.info("[SectionAgg] PARTIAL summary created: lectureId={} section={}",
+        log.info("[SectionAgg] ✅ PARTIAL summary created: lectureId={} section={} length={}",
+                lectureId, state.sectionIndex, partialSummary.length());
+
+        // STOMP로 프론트에 partial 요약 전송
+        streamGateway.sendSummary(lectureId, state.sectionIndex, partialSummary, "partial");
+        log.info("[SectionAgg] 📤 PARTIAL summary pushed via STOMP: lectureId={} section={}",
                 lectureId, state.sectionIndex);
 
-
         // partial 기반 자료 2개 / QnA 2개 요청
-        ragClient.requestResourceRecommendation(lectureId, null, state.sectionIndex);
-        ragClient.requestQnaGeneration(lectureId, null, state.sectionIndex);
+        aiRequestService.requestResourcesWithSummary(
+                lectureId,
+                null,
+                state.sectionIndex,
+                partialSummary
+        );
+        aiRequestService.requestQnaWithSummary(
+                lectureId,
+                null,
+                state.sectionIndex,
+                partialSummary
+        );
     }
 
     /**
      * 30초 시점 처리:
      *  - 하나의 섹션을 확정하고 섹션 전체 텍스트를 요약
      *  - Summary 엔티티로 DB에 저장
-     *  - 최종 요약은 나중에 API/콜백을 통해 프론트에 제공
+     *  - STOMP로 프론트에 final 요약 push
+     *  - RAG 인덱스에 업서트
      */
     private void handleFinal(Long lectureId, SectionState state) {
         String text = state.buffer.toString();
 
         String finalSummary = openAiSummaryService.summarize(text);
 
-        log.info("[SectionAgg] FINAL summary created: lectureId={} section={}",
-                lectureId, state.sectionIndex);
+        log.info("[SectionAgg] ✅ FINAL summary created: lectureId={} section={} length={}",
+                lectureId, state.sectionIndex, finalSummary.length());
 
         // DB에 섹션 요약 저장
         Summary summary = summaryService.createSectionSummary(
@@ -120,8 +165,17 @@ public class SectionAggregationService {
                 state.sectionIndex,
                 finalSummary
         );
+        log.info("[SectionAgg] 💾 FINAL summary saved to DB: id={} lectureId={} section={}",
+                summary.getId(), lectureId, state.sectionIndex);
+
+        // STOMP로 프론트에 final 요약 전송
+        streamGateway.sendSummary(lectureId, state.sectionIndex, finalSummary, "final");
+        log.info("[SectionAgg] 📤 FINAL summary pushed via STOMP: lectureId={} section={}",
+                lectureId, state.sectionIndex);
+
+        // 최종 요약을 RAG 인덱스에 업서트
+        ragClient.upsertSummaryText(lectureId, summary);
 
     }
 
 }
-

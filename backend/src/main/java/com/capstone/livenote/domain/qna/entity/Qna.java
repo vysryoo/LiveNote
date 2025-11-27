@@ -17,6 +17,9 @@ public class Qna {
     @Column(name = "lecture_id", nullable = false)
     private Long lectureId;
 
+    @Column(name = "summary_id")
+    private Long summaryId;
+
     @Column(nullable = false)
     private Integer sectionIndex;
 
@@ -26,7 +29,8 @@ public class Qna {
     @Column(nullable = false)
     private String question;
 
-    @Lob @Column(nullable = false)
+    @Lob
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String answer;
 
 }

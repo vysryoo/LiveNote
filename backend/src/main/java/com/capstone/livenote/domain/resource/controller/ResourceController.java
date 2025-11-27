@@ -35,12 +35,14 @@ public class ResourceController {
                 .summaryId(dto.getSummaryId())
                 .userId(dto.getUserId())
                 .sectionIndex(dto.getSectionIndex())
-                .type(Resource.Type.valueOf(dto.getType().toUpperCase()))
+                .type(Resource.Type.fromString(dto.getType()))
                 .title(dto.getTitle())
                 .text(dto.getText())
                 .url(dto.getUrl())
                 .thumbnail(dto.getThumbnail())
                 .score(dto.getScore())
+                .reason(dto.getReason())
+                .detail(dto.getDetail() == null ? null : new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(dto.getDetail()))
                 .build();
 
         resourceRepository.save(r);

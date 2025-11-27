@@ -11,4 +11,13 @@ public interface ResourceRepository extends JpaRepository<Resource, Long> {
     Page<Resource> findBySummaryId(Long summaryId, Pageable pageable);
     Page<Resource> findByLectureId(Long lectureId, Pageable pageable);
     List<Resource> findBySummaryIdOrderByScoreDesc(Long summaryId);
+
+    List<Resource> findByLectureIdAndSectionIndexBetweenOrderBySectionIndexDesc(
+            Long lectureId,
+            Integer start,
+            Integer end
+    );
+
+    // 기존 파일에 아래 메서드 추가
+    List<Resource> findByLectureIdAndSectionIndexOrderByScoreDesc(Long lectureId, Integer sectionIndex);
 }

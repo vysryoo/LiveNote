@@ -23,7 +23,18 @@ public class ResourceService {
                 .filter(r -> r.getType().name().equalsIgnoreCase(type))
                 .toList();
     }
-}
 
+    @Transactional(readOnly = true)
+    public List<Resource> findBySectionRange(Long lectureId, int startSection, int endSection) {
+        if (endSection < startSection) {
+            return List.of();
+        }
+        return repo.findByLectureIdAndSectionIndexBetweenOrderBySectionIndexDesc(
+                lectureId,
+                startSection,
+                endSection
+        );
+    }
+}
 
 

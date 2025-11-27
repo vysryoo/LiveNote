@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class LectureResponseDto {
     private Long id;
+    private Long userId;
     private String title;
     private String subject;
     private String sttLanguage;
@@ -36,6 +37,7 @@ public class LectureResponseDto {
     public static LectureResponseDto from(Lecture l) {
         return new LectureResponseDto(
                 l.getId(),
+                l.getUserId(),
                 l.getTitle(),
                 l.getSubject(),
                 l.getSttLanguage(),

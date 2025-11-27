@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Map;
+
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor
 public class ResourceRequestDto {
@@ -21,5 +23,7 @@ public class ResourceRequestDto {
     private String thumbnail;
 
     private Double score;
-}
 
+    private String reason;
+    private Map<String, Object> detail;
+}

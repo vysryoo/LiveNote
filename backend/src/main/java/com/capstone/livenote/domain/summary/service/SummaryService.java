@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 
 import java.util.List;
+import java.util.Optional;
 
 
 @Service
@@ -42,5 +43,33 @@ public class SummaryService {
 
         return summaryRepository.save(summary);
     }
-}
 
+    @Transactional(readOnly = true)
+    public Optional<Summary> findByLectureAndSection(Long lectureId, Integer sectionIndex) {
+        return summaryRepository.findByLectureIdAndSectionIndex(lectureId, sectionIndex);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Summary> findPreviousSummaries(Long lectureId, Integer sectionIndex, int limit) {
+        if (limit <= 0) {
+            return List.of();
+        }
+        var pageable = org.springframework.data.domain.PageRequest.of(
+                0,
+                limit,
+                org.springframework.data.domain.Sort.by("sectionIndex").descending()
+        );
+        return summaryRepository.findByLectureIdAndSectionIndexLessThanOrderBySectionIndexDesc(
+                lectureId,
+                sectionIndex,
+                pageable
+        );
+    }
+
+    // 해당 섹션의 요약이 DB에 존재하는지 확인
+    @Transactional(readOnly = true)
+    public boolean existsByLectureAndSection(Long lectureId, Integer sectionIndex) {
+
+        return summaryRepository.existsByLectureIdAndSectionIndex(lectureId, sectionIndex);
+    }
+}

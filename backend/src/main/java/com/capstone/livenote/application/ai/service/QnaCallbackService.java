@@ -7,6 +7,7 @@ import com.capstone.livenote.domain.qna.entity.Qna;
 import com.capstone.livenote.domain.qna.repository.QnaRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class QnaCallbackService {
 
     private final QnaRepository qnaRepository;
@@ -23,12 +25,17 @@ public class QnaCallbackService {
     @Transactional
     public void handleQnaCallback(QnaCallbackDto dto) {
 
+        log.info("QnA callback: lectureId={} section={} summaryId={} size={}",
+                dto.getLectureId(), dto.getSectionIndex(), dto.getSummaryId(),
+                dto.getQnaList() == null ? 0 : dto.getQnaList().size());
+
         List<Qna> saved = dto.getQnaList().stream()
                 .map(item -> qnaRepository.save(
                         Qna.builder()
                                 .lectureId(dto.getLectureId())
+                                .summaryId((dto.getSummaryId() == null || dto.getSummaryId() == 0L) ? null : dto.getSummaryId())
                                 .sectionIndex(dto.getSectionIndex())
-                                .type(Qna.Type.valueOf(item.getType().toUpperCase()))
+                                .type(resolveType(item.getType()))
                                 .question(item.getQuestion())
                                 .answer(item.getAnswer())
                                 .build()
@@ -39,5 +46,18 @@ public class QnaCallbackService {
                 .toList();
 
         streamGateway.sendQna(dto.getLectureId(), dto.getSectionIndex(), items);
+    }
+
+    private Qna.Type resolveType(String raw) {
+        if (raw == null) {
+            return Qna.Type.CONCEPT;
+        }
+        return switch (raw.trim().toUpperCase()) {
+            case "APPLICATION", "응용" -> Qna.Type.APPLICATION;
+            case "ADVANCED", "심화" -> Qna.Type.ADVANCED;
+            case "COMPARISON", "비교" -> Qna.Type.COMPARISON;
+            case "CONCEPT", "개념" -> Qna.Type.CONCEPT;
+            default -> Qna.Type.CONCEPT;
+        };
     }
 }

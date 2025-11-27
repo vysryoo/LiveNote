@@ -36,6 +36,7 @@ public class Summary {
     private Integer endSec;
 
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String text;
+
 }
