@@ -50,7 +50,8 @@ public class SecurityConfig {
                                 // 디버그용
                                 "/api/dev/**",
                                 "/debug/**",
-                                "/test/**"
+                                "/test/**",
+                                "/api/ai/callback/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
