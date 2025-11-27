@@ -68,6 +68,9 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
+          port: 22
+          # GitHub Secret(ENV)을 가져옵니다.
+          envs: GITHUB_ENV
           script: |
             echo "🔹 Docker Hub 로그인"
             sudo docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
