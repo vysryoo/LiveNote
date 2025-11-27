@@ -20,7 +20,7 @@ public class OpenAiSummaryService {
 
     private final RestTemplate restTemplate;
 
-    @Value("${app.openai.api.key}")
+    @Value("${OPENAI_API_KEY}")
     private String apiKey;
 
 
