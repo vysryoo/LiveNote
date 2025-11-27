@@ -22,4 +22,6 @@ public interface SummaryRepository extends JpaRepository<Summary, Long> {
             org.springframework.data.domain.Pageable pageable
     );
 
+    boolean existsByLectureIdAndSectionIndex(Long lectureId, Integer sectionIndex);
+
 }

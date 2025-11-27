@@ -82,18 +82,24 @@ public class StreamGateway {
     }
 
     // 스트리밍 토큰 전송 메소드
-    public void sendStreamToken(Long lectureId, String type, String cardId, String token, boolean isComplete, Object data) {
+    public void sendStreamToken(Long lectureId, String type, String cardId, String token, boolean isComplete, Object data, String title, String resourceType) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("type", type);         // "qna_stream" or "resource_stream"
         payload.put("cardId", cardId);
         payload.put("isComplete", isComplete);
 
         if (isComplete) {
-            // 완료 시 최종 데이터 포함
-            payload.put("data", data);
+            payload.put("data", data); // 완료 시엔 최종 데이터 객체 포함
         } else {
-            // 진행 중일 땐 토큰만 포함
-            payload.put("token", token);
+            payload.put("token", token); // 진행 중일 땐 글자 토큰
+
+            //
+            if (title != null) {
+                payload.put("title", title);
+            }
+            if (resourceType != null) {
+                payload.put("resourceType", resourceType);
+            }
         }
 
         // 스트리밍 전용 토픽 경로로 전송

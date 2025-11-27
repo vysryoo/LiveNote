@@ -65,4 +65,11 @@ public class SummaryService {
                 pageable
         );
     }
+
+    // 해당 섹션의 요약이 DB에 존재하는지 확인
+    @Transactional(readOnly = true)
+    public boolean existsByLectureAndSection(Long lectureId, Integer sectionIndex) {
+
+        return summaryRepository.existsByLectureIdAndSectionIndex(lectureId, sectionIndex);
+    }
 }
