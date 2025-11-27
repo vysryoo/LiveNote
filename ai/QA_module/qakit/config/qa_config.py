@@ -13,8 +13,8 @@ class QAConfig:
     OPENAI_TIMEOUT: int = 30  # seconds
     
     # 모델 설정
-    QA_MODEL: str = "gpt-4o"
-    #QA_MODEL: str = "gpt-4o-mini"
+    #QA_MODEL: str = "gpt-4o"
+    QA_MODEL: str = "gpt-4o-mini"
     QA_MAX_TOKENS: int = 500
     QA_TEMPERATURE: float = 0.5
     
