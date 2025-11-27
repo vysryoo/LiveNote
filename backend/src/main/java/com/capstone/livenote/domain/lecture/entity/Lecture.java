@@ -41,5 +41,8 @@ public class Lecture {
     @PrePersist void prePersist() {
         if (createdAt == null) createdAt = java.time.LocalDateTime.now();
     }
-    
+
+    // RAG 컬렉션 ID 저장용
+    @Column(name = "collection_id")
+    private String collectionId;
 }

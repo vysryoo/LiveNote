@@ -364,6 +364,26 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
                     ctx.transcriptBuffer.setLength(0);
                 }
             }
+
+            // 전사 완료 이벤트
+            if (type.equals("conversation.item.input_audio_transcription.completed")) {
+                String transcript = root.path("transcript").asText("").trim();
+                if (!transcript.isEmpty()) {
+                    log.info("🎤 [RealtimeWS] Transcribed: {}", transcript);
+                    sendTranscript(ctx, transcript, true); // DB 저장 트리거
+                }
+                return;
+            }
+
+            // 실시간 부분 전사 (User Experience용)
+            if (type.equals("response.audio_transcript.delta")) {
+                String delta = root.path("delta").asText("");
+                if (!delta.isEmpty()) {
+                    sendTranscript(ctx, delta, false); // 프론트에만 보여줌 (저장 X)
+                }
+                return;
+            }
+
         } catch (Exception e) {
             log.warn("[RealtimeWS] parse OpenAI text failed lectureId={} err={}", ctx.lectureId, e.getMessage());
         }

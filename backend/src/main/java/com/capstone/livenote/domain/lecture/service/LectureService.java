@@ -143,4 +143,11 @@ public class LectureService {
         return SessionDetailResponse.from(lecture, transcripts, summaries, resources, qnas, bookmarks);
     }
 
+
+    @Transactional
+    public void updateCollectionId(Long lectureId, String collectionId) {
+        Lecture lecture = get(lectureId); // 기존 get 메서드 활용
+        lecture.setCollectionId(collectionId);
+        // 더티 체킹으로 자동 저장
+    }
 }

@@ -78,69 +78,6 @@ public class RagClient {
         }
     }
 
-    // 2. Resource 추천 요청 (snake_case 적용)
-//    public void requestResourceRecommendation(AiRequestPayloads.ResourceRecommendPayload payload) {
-//        Map<String, Object> body = new HashMap<>();
-//
-//        // 명세서 "예시 1" 기준 매핑
-//        // 주의: QnA는 section_index인데, REC 명세서는 section_id 라고 되어 있음. 명세서 텍스트 따름.
-//        //body.put("lecture_id", payload.getLectureId());          // lectureId -> lecture_id
-//        body.put("lecture_id", String.valueOf(payload.getLectureId()));
-//        //body.put("summary_id", payload.getSummaryId());          // 콜백 시 필요하므로 전송 (명세에 없어도 보통 허용됨)
-//        //body.put("section_id", payload.getSectionIndex());       // ★ REC 명세서는 section_id 입니다!
-//        body.put("section_id", payload.getSectionIndex() + 1);
-//        body.put("section_summary", payload.getSectionSummary());// sectionSummary -> section_summary
-//
-//        //body.put("previous_summaries", payload.getPreviousSummaries()); // previousSummaries -> previous_summaries
-//        List<Map<String, Object>> prev = payload.getPreviousSummaries().stream()
-//                .map(s -> {
-//                    Map<String, Object> m = new HashMap<>();
-//                    m.put("section_id", s.getSectionIndex() + 1); // 1-base로 변환
-//                    m.put("summary", s.getSummary());
-//                    return m;
-//                })
-//                .collect(Collectors.toList());
-//
-//        body.put("previous_summaries", prev);
-//
-//        body.put("yt_exclude", payload.getYtExclude());          // ytExclude -> yt_exclude
-//        body.put("wiki_exclude", payload.getWikiExclude());      // wikiExclude -> wiki_exclude
-//        body.put("paper_exclude", payload.getPaperExclude());    // paperExclude -> paper_exclude
-//        body.put("google_exclude", payload.getGoogleExclude());  // googleExclude -> google_exclude
-//
-//        //body.put("callback_url", callback("resources"));         // callbackUrl -> callback_url
-//
-//        String url = baseUrl + "/rec/recommend";
-//
-//        log.info("🤖 [AI Resource] Request: lecture_id={} section_id={} callback={}",
-//                payload.getLectureId(), payload.getSectionIndex(), callback("resources"));
-//
-//        try {
-//            String response = webClient.post()
-//                    .uri(url)
-//                    .contentType(MediaType.APPLICATION_JSON)
-//                    .bodyValue(body)
-//                    .retrieve()
-//                    .onStatus(
-//                            status -> status.is4xxClientError() || status.is5xxServerError(),
-//                            clientResponse -> clientResponse.bodyToMono(String.class)
-//                                    .map(errorBody -> {
-//                                        log.error("❌ [AI Resource] status={} body={}",
-//                                                clientResponse.statusCode(), errorBody);
-//                                        return new RuntimeException("AI error: " + errorBody);
-//                                    })
-//                    )
-//                    .bodyToMono(String.class)
-//                    .block();
-//
-//            log.info("✅ [AI Resource] Request sent successfully. rawResponse={}", response);
-//        } catch (Exception e) {
-//            log.error("❌ [AI Resource] Request failed: {}", e.getMessage(), e);
-//            throw e;
-//        }
-//
-//    }
-
     // 2. Resource 추천 요청 (snake_case + 실제 필드 둘 다 보내기)
     public void requestResourceRecommendation(AiRequestPayloads.ResourceRecommendPayload payload) {
         Map<String, Object> body = new HashMap<>();
@@ -250,7 +187,7 @@ public class RagClient {
     }
 
 
-    public void upsertPdf(Long lectureId, MultipartFile pdfFile, Map<String, Object> metadata) {
+    public String upsertPdf(Long lectureId, MultipartFile pdfFile, Map<String, Object> metadata) {
         MultipartBodyBuilder builder = new MultipartBodyBuilder();
         builder.part("lecture_id", lectureId.toString());
         builder.part("file", pdfFile.getResource()).filename(pdfFile.getOriginalFilename());
@@ -259,6 +196,7 @@ public class RagClient {
         }
 
         String url = baseUrl + "/rag/pdf-upsert";
+
         log.info("🤖 [AI Server Call] RAG PDF Upsert Request:");
         log.info("   └─ URL: POST {}", url);
         log.info("   └─ lectureId: {}", lectureId);
@@ -267,17 +205,24 @@ public class RagClient {
         log.info("   └─ metadata: {}", metadata != null ? metadata.keySet() : "none");
 
         try {
-            webClient.post()
+            // [수정] 응답 본문을 받아서 collection_id 추출
+            String responseBody = webClient.post()
                     .uri(url)
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(BodyInserters.fromMultipartData(builder.build()))
                     .retrieve()
-                    .toBodilessEntity()
+                    .bodyToMono(String.class) // String으로 받음
                     .block();
-            log.info("✅ [AI Server Call] PDF upsert completed successfully");
+
+            log.info("✅ [AI Server Call] PDF upsert completed. Response: {}", responseBody);
+
+            // 간단한 JSON 파싱 (Jackson 사용 가정)
+            // {"collection_id": "lecture_1", "result": {...}}
+            return objectMapper.readTree(responseBody).get("collection_id").asText();
+
         } catch (Exception e) {
             log.error("❌ [AI Server Call] PDF upsert failed: {}", e.getMessage(), e);
-            throw e;
+            throw new RuntimeException("RAG Upsert Failed", e);
         }
     }
 

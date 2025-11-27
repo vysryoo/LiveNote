@@ -1,5 +1,6 @@
 package com.capstone.livenote.domain.lecture.controller;
 
+import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.application.audio.service.AudioIngestService;
 import com.capstone.livenote.domain.lecture.dto.CreateLectureRequestDto;
 import com.capstone.livenote.domain.lecture.dto.LectureResponseDto;
@@ -43,6 +44,7 @@ public class LectureController {
     private final TranscriptService trQuery;
     private final SummaryService smQuery;
     private final QnaService qnaService;
+    private final RagClient ragClient;
 
     private Long currentUserId(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -138,6 +140,27 @@ public class LectureController {
         return ApiResponse.ok();
     }
 
+
+    // PDF 업로드 및 RAG 업서트 요청
+    @Operation(summary = "강의 PDF 자료 업로드 (RAG 업서트)")
+    @PostMapping(value = "/{lectureId}/pdf", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<String> uploadPdf(
+            @PathVariable Long lectureId,
+            @RequestPart("file") MultipartFile file
+    ) {
+        // 1. 사용자 권한 검증 (선택 사항이나 권장)
+        //Long userId = currentUserId();
+        // lectureService.validateOwner(lectureId, userId); // 필요 시 추가
+
+        // 2. AI 서버로 전송하여 RAG 업서트 수행 및 collectionId 획득
+        // (RagClient.upsertPdf는 이제 String collectionId를 반환해야 함)
+        String collectionId = ragClient.upsertPdf(lectureId, file, null);
+
+        // 3. DB에 collectionId 업데이트
+        lectureService.updateCollectionId(lectureId, collectionId);
+
+        return ApiResponse.ok(collectionId);
+    }
 
     // 전사
 //    @Operation(summary = "전사 목록 조회 (내부용)", hidden = true)
