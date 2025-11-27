@@ -20,7 +20,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OpenAiSttService {
 
-    @Value("${openai.api.key}")
+    @Value("${app.openai.api.key}")
     private String apiKey;
 
     @Value("${app.openai.stt.model}")
