@@ -54,7 +54,7 @@ export function SessionPage({
   const { t } = useI18n();
   const wsRef = useRef<WebSocket | null>(null);
   const summaryRequestStateRef = useRef<Record<number, { midRequested?: boolean; finalRequested?: boolean }>>({});
-  const extendedGenerationRequestedRef = useRef<Set<number>>(new Set()); // 섹션별 추가 카드 생성 요청 여부 추적
+  const requestStreamingCardRef = useRef<Set<number>>(new Set()); // 섹션별 추가 카드 생성 요청 여부 추적
   const currentSectionIndexRef = useRef<number>(-1);
   const elapsedTimeRef = useRef<number>(0);
   const lectureScrollViewportRef = useRef<HTMLDivElement | null>(null);
@@ -415,6 +415,8 @@ export function SessionPage({
     isComplete: boolean;
     data?: QnA | Resource;
     error?: string;
+    resourceType?: 'paper' | 'wiki' | 'video' | 'blog';
+    title?: string;
   }) => {
     const cardId = message.cardId;
     console.log('[handleStreamingMessage] 처리 시작', { cardId, type: message.type, hasToken: !!message.token, isComplete: message.isComplete });
@@ -428,12 +430,8 @@ export function SessionPage({
         const [type, lectureIdStr, sectionIndexStr, cardIndexStr] = cardId.split('_');
         const cardIndex = parseInt(cardIndexStr);
         
-        // Resource 타입 추론 (추가 생성 카드의 경우)
-        let resourceType: 'paper' | 'wiki' | 'video' | 'blog' | undefined = undefined;
-        if (type === 'resource' && cardIndex >= 2) {
-          const resourceTypes: ('paper' | 'wiki' | 'video' | 'blog')[] = ['paper', 'wiki', 'video', 'blog'];
-          resourceType = resourceTypes[(cardIndex - 2) % 4];
-        }
+        // Resource 추가 생성 카드도 유형 정보가 없으면 기본 스타일(그라데이션)로 표시
+        let resourceType: 'paper' | 'wiki' | 'video' | 'blog' | undefined = message.resourceType;
         
         newMap.set(cardId, {
           cardId,
@@ -444,6 +442,7 @@ export function SessionPage({
           data: message.data,
           error: message.error,
           resourceType,
+          title: message.title,
         });
       } else {
         if (message.isComplete) {
@@ -518,7 +517,8 @@ export function SessionPage({
             console.log(`[handleStreamingMessage] 토큰 추가: ${cardId}, 길이: ${newContent.length}`);
             
             // Resource 타입 정보 업데이트 (완료 데이터에서 타입 추출)
-            let resourceType: 'paper' | 'wiki' | 'video' | 'blog' | undefined = existingCard.resourceType;
+            let resourceType: 'paper' | 'wiki' | 'video' | 'blog' | undefined =
+              message.resourceType || existingCard.resourceType;
             if (message.data && existingCard.type === 'resource') {
               const resource = message.data as Resource;
               if (resource.type) {
@@ -530,6 +530,7 @@ export function SessionPage({
               ...existingCard,
               content: newContent,
               resourceType,
+              title: message.title ?? existingCard.title,
             });
           } else {
             console.warn(`[handleStreamingMessage] 토큰 수신했지만 카드 없음: ${cardId}`);
@@ -724,7 +725,7 @@ export function SessionPage({
       // QnA 타입별로 스트리밍 시작 (4개: concept, application, advanced, comparison)
       const qnaTypes = ["concept", "application", "advanced", "comparison"];
       const qnaPromises = qnaTypes.map((qnaType, index) => {
-        // cardIndex는 기존 완료된 카드 수를 고려하여 설정 (기본 2개 + 추가 인덱스)
+        // cardIndex는 기존 완료된 카드 수를 고려하여 설정 (기본 2개: 0, 1 + 추가 인덱스)
         // 간단하게 2 + index로 설정 (기존 기본 카드가 0, 1이므로)
         const cardIndex = 2 + index;
         const cardId = `qna_${lectureId}_${sectionIndex}_${cardIndex}`;
@@ -796,8 +797,8 @@ export function SessionPage({
         console.error("카드 상태 업데이트 실패:", error);
       });
 
-      if (!extendedGenerationRequestedRef.current.has(sectionIndex)) {
-        extendedGenerationRequestedRef.current.add(sectionIndex);
+      if (!requestStreamingCardRef.current.has(sectionIndex)) {
+        requestStreamingCardRef.current.add(sectionIndex);
         setIsGeneratingExtended(true);
         requestStreamingCard(sectionIndex);
       } 
@@ -813,7 +814,7 @@ export function SessionPage({
   useEffect(() => {
     setLiveSectionTranscripts({});
     summaryRequestStateRef.current = {};
-    extendedGenerationRequestedRef.current.clear(); // 강의 변경 시 초기화
+    requestStreamingCardRef.current.clear(); // 강의 변경 시 초기화
     setResourcesBySection({});
     setQnaBySection({});
   }, [lectureId]);
