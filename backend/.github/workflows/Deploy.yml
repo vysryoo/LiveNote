@@ -70,7 +70,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           port: 22
           # GitHub Secret(ENV)을 가져옵니다.
-          envs: GITHUB_ENV
+          envs: APP_ENV_FILE
           script: |
             echo "🔹 Docker Hub 로그인"
             sudo docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
@@ -82,7 +82,11 @@ jobs:
             sudo docker stop livenote || true
             sudo docker rm livenote || true
 
-            echo "$GITHUB_ENV" > .env
+            echo "$APP_ENV_FILE" > .env
+            
+            # (디버깅용) 파일이 제대로 만들어졌는지
+            echo "🔹 생성된 .env 파일 확인:"
+            head -n 3 .env
             
             echo "🔹 새 컨테이너 실행"
             sudo docker run -d \
@@ -92,4 +96,4 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:latest
             echo "🎉 배포 완료!"
         env:
-          GITHUB_ENV: ${{ secrets.ENV }}
+          APP_ENV_FILE: ${{ secrets.ENV }}
