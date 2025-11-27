@@ -33,7 +33,7 @@ app:
     api:
       key: ${OPENAI_API_KEY}
     stt:
-      model: whisper-1
+      model: ${APP_OPENAI_STT_MODEL:whisper-1}
     summary:
       model: gpt-4o-mini
       max-tokens: 500
