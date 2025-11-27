@@ -79,10 +79,14 @@ jobs:
             sudo docker stop livenote || true
             sudo docker rm livenote || true
 
+            echo "$GITHUB_ENV" > .env
+            
             echo "🔹 새 컨테이너 실행"
             sudo docker run -d \
-              --name livenote \
-              -p 8080:8080 \
-              ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:latest
-
+            --name livenote \
+            --network host \
+            --env-file .env \
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:latest
             echo "🎉 배포 완료!"
+        env:
+          GITHUB_ENV: ${{ secrets.ENV }}
