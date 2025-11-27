@@ -1,0 +1,57 @@
+spring:
+  config:
+    import: "optional:classpath:env.properties"
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+#  main:
+#    allow-circular-references: true
+ai:
+  server:
+    url: ${AI_SERVER_URL}
+
+
+openai:
+  api:
+    key: ${OPENAI_API_KEY}
+
+app:
+  storage:
+    audio-dir: uploads/audio
+
+  openai:
+    api:
+      key: ${OPENAI_API_KEY}
+    stt:
+      model: whisper-1
+    summary:
+      model: gpt-4o-mini
+      max-tokens: 500
+
+  jwt:
+    secret: ${APP_JWT_SECRET}
+    expiration: 3600000
+
+
+  logging:
+    level:
+      i.n.r.d.DnsServerAddressStreamProviders: WARN
+
+  callback-base-url: ${APP_CALLBACK_BASE_URL:http://localhost:8080}
+
+  ai:
+    base-url: ${AI_SERVER_URL}
+    history:
+      previous-summary-count: 3
+      previous-resource-sections: 3
+      previous-qa-sections: 3
