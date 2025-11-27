@@ -86,7 +86,6 @@ public class RagClient {
 
         // 명세서용(1-base)
         body.put("section_id", payload.getSectionIndex() + 1);
-        // 실제 FastAPI 코드가 요구하는 필드 (0-base일 가능성 높음)
         body.put("sectionIndex", payload.getSectionIndex());
 
         body.put("section_summary", payload.getSectionSummary());
@@ -95,6 +94,7 @@ public class RagClient {
         List<Map<String, Object>> prev = payload.getPreviousSummaries().stream()
                 .map(s -> {
                     Map<String, Object> m = new HashMap<>();
+                    m.put("sectionIndex", s.getSectionIndex());
                     m.put("section_id", s.getSectionIndex() + 1);
                     m.put("summary", s.getSummary());
                     return m;
@@ -107,7 +107,6 @@ public class RagClient {
         body.put("paper_exclude", payload.getPaperExclude());
         body.put("google_exclude", payload.getGoogleExclude());
 
-        // 🔥 여기 중요: 명세에는 없는데 실제 서버는 callbackUrl 필수
         body.put("callbackUrl", callback("resources"));
 
         String url = baseUrl + "/rec/recommend";

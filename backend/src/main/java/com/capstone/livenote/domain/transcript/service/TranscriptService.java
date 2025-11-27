@@ -1,5 +1,6 @@
 package com.capstone.livenote.domain.transcript.service;
 
+import com.capstone.livenote.application.ai.service.SectionAggregationService;
 import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.summary.service.SummaryService;
 import com.capstone.livenote.domain.transcript.dto.TranscriptResponseDto;
@@ -23,6 +24,7 @@ public class TranscriptService {
     private final TranscriptRepository transcriptRepository;
     // private final SummaryService summaryService;      // 예전 30초 요약용 (사용 안 하면 삭제해도 됨)
     private final StreamGateway streamGateway; // 실시간 전송
+    private final SectionAggregationService sectionAggregationService;
 
     // 재시작 감지용: 강의별 raw startSec 오프셋
     private final Map<Long, Integer> baseOffsets = new HashMap<>();
@@ -30,9 +32,10 @@ public class TranscriptService {
 
     // 순환 참조 고리 끊기
     public TranscriptService(TranscriptRepository transcriptRepository,
-                             @Lazy StreamGateway streamGateway) {
+                             @Lazy StreamGateway streamGateway, SectionAggregationService sectionAggregationService) {
         this.transcriptRepository = transcriptRepository;
         this.streamGateway = streamGateway;
+        this.sectionAggregationService = sectionAggregationService;
     }
 
     @Transactional(readOnly = true)
@@ -83,6 +86,19 @@ public class TranscriptService {
         // 4) 저장된 전사를 모든 클라이언트에게 실시간 브로드캐스트 (WebSocket)
         TranscriptResponseDto dto = TranscriptResponseDto.from(t);
         streamGateway.sendTranscript(lectureId, dto, true);
+
+        //  5) 섹션 집계 서비스로 텍스트 전달 (15초/30초 트리거)
+        try {
+            sectionAggregationService.onNewTranscript(
+                    lectureId,
+                    sectionIndex,
+                    adjustedStart,
+                    adjustedEnd,
+                    text
+            );
+        } catch (Exception e) {
+            log.error("Failed to aggregate section: {}", e.getMessage(), e);
+        }
 
         return dto;
     }
