@@ -20,10 +20,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OpenAiSttService {
 
-    @Value("${app.openai.api.key}")
+    @Value("${OPENAI_API_KEY}")
     private String apiKey;
 
-    @Value("${app.openai.stt.model}")
+    @Value("${APP_OPENAI_STT_MODEL:whisper-1}")
     private String model;
 
     private static final String WHISPER_URL = "https://api.openai.com/v1/audio/transcriptions";
