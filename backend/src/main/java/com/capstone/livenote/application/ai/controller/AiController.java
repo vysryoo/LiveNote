@@ -53,23 +53,11 @@ public class AiController {
     public ApiResponse<Map<String, Object>> generateSummary(
             @RequestParam Long lectureId,
             @RequestParam Integer sectionIndex
-            // phase 파라미터 일단 제거
     ) {
-        try {
-            // 항상 final 로 동작하게 강제
-            SummaryResponseDto summary =
-                    aiGenerateService.generateSummary(lectureId, sectionIndex, "final");
-
-            return ApiResponse.ok(Map.of(
-                    "success", true,
-                    "summary", summary,
-                    "sectionIndex", sectionIndex
-            ));
-        } catch (Exception e) {
-            log.error("Summary generation failed", e);
-            return ApiResponse.ok(Map.of("success", false, "error", e.getMessage()));
-        }
+        aiGenerateService.generateSummary(lectureId, sectionIndex, "FINAL");
+        return ApiResponse.ok(Map.of("success", true));
     }
+
 
 
     // 2. 카드 상태 조회 (Req #3)

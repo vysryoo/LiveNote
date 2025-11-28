@@ -2,8 +2,10 @@ package com.capstone.livenote.application.ai.controller;
 
 import com.capstone.livenote.application.ai.dto.QnaCallbackDto;
 import com.capstone.livenote.application.ai.dto.ResourceCallbackDto;
+import com.capstone.livenote.application.ai.dto.SummaryCallbackDto;
 import com.capstone.livenote.application.ai.service.QnaCallbackService;
 import com.capstone.livenote.application.ai.service.ResourceCallbackService;
+import com.capstone.livenote.application.ai.service.SummaryCallbackService;
 import com.capstone.livenote.global.ApiResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,6 +30,8 @@ public class AiCallbackController {
 
     private final QnaCallbackService qnaCallbackService;
     private final ResourceCallbackService resourceCallbackService;
+    private final SummaryCallbackService summaryCallbackService;
+    private final ObjectMapper objectMapper;
 
     @Operation(
             summary = "AI 서버가 결과를 백엔드에 전달"
@@ -48,6 +52,11 @@ public class AiCallbackController {
             case "resources" -> {
                 ResourceCallbackDto dto = new ObjectMapper().convertValue(payload, ResourceCallbackDto.class);
                 resourceCallbackService.handleResourceCallback(dto);
+            }
+
+            case "summary" -> {
+                SummaryCallbackDto dto = objectMapper.convertValue(payload, SummaryCallbackDto.class);
+                summaryCallbackService.handleSummaryCallback(dto);
             }
 
             default -> throw new IllegalArgumentException("Unsupported callback type: " + type);
