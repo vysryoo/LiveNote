@@ -1,5 +1,6 @@
 package com.capstone.livenote.global.config;
 
+import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
@@ -7,6 +8,8 @@ import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
 
 @Configuration
 public class SwaggerConfig {
@@ -30,7 +33,11 @@ public class SwaggerConfig {
                         .title("LiveNote API")
                         .description("LiveNote 백엔드 API 명세서")
                         .version("1.0.0"))
-                .addSecurityItem(securityRequirement) // 모든 API에 보안 적용
+                .servers(List.of(
+                        new Server().url("http://54.180.135.94:8080").description("AWS EC2 Server"),
+                        new Server().url("http://localhost:8080").description("Local Development")
+                ))
+                .addSecurityItem(securityRequirement)
                 .components(components);
     }
 }
