@@ -206,7 +206,7 @@ gradle-app.setting
 # End of https://www.toptal.com/developers/gitignore/api/java,intellij,macos,gradle
 
 # 환경변수/설정 파일 제외하기)
-src/main/resources/application.yml
+#src/main/resources/application.yml
 src/main/resources/env.properties
 
 # local env/creds
