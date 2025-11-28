@@ -6,8 +6,9 @@
   - [2.1 PDF 업서트](#21-pdf-업서트)
   - [2.2 텍스트 업서트](#22-텍스트-업서트)
 - [3. QA 생성](#3-qa-생성)
-- [4. REC 추천](#4-rec-추천)
-- [5. 공통 사항](#5-공통-사항)
+- [4. 요약 생성](#4-요약-생성)
+- [5. REC 추천](#5-rec-추천)
+- [6. 공통 사항](#6-공통-사항)
 
 ---
 
@@ -377,7 +378,100 @@ data: {"total":2,"duration_ms":5128}
 
 ---
 
-## 4. REC 추천
+## 4. 요약 생성
+
+### 형식
+- **Content-Type**: `application/json`
+- **Response**: `202 Accepted` + JSON  
+  (실제 요약 결과는 `callback_url`로 비동기 전송. 요청/설정/환경변수 어디에도 값이 없으면 400)
+
+### HTTP 메서드
+```
+POST /summary/generate
+```
+
+### 본문 예시
+
+**예시 1: 단일 텍스트 전사로 FINAL 요약 생성**
+```json
+{
+  "lecture_id": 7,
+  "summary_id": 301,
+  "section_index": 5,
+  "start_sec": 150,
+  "end_sec": 180,
+  "phase": "FINAL",
+  "callback_url": "https://example.com/api/ai/callback",
+  "transcript": "이번 섹션에서는 분산 시스템의 리더 선출과 네트워크 파티션 대응 전략을 다루었습니다..."
+}
+```
+
+**예시 2: 문장 배열로 PARTIAL 요약 요청 (callback_url 미지정 → 서버 기본값 사용)**
+```json
+{
+  "lecture_id": 8,
+  "section_index": 2,
+  "phase": "PARTIAL",
+  "transcript": [
+    "캐시 일관성 문제를 소개했습니다.",
+    "MESI 프로토콜의 동작 단계를 설명했습니다."
+  ]
+}
+```
+
+### 입력 필드 설명
+
+| 필드명 | 타입 | 필수 | 설명 |
+|--------|------|------|------|
+| lecture_id | int | 예 | 강의 ID (1 이상) |
+| section_index | int | 예 | 섹션 인덱스(0-base) |
+| transcript | string \| array[string] | 예 | 전사 텍스트. 문자열 또는 문장 배열 모두 허용 (배열은 줄바꿈으로 합쳐 요약) |
+| summary_id | int | 아니오 | 기존 요약 ID. 없으면 `null` 그대로 콜백 |
+| start_sec | int | 아니오 | 요약 구간 시작 초. 미지정 시 `section_index*30` |
+| end_sec | int | 아니오 | 요약 구간 종료 초. 미지정 시 `start_sec+30` |
+| phase | string | 아니오 | 요약 단계. 기본 `FINAL` (대문자로 변환) |
+| callback_url | string(URL) | 조건부 | 콜백 URL. 요청/`settings.summary.callback_url`/`SUMMARY_CALLBACK_URL` 중 하나 필요. 쿼리에 `type=summary`가 자동 추가/보존됨 |
+
+### 즉시 응답 형식 (`202 Accepted`)
+
+```json
+{
+  "status": "accepted"
+}
+```
+
+### 콜백 요청 형식
+
+- 서버가 `callback_url`로 `POST` 수행 (쿼리에 `type=summary` 보장)
+- 본문 예시:
+```json
+{
+  "id": 301,
+  "summaryId": 301,
+  "lectureId": 7,
+  "sectionIndex": 5,
+  "startSec": 150,
+  "endSec": 180,
+  "text": "요약된 내용이 여기에 들어갑니다.",
+  "phase": "FINAL"
+}
+```
+
+### 주의 사항
+- `OPENAI_API_KEY` 미설정 시 500 오류
+- `callback_url`이 없으면 400 오류
+- 긴 전사는 문자열로 보내는 것을 권장하나 문장 배열도 허용 (줄바꿈으로 합쳐 요약)
+- `start_sec`/`end_sec`를 생략하면 섹션 인덱스 기준 30초 단위로 기본값 설정
+- 콜백 페이로드에 `id`와 `summaryId`를 함께 포함해 백엔드 매핑을 돕습니다
+- 현재 콜백에서는 STOMP 푸시를 수행하지 않습니다 (백엔드 후처리 필요)
+
+### 참고
+- OpenAI 모델/프롬프트/토큰 제한은 `server/config.py`의 `SummarySettings`로 조정 가능 (`SUMMARY_CALLBACK_URL` 환경변수도 지원)
+- 콜백 URL에는 `type=summary` 쿼리가 자동으로 추가되어 `/api/ai/callback?type=summary`와 호환됩니다
+
+---
+
+## 5. REC 추천
 
 ### 형식
 - **Content-Type**: `application/json`
@@ -582,9 +676,9 @@ POST {callback_url}
 
 ---
 
-## 5. 공통 사항
+## 6. 공통 사항
 
-### 5.1 HTTP 상태 코드
+### 6.1 HTTP 상태 코드
 
 | 코드 | 의미 | 발생 상황 |
 |------|------|-----------|
@@ -595,7 +689,7 @@ POST {callback_url}
 | 422 | Unprocessable Entity | 유효성 검증 실패 (Pydantic 모델) |
 | 500 | Internal Server Error | 서버 내부 오류 (OpenAI/Chroma 오류 등) |
 
-### 5.2 오류 응답 형식
+### 6.2 오류 응답 형식
 
 **JSON 오류 응답**:
 ```json
@@ -610,7 +704,7 @@ event: qa_error
 data: {"type":"응용","error":"OpenAI API rate limit exceeded"}
 ```
 
-### 5.3 SSE 연결
+### 6.3 SSE 연결
 
 **cURL 예시**:
 ```bash
@@ -643,7 +737,7 @@ eventSource.addEventListener('qa_complete', (e) => {
 });
 ```
 
-### 5.4 타임아웃 및 재시도
+### 6.4 타임아웃 및 재시도
 
 - **연결 타임아웃**: 30초 (서버 설정)
 - **읽기 타임아웃**: 120초 (SSE 스트림)
@@ -651,13 +745,13 @@ eventSource.addEventListener('qa_complete', (e) => {
   - 업서트: 즉시 재시도 가능
   - QA/REC: 3초 대기 후 재시도 권장 (OpenAI rate limit 고려)
 
-### 5.5 동시성 제한
+### 6.5 동시성 제한
 
 - **업서트**: 제한 없음 (단, Chroma 락 발생 가능)
 - **QA 생성**: 동시 10개 요청 권장
 - **REC 추천**: 동시 5개 요청 권장 (4개 Provider × 동시성)
 
-### 5.6 데이터 크기 제한
+### 6.6 데이터 크기 제한
 
 - **PDF 파일**: 최대 100MB (서버 설정 조정 가능)
 - **텍스트 항목**: 항목당 최대 10,000자 권장
@@ -666,14 +760,14 @@ eventSource.addEventListener('qa_complete', (e) => {
   - `previous_summaries[]`: 최대 10개
   - `*_exclude[]`: 각각 최대 50개
 
-### 5.7 보안 고려사항
+### 6.7 보안 고려사항
 
 - 현재 버전은 인증 미구현 (내부 네트워크 전용)
 - 운영 환경 배포 시 JWT 또는 API 키 인증 추가 권장
 - CORS 설정은 `server/app.py`에서 조정 가능
 - HTTPS 사용 권장 (API 키 노출 방지)
 
-### 5.8 로깅 및 디버깅
+### 6.8 로깅 및 디버깅
 
 - 서버 로그: `uvicorn server.main:app --log-level info`
 - 각 모듈 로그: Python `logging` 모듈 사용

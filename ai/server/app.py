@@ -9,7 +9,7 @@ from typing import Any
 from fastapi import FastAPI
 
 from .config import AppSettings
-from .routes import qa_router, rag_router, rec_router
+from .routes import qa_router, rag_router, rec_router, summary_router
 
 
 def _ensure_service(service: Any, factory_path: str):
@@ -74,6 +74,7 @@ def create_app(
     app.include_router(rag_router)
     app.include_router(qa_router)
     app.include_router(rec_router)
+    app.include_router(summary_router)
 
     # 테스트나 수동 호출 시 lifespan이 실행되지 않아도 안전하도록 기본 상태를 설정
     app.state.app_settings = base_settings

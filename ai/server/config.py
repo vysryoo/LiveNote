@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
 from .models import QnAType
 
@@ -92,9 +92,26 @@ class RECSettings(BaseModel):
     google: GoogleSettings = Field(default_factory=GoogleSettings)
 
 
+class SummarySettings(BaseModel):
+    """요약 생성 설정"""
+
+    model: str = Field(default="gpt-4o-mini", description="요약에 사용할 OpenAI 모델명")
+    temperature: float = Field(default=0.2, ge=0.0, le=2.0, description="샘플링 온도")
+    max_tokens: int = Field(default=256, ge=1, description="최대 토큰")
+    system_prompt: str = Field(
+        default="당신은 강의 내용을 간결하게 요약하는 비서입니다. 사용자가 준 내용을 한국어로 3~5문장 정도로 핵심만 요약해 주세요.",
+        description="시스템 프롬프트"
+    )
+    callback_url: HttpUrl | None = Field(
+        default=None,
+        description="기본 요약 콜백 URL (요청에서 미지정 시 사용)"
+    )
+
+
 class AppSettings(BaseModel):
     """서버 전체 설정"""
     
     rag: RAGSettings = Field(default_factory=RAGSettings)
     qa: QASettings = Field(default_factory=QASettings)
     rec: RECSettings = Field(default_factory=RECSettings)
+    summary: SummarySettings = Field(default_factory=SummarySettings)

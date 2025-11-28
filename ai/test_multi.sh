@@ -8,6 +8,7 @@ BASE_URL="http://${HOST}:${PORT}"
 
 CALLBACK_QA=${CALLBACK_QA:-https://webhook.site/65c1525f-da82-4d45-a8c8-351a004429d7}
 CALLBACK_REC=${CALLBACK_REC:-https://webhook.site/65c1525f-da82-4d45-a8c8-351a004429d7}
+CALLBACK_SUMMARY=${CALLBACK_SUMMARY:-https://webhook.site/65c1525f-da82-4d45-a8c8-351a004429d7}
 LECTURE_ID=${LECTURE_ID:-7777}
 SUMMARY_ID=${SUMMARY_ID:-101}
 
@@ -62,31 +63,40 @@ call_api() {
 echo "Target host : ${BASE_URL}"
 echo "QA callback : ${CALLBACK_QA}"
 echo "REC callback: ${CALLBACK_REC}"
+echo "SUM callback: ${CALLBACK_SUMMARY}"
 echo "Lecture ID  : ${LECTURE_ID}"
 
 usage() {
   cat <<EOF
 사용법: ./test_multi.sh [케이스번호 ...]
-미입력 시 1~6 전체 실행.
-케이스:
-  1. Health check
-  2. RAG text upsert
-  3. QA 기본 question_types
-  4. QA 커스텀 question_types
-  5. REC 모든 provider
-  6. REC WIKI+VIDEO만
-  7. QA 이전 질문 제공 (개념 타입 중복 방지)
-  8. REC 논문 제외 목록 추가 (PAPER only)
-  9. REC 위키 제외 목록 추가 (WIKI only)
+미입력 시 1~10 전체 실행.
 EOF
 }
+
+print_menu() {
+  cat <<'EOF'
+[케이스 목록]
+  1) Health check
+  2) RAG text upsert
+  3) QA 기본 question_types
+  4) QA 커스텀 question_types
+  5) REC 모든 provider
+  6) REC WIKI+VIDEO만
+  7) QA 이전 질문 제공 (개념 타입 중복 방지)
+  8) REC 논문 제외 목록 추가 (PAPER only)
+  9) REC 위키 제외 목록 추가 (WIKI only)
+ 10) SUMMARY 생성 요청 (전사 5문장 → OpenAI 요약 → 콜백)
+EOF
+}
+
+print_menu
 
 USER_INPUT=""
 if [ "$#" -eq 0 ]; then
   echo
   read -r -p "몇 번을 실행하시겠습니까? (예: 1 3 5, 엔터=전체) > " USER_INPUT || true
   if [ -z "${USER_INPUT}" ]; then
-    SELECTED=("1" "2" "3" "4" "5" "6" "7" "8" "9")
+    SELECTED=("1" "2" "3" "4" "5" "6" "7" "8" "9" "10")
   else
     # 공백 구분 숫자 배열
     SELECTED=(${USER_INPUT})
@@ -227,6 +237,19 @@ PAYLOAD_REC_WIKI_EXCLUDE=$(cat <<JSON
 }
 JSON
 )
+PAYLOAD_SUMMARY=$(cat <<JSON
+{
+  "lecture_id": ${LECTURE_ID},
+  "summary_id": ${SUMMARY_ID}10,
+  "section_index": 5,
+  "start_sec": 150,
+  "end_sec": 180,
+  "phase": "FINAL",
+  "callback_url": "${CALLBACK_SUMMARY}",
+  "transcript": "이번 섹션에서는 분산 시스템에서 리더 선출이 왜 중요한지 사례를 통해 설명했습니다. 네트워크 파티션이 발생하면 어떤 문제가 생기는지와 이를 최소화하기 위한 전략을 다뤘습니다. 또한 합의 알고리즘으로 Raft를 선택했을 때의 장단점과 설정값 조정 포인트를 이야기했습니다. 프로덕션 환경에서 모니터링할 핵심 지표와 알람 기준을 간단히 정리했습니다. 마지막으로 장애 복구 연습을 주기적으로 실행해야 한다는 점을 강조하며 마무리했습니다."
+}
+JSON
+)
 
 for CASE in "${SELECTED[@]}"; do
   case "${CASE}" in
@@ -239,6 +262,7 @@ for CASE in "${SELECTED[@]}"; do
     7) call_api "07) QA generate (with previous CONCEPT to avoid duplicates)" "${PAYLOAD_QA_PREVIOUS}" "${BASE_URL}/qa/generate" ;;
     8) call_api "08) REC recommend (paper excludes applied, PAPER only)" "${PAYLOAD_REC_EXCLUDE_PAPER}" "${BASE_URL}/rec/recommend" ;;
     9) call_api "09) REC recommend (WIKI excludes applied, WIKI only)" "${PAYLOAD_REC_WIKI_EXCLUDE}" "${BASE_URL}/rec/recommend" ;;
+    10) call_api "10) SUMMARY generate (OpenAI → callback)" "${PAYLOAD_SUMMARY}" "${BASE_URL}/summary/generate" ;;
     *) echo "[!] 알 수 없는 케이스 번호: ${CASE}" ;;
   esac
 done
