@@ -53,7 +53,7 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
     private final TranscriptService transcriptService;
     private final ObjectMapper objectMapper;
 
-    @Value("${openai.api.key}")
+    @Value("${OPENAI_API_KEY}")
     private String openAiApiKey;
 
     private final Map<String, SessionContext> contexts = new ConcurrentHashMap<>();
