@@ -135,6 +135,57 @@ public class RagClient {
     }
 
 
+    public void requestSummaryGeneration(Long lectureId,
+                                         Long summaryId,
+                                         Integer sectionIndex,
+                                         Integer startSec,
+                                         Integer endSec,
+                                         String phase,          // "FINAL" 또는 "PARTIAL"
+                                         String transcript) {
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("lecture_id", lectureId);
+        if (summaryId != null) {
+            body.put("summary_id", summaryId);
+        }
+        body.put("section_index", sectionIndex);
+
+        if (startSec != null) {
+            body.put("start_sec", startSec);
+        }
+        if (endSec != null) {
+            body.put("end_sec", endSec);
+        }
+
+        // 명세서: 기본값 FINAL, 대문자
+        body.put("phase", phase != null ? phase.toUpperCase() : "FINAL");
+
+        // string 또는 array[string] 둘 다 허용 → 우리는 일단 통짜 string 으로 보냄
+        body.put("transcript", transcript);
+
+        // 콜백 URL (type=summary 는 AI 서버가 자동으로 붙여 준다고 했지만
+        // 우리도 /api/ai/callback?type=summary 로 맞춰 줌)
+        body.put("callback_url", callback("summary"));
+
+        String url = baseUrl + "/summary/generate";
+
+        log.info("🤖 [AI Summary] Request body = {}", body);
+
+        try {
+            webClient.post()
+                    .uri(url)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(body)
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+            log.info("✅ [AI Summary] Request sent successfully");
+        } catch (Exception e) {
+            log.error("❌ [AI Summary] Request failed: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+
     public void upsertSummaryText(Long lectureId, Summary summary) {
         Assert.notNull(summary, "summary is required");
 

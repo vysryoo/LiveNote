@@ -3,6 +3,7 @@ package com.capstone.livenote.application.ws;
 import com.capstone.livenote.domain.qna.dto.QnaResponseDto;
 import com.capstone.livenote.domain.resource.dto.ResourceResponseDto;
 import com.capstone.livenote.domain.summary.dto.SummaryResponseDto;
+import com.capstone.livenote.domain.summary.entity.Summary;
 import com.capstone.livenote.domain.transcript.dto.TranscriptResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -31,20 +32,27 @@ public class StreamGateway {
                 ));
     }
 
-    // summary 실시간 전송
-    public void sendSummary(Long lectureId,
-                            Integer sectionIndex,
-                            String text,
-                            String phase) {
+    public void sendSummary(Summary summary) {
+        sendSummary(
+                summary.getLectureId(),
+                summary.getSectionIndex(),
+                summary.getText(),
+                "final"
+        );
+    }
 
-        tmpl.convertAndSend("/topic/lectures/" + lectureId + "/summary",
-                Map.of(
-                        "type", "summary",
-                        "lectureId", lectureId,
-                        "sectionIndex", sectionIndex,
-                        "phase", phase,
-                        "text", text
-                ));
+    public void sendSummary(Long lectureId, Integer sectionIndex, String text, String phase) {
+        String destination = "/topic/lectures/" + lectureId + "/summary/" + sectionIndex;
+
+        Map<String, Object> payload = Map.of(
+                "type", "summary",
+                "lectureId", lectureId,
+                "sectionIndex", sectionIndex,
+                "text", text != null ? text : "",
+                "phase", phase != null ? phase : "final"
+        );
+
+        tmpl.convertAndSend(destination, payload);
     }
 
 

@@ -1,5 +1,6 @@
 package com.capstone.livenote.domain.summary.service;
 
+import com.capstone.livenote.application.ai.dto.SummaryCallbackDto;
 import com.capstone.livenote.domain.summary.entity.Summary;
 import com.capstone.livenote.domain.summary.repository.SummaryRepository;
 
@@ -83,5 +84,33 @@ public class SummaryService {
     public boolean existsByLectureAndSection(Long lectureId, Integer sectionIndex) {
 
         return summaryRepository.existsByLectureIdAndSectionIndex(lectureId, sectionIndex);
+    }
+
+    @Transactional
+    public Summary upsertFromCallback(SummaryCallbackDto dto) {
+        int startSec = dto.getStartSec() != null
+                ? dto.getStartSec()
+                : dto.getSectionIndex() * 30;
+        int endSec = dto.getEndSec() != null
+                ? dto.getEndSec()
+                : startSec + 30;
+
+        return summaryRepository
+                .findByLectureIdAndSectionIndex(dto.getLectureId(), dto.getSectionIndex())
+                .map(existing -> {
+                    existing.setText(dto.getText());
+                    existing.setStartSec(startSec);
+                    existing.setEndSec(endSec);
+                    return existing;
+                })
+                .orElseGet(() -> summaryRepository.save(
+                        Summary.builder()
+                                .lectureId(dto.getLectureId())
+                                .sectionIndex(dto.getSectionIndex())
+                                .startSec(startSec)
+                                .endSec(endSec)
+                                .text(dto.getText())
+                                .build()
+                ));
     }
 }
