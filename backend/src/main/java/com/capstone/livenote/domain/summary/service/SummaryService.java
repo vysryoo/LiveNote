@@ -4,6 +4,7 @@ import com.capstone.livenote.application.ai.dto.SummaryCallbackDto;
 import com.capstone.livenote.domain.summary.entity.Summary;
 import com.capstone.livenote.domain.summary.repository.SummaryRepository;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -79,38 +80,49 @@ public class SummaryService {
         );
     }
 
-    // 해당 섹션의 요약이 DB에 존재하는지 확인
     @Transactional(readOnly = true)
     public boolean existsByLectureAndSection(Long lectureId, Integer sectionIndex) {
-
         return summaryRepository.existsByLectureIdAndSectionIndex(lectureId, sectionIndex);
     }
 
+    // 해당 섹션의 요약이 DB에 존재하는지 확인
     @Transactional
     public Summary upsertFromCallback(SummaryCallbackDto dto) {
-        int startSec = dto.getStartSec() != null
-                ? dto.getStartSec()
-                : dto.getSectionIndex() * 30;
-        int endSec = dto.getEndSec() != null
-                ? dto.getEndSec()
-                : startSec + 30;
+        int startSec = dto.getStartSec() != null ? dto.getStartSec() : dto.getSectionIndex() * 30;
+        int endSec = dto.getEndSec() != null ? dto.getEndSec() : startSec + 30;
 
-        return summaryRepository
-                .findByLectureIdAndSectionIndex(dto.getLectureId(), dto.getSectionIndex())
-                .map(existing -> {
-                    existing.setText(dto.getText());
-                    existing.setStartSec(startSec);
-                    existing.setEndSec(endSec);
-                    return existing;
-                })
-                .orElseGet(() -> summaryRepository.save(
-                        Summary.builder()
-                                .lectureId(dto.getLectureId())
-                                .sectionIndex(dto.getSectionIndex())
-                                .startSec(startSec)
-                                .endSec(endSec)
-                                .text(dto.getText())
-                                .build()
-                ));
+        // 1. 조회 시도
+        Optional<Summary> existingOpt = summaryRepository.findByLectureIdAndSectionIndex(
+                dto.getLectureId(), dto.getSectionIndex());
+
+        if (existingOpt.isPresent()) {
+            Summary existing = existingOpt.get();
+            existing.setText(dto.getText());
+            existing.setStartSec(startSec);
+            existing.setEndSec(endSec);
+            return existing; // Dirty Checking으로 자동 저장
+        }
+
+        // 2. 없으면 저장 시도 (동시성 충돌 발생 가능 구간)
+        try {
+            return summaryRepository.save(
+                    Summary.builder()
+                            .lectureId(dto.getLectureId())
+                            .sectionIndex(dto.getSectionIndex())
+                            .startSec(startSec)
+                            .endSec(endSec)
+                            .text(dto.getText())
+                            .build()
+            );
+        } catch (DataIntegrityViolationException e) {
+            Summary existing = summaryRepository.findByLectureIdAndSectionIndex(
+                            dto.getLectureId(), dto.getSectionIndex())
+                    .orElseThrow(() -> new IllegalStateException("Summary duplicate error but not found", e));
+
+            existing.setText(dto.getText());
+            existing.setStartSec(startSec);
+            existing.setEndSec(endSec);
+            return existing;
+        }
     }
 }

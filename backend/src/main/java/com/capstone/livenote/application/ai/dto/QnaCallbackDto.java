@@ -13,20 +13,18 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class QnaCallbackDto {
 
-    @JsonProperty("lecture_id")
     private Long lectureId;
 
-    @JsonProperty("summary_id")
     private Long summaryId;
 
-    @JsonProperty("section_index")
     private Integer sectionIndex;
 
-    @JsonProperty("items")
+    @JsonProperty("qnaList")
     private List<QnaItem> qnaList;
 
 
     @Getter @Setter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class QnaItem {
         private String type;     // "concept" | "application" | "advanced" | "comparison"
         private String question;
