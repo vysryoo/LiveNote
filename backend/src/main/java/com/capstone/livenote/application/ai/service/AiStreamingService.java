@@ -2,6 +2,7 @@ package com.capstone.livenote.application.ai.service;
 
 import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.summary.service.SummaryService;
+import com.capstone.livenote.domain.summary.repository.SummaryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
