@@ -38,7 +38,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",
-                                
+                                "/api/users/**",
+
                                 // WebSocket 핸드셰이크 허용
                                 "/ws/**",
                                 "/ws/transcription/**",
