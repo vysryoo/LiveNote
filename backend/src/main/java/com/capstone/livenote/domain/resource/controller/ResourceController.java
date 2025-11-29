@@ -56,18 +56,23 @@ public class ResourceController {
             @RequestParam Integer sectionIndex,
             @RequestParam(required = false) String type
     ) {
-        // 1) lectureId + sectionIndex 에 해당하는 Summary 찾기
-        Summary summary = summaryRepository
-                .findByLectureIdAndSectionIndex(lectureId, sectionIndex)
-                .orElseThrow(() -> new IllegalArgumentException("요약을 찾을 수 없습니다."));
+        // 1. lectureId + sectionIndex로 직접 조회 (summaryId 의존성 제거)
+        List<Resource> resourceList = resourceRepository.findByLectureIdAndSectionIndex(lectureId, sectionIndex);
 
-        // 2) summaryId 기준으로 Resource 조회
-        var list = resourceService.bySummary(summary.getId(), type)
-                .stream()
+        // 2. Type 필터링 (type 파라미터가 있을 경우)
+        if (type != null && !type.isBlank()) {
+            resourceList = resourceList.stream()
+                    .filter(r -> r.getType().name().equalsIgnoreCase(type))
+                    .toList();
+        }
+
+        // 3. Entity -> DTO 변환
+        List<ResourceResponseDto> items = resourceList.stream()
                 .map(ResourceResponseDto::from)
                 .toList();
 
-        return ApiResponse.ok(list);
+        // 4. 반환
+        return ApiResponse.ok(items);
     }
 
 }

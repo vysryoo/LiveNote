@@ -18,6 +18,6 @@ public interface ResourceRepository extends JpaRepository<Resource, Long> {
             Integer end
     );
 
-    // 기존 파일에 아래 메서드 추가
-    List<Resource> findByLectureIdAndSectionIndexOrderByScoreDesc(Long lectureId, Integer sectionIndex);
+    List<Resource> findByLectureIdAndSectionIndex(Long lectureId, Integer sectionIndex);
+
 }
