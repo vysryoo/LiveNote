@@ -123,6 +123,7 @@ export interface Summary {
   startSec: number;
   endSec: number;
   text: string | string[];
+  phase?: 'PARTIAL' | 'FINAL';
 }
 
 export interface Resource {
@@ -303,4 +304,3 @@ export interface BackendPort {
   lecture: LecturePort;
   settings: SettingsPort;
 }
-

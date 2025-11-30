@@ -18,6 +18,7 @@ interface UseRecordingResult {
 }
 
 const DEV_AUDIO_URL = (import.meta as any).env?.VITE_DEV_AUDIO_URL as string | undefined;
+const DISABLE_DEV_AUDIO = ((import.meta as any).env?.VITE_DISABLE_DEV_AUDIO as string | undefined)?.trim() === 'true';
 
 export function useRecording({
   lectureId,
@@ -73,7 +74,11 @@ export function useRecording({
         }
 
         try {
-          console.info(`[DEV_AUDIO] Using file playback: ${DEV_AUDIO_URL}`);
+          if (DEV_AUDIO_URL && !DISABLE_DEV_AUDIO) {
+            console.info(`[DEV_AUDIO] Using file playback: ${DEV_AUDIO_URL}`);
+          } else {
+            console.info("[DEV_AUDIO] Disabled or no DEV_AUDIO_URL — using microphone flow");
+          }
           devAudioEndedRef.current = false;
 
           const AudioContextClass =
@@ -134,38 +139,37 @@ export function useRecording({
             backend.lecture.sendAudioData(wsRef.current, pcm16Data.buffer);
           };
 
-          if (!DEV_AUDIO_URL) {
-            throw new Error("DEV_AUDIO_URL이 설정되어 있지 않습니다.");
-          }
+          // DEV audio fetch/decoding is handled below in `bufferSourcePromise`.
+          const bufferSourcePromise = DEV_AUDIO_URL
+            ? (async () => {
+                const response = await fetch(DEV_AUDIO_URL);
+                if (!response.ok) {
+                  throw new Error(`DEV_AUDIO 파일 로드 실패: ${response.statusText}`);
+                }
+                const fileBuffer = await response.arrayBuffer();
+                const decodedBuffer = await new Promise<AudioBuffer>(
+                  (resolve, reject) => {
+                    audioContext.decodeAudioData(
+                      fileBuffer.slice(0),
+                      (buffer) => resolve(buffer),
+                      (error) => reject(error)
+                    );
+                  }
+                );
+                const bufferSource = audioContext.createBufferSource();
+                bufferSource.buffer = decodedBuffer;
+                bufferSource.onended = () => {
+                  devAudioEndedRef.current = true;
+                  console.info("[DEV_AUDIO] Playback finished");
+                  if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                    wsRef.current.close(1000, "dev-audio-finished");
+                  }
+                };
+                return bufferSource as AudioNode;
+              })()
+            : Promise.resolve(null as AudioNode | null);
 
-          const response = await fetch(DEV_AUDIO_URL);
-          if (!response.ok) {
-            throw new Error(
-              `DEV_AUDIO 파일 로드 실패: ${response.statusText}`
-            );
-          }
-          const fileBuffer = await response.arrayBuffer();
-          const decodedBuffer = await new Promise<AudioBuffer>(
-            (resolve, reject) => {
-              audioContext.decodeAudioData(
-                fileBuffer.slice(0),
-                (buffer) => resolve(buffer),
-                (error) => reject(error)
-              );
-            }
-          );
-          const bufferSource = audioContext.createBufferSource();
-          bufferSource.buffer = decodedBuffer;
-          bufferSource.onended = () => {
-            devAudioEndedRef.current = true;
-            console.info("[DEV_AUDIO] Playback finished");
-            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-              wsRef.current.close(1000, "dev-audio-finished");
-            }
-          };
-          let sourceNode: AudioNode | null = bufferSource;
-          sourceNodeRef.current = bufferSource;
-
+          // Ensure websocket is created for either flow
           const ws =
             wsRef.current && wsRef.current.readyState === WebSocket.OPEN
               ? wsRef.current
@@ -198,10 +202,27 @@ export function useRecording({
             });
           }
 
-          scriptProcessor.connect(audioContext.destination);
-          sourceNode.connect(scriptProcessor);
-          if (sourceNode instanceof AudioBufferSourceNode) {
-            sourceNode.start();
+          const maybeBufferSource = await bufferSourcePromise;
+
+          if (maybeBufferSource) {
+            // DEV audio playback flow
+            sourceNodeRef.current = maybeBufferSource;
+            scriptProcessor.connect(audioContext.destination);
+            maybeBufferSource.connect(scriptProcessor);
+            if (maybeBufferSource instanceof AudioBufferSourceNode) {
+              (maybeBufferSource as AudioBufferSourceNode).start();
+            }
+          } else {
+            // Microphone flow: fallback to real mic input
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+              throw new Error("브라우저가 마이크 사용을 지원하지 않습니다.");
+            }
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioStreamRef.current = stream;
+            const mediaSource = audioContext.createMediaStreamSource(stream);
+            sourceNodeRef.current = mediaSource;
+            scriptProcessor.connect(audioContext.destination);
+            mediaSource.connect(scriptProcessor as any);
           }
 
           ws.onmessage = (event) => {

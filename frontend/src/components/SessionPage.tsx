@@ -53,7 +53,7 @@ export function SessionPage({
   const backend = useBackend();
   const { t } = useI18n();
   const wsRef = useRef<WebSocket | null>(null);
-  const summaryRequestStateRef = useRef<Record<number, { midRequested?: boolean; finalRequested?: boolean }>>({});
+  const finalSummaryRequestRef = useRef<Map<number, string>>(new Map());
   const requestStreamingCardRef = useRef<Set<number>>(new Set()); // 섹션별 추가 카드 생성 요청 여부 추적
   const currentSectionIndexRef = useRef<number>(-1);
   const elapsedTimeRef = useRef<number>(0);
@@ -708,8 +708,8 @@ export function SessionPage({
 
   useEffect(() => {
     setLiveSectionTranscripts({});
-    summaryRequestStateRef.current = {};
     sectionKeyMapRef.current.clear();
+    finalSummaryRequestRef.current.clear();
   }, [lectureId]);
 
   useEffect(() => {
@@ -770,6 +770,15 @@ export function SessionPage({
     [backend, lectureId]
   );
 
+  // summaries를 섹션 인덱스별로 빠르게 조회하기 위한 맵 (선택 상태 유지 등에 사용)
+  const summariesBySection = useMemo(() => {
+    const map = new Map<number, Summary>();
+    for (const summary of summaries) {
+      map.set(summary.sectionIndex, summary);
+    }
+    return map;
+  }, [summaries]);
+
 
   // selectedSummaryId를 ref로 추적하여 의존성 문제 방지
   const selectedSummaryIdRef = useRef<number | null>(null);
@@ -797,6 +806,29 @@ export function SessionPage({
         console.error("카드 상태 업데이트 실패:", error);
       });
 
+      const summary = summariesBySection.get(sectionIndex);
+      const phase = summary?.phase?.toUpperCase();
+      const isFinalSummary = phase === "FINAL";
+
+      if (isFinalSummary) {
+        const summarySignature = `${summary?.id ?? `section-${sectionIndex}`}:${Array.isArray(summary?.text) ? summary?.text.join(" ") : summary?.text ?? ""}`;
+        if (finalSummaryRequestRef.current.get(sectionIndex) !== summarySignature) {
+          finalSummaryRequestRef.current.set(sectionIndex, summarySignature);
+          setIsGeneratingExtended(true);
+          Promise.all([
+            backend.lecture.generateResources(lectureId, sectionIndex),
+            backend.lecture.generateQnA(lectureId, sectionIndex),
+          ])
+            .catch((error) => {
+              finalSummaryRequestRef.current.delete(sectionIndex);
+              console.error("최종 요약 기반 AI 요청 실패:", error);
+            })
+            .finally(() => {
+              setIsGeneratingExtended(false);
+            });
+        }
+      }
+
       if (!requestStreamingCardRef.current.has(sectionIndex)) {
         requestStreamingCardRef.current.add(sectionIndex);
         setIsGeneratingExtended(true);
@@ -808,24 +840,29 @@ export function SessionPage({
       lectureId,
       updateCardsForSection,
       requestStreamingCard,
+      summariesBySection,
     ]
   );
 
   useEffect(() => {
     setLiveSectionTranscripts({});
-    summaryRequestStateRef.current = {};
     requestStreamingCardRef.current.clear(); // 강의 변경 시 초기화
+    finalSummaryRequestRef.current.clear();
     setResourcesBySection({});
     setQnaBySection({});
   }, [lectureId]);
 
-  // summaries를 섹션 인덱스별로 빠르게 조회하기 위한 맵 (선택 상태 유지 등에 사용)
-  const summariesBySection = useMemo(() => {
-    const map = new Map<number, Summary>();
-    for (const summary of summaries) {
-      map.set(summary.sectionIndex, summary);
-    }
-    return map;
+  useEffect(() => {
+    summaries.forEach((summary) => {
+      if (!summary || summary.phase?.toUpperCase() !== "FINAL") {
+        return;
+      }
+      const signature = `${summary.id ?? `section-${summary.sectionIndex}`}:${Array.isArray(summary.text) ? summary.text.join(" ") : summary.text ?? ""}`;
+      const stored = finalSummaryRequestRef.current.get(summary.sectionIndex);
+      if (stored && stored !== signature) {
+        finalSummaryRequestRef.current.delete(summary.sectionIndex);
+      }
+    });
   }, [summaries]);
 
   // summaries 변경 시 selectedSummaryId 유지 (summaryKey가 변경되어도 선택 유지)
@@ -1037,91 +1074,6 @@ export function SessionPage({
     },
     [backend, bookmarks, lectureId, t]
   );
-
-  const requestSectionSummary = useCallback(
-    async (sectionIndex: number, phase: "partial" | "final") => {
-      if (sectionIndex < 0) return;
-      const state = summaryRequestStateRef.current[sectionIndex] ?? {};
-      if (phase === "partial" && state.midRequested) {
-        return;
-      }
-      if (phase === "final" && state.finalRequested) {
-        return;
-      }
-      summaryRequestStateRef.current[sectionIndex] = {
-        midRequested: state.midRequested || phase === "partial",
-        finalRequested: state.finalRequested || phase === "final",
-      };
-
-      // 요약 생성 중 상태를 summaries에 추가
-      if (phase === "partial") {
-        setSummaries((prev) => {
-          const existingIndex = prev.findIndex(s => s.sectionIndex === sectionIndex);
-          if (existingIndex >= 0) {
-            // 이미 존재하면 업데이트
-            const updated = [...prev];
-            updated[existingIndex] = {
-              ...updated[existingIndex],
-              text: "요약 생성 중...",
-            };
-            return updated;
-          } else {
-            // 없으면 추가
-            return [...prev, {
-              lectureId,
-              sectionIndex,
-              startSec: sectionIndex * 30,
-              endSec: sectionIndex * 30 + 30,
-              text: "요약 생성 중...",
-            }];
-          }
-        });
-      }
-
-      try {
-        const result = await backend.lecture.generateSummary(lectureId, sectionIndex, phase);
-        if (result.success && result.summary) {
-          setSummaries((prev) => {
-            const existingIndex = prev.findIndex(s => s.sectionIndex === sectionIndex);
-            if (existingIndex >= 0) {
-              // 이미 존재하면 업데이트
-              const updated = [...prev];
-              updated[existingIndex] = {
-                ...updated[existingIndex],
-                ...result.summary,
-              };
-              return updated;
-            } else {
-              // 없으면 추가
-              return [...prev, result.summary!];
-            }
-          });
-        } else if (result.error) {
-          console.error(`Summary generation failed (section ${sectionIndex}):`, result.error);
-        }
-      } catch (error) {
-        console.error(`Summary generation error (section ${sectionIndex}):`, error);
-      }
-    },
-    [backend, lectureId, refreshLecture]
-  );
-
-  useEffect(() => {
-    if (!isRecording) return;
-    const sectionIndex = Math.floor(elapsedTime / 30);
-    const secondsIntoSection = elapsedTime % 30;
-
-    if (secondsIntoSection === 15) {
-      requestSectionSummary(sectionIndex, "partial");
-    }
-
-    if (secondsIntoSection === 0 && elapsedTime > 0) {
-      const previousSection = sectionIndex - 1;
-      if (previousSection >= 0) {
-        requestSectionSummary(previousSection, "final");
-      }
-    }
-  }, [elapsedTime, isRecording, requestSectionSummary]);
 
 
 
