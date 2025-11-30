@@ -99,8 +99,23 @@ class SummarySettings(BaseModel):
     temperature: float = Field(default=0.2, ge=0.0, le=2.0, description="샘플링 온도")
     max_tokens: int = Field(default=256, ge=1, description="최대 토큰")
     system_prompt: str = Field(
-        default="당신은 강의 내용을 간결하게 요약하는 비서입니다. 사용자가 준 내용을 한국어로 3~5문장 정도로 핵심만 요약해 주세요.",
+        default=(
+            "당신은 강의 내용을 간결하게 요약하는 비서입니다. "
+            "아래에서 제공하는 전사 텍스트는 하나의 섹션(약 30초 분량)에 해당하며, "
+            "반드시 해당 섹션의 내용만 이용해서 요약하세요. "
+            "다른 섹션이나 이전/이후 내용은 절대 추측하거나 언급하지 마세요. "
+            "주어진 섹션을 한국어로 1~2문장 정도로 핵심만 요약해 주세요."
+        ),
         description="시스템 프롬프트"
+    )
+    min_transcript_length: int = Field(
+        default=10,
+        ge=1,
+        description="요약을 시도할 최소 전사 길이(문자 수)"
+    )
+    short_transcript_message: str = Field(
+        default="요약을 생성하기에 강의가 너무 짧습니다.",
+        description="전사가 너무 짧을 때 콜백으로 전송할 안내 메시지"
     )
     callback_url: HttpUrl | None = Field(
         default=None,

@@ -69,11 +69,30 @@ async def generate_summary(
     api_key = _resolve_api_key()
     callback_url = _resolve_callback_url(request.callback_url, settings)
 
+    if _is_too_short(transcript_text, settings.summary.min_transcript_length):
+        logger.info(
+            "요약 건너뜀: lectureId=%s section=%s 이유=too_short len=%s",
+            request.lecture_id,
+            request.section_index,
+            len(transcript_text.strip()),
+        )
+        payload = _build_callback_payload(
+            request,
+            settings.summary.short_transcript_message,
+            status="TOO_SHORT",
+        )
+
+        async def send_skip():
+            await _post_summary_callback(callback_url, payload)
+
+        asyncio.create_task(send_skip())
+        return {"status": "skipped", "reason": "too_short"}
+
     async def run_and_callback():
         try:
             client = AsyncOpenAI(api_key=api_key, timeout=30.0)
             summary_text = await _generate_summary_text(client, transcript_text, settings)
-            payload = _build_callback_payload(request, summary_text)
+            payload = _build_callback_payload(request, summary_text, status="COMPLETED")
             await _post_summary_callback(callback_url, payload)
         except Exception as exc:  # pragma: no cover - 네트워크/외부 API 예외
             logger.exception("요약 생성 실패: %s", exc)
@@ -106,11 +125,11 @@ async def _post_summary_callback(callback_url: str, payload: dict):
         logger.exception("요약 콜백 전송 실패: %s", exc)
 
 
-def _build_callback_payload(request: SummaryGenerateRequest, summary_text: str) -> dict:
+def _build_callback_payload(request: SummaryGenerateRequest, summary_text: str, status: str | None = None) -> dict:
     """백엔드로 전송할 페이로드 생성"""
     start_sec = request.start_sec if request.start_sec is not None else request.section_index * 30
     end_sec = request.end_sec if request.end_sec is not None else start_sec + 30
-    return {
+    payload = {
         "id": request.summary_id,
         "summaryId": request.summary_id,
         "lectureId": request.lecture_id,
@@ -120,6 +139,9 @@ def _build_callback_payload(request: SummaryGenerateRequest, summary_text: str) 
         "text": summary_text,
         "phase": request.phase,
     }
+    if status:
+        payload["status"] = status
+    return payload
 
 
 def _resolve_callback_url(explicit_url: Optional[HttpUrl], settings: AppSettings) -> str:
@@ -145,11 +167,18 @@ def _ensure_summary_type(url: str) -> str:
 
 def _resolve_api_key() -> str:
     """OpenAI API 키 확보"""
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = (os.getenv("OPENAI_API_KEY") or "").strip()
     if not api_key:
+        logger.error("OPENAI_API_KEY가 설정되지 않았습니다 (.env 로드 실패 가능).")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="OPENAI_API_KEY가 설정되지 않았습니다.",
+        )
+    if len(api_key) < 20:
+        logger.error("OPENAI_API_KEY가 비정상적으로 짧습니다 (len=%d). .env 내용을 확인하세요.", len(api_key))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="OPENAI_API_KEY가 올바르지 않습니다. (.env 확인 후 서버를 재시작하세요.)",
         )
     return api_key
 
@@ -159,3 +188,10 @@ def _to_transcript_text(transcript: List[str] | str) -> str:
     if isinstance(transcript, str):
         return transcript.strip()
     return "\n".join(transcript).strip()
+
+
+def _is_too_short(text: str, min_length: int) -> bool:
+    if min_length <= 0:
+        return False
+    normalized = "".join(text.split())
+    return len(normalized) <= min_length

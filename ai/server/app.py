@@ -4,7 +4,13 @@ FastAPI 애플리케이션 생성
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
+
+from dotenv import load_dotenv
+
+# Ensure .env is loaded even if the working directory differs (override stale env)
+load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
 
 from fastapi import FastAPI
 
