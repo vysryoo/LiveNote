@@ -2,6 +2,7 @@ package com.capstone.livenote.application.ai.controller;
 
 import com.capstone.livenote.application.ai.dto.CardStatusDto;
 import com.capstone.livenote.application.ai.service.AiGenerateService;
+import com.capstone.livenote.application.ai.service.AiRequestService;
 import com.capstone.livenote.application.ai.service.AiStreamingService;
 import com.capstone.livenote.domain.qna.service.QnaService;
 import com.capstone.livenote.domain.resource.service.ResourceService;
@@ -25,6 +26,7 @@ public class AiController {
 
     private final AiGenerateService aiGenerateService;
     private final AiStreamingService aiStreamingService;
+    private final AiRequestService aiRequestService;
     private final QnaService qnaService;
     private final ResourceService resourceService;
 
@@ -49,14 +51,32 @@ public class AiController {
 //        }
 //    }
 
-        @PostMapping("/ai/generate-summary")
-        public ApiResponse<Map<String, Object>> generateSummary(
-                        @RequestParam Long lectureId,
-                        @RequestParam Integer sectionIndex
-        ) {
-                aiGenerateService.generateSummary(lectureId, sectionIndex, "FINAL");
-                return ApiResponse.ok(Map.of("success", true));
-        }
+    @PostMapping("/ai/generate-summary")
+    public ApiResponse<Map<String, Object>> generateSummary(
+            @RequestParam Long lectureId,
+            @RequestParam Integer sectionIndex
+    ) {
+        aiGenerateService.generateSummary(lectureId, sectionIndex, "FINAL");
+        return ApiResponse.ok(Map.of("success", true));
+    }
+
+    @PostMapping("/ai/generate-resources")
+    public ApiResponse<Map<String, Object>> generateResources(
+            @RequestParam Long lectureId,
+            @RequestParam Integer sectionIndex
+    ) {
+        aiRequestService.requestResources(lectureId, sectionIndex);
+        return ApiResponse.ok(Map.of("success", true));
+    }
+
+    @PostMapping("/ai/generate-qna")
+    public ApiResponse<Map<String, Object>> generateQna(
+            @RequestParam Long lectureId,
+            @RequestParam Integer sectionIndex
+    ) {
+        aiRequestService.requestQna(lectureId, sectionIndex);
+        return ApiResponse.ok(Map.of("success", true));
+    }
 
 
 

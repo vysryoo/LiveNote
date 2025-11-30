@@ -6,6 +6,7 @@ import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.application.ai.dto.SummaryCallbackDto;
 import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.summary.entity.Summary;
+import com.capstone.livenote.domain.summary.entity.SummaryPhase;
 import com.capstone.livenote.domain.summary.service.SummaryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +38,9 @@ public class SummaryCallbackService {
             return;
         }
 
-        // 1. DB 저장 (Partial/Final 모두 저장하거나, 정책에 따라 선택)
+        SummaryPhase phase = SummaryPhase.from(dto.getPhase());
+
+        // 1. DB 저장
         // SummaryService.upsertFromCallback 구현 확인 완료 (기존 내용 있으면 업데이트)
         Summary summary = summaryService.upsertFromCallback(dto);
 
@@ -50,8 +53,8 @@ public class SummaryCallbackService {
                 dto.getPhase() // "partial" or "final"
         );
 
-        // 3. ✅ [추가] Final 요약인 경우 RAG 벡터 DB에 업서트 요청
-        if ("final".equalsIgnoreCase(dto.getPhase())) {
+        if (phase == SummaryPhase.FINAL) {
+            // 3. ✅ Final 요약인 경우에만 RAG 업서트
             try {
                 log.info("🗂️ [RAG Upsert] Sending FINAL summary to Vector DB: summaryId={}", summary.getId());
                 ragClient.upsertSummaryText(summary.getLectureId(), summary);
@@ -59,11 +62,11 @@ public class SummaryCallbackService {
                 log.error("❌ RAG Upsert failed: {}", e.getMessage());
                 // RAG 실패가 메인 로직을 중단시키지 않도록 예외 처리
             }
+
+            return;
         }
 
-        // 4. 연쇄 작업 요청 (자료 추천 & QnA)
-        // Partial 단계에서도 추천을 띄울 것인지, Final에서만 띄울 것인지 결정 필요.
-        // 여기서는 기존 로직대로 호출합니다.
+        // 4. Partial 단계에서는 즉시 AI 추천/QnA 요청
         aiRequestService.requestResourcesWithSummary(
                 summary.getLectureId(),
                 summary.getId(),
