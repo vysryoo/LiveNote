@@ -142,6 +142,7 @@ export interface QnA {
   id: number;
   lectureId: number;
   sectionIndex: number;
+  summaryId?: number;
   type: 'concept' | 'application' | 'advanced' | 'comparison';
   question: string | string[];
   answer: string | string[];

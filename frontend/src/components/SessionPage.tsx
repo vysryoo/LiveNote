@@ -183,10 +183,15 @@ export function SessionPage({
 
   const appendQnAForSection = useCallback((sectionIndex: number, items: QnA[]) => {
     if (!items || items.length === 0) return;
+    const normalized = items.map((item) => {
+      const type = typeof item.type === "string" ? item.type.toLowerCase() as QnA["type"] : item.type;
+      const summaryId = (item as any).summaryId ?? (item as any).summary_id ?? item.summaryId;
+      return { ...item, type, summaryId };
+    });
     setQnaBySection((prev) => {
       const existing = prev[sectionIndex] ?? [];
       const existingIds = new Set(existing.map((item) => item.id));
-      const deduped = items.filter((item) => !existingIds.has(item.id));
+      const deduped = normalized.filter((item) => !existingIds.has(item.id));
       if (deduped.length === 0) {
         return prev;
       }
