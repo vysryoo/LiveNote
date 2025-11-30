@@ -49,14 +49,14 @@ public class AiController {
 //        }
 //    }
 
-    @PostMapping("/api/ai/generate-summary")
-    public ApiResponse<Map<String, Object>> generateSummary(
-            @RequestParam Long lectureId,
-            @RequestParam Integer sectionIndex
-    ) {
-        aiGenerateService.generateSummary(lectureId, sectionIndex, "FINAL");
-        return ApiResponse.ok(Map.of("success", true));
-    }
+        @PostMapping("/ai/generate-summary")
+        public ApiResponse<Map<String, Object>> generateSummary(
+                        @RequestParam Long lectureId,
+                        @RequestParam Integer sectionIndex
+        ) {
+                aiGenerateService.generateSummary(lectureId, sectionIndex, "FINAL");
+                return ApiResponse.ok(Map.of("success", true));
+        }
 
 
 

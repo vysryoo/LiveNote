@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class SummaryCallbackService {
 
+    private static final String STATUS_TOO_SHORT = "TOO_SHORT";
+
     private final SummaryService summaryService;
     private final StreamGateway streamGateway;
     private final AiRequestService aiRequestService;
@@ -26,6 +28,14 @@ public class SummaryCallbackService {
     public void handleSummaryCallback(SummaryCallbackDto dto) {
         log.info("📝 [Callback] Summary received: lectureId={} section={} type={}",
                 dto.getLectureId(), dto.getSectionIndex(), dto.getPhase());
+
+        if (STATUS_TOO_SHORT.equalsIgnoreCase(dto.getStatus())) {
+            String message = dto.getText() != null ? dto.getText() : "요약을 생성하기에 강의가 너무 짧습니다.";
+            log.info("⏭️  [Summary] Skipping DB save due to short transcript: lectureId={} section={}",
+                    dto.getLectureId(), dto.getSectionIndex());
+            streamGateway.sendError(dto.getLectureId(), message);
+            return;
+        }
 
         // 1. DB 저장 (Partial/Final 모두 저장하거나, 정책에 따라 선택)
         // SummaryService.upsertFromCallback 구현 확인 완료 (기존 내용 있으면 업데이트)

@@ -53,6 +53,9 @@ public class StreamGateway {
         );
 
         tmpl.convertAndSend(destination, payload);
+        // Also send to the non-section-specific summary topic so clients
+        // that subscribe to `/topic/lectures/{lectureId}/summary` receive updates.
+        tmpl.convertAndSend("/topic/lectures/" + lectureId + "/summary", payload);
     }
 
 
