@@ -104,4 +104,42 @@ public class UserService {
         }
         return user;
     }
+
+    @Transactional
+    public UserViewDto setLanguage(Long userId, String language) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("user not found"));
+        user.setUiLanguage(language != null ? language : "ko");
+        userRepository.save(user);
+        log.info("💾 [DB WRITE] Language updated: userId={} lang={}", userId, user.getUiLanguage());
+        return new UserViewDto(
+                user.getId(),
+                user.getLoginId(),
+                user.getName(),
+                user.getEmail(),
+                user.getUiLanguage()
+        );
+    }
+
+    @Transactional
+    public UserViewDto changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("user not found"));
+        if (currentPassword == null || newPassword == null) {
+            throw new IllegalArgumentException("missing password");
+        }
+        if (!encoder.matches(currentPassword, user.getPassword())) {
+            throw new IllegalArgumentException("invalid current password");
+        }
+        user.setPassword(encoder.encode(newPassword));
+        userRepository.save(user);
+        log.info("💾 [DB WRITE] Password updated: userId={}", userId);
+        return new UserViewDto(
+                user.getId(),
+                user.getLoginId(),
+                user.getName(),
+                user.getEmail(),
+                user.getUiLanguage()
+        );
+    }
 }
