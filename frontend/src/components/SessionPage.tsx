@@ -83,6 +83,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
   const [liveSectionTranscripts, setLiveSectionTranscripts] = useState<Record<number, string>>({});
   const [serverSectionIndex, setServerSectionIndex] = useState(0);
+  const [serverElapsedSec, setServerElapsedSec] = useState(0);
 
   // 새로운 섹션이 생기거나 내용이 갱신될 때 왼쪽 강의 뷰포트를 항상 맨 아래로 스크롤
   const stompClientRef = useRef<Client | null>(null);
@@ -100,6 +101,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
     backend,
     t,
     serverSectionIndex,
+    serverElapsedSec,
     onLiveTranscript: (sectionIndex, content, isFinal) => {
       setLiveSectionTranscripts((prev) => {
         const prevText = prev[sectionIndex] ?? "";
@@ -658,6 +660,34 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
             });
             console.log('[STOMP] 스트리밍 토픽 구독 완료: /topic/lectures/' + lectureId + '/stream');
             console.log('[STOMP] 구독 객체:', streamSubscription);
+
+            // 전사 구독 (섹션/elapsed 동기화 및 transcripts 상태 업데이트)
+            client.subscribe(`/topic/lectures/${lectureId}/transcripts`, (message) => {
+              try {
+                const data = JSON.parse(message.body);
+                if (typeof data.sectionIndex === "number") {
+                  setServerSectionIndex(data.sectionIndex);
+                }
+                if (typeof data.endSec === "number") {
+                  setServerElapsedSec((prev) => Math.max(prev, data.endSec));
+                }
+                // DB 전사 목록에 반영
+                const t: Transcript = {
+                  id: Date.now(),
+                  lectureId,
+                  sectionIndex: data.sectionIndex ?? 0,
+                  startSec: data.startSec ?? 0,
+                  endSec: data.endSec ?? 0,
+                  text: data.text ?? "",
+                };
+                setTranscripts((prev) => {
+                  const exists = prev.some((p) => p.sectionIndex === t.sectionIndex && p.startSec === t.startSec && p.endSec === t.endSec && p.text === t.text);
+                  return exists ? prev : [...prev, t];
+                });
+              } catch (err) {
+                console.error("전사 메시지 처리 오류", err, message.body);
+              }
+            });
           },
           onStompError: (frame) => {
             console.error('[STOMP] STOMP 에러:', frame);
@@ -837,7 +867,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
       try {
         const summary = summariesBySection.get(sectionIndex);
         const phase = summary?.phase?.toUpperCase();
-        const isFinalSummary = phase === "FINAL";
+        const isFinalSummary = phase ? phase === "FINAL" : true; // phase가 없으면 FINAL로 간주
 
         // FINAL 요약이 아니면 추가 카드 요청을 하지 않음
         if (!isFinalSummary) {
@@ -855,7 +885,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
         if (existingQnaCount >= 3 || existingResourceCount >= 3) {
           console.log(`[handleSummaryClick] 이미 3개 이상 → 최초 클릭 아님, 요청 생략 (API 제한): section=${sectionIndex}`);
           shouldRequestMore = false;
-        } else if (existingQnaCount <= 2 && existingResourceCount <= 2 && !requestStreamingCardRef.current.has(sectionIndex)) {
+        } else if (isFinalSummary && existingQnaCount <= 2 && existingResourceCount <= 2 && !requestStreamingCardRef.current.has(sectionIndex)) {
           // FINAL 최초 클릭: QnA ≤ 2, Resource ≤ 2 → 4개씩 요청
           // (PARTIAL로 2개 이하 생성되었거나, AI 서버 내부 로직으로 2개보다 적게 생성된 경우 포함)
           console.log(`[handleSummaryClick] FINAL 최초 클릭 (QnA≤2, Resource≤2) → 4개씩 요청: section=${sectionIndex}`);

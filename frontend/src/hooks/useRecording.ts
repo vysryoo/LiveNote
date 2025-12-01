@@ -8,6 +8,7 @@ interface UseRecordingParams {
   onLiveTranscript: (sectionIndex: number, text: string, isFinal: boolean) => void;
   onRecordingStartedOnce: () => void;
   serverSectionIndex?: number;
+  serverElapsedSec?: number;
 }
 
 interface UseRecordingResult {
@@ -29,6 +30,7 @@ export function useRecording({
   onLiveTranscript,
   onRecordingStartedOnce,
   serverSectionIndex,
+  serverElapsedSec,
 }: UseRecordingParams): UseRecordingResult {
   const [isRecording, setIsRecording] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -368,6 +370,12 @@ export function useRecording({
       }
     }
   }, [serverSectionIndex]);
+
+  useEffect(() => {
+    if (serverElapsedSec != null && serverElapsedSec > elapsedTime) {
+      setElapsedTime(serverElapsedSec);
+    }
+  }, [serverElapsedSec, elapsedTime]);
 
   useEffect(() => {
     if (!isRecording) {
