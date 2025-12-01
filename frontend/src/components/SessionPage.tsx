@@ -54,7 +54,8 @@ export function SessionPage({
   const { t } = useI18n();
   const wsRef = useRef<WebSocket | null>(null);
   const finalSummaryRequestRef = useRef<Map<number, string>>(new Map());
-  const requestStreamingCardRef = useRef<Set<number>>(new Set()); // 섹션별 추가 카드 생성 요청 여부 추적
+const requestStreamingCardRef = useRef<Set<number>>(new Set()); // 섹션별 추가 카드 생성 요청 여부 추적
+const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 요청 방지용
   const currentSectionIndexRef = useRef<number>(-1);
   const elapsedTimeRef = useRef<number>(0);
   const lectureScrollViewportRef = useRef<HTMLDivElement | null>(null);
@@ -815,49 +816,59 @@ export function SessionPage({
 
   const handleSummaryClick = useCallback(
     async (summaryId: number, sectionIndex: number) => {
+      if (cardRequestInFlightRef.current.has(sectionIndex)) {
+        console.log(`[handleSummaryClick] 요청 진행 중인 섹션 → 스킵: section=${sectionIndex}`);
+        return;
+      }
+      cardRequestInFlightRef.current.add(sectionIndex);
+
       // ref를 사용하여 현재 값 확인 (의존성 문제 방지)
       if (selectedSummaryIdRef.current === summaryId) {
         // 같은 요약을 다시 클릭하면 해제
         setSplitMode(false);
         setSelectedSummaryId(null);
         setSelectedSectionIndex(null);
+        cardRequestInFlightRef.current.delete(sectionIndex);
         return;
       }
 
       // 1단계: DB에서 카드 개수 먼저 확인 (추가 요청 필요 여부 판단)
       let shouldRequestMore = false;
       try {
+        const summary = summariesBySection.get(sectionIndex);
+        const phase = summary?.phase?.toUpperCase();
+        const isFinalSummary = phase === "FINAL";
+
+        // FINAL 요약이 아니면 추가 카드 요청을 하지 않음
+        if (!isFinalSummary) {
+          console.log(`[handleSummaryClick] FINAL 요약 아님 → 추가 요청 생략: section=${sectionIndex}`);
+          shouldRequestMore = false;
+        }
+
         const cardsStatus = await backend.lecture.getCardsStatus(lectureId, sectionIndex);
         const existingQnaCount = cardsStatus.qnaCards.filter(c => c.isComplete).length;
         const existingResourceCount = cardsStatus.resourceCards.filter(c => c.isComplete).length;
         
         console.log(`[handleSummaryClick] sectionIndex=${sectionIndex}, QnA=${existingQnaCount}, Resource=${existingResourceCount}`);
 
-        // QnA와 Resource가 각각 4개 이상 있으면 추가 요청 안 함
-        if (existingQnaCount >= 4 && existingResourceCount >= 4) {
-          console.log(`[handleSummaryClick] 이미 충분한 카드가 있어 요청 생략: section=${sectionIndex}`);
+        // QnA나 Resource 중 하나라도 3개 이상이면 이미 요청했으므로 요청 안 함 (API 제한 고려)
+        if (existingQnaCount >= 3 || existingResourceCount >= 3) {
+          console.log(`[handleSummaryClick] 이미 3개 이상 → 최초 클릭 아님, 요청 생략 (API 제한): section=${sectionIndex}`);
           shouldRequestMore = false;
-        } else if (existingQnaCount === 2 && existingResourceCount === 2 && !requestStreamingCardRef.current.has(sectionIndex)) {
-          // PARTIAL 단계 (정확히 2개씩)에서만 추가 2개씩 요청
-          console.log(`[handleSummaryClick] PARTIAL 상태 (2개씩) → FINAL 추가 요청: section=${sectionIndex}`);
-          shouldRequestMore = true;
-          requestStreamingCardRef.current.add(sectionIndex);
-        } else if (existingQnaCount === 0 && existingResourceCount === 0 && !requestStreamingCardRef.current.has(sectionIndex)) {
-          // 카드가 하나도 없을 때만 초기 요청
-          console.log(`[handleSummaryClick] 카드 없음 → 초기 요청: section=${sectionIndex}`);
+        } else if (existingQnaCount <= 2 && existingResourceCount <= 2 && !requestStreamingCardRef.current.has(sectionIndex)) {
+          // FINAL 최초 클릭: QnA ≤ 2, Resource ≤ 2 → 4개씩 요청
+          // (PARTIAL로 2개 이하 생성되었거나, AI 서버 내부 로직으로 2개보다 적게 생성된 경우 포함)
+          console.log(`[handleSummaryClick] FINAL 최초 클릭 (QnA≤2, Resource≤2) → 4개씩 요청: section=${sectionIndex}`);
           shouldRequestMore = true;
           requestStreamingCardRef.current.add(sectionIndex);
         } else {
-          console.log(`[handleSummaryClick] 요청 조건 불일치 (QnA=${existingQnaCount}, Resource=${existingResourceCount}): section=${sectionIndex}`);
+          console.log(`[handleSummaryClick] 이미 요청했거나 조건 불일치: section=${sectionIndex}`);
           shouldRequestMore = false;
         }
       } catch (error) {
         console.error("카드 상태 확인 실패:", error);
-        // 에러 발생 시에도 요청은 진행 (안전장치)
-        if (!requestStreamingCardRef.current.has(sectionIndex)) {
-          shouldRequestMore = true;
-          requestStreamingCardRef.current.add(sectionIndex);
-        }
+        // 에러 발생 시에는 요청하지 않음 (DB 확인 없이는 중복 요청 방지 불가)
+        shouldRequestMore = false;
       }
 
       // 2단계: UI 업데이트 (섹션 선택)
@@ -875,6 +886,7 @@ export function SessionPage({
         setIsGeneratingExtended(true);
         requestStreamingCard(sectionIndex);
       }
+      cardRequestInFlightRef.current.delete(sectionIndex);
     },
     [
       backend,
@@ -885,10 +897,19 @@ export function SessionPage({
     ]
   );
 
+  // 컴포넌트 마운트 시 ref 초기화 (재로그인 대응)
+  useEffect(() => {
+    console.log("[SessionPage] 컴포넌트 마운트: ref 초기화");
+    requestStreamingCardRef.current.clear();
+    finalSummaryRequestRef.current.clear();
+    cardRequestInFlightRef.current.clear();
+  }, []);
+
   useEffect(() => {
     setLiveSectionTranscripts({});
     requestStreamingCardRef.current.clear(); // 강의 변경 시 초기화
     finalSummaryRequestRef.current.clear();
+    cardRequestInFlightRef.current.clear();
     setResourcesBySection({});
     setQnaBySection({});
   }, [lectureId]);
