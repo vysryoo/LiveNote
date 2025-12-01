@@ -29,6 +29,21 @@ public class TranscriptService {
     // 재시작 감지용: 강의별 raw startSec 오프셋
     private final Map<Long, Integer> baseOffsets = new HashMap<>();
     private final Map<Long, Integer> lastRawStarts = new HashMap<>();
+    
+    // 동적 섹션 관리: 강의별 현재 섹션 정보 (sectionIndex, sectionStartSec)
+    private final Map<Long, SectionInfo> currentSections = new HashMap<>();
+    
+    private static class SectionInfo {
+        int index;
+        int startSec;
+        int lastEndSec;
+        
+        SectionInfo(int index, int startSec, int lastEndSec) {
+            this.index = index;
+            this.startSec = startSec;
+            this.lastEndSec = lastEndSec;
+        }
+    }
 
     // 순환 참조 고리 끊기
     public TranscriptService(TranscriptRepository transcriptRepository,
@@ -66,11 +81,27 @@ public class TranscriptService {
         int adjustedStart = startSec + offset;
         int adjustedEnd = endSec + offset;
 
-        // 2) sectionIndex 계산: 30초 단위 섹션 (연속 청크가 동일 섹션에 쌓이도록 고정)
-        int sectionIndex = adjustedStart / 30;
+        // 2) 동적 섹션 배정: 현재 전사의 startSec이 섹션 기준점(첫 전사의 startSec)으로부터 30초 이상이면 새 섹션
+        SectionInfo section = currentSections.get(lectureId);
+        if (section == null) {
+            // 첫 전사: Section 0으로 시작, startSec을 기준점으로 설정
+            section = new SectionInfo(0, adjustedStart, adjustedEnd);
+            currentSections.put(lectureId, section);
+        } else {
+            // 현재 전사의 startSec이 섹션 기준점(section.startSec)으로부터 30초 이상이면 새 섹션 시작
+            if (adjustedStart - section.startSec >= 30) {
+                // 새 섹션 시작: 현재 전사의 startSec이 새 섹션의 기준점이 됨
+                section = new SectionInfo(section.index + 1, adjustedStart, adjustedEnd);
+                currentSections.put(lectureId, section);
+            } else {
+                // 같은 섹션 내에서 lastEndSec만 갱신
+                section.lastEndSec = adjustedEnd;
+            }
+        }
+        int sectionIndex = section.index;
 
-        log.info("[TranscriptService] Saving transcript: lectureId={} startSec={} endSec={} sectionIndex={}",
-                lectureId, adjustedStart, adjustedEnd, sectionIndex);
+        log.info("[TranscriptService] Saving transcript: lectureId={} startSec={} endSec={} sectionIndex={} (section baseline: {}s, range: {}~{}s)",
+                lectureId, adjustedStart, adjustedEnd, sectionIndex, section.startSec, section.startSec, section.lastEndSec);
 
         // 3) Transcript 엔터티 저장
         Transcript t = transcriptRepository.save(
