@@ -341,6 +341,8 @@ export function SessionPage({
   }, [backend, lectureId, t, formatText]);
 
   useEffect(() => {
+    // 강의 새로고침 시 ref 초기화
+    requestStreamingCardRef.current.clear();
     refreshLecture();
   }, [refreshLecture]);
 
@@ -822,21 +824,54 @@ export function SessionPage({
         return;
       }
 
+      // 1단계: DB에서 카드 개수 먼저 확인 (추가 요청 필요 여부 판단)
+      let shouldRequestMore = false;
+      try {
+        const cardsStatus = await backend.lecture.getCardsStatus(lectureId, sectionIndex);
+        const existingQnaCount = cardsStatus.qnaCards.filter(c => c.isComplete).length;
+        const existingResourceCount = cardsStatus.resourceCards.filter(c => c.isComplete).length;
+        
+        console.log(`[handleSummaryClick] sectionIndex=${sectionIndex}, QnA=${existingQnaCount}, Resource=${existingResourceCount}`);
 
+        // QnA와 Resource가 각각 4개 이상 있으면 추가 요청 안 함
+        if (existingQnaCount >= 4 && existingResourceCount >= 4) {
+          console.log(`[handleSummaryClick] 이미 충분한 카드가 있어 요청 생략: section=${sectionIndex}`);
+          shouldRequestMore = false;
+        } else if (existingQnaCount === 2 && existingResourceCount === 2 && !requestStreamingCardRef.current.has(sectionIndex)) {
+          // PARTIAL 단계 (정확히 2개씩)에서만 추가 2개씩 요청
+          console.log(`[handleSummaryClick] PARTIAL 상태 (2개씩) → FINAL 추가 요청: section=${sectionIndex}`);
+          shouldRequestMore = true;
+          requestStreamingCardRef.current.add(sectionIndex);
+        } else if (existingQnaCount === 0 && existingResourceCount === 0 && !requestStreamingCardRef.current.has(sectionIndex)) {
+          // 카드가 하나도 없을 때만 초기 요청
+          console.log(`[handleSummaryClick] 카드 없음 → 초기 요청: section=${sectionIndex}`);
+          shouldRequestMore = true;
+          requestStreamingCardRef.current.add(sectionIndex);
+        } else {
+          console.log(`[handleSummaryClick] 요청 조건 불일치 (QnA=${existingQnaCount}, Resource=${existingResourceCount}): section=${sectionIndex}`);
+          shouldRequestMore = false;
+        }
+      } catch (error) {
+        console.error("카드 상태 확인 실패:", error);
+        // 에러 발생 시에도 요청은 진행 (안전장치)
+        if (!requestStreamingCardRef.current.has(sectionIndex)) {
+          shouldRequestMore = true;
+          requestStreamingCardRef.current.add(sectionIndex);
+        }
+      }
+
+      // 2단계: UI 업데이트 (섹션 선택)
       setSelectedSectionIndex(sectionIndex);
       setSplitMode(true);
-
       setSelectedSummaryId(summaryId);
+
+      // 3단계: 카드 표시 업데이트 (DB에서 가져와서 표시)
       updateCardsForSection(sectionIndex).catch(error => {
         console.error("카드 상태 업데이트 실패:", error);
       });
 
-      const summary = summariesBySection.get(sectionIndex);
-      const phase = summary?.phase?.toUpperCase();
-      const isFinalSummary = phase === "FINAL";
-
-      if (!requestStreamingCardRef.current.has(sectionIndex)) {
-        requestStreamingCardRef.current.add(sectionIndex);
+      // 4단계: 필요한 경우에만 추가 카드 요청
+      if (shouldRequestMore) {
         setIsGeneratingExtended(true);
         requestStreamingCard(sectionIndex);
       }

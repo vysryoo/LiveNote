@@ -135,7 +135,8 @@ export function useSectionsLayout({
 
       const hasNoSummary = summaryText === t("session.noSummaryText");
       const isGenerating = summaryFromDb?.text === "요약 생성 중...";
-      const isClickable = !hasNoSummary && !isGenerating && !autoMode;
+      const isFinalSummary = summaryFromDb?.phase?.toUpperCase() === "FINAL";
+      const isClickable = !hasNoSummary && !isGenerating && !autoMode && isFinalSummary;
 
       return {
         sectionIndex,
