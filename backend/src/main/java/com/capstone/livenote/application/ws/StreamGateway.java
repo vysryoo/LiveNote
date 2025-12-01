@@ -32,6 +32,7 @@ public class StreamGateway {
                 ));
     }
 
+    // Summary 엔티티를 받는 오버로드 메서드 (SummaryCallbackService용)
     public void sendSummary(Summary summary) {
         sendSummary(
                 summary.getLectureId(),
@@ -41,6 +42,7 @@ public class StreamGateway {
         );
     }
 
+    // 파라미터로 받는 메서드 (SectionAggregationService용)
     public void sendSummary(Long lectureId, Integer sectionIndex, String text, String phase) {
         String destination = "/topic/lectures/" + lectureId + "/summary/" + sectionIndex;
 

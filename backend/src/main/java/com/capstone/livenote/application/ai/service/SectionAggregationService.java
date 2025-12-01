@@ -1,6 +1,9 @@
 package com.capstone.livenote.application.ai.service;
 
 import com.capstone.livenote.application.ai.client.RagClient;
+import com.capstone.livenote.domain.summary.service.SummaryService;
+import com.capstone.livenote.domain.summary.entity.Summary;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -11,17 +14,18 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 섹션 단위 집계 -> AI 서버로 요약 요청 트리거
- * (결과는 비동기 콜백으로 수신되므로, 여기서는 요청만 보내고 끝냅니다)
+ * (결과는 비동기 콜백으로 수신되므로, 여기서는 요청만 보내고 끝냄)
  */
 @Service
 @Slf4j
 public class SectionAggregationService {
 
     private final RagClient ragClient;
+    private final SummaryService summaryService;
 
-    // 불필요한 의존성(OpenAiSummaryService, SummaryService 등) 모두 제거
-    public SectionAggregationService(RagClient ragClient) {
+    public SectionAggregationService(RagClient ragClient, SummaryService summaryService) {
         this.ragClient = ragClient;
+        this.summaryService = summaryService;
     }
 
     private final Map<Long, SectionState> states = new ConcurrentHashMap<>();
@@ -91,4 +95,5 @@ public class SectionAggregationService {
                 sourceText
         );
     }
+
 }

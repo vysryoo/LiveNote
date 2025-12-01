@@ -31,8 +31,9 @@ public class ResourceCallbackService {
                 dto.getLectureId(), dto.getSectionIndex(), dto.getSummaryId(),
                 dto.getResources() == null ? 0 : dto.getResources().size());
 
-        List<Resource> saved = dto.getResources().stream()
-                .map(item -> Resource.builder()
+        // 1. 저장
+        dto.getResources().forEach(item -> resourceRepository.save(
+                Resource.builder()
                         .lectureId(dto.getLectureId())
                         .summaryId((dto.getSummaryId() == null || dto.getSummaryId() == 0L) ? null : dto.getSummaryId())
                         .sectionIndex(dto.getSectionIndex())
@@ -43,11 +44,16 @@ public class ResourceCallbackService {
                         .score(item.getScore())
                         .reason(item.getReason())
                         .detail(toJsonNode(item.getDetail()))
-                        .build())
-                .map(resourceRepository::save)
-                .toList();
+                        .build()
+        ));
 
-        List<ResourceResponseDto> items = saved.stream()
+        // 2. 전체 조회
+        List<Resource> allResources = resourceRepository.findByLectureIdAndSectionIndex( // Repository 메서드명 확인 필요
+                dto.getLectureId(), dto.getSectionIndex()
+        );
+
+        // 3. DTO 변환 및 전송
+        List<ResourceResponseDto> items = allResources.stream()
                 .map(ResourceResponseDto::from)
                 .toList();
 

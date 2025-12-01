@@ -37,6 +37,7 @@ public class AiRequestService {
     private final LectureService lectureService;
     private final AiHistoryProperties historyProperties;
 
+    // 수동 요청
     public void requestResources(Long lectureId, Integer sectionIndex) {
         Summary summary = summaryService.findByLectureAndSection(lectureId, sectionIndex)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "summary not found"));
@@ -47,22 +48,13 @@ public class AiRequestService {
                 sectionIndex,
                 summary.getText()
         );
-        log.info("🔄 [AI Request] Resource recommendation: lectureId={} section={} prevSummaries={} excludes(y/w/p/g)={}/{}/{}/{}",
-                lectureId,
-                sectionIndex,
-                payload.getPreviousSummaries().size(),
-                payload.getYtExclude().size(),
-                payload.getWikiExclude().size(),
-                payload.getPaperExclude().size(),
-                payload.getGoogleExclude().size());
-        ragClient.requestResourceRecommendation(payload);
+        log.info("🔄 [AI Request] Resource recommendation (Manual): lectureId={} section={}", lectureId, sectionIndex);
+
+        ragClient.requestResourceRecommendation(payload, null);
     }
 
-    public void requestResourcesWithSummary(Long lectureId, Long summaryId, Integer sectionIndex, String sectionSummary) {
-        ResourceRecommendPayload payload = buildResourcePayload(lectureId, summaryId, sectionIndex, sectionSummary);
-        ragClient.requestResourceRecommendation(payload);
-    }
 
+    // 수동 요
     public void requestQna(Long lectureId, Integer sectionIndex) {
         Summary summary = summaryService.findByLectureAndSection(lectureId, sectionIndex)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "summary not found"));
@@ -74,21 +66,37 @@ public class AiRequestService {
                 sectionIndex,
                 summary.getText()
         );
-        log.info("🔄 [AI Request] QnA generation: lectureId={} section={} prevQa={}",
-                lectureId,
-                sectionIndex,
-                payload.getPreviousQa().size());
-        ragClient.requestQnaGeneration(payload);
+        log.info("🔄 [AI Request] QnA generation (Manual): lectureId={} section={}", lectureId, sectionIndex);
+
+        ragClient.requestQnaGeneration(payload, null);
     }
 
-    public void requestQnaWithSummary(Long lectureId, Long summaryId, Integer sectionIndex, String sectionSummary) {
+    // limit 숫자를 받아서 -> 구체적인 Type List로 변환하여 요청
+    public void requestResourcesWithSummary(Long lectureId, Long summaryId, Integer sectionIndex, String sectionSummary, Integer limit) {
+        ResourceRecommendPayload payload = buildResourcePayload(lectureId, summaryId, sectionIndex, sectionSummary);
+
+        List<String> types = null;
+        if (limit != null && limit == 2) {
+            // 15초(Partial)일 때 요청할 2가지 타입 (예: 위키, 비디오)
+            types = List.of("WIKI", "VIDEO");
+        }
+        // limit가 null이면 types도 null -> AI가 알아서 전체(4개) 수행
+
+        ragClient.requestResourceRecommendation(payload, types);
+    }
+
+    // limit 숫자를 받아서 -> 구체적인 Type List로 변환하여 요청
+    public void requestQnaWithSummary(Long lectureId, Long summaryId, Integer sectionIndex, String sectionSummary, Integer limit) {
         Lecture lecture = lectureService.get(lectureId);
         var payload = buildQnaPayload(lecture, summaryId, sectionIndex, sectionSummary);
-        log.info("🔄 [AI Request] QnA generation (custom summary): lectureId={} section={} prevQa={}",
-                lectureId,
-                sectionIndex,
-                payload.getPreviousQa().size());
-        ragClient.requestQnaGeneration(payload);
+
+        List<String> types = null;
+        if (limit != null && limit == 2) {
+            // 15초(Partial)일 때 요청할 2가지 타입 (예: 개념, 응용)
+            types = List.of("CONCEPT", "APPLICATION");
+        }
+
+        ragClient.requestQnaGeneration(payload, types);
     }
 
     private ResourceRecommendPayload buildResourcePayload(Long lectureId,
@@ -214,4 +222,7 @@ public class AiRequestService {
     }
 
     private record ResourceExcludes(List<String> yt, List<String> wiki, List<String> paper, List<String> google) {}
+
+
+
 }

@@ -29,19 +29,25 @@ public class QnaCallbackService {
                 dto.getLectureId(), dto.getSectionIndex(), dto.getSummaryId(),
                 dto.getQnaList() == null ? 0 : dto.getQnaList().size());
 
-        List<Qna> saved = dto.getQnaList().stream()
-                .map(item -> qnaRepository.save(
-                        Qna.builder()
-                                .lectureId(dto.getLectureId())
-                                .summaryId((dto.getSummaryId() == null || dto.getSummaryId() == 0L) ? null : dto.getSummaryId())
-                                .sectionIndex(dto.getSectionIndex())
-                                .type(resolveType(item.getType()))
-                                .question(item.getQuestion())
-                                .answer(item.getAnswer())
-                                .build()
-                )).toList();
+        // 1. 저장 (이번에 들어온 데이터)
+        dto.getQnaList().forEach(item -> qnaRepository.save(
+                Qna.builder()
+                        .lectureId(dto.getLectureId())
+                        .summaryId((dto.getSummaryId() == null || dto.getSummaryId() == 0L) ? null : dto.getSummaryId())
+                        .sectionIndex(dto.getSectionIndex())
+                        .type(resolveType(item.getType()))
+                        .question(item.getQuestion())
+                        .answer(item.getAnswer())
+                        .build()
+        ));
 
-        List<QnaResponseDto> items = saved.stream()
+        // 2. 전체 조회 (해당 섹션의 모든 QnA 조회) -> 프론트에 누적된 데이터 전송
+        List<Qna> allQnas = qnaRepository.findByLectureIdAndSectionIndex(
+                dto.getLectureId(), dto.getSectionIndex()
+        );
+
+        // 3. DTO 변환 및 전송
+        List<QnaResponseDto> items = allQnas.stream()
                 .map(QnaResponseDto::from)
                 .toList();
 
@@ -61,3 +67,4 @@ public class QnaCallbackService {
         };
     }
 }
+

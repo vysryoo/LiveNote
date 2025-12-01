@@ -43,7 +43,7 @@ public class RagClient {
     }
 
     // 1. QnA 생성 요청 (snake_case 적용)
-    public void requestQnaGeneration(AiRequestPayloads.QnaGeneratePayload payload) {
+    public void requestQnaGeneration(AiRequestPayloads.QnaGeneratePayload payload, List<String> targetTypes) {
         Map<String, Object> body = new HashMap<>();
 
         // 명세서 "예시 1" 및 "입력 필드 설명" 기준 매핑
@@ -63,6 +63,10 @@ public class RagClient {
         log.info("🤖 [AI QnA] Request: lecture_id={} section_index={} callback={}",
                 payload.getLectureId(), payload.getSectionIndex(), callback("qna"));
 
+        if (targetTypes != null && !targetTypes.isEmpty()) {
+            body.put("question_types", targetTypes);
+        }
+
         try {
             webClient.post()
                     .uri(url)
@@ -79,22 +83,19 @@ public class RagClient {
     }
 
     // 2. Resource 추천 요청 (snake_case + 실제 필드 둘 다 보내기)
-    public void requestResourceRecommendation(AiRequestPayloads.ResourceRecommendPayload payload) {
+    public void requestResourceRecommendation(AiRequestPayloads.ResourceRecommendPayload payload, List<String> targetTypes) {
         Map<String, Object> body = new HashMap<>();
 
         body.put("lecture_id", String.valueOf(payload.getLectureId()));
-
-        // 명세서용(1-base)
         body.put("section_id", payload.getSectionIndex() + 1);
-        body.put("sectionIndex", payload.getSectionIndex());
-
+        body.put("section_index", payload.getSectionIndex());
         body.put("section_summary", payload.getSectionSummary());
 
         // previous_summaries 변환
         List<Map<String, Object>> prev = payload.getPreviousSummaries().stream()
                 .map(s -> {
                     Map<String, Object> m = new HashMap<>();
-                    m.put("sectionIndex", s.getSectionIndex());
+                    m.put("section_index", s.getSectionIndex());
                     m.put("section_id", s.getSectionIndex() + 1);
                     m.put("summary", s.getSummary());
                     return m;
@@ -107,11 +108,15 @@ public class RagClient {
         body.put("paper_exclude", payload.getPaperExclude());
         body.put("google_exclude", payload.getGoogleExclude());
 
-        body.put("callbackUrl", callback("resources"));
+        body.put("callback_url", callback("resources"));
 
         String url = baseUrl + "/rec/recommend";
 
         log.info("🤖 [AI Resource] Request body = {}", body);
+
+        if (targetTypes != null && !targetTypes.isEmpty()) {
+            body.put("resource_types", targetTypes);
+        }
 
         try {
             webClient.post()
@@ -283,4 +288,6 @@ public class RagClient {
             throw new IllegalArgumentException("failed to serialize metadata", e);
         }
     }
+
+
 }
