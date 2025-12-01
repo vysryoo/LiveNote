@@ -4,6 +4,7 @@ import com.capstone.livenote.application.ai.config.AiHistoryProperties;
 import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.application.ai.dto.AiRequestPayloads;
 import com.capstone.livenote.application.ai.dto.CardStatusDto;
+import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.lecture.entity.Lecture;
 import com.capstone.livenote.domain.lecture.service.LectureService;
 import com.capstone.livenote.domain.qna.entity.Qna;
@@ -37,6 +38,7 @@ public class AiRequestService {
     private final QnaService qnaService;
     private final LectureService lectureService;
     private final AiHistoryProperties historyProperties;
+    private final StreamGateway streamGateway;
 
     public CardStatusDto getCardsStatus(Long lectureId, Integer sectionIndex) {
         // QnA: cardIndex는 기존 카드 2개(0, 1) 이후부터 시작
@@ -68,6 +70,15 @@ public class AiRequestService {
 
     // 수동 요청
     public void requestResources(Long lectureId, Integer sectionIndex) {
+        if (resourceService.findBySectionRange(lectureId, sectionIndex, sectionIndex).size() >= 3) {
+            log.info("⏭️ [AI Request] Resources skipped (already >=3): lectureId={} section={}", lectureId, sectionIndex);
+            // 최신 상태를 프론트로 재전송하여 UI를 동기화
+            var existing = resourceService.findBySectionRange(lectureId, sectionIndex, sectionIndex).stream()
+                    .map(com.capstone.livenote.domain.resource.dto.ResourceResponseDto::from)
+                    .toList();
+            streamGateway.sendResources(lectureId, sectionIndex, existing);
+            return;
+        }
         Summary summary = summaryService.findByLectureAndSection(lectureId, sectionIndex)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "summary not found"));
 
@@ -85,6 +96,14 @@ public class AiRequestService {
 
     // 수동 요
     public void requestQna(Long lectureId, Integer sectionIndex) {
+        if (qnaService.byLectureAndSection(lectureId, sectionIndex).size() >= 3) {
+            log.info("⏭️ [AI Request] QnA skipped (already >=3): lectureId={} section={}", lectureId, sectionIndex);
+            var existing = qnaService.byLectureAndSection(lectureId, sectionIndex).stream()
+                    .map(com.capstone.livenote.domain.qna.dto.QnaResponseDto::from)
+                    .toList();
+            streamGateway.sendQna(lectureId, sectionIndex, existing);
+            return;
+        }
         Summary summary = summaryService.findByLectureAndSection(lectureId, sectionIndex)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "summary not found"));
         Lecture lecture = lectureService.get(lectureId);
@@ -102,6 +121,14 @@ public class AiRequestService {
 
     // 프론트 start-qna-stream → 특정 타입 한 건 요청
     public void requestQnaWithType(Long lectureId, Integer sectionIndex, String qnaType) {
+        if (qnaService.byLectureAndSection(lectureId, sectionIndex).size() >= 3) {
+            log.info("⏭️ [AI Request] QnA (single type) skipped (already >=3): lectureId={} section={}", lectureId, sectionIndex);
+            var existing = qnaService.byLectureAndSection(lectureId, sectionIndex).stream()
+                    .map(com.capstone.livenote.domain.qna.dto.QnaResponseDto::from)
+                    .toList();
+            streamGateway.sendQna(lectureId, sectionIndex, existing);
+            return;
+        }
         Summary summary = summaryService.findByLectureAndSection(lectureId, sectionIndex)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "summary not found"));
         Lecture lecture = lectureService.get(lectureId);
@@ -114,6 +141,14 @@ public class AiRequestService {
 
     // 프론트 start-resources-stream → 특정 타입 한 건 요청
     public void requestResourcesWithType(Long lectureId, Integer sectionIndex, String resourceType) {
+        if (resourceService.findBySectionRange(lectureId, sectionIndex, sectionIndex).size() >= 3) {
+            log.info("⏭️ [AI Request] Resource (single type) skipped (already >=3): lectureId={} section={}", lectureId, sectionIndex);
+            var existing = resourceService.findBySectionRange(lectureId, sectionIndex, sectionIndex).stream()
+                    .map(com.capstone.livenote.domain.resource.dto.ResourceResponseDto::from)
+                    .toList();
+            streamGateway.sendResources(lectureId, sectionIndex, existing);
+            return;
+        }
         Summary summary = summaryService.findByLectureAndSection(lectureId, sectionIndex)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "summary not found"));
         ResourceRecommendPayload payload = buildResourcePayload(lectureId, summary.getId(), sectionIndex, summary.getText());

@@ -105,6 +105,14 @@ public class LectureService {
         return lecture;
     }
 
+    @Transactional
+    public Lecture updateLectureTitle(Long lectureId, String title) {
+        Lecture lecture = lectureRepo.findById(lectureId)
+                .orElseThrow(() -> new EntityNotFoundException("lecture"));
+        lecture.setTitle(title);
+        return lectureRepo.save(lecture);
+    }
+
     // 강의 상세 정보 조회 (transcripts, summaries, resources, qna, bookmarks 포함)
     @Transactional(readOnly = true)
     public SessionDetailResponse getSessionDetail(Long lectureId) {

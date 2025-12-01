@@ -5,6 +5,7 @@ import com.capstone.livenote.application.audio.service.AudioIngestService;
 import com.capstone.livenote.domain.lecture.dto.CreateLectureRequestDto;
 import com.capstone.livenote.domain.lecture.dto.LectureResponseDto;
 import com.capstone.livenote.domain.lecture.dto.SessionDetailResponse;
+import com.capstone.livenote.domain.lecture.dto.UpdateLectureTitleRequest;
 import com.capstone.livenote.domain.lecture.service.LectureService;
 import com.capstone.livenote.global.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -153,6 +154,16 @@ public class LectureController {
     public ApiResponse<Void> delete(@PathVariable Long lectureId){
         lectureService.delete(lectureId);
         return ApiResponse.ok();
+    }
+
+    @Operation(summary = "강의 제목 수정")
+    @PatchMapping("/{lectureId}/title")
+    public ApiResponse<LectureResponseDto> updateTitle(
+            @PathVariable Long lectureId,
+            @RequestBody UpdateLectureTitleRequest req
+    ) {
+        var updated = lectureService.updateLectureTitle(lectureId, req.getTitle());
+        return ApiResponse.ok(LectureResponseDto.from(updated));
     }
 
 
