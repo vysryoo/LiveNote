@@ -12,3 +12,4 @@ import lombok.Setter;
 public class UpdateLectureTitleRequest {
     private String title;
 }
+
