@@ -2,6 +2,7 @@ package com.capstone.livenote.global.config;
 
 import com.capstone.livenote.application.ws.RealtimeTranscriptionWebSocketHandler;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
