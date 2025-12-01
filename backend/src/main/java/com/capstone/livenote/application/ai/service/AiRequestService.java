@@ -39,8 +39,8 @@ public class AiRequestService {
     private final AiHistoryProperties historyProperties;
 
     public CardStatusDto getCardsStatus(Long lectureId, Integer sectionIndex) {
-        // QnA
-        var qIndex = new java.util.concurrent.atomic.AtomicInteger(0);
+        // QnA: cardIndex는 기존 카드 2개(0, 1) 이후부터 시작
+        var qIndex = new java.util.concurrent.atomic.AtomicInteger(2);
         var qnaList = qnaService.byLectureAndSection(lectureId, sectionIndex).stream()
                 .map(q -> CardStatusDto.CardItem.builder()
                         .cardId("qna_" + lectureId + "_" + sectionIndex + "_" + qIndex.getAndIncrement())
@@ -51,11 +51,11 @@ public class AiRequestService {
                         .build())
                 .toList();
 
-        // Resources
-        var rIndex = new java.util.concurrent.atomic.AtomicInteger(0);
+        // Resources: cardIndex는 기존 카드 2개(0, 1) 이후부터 시작
+        var rIndex = new java.util.concurrent.atomic.AtomicInteger(2);
         var resList = resourceService.findBySectionRange(lectureId, sectionIndex, sectionIndex).stream()
                 .map(r -> CardStatusDto.CardItem.builder()
-                        .cardId("res_" + lectureId + "_" + sectionIndex + "_" + rIndex.getAndIncrement())
+                        .cardId("resource_" + lectureId + "_" + sectionIndex + "_" + rIndex.getAndIncrement())
                         .cardIndex(rIndex.get() - 1)
                         .type("resource")
                         .isComplete(true)
