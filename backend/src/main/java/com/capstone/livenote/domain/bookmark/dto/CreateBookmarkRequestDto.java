@@ -12,6 +12,6 @@ import lombok.Setter;
 public class CreateBookmarkRequestDto {
     private Long lectureId;
     private Integer sectionIndex;
-    private Bookmark.TargetType targetType;    // "resource" | "qna"
+    private String targetType;    // "resource" | "qna"
     private Long targetId;
 }

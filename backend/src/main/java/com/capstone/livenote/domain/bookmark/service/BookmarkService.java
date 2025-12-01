@@ -21,11 +21,24 @@ public class BookmarkService {
     // 북마크 생성
     @Transactional
     public Bookmark createBookmark(CreateBookmarkRequestDto req, Long userId) {
+        Bookmark.TargetType targetType = Bookmark.TargetType.fromString(req.getTargetType());
+        if (targetType == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "invalid targetType");
+        }
+
+        var existing = bookmarkRepository.findByUserIdAndLectureIdAndSectionIndexAndTargetTypeAndTargetId(
+                userId, req.getLectureId(), req.getSectionIndex(), targetType, req.getTargetId()
+        );
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
         Bookmark bookmark = Bookmark.builder()
                 .userId(userId)
                 .lectureId(req.getLectureId())
                 .sectionIndex(req.getSectionIndex())
-                .targetType(req.getTargetType())     // "lecture" / "resource" / "qna"
+                .targetType(targetType)
                 .targetId(req.getTargetId())
                 .build();
 

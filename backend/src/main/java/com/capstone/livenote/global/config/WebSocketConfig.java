@@ -3,6 +3,8 @@ package com.capstone.livenote.global.config;
 import com.capstone.livenote.application.ws.RealtimeTranscriptionWebSocketHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -22,7 +24,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSoc
     // === STOMP 설정 (기존: 결과 전송용) ===
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/topic");
+        registry.enableSimpleBroker("/topic")
+                .setHeartbeatValue(new long[]{4000, 4000})
+                .setTaskScheduler(heartbeatScheduler());
         registry.setApplicationDestinationPrefixes("/app");
     }
 
@@ -35,6 +39,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSoc
         // 프론트 STOMP용 기본 엔드포인트 (/ws)
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*");
+    }
+
+    @Bean
+    public TaskScheduler heartbeatScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(1);
+        scheduler.setThreadNamePrefix("ws-heartbeat-");
+        scheduler.initialize();
+        return scheduler;
     }
 
     // === WebSocket 설정 (새로 추가: 오디오 업로드용) ===
