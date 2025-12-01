@@ -35,8 +35,11 @@ public class BookmarkService {
     // 북마크 조회
     @Transactional(readOnly = true)
     public List<Bookmark> getBookmarks(Long userId, Long lectureId, Integer sectionIndex, Pageable pageable) {
+        if (sectionIndex == null) {
+            return bookmarkRepository.findByUserIdAndLectureId(userId, lectureId, pageable).getContent();
+        }
         return bookmarkRepository
-                .findByUserIdAndLectureIdAndSectionIndex(userId, lectureId, sectionIndex, null)
+                .findByUserIdAndLectureIdAndSectionIndex(userId, lectureId, sectionIndex, pageable)
                 .getContent();
     }
 

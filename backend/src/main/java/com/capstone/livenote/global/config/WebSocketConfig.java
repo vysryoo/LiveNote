@@ -1,6 +1,5 @@
 package com.capstone.livenote.global.config;
 
-import com.capstone.livenote.application.ws.AudioWebSocketHandler;
 import com.capstone.livenote.application.ws.RealtimeTranscriptionWebSocketHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +17,6 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSocketConfigurer {
 
-    private final AudioWebSocketHandler audioWebSocketHandler;
     private final RealtimeTranscriptionWebSocketHandler realtimeTranscriptionWebSocketHandler;
 
     // === STOMP 설정 (기존: 결과 전송용) ===
@@ -42,10 +40,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSoc
     // === WebSocket 설정 (새로 추가: 오디오 업로드용) ===
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        // 오디오 스트리밍 전용 WebSocket 엔드포인트
-        registry.addHandler(audioWebSocketHandler, "/api/ws/audio")
-                .setAllowedOrigins("*");
-
         // OpenAI Realtime STT 중계용 WebSocket 엔드포인트 (프론트 경로: /ws/transcription)
         registry.addHandler(realtimeTranscriptionWebSocketHandler, "/ws/transcription")
                 .setAllowedOrigins("*");

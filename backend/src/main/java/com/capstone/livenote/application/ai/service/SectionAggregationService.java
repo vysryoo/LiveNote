@@ -1,8 +1,8 @@
 package com.capstone.livenote.application.ai.service;
 
 import com.capstone.livenote.application.ai.client.RagClient;
+import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.summary.service.SummaryService;
-import com.capstone.livenote.domain.summary.entity.Summary;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,10 +22,12 @@ public class SectionAggregationService {
 
     private final RagClient ragClient;
     private final SummaryService summaryService;
+    private final StreamGateway streamGateway;
 
-    public SectionAggregationService(RagClient ragClient, SummaryService summaryService) {
+    public SectionAggregationService(RagClient ragClient, SummaryService summaryService, StreamGateway streamGateway) {
         this.ragClient = ragClient;
         this.summaryService = summaryService;
+        this.streamGateway = streamGateway;
     }
 
     private final Map<Long, SectionState> states = new ConcurrentHashMap<>();
@@ -44,6 +46,7 @@ public class SectionAggregationService {
 
         SectionState state = states.computeIfAbsent(lectureId, id -> {
             log.info("[SectionAgg] ✅ Init section state: lectureId={} section={}", lectureId, sectionIndex);
+            streamGateway.sendSection(lectureId, sectionIndex);
             return new SectionState(sectionIndex, 0, false, new StringBuilder());
         });
 
@@ -70,6 +73,7 @@ public class SectionAggregationService {
             // 다음 섹션 준비
             SectionState next = new SectionState(state.sectionIndex + 1, 0, false, new StringBuilder());
             states.put(lectureId, next);
+            streamGateway.sendSection(lectureId, next.sectionIndex);
         }
     }
 

@@ -2,12 +2,7 @@ package com.capstone.livenote.application.ai.controller;
 
 import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.application.ai.dto.CardStatusDto;
-import com.capstone.livenote.application.ai.service.AiGenerateService;
 import com.capstone.livenote.application.ai.service.AiRequestService;
-import com.capstone.livenote.application.ai.service.AiStreamingService;
-import com.capstone.livenote.domain.qna.service.QnaService;
-import com.capstone.livenote.domain.resource.service.ResourceService;
-import com.capstone.livenote.domain.summary.dto.SummaryResponseDto;
 import com.capstone.livenote.domain.transcript.service.TranscriptService;
 import com.capstone.livenote.global.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 @RequestMapping("/api") // 명세에 따라 경로 조정 (/api/ai/... 와 /api/cards-status 등이 섞여있음)
@@ -27,11 +21,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class AiController {
 
     private final RagClient ragClient;
-    private final AiStreamingService aiStreamingService;
     private final TranscriptService transcriptService;
     private final AiRequestService aiRequestService;
-    private final QnaService qnaService;
-    private final ResourceService resourceService;
 
     // 1. 요약 생성 (수동 트리거)
     @Operation(summary = "수동 요약 생성 요청 (테스트용)")
@@ -92,31 +83,7 @@ public class AiController {
             @RequestParam Long lectureId,
             @RequestParam Integer sectionIndex
     ) {
-        // QnA 조회 및 매핑
-        AtomicInteger qIndex = new AtomicInteger(0);
-        var qnaList = qnaService.byLectureAndSection(lectureId, sectionIndex).stream()
-                .map(q -> CardStatusDto.CardItem.builder()
-                        .cardId("qna_" + lectureId + "_" + sectionIndex + "_" + qIndex.getAndIncrement())
-                        .cardIndex(qIndex.get() - 1)
-                        .type("qna")
-                        .isComplete(true)
-                        .data(q)
-                        .build())
-                .toList();
-
-        // Resource 조회 및 매핑
-        AtomicInteger rIndex = new AtomicInteger(0);
-        var resList = resourceService.findBySectionRange(lectureId, sectionIndex, sectionIndex).stream()
-                .map(r -> CardStatusDto.CardItem.builder()
-                        .cardId("res_" + lectureId + "_" + sectionIndex + "_" + rIndex.getAndIncrement())
-                        .cardIndex(rIndex.get() - 1)
-                        .type("resource")
-                        .isComplete(true)
-                        .data(r)
-                        .build())
-                .toList();
-
-        return ApiResponse.ok(new CardStatusDto(qnaList, resList));
+        return ApiResponse.ok(aiRequestService.getCardsStatus(lectureId, sectionIndex));
     }
 
     // 3. QnA 스트리밍
@@ -128,10 +95,8 @@ public class AiController {
             @RequestParam Integer cardIndex,
             @RequestParam String qnaType
     ) {
+        aiRequestService.requestQnaWithType(lectureId, sectionIndex, qnaType);
         String cardId = "qna_" + lectureId + "_" + sectionIndex + "_" + cardIndex;
-        // 비동기 스트리밍 시작
-        aiStreamingService.startQnaStreaming(lectureId, sectionIndex, cardId, qnaType);
-
         return ApiResponse.ok(Map.of("success", true, "cardId", cardId, "type", "qna"));
     }
 
@@ -144,10 +109,8 @@ public class AiController {
             @RequestParam Integer cardIndex,
             @RequestParam String resourceType
     ) {
+        aiRequestService.requestResourcesWithType(lectureId, sectionIndex, resourceType);
         String cardId = "res_" + lectureId + "_" + sectionIndex + "_" + cardIndex;
-        // 비동기 스트리밍 시작
-        aiStreamingService.startResourceStreaming(lectureId, sectionIndex, cardId, resourceType);
-
         return ApiResponse.ok(Map.of("success", true, "cardId", cardId, "type", "resource_stream"));
     }
 }

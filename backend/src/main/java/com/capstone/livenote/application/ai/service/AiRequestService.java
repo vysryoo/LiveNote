@@ -3,6 +3,7 @@ package com.capstone.livenote.application.ai.service;
 import com.capstone.livenote.application.ai.config.AiHistoryProperties;
 import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.application.ai.dto.AiRequestPayloads;
+import com.capstone.livenote.application.ai.dto.CardStatusDto;
 import com.capstone.livenote.domain.lecture.entity.Lecture;
 import com.capstone.livenote.domain.lecture.service.LectureService;
 import com.capstone.livenote.domain.qna.entity.Qna;
@@ -37,6 +38,34 @@ public class AiRequestService {
     private final LectureService lectureService;
     private final AiHistoryProperties historyProperties;
 
+    public CardStatusDto getCardsStatus(Long lectureId, Integer sectionIndex) {
+        // QnA
+        var qIndex = new java.util.concurrent.atomic.AtomicInteger(0);
+        var qnaList = qnaService.byLectureAndSection(lectureId, sectionIndex).stream()
+                .map(q -> CardStatusDto.CardItem.builder()
+                        .cardId("qna_" + lectureId + "_" + sectionIndex + "_" + qIndex.getAndIncrement())
+                        .cardIndex(qIndex.get() - 1)
+                        .type("qna")
+                        .isComplete(true)
+                        .data(q)
+                        .build())
+                .toList();
+
+        // Resources
+        var rIndex = new java.util.concurrent.atomic.AtomicInteger(0);
+        var resList = resourceService.findBySectionRange(lectureId, sectionIndex, sectionIndex).stream()
+                .map(r -> CardStatusDto.CardItem.builder()
+                        .cardId("res_" + lectureId + "_" + sectionIndex + "_" + rIndex.getAndIncrement())
+                        .cardIndex(rIndex.get() - 1)
+                        .type("resource")
+                        .isComplete(true)
+                        .data(r)
+                        .build())
+                .toList();
+
+        return new CardStatusDto(qnaList, resList);
+    }
+
     // 수동 요청
     public void requestResources(Long lectureId, Integer sectionIndex) {
         Summary summary = summaryService.findByLectureAndSection(lectureId, sectionIndex)
@@ -69,6 +98,29 @@ public class AiRequestService {
         log.info("🔄 [AI Request] QnA generation (Manual): lectureId={} section={}", lectureId, sectionIndex);
 
         ragClient.requestQnaGeneration(payload, null);
+    }
+
+    // 프론트 start-qna-stream → 특정 타입 한 건 요청
+    public void requestQnaWithType(Long lectureId, Integer sectionIndex, String qnaType) {
+        Summary summary = summaryService.findByLectureAndSection(lectureId, sectionIndex)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "summary not found"));
+        Lecture lecture = lectureService.get(lectureId);
+        var payload = buildQnaPayload(lecture, summary.getId(), sectionIndex, summary.getText());
+
+        List<String> types = qnaType != null ? List.of(qnaType.toUpperCase()) : null;
+        log.info("🔄 [AI Request] QnA generation (Single type): lectureId={} section={} type={}", lectureId, sectionIndex, types);
+        ragClient.requestQnaGeneration(payload, types);
+    }
+
+    // 프론트 start-resources-stream → 특정 타입 한 건 요청
+    public void requestResourcesWithType(Long lectureId, Integer sectionIndex, String resourceType) {
+        Summary summary = summaryService.findByLectureAndSection(lectureId, sectionIndex)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "summary not found"));
+        ResourceRecommendPayload payload = buildResourcePayload(lectureId, summary.getId(), sectionIndex, summary.getText());
+
+        List<String> types = resourceType != null ? List.of(resourceType.toUpperCase()) : null;
+        log.info("🔄 [AI Request] Resource recommendation (Single type): lectureId={} section={} type={}", lectureId, sectionIndex, types);
+        ragClient.requestResourceRecommendation(payload, types);
     }
 
     // limit 숫자를 받아서 -> 구체적인 Type List로 변환하여 요청

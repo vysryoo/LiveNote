@@ -38,7 +38,7 @@ public class StreamGateway {
                 summary.getLectureId(),
                 summary.getSectionIndex(),
                 summary.getText(),
-                "final"
+                summary.getPhase() != null ? summary.getPhase().name().toLowerCase() : "final"
         );
     }
 
@@ -94,6 +94,19 @@ public class StreamGateway {
                 Map.of("type", "error", "message", error));
     }
 
+    // 섹션 상태 전송
+    public void sendSection(Long lectureId, int sectionIndex) {
+        tmpl.convertAndSend(
+                "/topic/lectures/" + lectureId + "/section",
+                Map.of(
+                        "type", "section",
+                        "lectureId", lectureId,
+                        "sectionIndex", sectionIndex,
+                        "timestamp", System.currentTimeMillis()
+                )
+        );
+    }
+
     // 스트리밍 토큰 전송 메소드
     public void sendStreamToken(Long lectureId, String type, String cardId, String token, boolean isComplete, Object data, String title, String resourceType) {
         Map<String, Object> payload = new HashMap<>();
@@ -119,4 +132,3 @@ public class StreamGateway {
         tmpl.convertAndSend("/topic/lectures/" + lectureId + "/stream", payload);
     }
 }
-

@@ -8,10 +8,12 @@ import com.capstone.livenote.global.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -22,12 +24,19 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BookmarkController {
 
-    @Autowired
-    private BookmarkService bookmarkService;
+    private final BookmarkService bookmarkService;
 
     private Long currentUserId() {
-        // JWT 완성 시 토큰에서 가져올예정
-        return 1L;
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "not authenticated");
+        }
+        String userIdStr = authentication.getName();
+        try {
+            return Long.parseLong(userIdStr);
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "invalid user id");
+        }
     }
 
     // 북마크 생성
