@@ -725,7 +725,7 @@ export function SessionPage({
       }
       stompClientRef.current = null;
     };
-  }, [lectureId, appendQnAForSection, appendResourcesForSection, handleStreamingMessage]);
+  }, [lectureId]);
 
   useEffect(() => {
     setLiveSectionTranscripts({});
