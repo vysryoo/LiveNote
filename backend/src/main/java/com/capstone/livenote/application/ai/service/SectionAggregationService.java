@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Lazy;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,7 +25,7 @@ public class SectionAggregationService {
     private final SummaryService summaryService;
     private final StreamGateway streamGateway;
 
-    public SectionAggregationService(RagClient ragClient, SummaryService summaryService, StreamGateway streamGateway) {
+    public SectionAggregationService(RagClient ragClient, SummaryService summaryService, @Lazy StreamGateway streamGateway) {
         this.ragClient = ragClient;
         this.summaryService = summaryService;
         this.streamGateway = streamGateway;
