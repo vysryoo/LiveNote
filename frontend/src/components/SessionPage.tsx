@@ -81,6 +81,7 @@ export function SessionPage({
   const [bookmarks, setBookmarks] = useState<BookmarkType[]>([]);
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
   const [liveSectionTranscripts, setLiveSectionTranscripts] = useState<Record<number, string>>({});
+  const [serverSectionIndex, setServerSectionIndex] = useState(0);
 
   // 새로운 섹션이 생기거나 내용이 갱신될 때 왼쪽 강의 뷰포트를 항상 맨 아래로 스크롤
   const stompClientRef = useRef<Client | null>(null);
@@ -90,12 +91,14 @@ export function SessionPage({
     isRecording,
     isEnded,
     elapsedTime,
+    currentSectionIndex,
     handleToggleRecording,
     hasRecordingStarted: recordingStartedFromHook,
   } = useRecording({
     lectureId,
     backend,
     t,
+    serverSectionIndex,
     onLiveTranscript: (sectionIndex, content, isFinal) => {
       setLiveSectionTranscripts((prev) => {
         const prevText = prev[sectionIndex] ?? "";
@@ -234,6 +237,7 @@ export function SessionPage({
     liveSectionTranscripts,
     isRecording,
     elapsedTime,
+    currentSectionIndex,
     selectedSummaryId,
     autoMode,
     transcription,
@@ -626,6 +630,18 @@ export function SessionPage({
               }
             });
 
+            // 섹션 상태 구독
+            client.subscribe(`/topic/lectures/${lectureId}/section`, (message) => {
+              try {
+                const data = JSON.parse(message.body);
+                if (typeof data.sectionIndex === "number") {
+                  setServerSectionIndex(data.sectionIndex);
+                }
+              } catch (err) {
+                console.error("섹션 상태 메시지 처리 오류", err);
+              }
+            });
+
             // 스트리밍 카드 구독
             const streamSubscription = client.subscribe(`/topic/lectures/${lectureId}/stream`, (message) => {
               try {
@@ -771,6 +787,10 @@ export function SessionPage({
             throw error;
           });
       });
+
+      Promise.all([...qnaPromises, ...resourcePromises]).finally(() => {
+        setIsGeneratingExtended(false);
+      });
     },
     [backend, lectureId]
   );
@@ -814,25 +834,6 @@ export function SessionPage({
       const summary = summariesBySection.get(sectionIndex);
       const phase = summary?.phase?.toUpperCase();
       const isFinalSummary = phase === "FINAL";
-
-      if (isFinalSummary) {
-        const summarySignature = `${summary?.id ?? `section-${sectionIndex}`}:${Array.isArray(summary?.text) ? summary?.text.join(" ") : summary?.text ?? ""}`;
-        if (finalSummaryRequestRef.current.get(sectionIndex) !== summarySignature) {
-          finalSummaryRequestRef.current.set(sectionIndex, summarySignature);
-          setIsGeneratingExtended(true);
-          Promise.all([
-            backend.lecture.generateResources(lectureId, sectionIndex),
-            backend.lecture.generateQnA(lectureId, sectionIndex),
-          ])
-            .catch((error) => {
-              finalSummaryRequestRef.current.delete(sectionIndex);
-              console.error("최종 요약 기반 AI 요청 실패:", error);
-            })
-            .finally(() => {
-              setIsGeneratingExtended(false);
-            });
-        }
-      }
 
       if (!requestStreamingCardRef.current.has(sectionIndex)) {
         requestStreamingCardRef.current.add(sectionIndex);
@@ -1005,7 +1006,6 @@ export function SessionPage({
     }
 
     // 현재 섹션의 전사만 가져오기 (전체가 아닌)
-    const currentSectionIndex = Math.floor(elapsedTime / 30);
     const currentSectionTranscripts = transcripts.filter(t => t.sectionIndex === currentSectionIndex);
 
     if (currentSectionTranscripts.length > 0) {
@@ -1017,7 +1017,7 @@ export function SessionPage({
     } else {
       setTranscription("");
     }
-  }, [transcripts, formatText, isRecording, elapsedTime]);
+  }, [transcripts, formatText, isRecording, currentSectionIndex]);
 
   useEffect(() => {
     elapsedTimeRef.current = elapsedTime;
@@ -1028,7 +1028,7 @@ export function SessionPage({
       currentSectionIndexRef.current = -1;
       return;
     }
-    const newSectionIndex = Math.floor(elapsedTime / 30);
+    const newSectionIndex = currentSectionIndex;
     if (newSectionIndex !== currentSectionIndexRef.current) {
       const previousSectionIndex = currentSectionIndexRef.current;
       currentSectionIndexRef.current = newSectionIndex;
@@ -1040,7 +1040,7 @@ export function SessionPage({
       setSectionScrollTrigger((prev) => prev + 1);
       console.log(`🔄 섹션 전환: ${previousSectionIndex} → ${newSectionIndex}`);
     }
-  }, [elapsedTime, isRecording]);
+  }, [currentSectionIndex, isRecording]);
 
   const isBookmarked = useCallback(
     (type: BookmarkType["targetType"], targetId: number) =>

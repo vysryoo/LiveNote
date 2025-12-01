@@ -122,7 +122,7 @@ function buildLecture(): LecturePort {
       return http<Lecture[]>(`/lectures`);
     },
     async getLecture(id: number): Promise<SessionDetailResponse> {
-      return http<SessionDetailResponse>(`/lectures/${id}`);
+      return http<SessionDetailResponse>(`/lectures/${id}/detail`);
     },
     async createLecture(data: CreateLectureRequest): Promise<Lecture> {
       // 파일이 있는 경우 FormData 사용
@@ -296,5 +296,4 @@ function buildSettings(): SettingsPort {
 export function createSpringBackend(): BackendPort {
   return { auth: buildAuth(), lecture: buildLecture(), settings: buildSettings() };
 }
-
 
