@@ -51,11 +51,21 @@ public class SectionAggregationService {
             return new SectionState(sectionIndex, 0, false, new StringBuilder());
         });
 
-        // 섹션이 변경되었으면 상태 초기화
+        // 섹션이 변경되었으면 이전 섹션의 FINAL 요약 보장 후 상태 초기화
         if (state.sectionIndex != sectionIndex) {
-            // log.info("[SectionAgg] 🔄 Section changed...");
+            log.info("[SectionAgg] 🔄 Section changed from {} to {}, ensuring FINAL summary", state.sectionIndex, sectionIndex);
+            
+            // 이전 섹션의 FINAL 요약이 아직 안 보내졌으면 지금 보내기
+            if (state.elapsedSec > 0 && !state.buffer.toString().trim().isEmpty()) {
+                log.info("[SectionAgg] 📤 Sending pending FINAL summary for section {}: elapsedSec={}", 
+                        state.sectionIndex, state.elapsedSec);
+                triggerAiSummary(lectureId, state, "FINAL");
+            }
+            
+            // 새 섹션으로 초기화
             state = new SectionState(sectionIndex, 0, false, new StringBuilder());
             states.put(lectureId, state);
+            streamGateway.sendSection(lectureId, sectionIndex);
         }
 
         state.elapsedSec += delta;
