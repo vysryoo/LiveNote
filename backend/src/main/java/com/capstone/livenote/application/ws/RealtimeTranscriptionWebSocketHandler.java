@@ -56,6 +56,15 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
     @Value("${OPENAI_API_KEY}")
     private String openAiApiKey;
 
+    @Value("${app.callback-base-url:http://localhost:8080}")
+    private String callbackBaseUrl;
+
+    @Value("${app.transcription.padding-seconds:1.5}")
+    private double transcriptPaddingSeconds;
+
+    @Value("${app.transcription.speed-multiplier:1.0}")
+    private double transcriptSpeedMultiplier;
+
     private final Map<String, SessionContext> contexts = new ConcurrentHashMap<>();
 
     @Override
@@ -88,7 +97,14 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
         
         log.info("[RealtimeWS] Lecture resume info: lectureId={} startFromSec={}", lectureId, startFromSec);
 
-        SessionContext ctx = new SessionContext(session, lectureId, language, startFromSec);
+        SessionContext ctx = new SessionContext(
+                session,
+                lectureId,
+                language,
+                startFromSec,
+                transcriptPaddingSeconds,
+                transcriptSpeedMultiplier
+        );
         contexts.put(session.getId(), ctx);
 
         connectOpenAi(ctx);
@@ -426,14 +442,19 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
         private int lastTranscriptEndSec;
         private long speechStartMillis = -1;
         private int spokenSeconds; // 말한 시간 누적
+        private final double paddingSeconds;
+        private final double speedMultiplier;
 
-        SessionContext(WebSocketSession clientSession, Long lectureId, String language, int startFromSec) {
+        SessionContext(WebSocketSession clientSession, Long lectureId, String language, int startFromSec,
+                       double paddingSeconds, double speedMultiplier) {
             this.clientSession = clientSession;
             this.lectureId = lectureId;
             this.language = language;
             this.baseSeconds = startFromSec;
             this.lastTranscriptEndSec = startFromSec;
             this.spokenSeconds = startFromSec;
+            this.paddingSeconds = paddingSeconds;
+            this.speedMultiplier = speedMultiplier;
         }
         
         int getElapsedSeconds() {
@@ -491,9 +512,9 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
         int endActiveSegment() {
             if (speechStartMillis <= 0) return 0;
             long now = System.currentTimeMillis();
-            double deltaSeconds = (now - speechStartMillis) / 1000.0;
-            // 약간의 완충(+1.5초) 후 올림하여 반올림 효과
-            int delta = (int) Math.ceil(deltaSeconds + 1.5);
+            double deltaSeconds = ((now - speechStartMillis) / 1000.0) * speedMultiplier;
+            // 약간의 완충(+paddingSeconds) 후 올림하여 반올림 효과
+            int delta = (int) Math.ceil(deltaSeconds + paddingSeconds);
             spokenSeconds += delta;
             speechStartMillis = -1;
             return delta;

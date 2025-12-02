@@ -58,3 +58,11 @@ app:
       previous-summary-count: 3
       previous-resource-sections: 3
       previous-qa-sections: 3
+
+  transcription:
+    padding-seconds: ${APP_TRANSCRIPTION_PADDING_SECONDS:2.0}
+    speed-multiplier: ${APP_TRANSCRIPTION_SPEED_MULTIPLIER:1.0}
+
+  streaming:
+    chunk-size: ${APP_STREAMING_CHUNK_SIZE:10}
+    delay-ms: ${APP_STREAMING_DELAY_MS:100}
