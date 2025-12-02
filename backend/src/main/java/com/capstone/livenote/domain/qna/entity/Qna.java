@@ -5,7 +5,10 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "qna")
+@Table(name = "qna",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_qna_card", columnNames = {"lecture_id", "section_index", "card_id"})
+        })
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Qna {
 
@@ -22,6 +25,9 @@ public class Qna {
 
     @Column(nullable = false)
     private Integer sectionIndex;
+
+    @Column(name = "card_id", length = 128)
+    private String cardId;
 
     @Enumerated(EnumType.STRING)
     private Type type;

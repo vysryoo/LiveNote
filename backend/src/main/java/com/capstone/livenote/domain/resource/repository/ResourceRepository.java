@@ -20,4 +20,11 @@ public interface ResourceRepository extends JpaRepository<Resource, Long> {
 
     List<Resource> findByLectureIdAndSectionIndex(Long lectureId, Integer sectionIndex);
 
+    List<Resource> findByLectureIdAndSectionIndexOrderByIdAsc(Long lectureId, Integer sectionIndex);
+
+    List<Resource> findByLectureIdAndSectionIndexBetweenOrderByIdAsc(Long lectureId, Integer start, Integer end);
+
+    boolean existsByLectureIdAndSectionIndexAndCardId(Long lectureId, Integer sectionIndex, String cardId);
+
+    boolean existsByLectureIdAndSectionIndexAndTitleAndUrl(Long lectureId, Integer sectionIndex, String title, String url);
 }

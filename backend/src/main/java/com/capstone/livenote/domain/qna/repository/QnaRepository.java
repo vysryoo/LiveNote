@@ -24,4 +24,7 @@ public interface QnaRepository extends JpaRepository<Qna, Long> {
             Integer end
     );
 
+    boolean existsByLectureIdAndSectionIndexAndCardId(Long lectureId, Integer sectionIndex, String cardId);
+
+    boolean existsByLectureIdAndSectionIndexAndQuestionAndAnswer(Long lectureId, Integer sectionIndex, String question, String answer);
 }

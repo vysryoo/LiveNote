@@ -41,31 +41,47 @@ public class AiRequestService {
     private final StreamGateway streamGateway;
 
     public CardStatusDto getCardsStatus(Long lectureId, Integer sectionIndex) {
-        // QnA: cardIndex는 기존 카드 2개(0, 1) 이후부터 시작
-        var qIndex = new java.util.concurrent.atomic.AtomicInteger(2);
-        var qnaList = qnaService.byLectureAndSection(lectureId, sectionIndex).stream()
-                .map(q -> CardStatusDto.CardItem.builder()
-                        .cardId("qna_" + lectureId + "_" + sectionIndex + "_" + qIndex.getAndIncrement())
-                        .cardIndex(qIndex.get() - 1)
-                        .type("qna")
-                        .isComplete(true)
-                        .data(q)
-                        .build())
-                .toList();
+        int qCursor = CardIdHelper.CARD_INDEX_OFFSET;
+        var qnaItems = new java.util.ArrayList<CardStatusDto.CardItem>();
+        for (var q : qnaService.byLectureAndSection(lectureId, sectionIndex)) {
+            int cardIndex = q.getCardId() != null
+                    ? CardIdHelper.extractCardIndex(q.getCardId(), qCursor)
+                    : qCursor;
+            String cardId = q.getCardId() != null
+                    ? q.getCardId()
+                    : CardIdHelper.buildCardId("qna", lectureId, sectionIndex, cardIndex);
+            qCursor = Math.max(qCursor, cardIndex + 1);
 
-        // Resources: cardIndex는 기존 카드 2개(0, 1) 이후부터 시작
-        var rIndex = new java.util.concurrent.atomic.AtomicInteger(2);
-        var resList = resourceService.findBySectionRange(lectureId, sectionIndex, sectionIndex).stream()
-                .map(r -> CardStatusDto.CardItem.builder()
-                        .cardId("resource_" + lectureId + "_" + sectionIndex + "_" + rIndex.getAndIncrement())
-                        .cardIndex(rIndex.get() - 1)
-                        .type("resource")
-                        .isComplete(true)
-                        .data(r)
-                        .build())
-                .toList();
+            qnaItems.add(CardStatusDto.CardItem.builder()
+                    .cardId(cardId)
+                    .cardIndex(cardIndex)
+                    .type("qna")
+                    .isComplete(true)
+                    .data(com.capstone.livenote.domain.qna.dto.QnaResponseDto.from(q))
+                    .build());
+        }
 
-        return new CardStatusDto(qnaList, resList);
+        int rCursor = CardIdHelper.CARD_INDEX_OFFSET;
+        var resourceItems = new java.util.ArrayList<CardStatusDto.CardItem>();
+        for (var r : resourceService.findByLectureAndSectionOrdered(lectureId, sectionIndex)) {
+            int cardIndex = r.getCardId() != null
+                    ? CardIdHelper.extractCardIndex(r.getCardId(), rCursor)
+                    : rCursor;
+            String cardId = r.getCardId() != null
+                    ? r.getCardId()
+                    : CardIdHelper.buildCardId("resource", lectureId, sectionIndex, cardIndex);
+            rCursor = Math.max(rCursor, cardIndex + 1);
+
+            resourceItems.add(CardStatusDto.CardItem.builder()
+                    .cardId(cardId)
+                    .cardIndex(cardIndex)
+                    .type("resource")
+                    .isComplete(true)
+                    .data(com.capstone.livenote.domain.resource.dto.ResourceResponseDto.from(r))
+                    .build());
+        }
+
+        return new CardStatusDto(qnaItems, resourceItems);
     }
 
     // 수동 요청

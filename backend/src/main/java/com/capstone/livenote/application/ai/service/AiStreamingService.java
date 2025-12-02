@@ -56,6 +56,7 @@ public class AiStreamingService {
                     Qna.builder()
                             .lectureId(lectureId)
                             .sectionIndex(sectionIndex)
+                            .cardId(cardId)
                             .type(resolveQnaType(qnaType)) // 타입 변환 필요
                             .question(questionTitle)
                             .answer(mockAnswer)
@@ -114,6 +115,7 @@ public class AiStreamingService {
                     Resource.builder()
                             .lectureId(lectureId)
                             .sectionIndex(sectionIndex)
+                            .cardId(cardId)
                             .type(resolveResourceType(resourceType))
                             .title(mockTitle)
                             .text(mockDesc)
