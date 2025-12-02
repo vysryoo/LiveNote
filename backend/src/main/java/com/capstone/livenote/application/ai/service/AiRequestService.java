@@ -95,8 +95,11 @@ public class AiRequestService {
             streamGateway.sendResources(lectureId, sectionIndex, existing);
             return;
         }
-        Summary summary = summaryService.findByLectureAndSection(lectureId, sectionIndex)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "summary not found"));
+        Summary summary = findSummaryWithRetry(lectureId, sectionIndex);
+        if (summary == null) {
+            log.warn("⏭️ [AI Request] Resources skipped after retry (summary not found): lectureId={} section={}", lectureId, sectionIndex);
+            return;
+        }
 
         ResourceRecommendPayload payload = buildResourcePayload(
                 lectureId,
@@ -120,8 +123,11 @@ public class AiRequestService {
             streamGateway.sendQna(lectureId, sectionIndex, existing);
             return;
         }
-        Summary summary = summaryService.findByLectureAndSection(lectureId, sectionIndex)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "summary not found"));
+        Summary summary = findSummaryWithRetry(lectureId, sectionIndex);
+        if (summary == null) {
+            log.warn("⏭️ [AI Request] QnA skipped after retry (summary not found): lectureId={} section={}", lectureId, sectionIndex);
+            return;
+        }
         Lecture lecture = lectureService.get(lectureId);
 
         var payload = buildQnaPayload(
@@ -145,8 +151,11 @@ public class AiRequestService {
             streamGateway.sendQna(lectureId, sectionIndex, existing);
             return;
         }
-        Summary summary = summaryService.findByLectureAndSection(lectureId, sectionIndex)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "summary not found"));
+        Summary summary = findSummaryWithRetry(lectureId, sectionIndex);
+        if (summary == null) {
+            log.warn("⏭️ [AI Request] QnA (single type) skipped after retry (summary not found): lectureId={} section={}", lectureId, sectionIndex);
+            return;
+        }
         Lecture lecture = lectureService.get(lectureId);
         var payload = buildQnaPayload(lecture, summary.getId(), sectionIndex, summary.getText());
 
@@ -165,8 +174,11 @@ public class AiRequestService {
             streamGateway.sendResources(lectureId, sectionIndex, existing);
             return;
         }
-        Summary summary = summaryService.findByLectureAndSection(lectureId, sectionIndex)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "summary not found"));
+        Summary summary = findSummaryWithRetry(lectureId, sectionIndex);
+        if (summary == null) {
+            log.warn("⏭️ [AI Request] Resource (single type) skipped after retry (summary not found): lectureId={} section={}", lectureId, sectionIndex);
+            return;
+        }
         ResourceRecommendPayload payload = buildResourcePayload(lectureId, summary.getId(), sectionIndex, summary.getText());
 
         List<String> types = resourceType != null ? List.of(resourceType.toUpperCase()) : null;
@@ -326,6 +338,23 @@ public class AiRequestService {
 
     private record ResourceExcludes(List<String> yt, List<String> wiki, List<String> paper, List<String> google) {}
 
-
-
+    private Summary findSummaryWithRetry(Long lectureId, Integer sectionIndex) {
+        final int maxAttempts = 6;
+        final long delayMs = 300L;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            var summaryOpt = summaryService.findByLectureAndSection(lectureId, sectionIndex);
+            if (summaryOpt.isPresent()) {
+                return summaryOpt.get();
+            }
+            if (attempt < maxAttempts) {
+                try {
+                    Thread.sleep(delayMs);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+        return null;
+    }
 }
