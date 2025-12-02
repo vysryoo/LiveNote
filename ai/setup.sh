@@ -119,7 +119,7 @@ cat <<'EOF'
 
 1) 환경 변수 확인/수정:   vi .env
 2) 가상환경 활성화:       source .venv/bin/activate
-3) 서버 실행:             uvicorn server.main:app --reload
+3) 서버 실행:           uvicorn server.main:app --reload --port 8003
 
 필요 시 PYTHON_BIN=python3.11 ./setup.sh 처럼 Python 버전을 지정할 수 있습니다.
 EOF
