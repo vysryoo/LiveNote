@@ -8,7 +8,7 @@ VENV_DIR="${PROJECT_ROOT}/.venv"
 REQUIREMENTS_FILE="${PROJECT_ROOT}/requirements.server.txt"
 ENV_EXAMPLE="${PROJECT_ROOT}/.env.example"
 
-PYTHON_BIN_DEFAULT="python3.11"
+PYTHON_BIN_DEFAULT="python3"
 PYTHON_BIN="${PYTHON_BIN:-$PYTHON_BIN_DEFAULT}"
 if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
   echo "⚠️  ${PYTHON_BIN} 을(를) 찾을 수 없습니다. 기본값(${PYTHON_BIN_DEFAULT})으로 시도합니다."
