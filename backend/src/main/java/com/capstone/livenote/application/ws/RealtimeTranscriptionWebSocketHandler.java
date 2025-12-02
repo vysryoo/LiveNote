@@ -245,7 +245,7 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
                       "type": "session.update",
                       "session": {
                         "modalities": ["text"],
-                        "instructions": "You are a helpful assistant that transcribes audio to text. Respond with transcriptions only.",
+                        "instructions": "You are a helpful assistant that transcribes audio to text. Respond with transcriptions only. Don't use chinese and japanese and spanish when language setting is ko",
                         "voice": "alloy",
                         "input_audio_format": "pcm16",
                         "output_audio_format": "pcm16",
