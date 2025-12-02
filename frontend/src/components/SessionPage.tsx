@@ -986,6 +986,10 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
     // 새로운 완료된 요약 찾기
     const prevSummaryMap = new Map<number, Summary>(prevSummariesRef.current.map(s => [s.sectionIndex, s]));
     const newCompletedSummaries = summaries.filter((summary: Summary) => {
+      // 오토모드는 FINAL 요약만 대상으로 동작
+      const phase = summary?.phase ? summary.phase.toUpperCase() : "FINAL";
+      if (phase !== "FINAL") return false;
+
       const prevSummary = prevSummaryMap.get(summary.sectionIndex);
       const summaryText = formatText(summary.text);
       const prevSummaryText = prevSummary ? formatText(prevSummary.text) : null;
