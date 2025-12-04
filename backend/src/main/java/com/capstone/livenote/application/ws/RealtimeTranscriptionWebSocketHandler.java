@@ -56,6 +56,15 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
     @Value("${OPENAI_API_KEY}")
     private String openAiApiKey;
 
+    @Value("${app.callback-base-url:http://localhost:8080}")
+    private String callbackBaseUrl;
+
+    @Value("${app.transcription.padding-seconds:1.5}")
+    private double transcriptPaddingSeconds;
+
+    @Value("${app.transcription.speed-multiplier:1.0}")
+    private double transcriptSpeedMultiplier;
+
     private final Map<String, SessionContext> contexts = new ConcurrentHashMap<>();
 
     @Override
@@ -88,7 +97,14 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
         
         log.info("[RealtimeWS] Lecture resume info: lectureId={} startFromSec={}", lectureId, startFromSec);
 
-        SessionContext ctx = new SessionContext(session, lectureId, language, startFromSec);
+        SessionContext ctx = new SessionContext(
+                session,
+                lectureId,
+                language,
+                startFromSec,
+                transcriptPaddingSeconds,
+                transcriptSpeedMultiplier
+        );
         contexts.put(session.getId(), ctx);
 
         connectOpenAi(ctx);
@@ -166,15 +182,19 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
             
             // 2. isFinal==true일 때 TranscriptService를 통해 저장 (요약 생성 트리거)
             if (isFinal && content != null && !content.trim().isEmpty()) {
-                int currentSec = ctx.getElapsedSeconds();
+                // 발화 구간 길이(초): speech_started ~ 현재까지
+                int segmentSec = ctx.endActiveSegment();
+                if (segmentSec <= 0) segmentSec = Math.max(1, content.trim().length() / 10); // 최소 1초 보정
+
                 int startSec = ctx.lastTranscriptEndSec;
-                int endSec = currentSec;
-                
+                int endSec = startSec + segmentSec;
+
                 // TranscriptService를 통해 저장 -> SectionAggregationService.onNewTranscript() 자동 호출
                 transcriptService.saveFromStt(ctx.lectureId, startSec, endSec, content.trim());
-                
-                ctx.lastTranscriptEndSec = currentSec;
-                
+
+                ctx.lastTranscriptEndSec = endSec;
+                ctx.spokenSeconds = endSec; // spoken 시간 누적
+
                 log.info("[RealtimeWS] ✅ Transcript saved to DB via TranscriptService: lectureId={} startSec={} endSec={} text={}",
                         ctx.lectureId, startSec, endSec, 
                         content.length() > 50 ? content.substring(0, 50) + "..." : content);
@@ -241,7 +261,7 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
                       "type": "session.update",
                       "session": {
                         "modalities": ["text"],
-                        "instructions": "You are a helpful assistant that transcribes audio to text. Respond with transcriptions only.",
+                        "instructions": "You are a helpful assistant that transcribes audio to text. Respond with transcriptions only. Don't use chinese and japanese and spanish when language setting is ko",
                         "voice": "alloy",
                         "input_audio_format": "pcm16",
                         "output_audio_format": "pcm16",
@@ -315,6 +335,7 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
             if (type.equals("input_audio_buffer.speech_started")) {
                 log.info("[RealtimeWS] Speech started lectureId={}", ctx.lectureId);
                 ctx.transcriptBuffer.setLength(0); // 버퍼 초기화
+                ctx.speechStartMillis = System.currentTimeMillis();
                 return;
             }
             
@@ -419,17 +440,29 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
         private final long startTimeMillis = System.currentTimeMillis();
         private final int baseSeconds; // 재개 시 기준 시간(초)
         private int lastTranscriptEndSec;
+        private long speechStartMillis = -1;
+        private int spokenSeconds; // 말한 시간 누적
+        private final double paddingSeconds;
+        private final double speedMultiplier;
 
-        SessionContext(WebSocketSession clientSession, Long lectureId, String language, int startFromSec) {
+        SessionContext(WebSocketSession clientSession, Long lectureId, String language, int startFromSec,
+                       double paddingSeconds, double speedMultiplier) {
             this.clientSession = clientSession;
             this.lectureId = lectureId;
             this.language = language;
             this.baseSeconds = startFromSec;
             this.lastTranscriptEndSec = startFromSec;
+            this.spokenSeconds = startFromSec;
+            this.paddingSeconds = paddingSeconds;
+            this.speedMultiplier = speedMultiplier;
         }
         
         int getElapsedSeconds() {
-            return baseSeconds + (int) ((System.currentTimeMillis() - startTimeMillis) / 1000);
+            int active = 0;
+            if (speechStartMillis > 0) {
+                active = (int) ((System.currentTimeMillis() - speechStartMillis) / 1000);
+            }
+            return spokenSeconds + active;
         }
 
         void setOpenAiWebSocket(WebSocket ws) {
@@ -474,6 +507,17 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
             if (openAiWebSocket != null) {
                 try { openAiWebSocket.sendClose(WebSocket.NORMAL_CLOSURE, "client closed"); } catch (Exception ignored) {}
             }
+        }
+
+        int endActiveSegment() {
+            if (speechStartMillis <= 0) return 0;
+            long now = System.currentTimeMillis();
+            double deltaSeconds = ((now - speechStartMillis) / 1000.0) * speedMultiplier;
+            // 약간의 완충(+paddingSeconds) 후 올림하여 반올림 효과
+            int delta = (int) Math.ceil(deltaSeconds + paddingSeconds);
+            spokenSeconds += delta;
+            speechStartMillis = -1;
+            return delta;
         }
     }
 }

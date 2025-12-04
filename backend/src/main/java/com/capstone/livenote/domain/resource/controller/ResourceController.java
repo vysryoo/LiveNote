@@ -8,6 +8,7 @@ import com.capstone.livenote.domain.resource.service.ResourceService;
 import com.capstone.livenote.domain.summary.entity.Summary;
 import com.capstone.livenote.domain.summary.repository.SummaryRepository;
 import com.capstone.livenote.global.ApiResponse;
+import com.capstone.livenote.application.ai.service.CardIdHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,11 +31,15 @@ public class ResourceController {
     // === AI 서버에서 추천자료 콜백 ===
     @PostMapping("/callback")
     public ApiResponse<Void> saveResourceFromAi(@RequestBody ResourceRequestDto dto) {
+        int nextIndex = CardIdHelper.CARD_INDEX_OFFSET + resourceRepository.findByLectureIdAndSectionIndexOrderByIdAsc(
+                dto.getLectureId(), dto.getSectionIndex()
+        ).size();
         Resource r = Resource.builder()
                 .lectureId(dto.getLectureId())
                 .summaryId(dto.getSummaryId())
                 .userId(dto.getUserId())
                 .sectionIndex(dto.getSectionIndex())
+                .cardId(CardIdHelper.buildCardId("resource", dto.getLectureId(), dto.getSectionIndex(), nextIndex))
                 .type(Resource.Type.fromString(dto.getType()))
                 .title(dto.getTitle())
                 .text(dto.getText())
@@ -57,7 +62,7 @@ public class ResourceController {
             @RequestParam(required = false) String type
     ) {
         // 1. lectureId + sectionIndex로 직접 조회 (summaryId 의존성 제거)
-        List<Resource> resourceList = resourceRepository.findByLectureIdAndSectionIndex(lectureId, sectionIndex);
+        List<Resource> resourceList = resourceRepository.findByLectureIdAndSectionIndexOrderByIdAsc(lectureId, sectionIndex);
 
         // 2. Type 필터링 (type 파라미터가 있을 경우)
         if (type != null && !type.isBlank()) {

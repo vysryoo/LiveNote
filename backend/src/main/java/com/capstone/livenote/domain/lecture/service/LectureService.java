@@ -94,10 +94,23 @@ public class LectureService {
 
     // 강의 종료 (녹음 끝 + 상태 COMPLETED)
     @Transactional
-    public void endLecture(Long id) {
+    public Lecture endLecture(Long id) {
         log.info("💾 [DB WRITE] Ending lecture: lectureId={}", id);
-        lectureRepo.updateStatus(id, Lecture.Status.COMPLETED);
+        Lecture lecture = lectureRepo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("lecture"));
+        lecture.setStatus(Lecture.Status.COMPLETED);
+        lecture.setEndAt(java.time.LocalDateTime.now());
+        lectureRepo.save(lecture);
         log.info("✅ [DB WRITE] Lecture ended: id={} status=COMPLETED", id);
+        return lecture;
+    }
+
+    @Transactional
+    public Lecture updateLectureTitle(Long lectureId, String title) {
+        Lecture lecture = lectureRepo.findById(lectureId)
+                .orElseThrow(() -> new EntityNotFoundException("lecture"));
+        lecture.setTitle(title);
+        return lectureRepo.save(lecture);
     }
 
     // 강의 상세 정보 조회 (transcripts, summaries, resources, qna, bookmarks 포함)

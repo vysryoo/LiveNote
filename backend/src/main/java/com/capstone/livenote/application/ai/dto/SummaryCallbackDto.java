@@ -14,4 +14,5 @@ public class SummaryCallbackDto {
     private Integer endSec;
     private String text;
     private String phase;      // "FINAL" / "PARTIAL"
+    private String status;     // "COMPLETED" / "TOO_SHORT" 등
 }

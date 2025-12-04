@@ -22,7 +22,17 @@ import lombok.*;
 @NoArgsConstructor @AllArgsConstructor @Builder
 public class Bookmark {
 
-    public enum TargetType { RESOURCE, QNA }
+    public enum TargetType {
+        RESOURCE, QNA;
+        public static TargetType fromString(String raw) {
+            if (raw == null) return null;
+            return switch (raw.trim().toUpperCase()) {
+                case "RESOURCE", "RESOURCES" -> TargetType.RESOURCE;
+                case "QNA", "Q&A" -> TargetType.QNA;
+                default -> null;
+            };
+        }
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

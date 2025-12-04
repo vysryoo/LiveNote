@@ -15,7 +15,9 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
     Slice<Bookmark> findByUserIdAndLectureIdAndSectionIndex(
             Long userId, Long lectureId, Integer sectionIndex, Pageable pageable);
 
+    Optional<Bookmark> findByUserIdAndLectureIdAndSectionIndexAndTargetTypeAndTargetId(
+            Long userId, Long lectureId, Integer sectionIndex, Bookmark.TargetType targetType, Long targetId);
+
 //    Optional<Bookmark> findByUserIdAndLectureIdAndSectionIndexAndTargetTypeAndTargetId(
 //            Long userId, Long lectureId, Integer sectionIndex, TargetType targetType, Long targetId);
 }
-

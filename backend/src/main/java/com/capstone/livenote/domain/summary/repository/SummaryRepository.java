@@ -1,6 +1,7 @@
 package com.capstone.livenote.domain.summary.repository;
 
 import com.capstone.livenote.domain.summary.entity.Summary;
+import com.capstone.livenote.domain.summary.entity.SummaryPhase;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -19,6 +20,13 @@ public interface SummaryRepository extends JpaRepository<Summary, Long> {
     List<Summary> findByLectureIdAndSectionIndexLessThanOrderBySectionIndexDesc(
             Long lectureId,
             Integer sectionIndex,
+            org.springframework.data.domain.Pageable pageable
+    );
+
+    List<Summary> findByLectureIdAndSectionIndexLessThanAndPhaseOrderBySectionIndexDesc(
+            Long lectureId,
+            Integer sectionIndex,
+            SummaryPhase phase,
             org.springframework.data.domain.Pageable pageable
     );
 

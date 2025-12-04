@@ -9,9 +9,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+
+import com.capstone.livenote.domain.user.dto.SetLanguageRequest;
+import com.capstone.livenote.domain.user.dto.SetPasswordRequest;
+import com.capstone.livenote.domain.user.dto.UserViewDto;
 
 @RestController
 @RequestMapping("/api/users")
@@ -45,5 +51,25 @@ public class UserMeController {
                 user.getEmail(),
                 user.getUiLanguage()
         ));
+    }
+
+    @PatchMapping("/me/language")
+    public ApiResponse<UserViewDto> setLanguage(@RequestBody SetLanguageRequest req) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "not authenticated");
+        }
+        Long userId = Long.parseLong(authentication.getName());
+        return ApiResponse.ok(userService.setLanguage(userId, req.getLanguage()));
+    }
+
+    @PatchMapping("/me/password")
+    public ApiResponse<UserViewDto> setPassword(@RequestBody SetPasswordRequest req) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "not authenticated");
+        }
+        Long userId = Long.parseLong(authentication.getName());
+        return ApiResponse.ok(userService.changePassword(userId, req.getCurrentPassword(), req.getNewPassword()));
     }
 }

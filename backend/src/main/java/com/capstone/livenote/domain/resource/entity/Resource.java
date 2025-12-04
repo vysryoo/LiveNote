@@ -10,7 +10,10 @@ import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "resources",
-        indexes = {@Index(name="idx_resources_summary", columnList = "summary_id")})
+        indexes = {@Index(name="idx_resources_summary", columnList = "summary_id")},
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_resource_card", columnNames = {"lecture_id", "section_index", "card_id"})
+        })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -49,6 +52,8 @@ public class Resource {
     @Column(name = "user_id", nullable = true)
     private Long userId;
 
+    @Column(name = "card_id", length = 128)
+    private String cardId;
 
     @Column(nullable = false)
     private Integer sectionIndex;

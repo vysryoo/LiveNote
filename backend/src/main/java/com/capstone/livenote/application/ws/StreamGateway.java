@@ -32,15 +32,17 @@ public class StreamGateway {
                 ));
     }
 
+    // Summary 엔티티를 받는 오버로드 메서드 (SummaryCallbackService용)
     public void sendSummary(Summary summary) {
         sendSummary(
                 summary.getLectureId(),
                 summary.getSectionIndex(),
                 summary.getText(),
-                "final"
+                summary.getPhase() != null ? summary.getPhase().name().toLowerCase() : "final"
         );
     }
 
+    // 파라미터로 받는 메서드 (SectionAggregationService용)
     public void sendSummary(Long lectureId, Integer sectionIndex, String text, String phase) {
         String destination = "/topic/lectures/" + lectureId + "/summary/" + sectionIndex;
 
@@ -53,6 +55,9 @@ public class StreamGateway {
         );
 
         tmpl.convertAndSend(destination, payload);
+        // Also send to the non-section-specific summary topic so clients
+        // that subscribe to `/topic/lectures/{lectureId}/summary` receive updates.
+        tmpl.convertAndSend("/topic/lectures/" + lectureId + "/summary", payload);
     }
 
 
@@ -89,6 +94,19 @@ public class StreamGateway {
                 Map.of("type", "error", "message", error));
     }
 
+    // 섹션 상태 전송
+    public void sendSection(Long lectureId, int sectionIndex) {
+        tmpl.convertAndSend(
+                "/topic/lectures/" + lectureId + "/section",
+                Map.of(
+                        "type", "section",
+                        "lectureId", lectureId,
+                        "sectionIndex", sectionIndex,
+                        "timestamp", System.currentTimeMillis()
+                )
+        );
+    }
+
     // 스트리밍 토큰 전송 메소드
     public void sendStreamToken(Long lectureId, String type, String cardId, String token, boolean isComplete, Object data, String title, String resourceType) {
         Map<String, Object> payload = new HashMap<>();
@@ -114,4 +132,3 @@ public class StreamGateway {
         tmpl.convertAndSend("/topic/lectures/" + lectureId + "/stream", payload);
     }
 }
-

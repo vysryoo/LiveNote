@@ -14,6 +14,7 @@ public class ResourceResponseDto {
     private Long lectureId;
     private Long summaryId;
     private Integer sectionIndex;
+    private String cardId;
     private String type;
     private String title;
     private String url;
@@ -29,6 +30,7 @@ public class ResourceResponseDto {
                 r.getLectureId(),
                 r.getSummaryId(),
                 r.getSectionIndex(),
+                r.getCardId(),
                 r.getType().name().toLowerCase(),
                 r.getTitle(),
                 r.getUrl(),

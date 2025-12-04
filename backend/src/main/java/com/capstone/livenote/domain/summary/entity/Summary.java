@@ -39,4 +39,16 @@ public class Summary {
     @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String text;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    @Builder.Default
+    private SummaryPhase phase = SummaryPhase.FINAL;
+
+    @PrePersist
+    public void ensurePhase() {
+        if (phase == null) {
+            phase = SummaryPhase.FINAL;
+        }
+    }
+
 }

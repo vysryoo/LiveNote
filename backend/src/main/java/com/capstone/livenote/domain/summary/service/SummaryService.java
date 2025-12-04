@@ -2,6 +2,7 @@ package com.capstone.livenote.domain.summary.service;
 
 import com.capstone.livenote.application.ai.dto.SummaryCallbackDto;
 import com.capstone.livenote.domain.summary.entity.Summary;
+import com.capstone.livenote.domain.summary.entity.SummaryPhase;
 import com.capstone.livenote.domain.summary.repository.SummaryRepository;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -47,6 +48,7 @@ public class SummaryService {
                     .startSec(startSec)
                     .endSec(endSec)
                     .text(text)
+                    .phase(SummaryPhase.FINAL)
                     .build();
         } else {
             // 있으면 덮어쓰기
@@ -73,9 +75,10 @@ public class SummaryService {
                 limit,
                 org.springframework.data.domain.Sort.by("sectionIndex").descending()
         );
-        return summaryRepository.findByLectureIdAndSectionIndexLessThanOrderBySectionIndexDesc(
+        return summaryRepository.findByLectureIdAndSectionIndexLessThanAndPhaseOrderBySectionIndexDesc(
                 lectureId,
                 sectionIndex,
+                SummaryPhase.FINAL,
                 pageable
         );
     }
@@ -86,10 +89,11 @@ public class SummaryService {
     }
 
     // 해당 섹션의 요약이 DB에 존재하는지 확인
-    @Transactional
+    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
     public Summary upsertFromCallback(SummaryCallbackDto dto) {
         int startSec = dto.getStartSec() != null ? dto.getStartSec() : dto.getSectionIndex() * 30;
         int endSec = dto.getEndSec() != null ? dto.getEndSec() : startSec + 30;
+        SummaryPhase phase = SummaryPhase.from(dto.getPhase());
 
         // 1. 조회 시도
         Optional<Summary> existingOpt = summaryRepository.findByLectureIdAndSectionIndex(
@@ -100,6 +104,7 @@ public class SummaryService {
             existing.setText(dto.getText());
             existing.setStartSec(startSec);
             existing.setEndSec(endSec);
+            existing.setPhase(phase);
             return existing; // Dirty Checking으로 자동 저장
         }
 
@@ -112,6 +117,7 @@ public class SummaryService {
                             .startSec(startSec)
                             .endSec(endSec)
                             .text(dto.getText())
+                            .phase(phase)
                             .build()
             );
         } catch (DataIntegrityViolationException e) {
@@ -122,6 +128,7 @@ public class SummaryService {
             existing.setText(dto.getText());
             existing.setStartSec(startSec);
             existing.setEndSec(endSec);
+            existing.setPhase(phase);
             return existing;
         }
     }

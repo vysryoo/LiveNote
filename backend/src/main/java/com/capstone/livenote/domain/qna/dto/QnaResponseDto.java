@@ -15,7 +15,8 @@ public class QnaResponseDto {
     private Long lectureId;
     private Long summaryId;
     private Integer sectionIndex;
-    private Qna.Type type;
+    private String cardId;
+    private String type;
     private String question;
     private String answer;
 
@@ -25,7 +26,8 @@ public class QnaResponseDto {
                 q.getLectureId(),
                 q.getSummaryId(),
                 q.getSectionIndex(),
-                q.getType(),
+                q.getCardId(),
+                q.getType().name().toLowerCase(),
                 q.getQuestion(),
                 q.getAnswer()
         );

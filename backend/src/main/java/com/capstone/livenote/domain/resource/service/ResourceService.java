@@ -29,12 +29,12 @@ public class ResourceService {
         if (endSection < startSection) {
             return List.of();
         }
-        return repo.findByLectureIdAndSectionIndexBetweenOrderBySectionIndexDesc(
-                lectureId,
-                startSection,
-                endSection
-        );
+        return repo.findByLectureIdAndSectionIndexBetweenOrderByIdAsc(lectureId, startSection, endSection);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Resource> findByLectureAndSectionOrdered(Long lectureId, Integer sectionIndex) {
+        return repo.findByLectureIdAndSectionIndexOrderByIdAsc(lectureId, sectionIndex);
     }
 }
-
 

@@ -5,13 +5,8 @@ import com.capstone.livenote.application.audio.service.AudioIngestService;
 import com.capstone.livenote.domain.lecture.dto.CreateLectureRequestDto;
 import com.capstone.livenote.domain.lecture.dto.LectureResponseDto;
 import com.capstone.livenote.domain.lecture.dto.SessionDetailResponse;
+import com.capstone.livenote.domain.lecture.dto.UpdateLectureTitleRequest;
 import com.capstone.livenote.domain.lecture.service.LectureService;
-import com.capstone.livenote.domain.qna.dto.QnaResponseDto;
-import com.capstone.livenote.domain.qna.service.QnaService;
-import com.capstone.livenote.domain.summary.dto.SummaryResponseDto;
-import com.capstone.livenote.domain.summary.service.SummaryService;
-import com.capstone.livenote.domain.transcript.dto.TranscriptResponseDto;
-import com.capstone.livenote.domain.transcript.service.TranscriptService;
 import com.capstone.livenote.global.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,7 +19,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -41,9 +35,6 @@ import java.util.List;
 public class LectureController {
     private final LectureService lectureService;
     private final AudioIngestService audio;
-    private final TranscriptService trQuery;
-    private final SummaryService smQuery;
-    private final QnaService qnaService;
     private final RagClient ragClient;
 
     private Long currentUserId(){
@@ -89,12 +80,41 @@ public class LectureController {
 
     // 강의 생성
     @Operation(summary = "새로운 강의를 생성")
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ApiResponse<LectureResponseDto> create(@RequestBody CreateLectureRequestDto req){
         var l = lectureService.create(currentUserId(), req);
         return ApiResponse.ok(LectureResponseDto.from(l));
     }
 
+    @Operation(summary = "새로운 강의를 생성 (PDF 업로드 포함)")
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<LectureResponseDto> createWithPdf(
+            @RequestPart("title") String title,
+            @RequestPart("subject") String subject,
+            @RequestPart("sttLanguage") String sttLanguage,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files
+    ) {
+        if (files == null || files.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "PDF 파일이 필요합니다.");
+        }
+        MultipartFile pdf = files.get(0);
+        if (pdf == null || pdf.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "PDF 파일이 비어있습니다.");
+        }
+        String contentType = pdf.getContentType();
+        if (contentType == null || !contentType.equalsIgnoreCase("application/pdf")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "PDF 파일만 업로드할 수 있습니다.");
+        }
+
+        var req = new CreateLectureRequestDto(title, subject, sttLanguage);
+        var lecture = lectureService.create(currentUserId(), req);
+
+        // RAG 업서트 수행
+        String collectionId = ragClient.upsertPdf(lecture.getId(), pdf, null);
+        lectureService.updateCollectionId(lecture.getId(), collectionId);
+
+        return ApiResponse.ok(LectureResponseDto.from(lecture));
+    }
 
 
     // 오디오 청크 업로드 ( AI 서버용 )
@@ -115,14 +135,10 @@ public class LectureController {
     // 강의 종료
     @Operation(summary = "녹음을 종료하고 강의 상태를 완료로 변경")
     @PostMapping("/{lectureId}/end")
-    public ApiResponse<Void> endLecture(@PathVariable Long lectureId) {
-        // 1) 강의 상태 COMPLETED
-        lectureService.endLecture(lectureId);
-
-        // 2) 오디오 인입 종료 처리
+    public ApiResponse<LectureResponseDto> endLecture(@PathVariable Long lectureId) {
+        var lecture = lectureService.endLecture(lectureId);
         audio.markComplete(lectureId);
-
-        return ApiResponse.ok();
+        return ApiResponse.ok(LectureResponseDto.from(lecture));
     }
 
 
@@ -138,6 +154,16 @@ public class LectureController {
     public ApiResponse<Void> delete(@PathVariable Long lectureId){
         lectureService.delete(lectureId);
         return ApiResponse.ok();
+    }
+
+    @Operation(summary = "강의 제목 수정")
+    @PatchMapping("/{lectureId}/title")
+    public ApiResponse<LectureResponseDto> updateTitle(
+            @PathVariable Long lectureId,
+            @RequestBody UpdateLectureTitleRequest req
+    ) {
+        var updated = lectureService.updateLectureTitle(lectureId, req.getTitle());
+        return ApiResponse.ok(LectureResponseDto.from(updated));
     }
 
 

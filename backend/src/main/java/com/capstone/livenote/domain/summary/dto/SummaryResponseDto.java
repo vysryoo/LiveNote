@@ -1,6 +1,7 @@
 package com.capstone.livenote.domain.summary.dto;
 
 import com.capstone.livenote.domain.summary.entity.Summary;
+import com.capstone.livenote.domain.summary.entity.SummaryPhase;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -32,7 +33,17 @@ public class SummaryResponseDto {
                 .startSec(s.getStartSec())
                 .endSec(s.getEndSec())
                 .text(s.getText())
-                .phase(Phase.FINAL)   // DB에 있는 건 전부 FINAL
+                .phase(toDtoPhase(s.getPhase()))
                 .build();
+    }
+
+    private static Phase toDtoPhase(SummaryPhase phase) {
+        if (phase == null) {
+            return Phase.FINAL;
+        }
+        return switch (phase) {
+            case PARTIAL -> Phase.PARTIAL;
+            case FINAL -> Phase.FINAL;
+        };
     }
 }
