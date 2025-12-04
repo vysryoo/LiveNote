@@ -2,6 +2,7 @@
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
 httpx[http2]==0.27.2
+aiohttp>=3.9.0
 
 # OpenAI / Vector
 openai==1.54.0
