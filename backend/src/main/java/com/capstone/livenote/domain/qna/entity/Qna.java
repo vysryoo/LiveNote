@@ -26,7 +26,7 @@ public class Qna {
     @Column(nullable = false)
     private Integer sectionIndex;
 
-    @Column(name = "card_id", length = 128)
+    @Column(name = "card_id", length = 128, nullable = false)
     private String cardId;
 
     @Enumerated(EnumType.STRING)

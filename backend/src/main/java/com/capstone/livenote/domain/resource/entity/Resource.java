@@ -52,7 +52,7 @@ public class Resource {
     @Column(name = "user_id", nullable = true)
     private Long userId;
 
-    @Column(name = "card_id", length = 128)
+    @Column(name = "card_id", length = 128, nullable = false)
     private String cardId;
 
     @Column(nullable = false)
