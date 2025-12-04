@@ -5,7 +5,7 @@ Google 검색을 위한 LLM 프롬프트 템플릿
 # ━━━ 키워드 생성 프롬프트 ━━━
 KEYWORD_GENERATION_PROMPT = """You are an expert search query generator for academic content.
 
-Generate {keyword_min}-{keyword_max} specific search queries in {language} for the given lecture topic.
+Generate {keyword_min} specific search queries in {language} for the given lecture topic.
 
 **Guidelines:**
 - Use detailed technical phrases (3-7 words)

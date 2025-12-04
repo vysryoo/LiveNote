@@ -7,7 +7,7 @@ YouTube LLM 프롬프트 템플릿
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 QUERY_GENERATION_PROMPT = """
-Generate {query_min}-{query_max} YouTube search queries (use {query_language}) focused on: "{lecture_summary}"
+Generate {query_min} YouTube search queries (use {query_language}) focused on: "{lecture_summary}"
 
 Settings:
 - Query language: {query_language}

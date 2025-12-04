@@ -22,7 +22,7 @@ class GoogleConfig:
     MAX_TOP_K: int = 10
     CARD_LIMIT: int = 15  # 검증 대상 최대 수
     SEARCH_LIMIT: int = 10  # API 한 번 호출 시 최대 결과
-    FANOUT: int = 3  # 동시 검색 키워드 개수
+    FANOUT: int = 1  # 동시 검색 키워드 개수
     
     # LLM 설정
     LLM_MODEL: str = "gpt-4o-mini"
