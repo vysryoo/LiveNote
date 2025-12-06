@@ -79,9 +79,11 @@ CREATE TABLE `qna` (
   `lecture_id` bigint NOT NULL,
   `question` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `section_index` int NOT NULL,
+  `card_id` varchar(128) COLLATE utf8mb4_general_ci NOT NULL,
   `type` enum('ADVANCED','APPLICATION','COMPARISON','CONCEPT') COLLATE utf8mb4_general_ci DEFAULT NULL,
   `summary_id` bigint DEFAULT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_qna_card` (`lecture_id`,`section_index`,`card_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -104,10 +106,12 @@ CREATE TABLE `resources` (
   `type` enum('BLOG','PAPER','VIDEO','WIKI','GOOGLE','YOUTUBE') COLLATE utf8mb4_general_ci NOT NULL,
   `url` varchar(2048) COLLATE utf8mb4_general_ci NOT NULL,
   `user_id` bigint DEFAULT NULL,
+  `card_id` varchar(128) COLLATE utf8mb4_general_ci NOT NULL,
   `detail` json DEFAULT NULL,
   `reason` longtext COLLATE utf8mb4_general_ci,
   PRIMARY KEY (`id`),
-  KEY `idx_resources_summary` (`summary_id`)
+  KEY `idx_resources_summary` (`summary_id`),
+  UNIQUE KEY `uk_resource_card` (`lecture_id`,`section_index`,`card_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -124,7 +128,8 @@ CREATE TABLE `summaries` (
   `lecture_id` bigint NOT NULL,
   `section_index` int NOT NULL,
   `start_sec` int NOT NULL,
-  `text` tinytext COLLATE utf8mb4_general_ci NOT NULL,
+  `text` longtext COLLATE utf8mb4_general_ci NOT NULL,
+  `phase` enum('PARTIAL','FINAL') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'FINAL',
   PRIMARY KEY (`id`),
   UNIQUE KEY `UKay5tuthn5wn39l0nuvxbo9nib` (`lecture_id`,`section_index`),
   KEY `idx_summaries_lecture_section` (`lecture_id`,`section_index`),

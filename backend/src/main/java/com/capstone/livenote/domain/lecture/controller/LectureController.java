@@ -66,8 +66,9 @@ public class LectureController {
     @Operation(summary = "특정 강의의 상세 정보를 조회")
     @GetMapping("/{lectureId}")
     public ApiResponse<LectureResponseDto> get(@PathVariable Long lectureId){
-        var l = lectureService.get(lectureId);
-        return ApiResponse.ok(LectureResponseDto.from(l));
+        Long userId = currentUserId();
+        var l = lectureService.getWithBookmarks(lectureId, userId);
+        return ApiResponse.ok(l);
     }
 
     // 강의 상세 정보 조회 (transcripts, summaries, resources, qna, bookmarks 포함)

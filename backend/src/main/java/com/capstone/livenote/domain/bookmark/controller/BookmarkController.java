@@ -57,11 +57,9 @@ public class BookmarkController {
             @RequestParam(required = false) Integer sectionIndex,
             @PageableDefault(size = 50) Pageable pageable
     ) {
-        var list = bookmarkService.getBookmarks(
-                        currentUserId(), lectureId, sectionIndex, pageable
-                ).stream()
-                .map(BookmarkResponseDto::from)
-                .toList();
+        List<BookmarkResponseDto> list = bookmarkService.getBookmarks(
+                currentUserId(), lectureId, sectionIndex, pageable
+        );
 
         return ApiResponse.ok(list);
     }
