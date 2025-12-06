@@ -324,7 +324,12 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
 
       setResourcesBySection(groupBySection(detail.resources));
       setQnaBySection(groupBySection(detail.qna));
-      setBookmarks(detail.bookmarks ?? []);
+      const normalizedBookmarks =
+        detail.bookmarks?.map((bm) => ({
+          ...bm,
+          targetType: (bm.targetType as string)?.toLowerCase() as BookmarkType["targetType"],
+        })) ?? [];
+      setBookmarks(normalizedBookmarks);
       const hasPersistedRecordingData =
         (detail.transcripts?.length ?? 0) > 0 ||
         (detail.summaries?.length ?? 0) > 0 ||
