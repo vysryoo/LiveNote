@@ -4,6 +4,7 @@ import com.capstone.livenote.domain.bookmark.dto.BookmarkResponseDto;
 import com.capstone.livenote.domain.bookmark.entity.Bookmark;
 import com.capstone.livenote.domain.bookmark.repository.BookmarkRepository;
 import com.capstone.livenote.domain.lecture.dto.CreateLectureRequestDto;
+import com.capstone.livenote.domain.lecture.dto.LectureResponseDto;
 import com.capstone.livenote.domain.lecture.dto.SessionDetailResponse;
 import com.capstone.livenote.domain.lecture.entity.Lecture;
 import com.capstone.livenote.domain.lecture.repository.LectureRepository;
@@ -24,6 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -70,6 +72,13 @@ public class LectureService {
                 .orElseThrow(() -> new EntityNotFoundException("lecture"));
         log.info("✅ [DB READ] Loaded lecture: id={} title={}", lecture.getId(), lecture.getTitle());
         return lecture;
+    }
+
+    @Transactional(readOnly = true)
+    public LectureResponseDto getWithBookmarks(Long lectureId, Long userId) {
+        Lecture lecture = get(lectureId);
+        List<BookmarkResponseDto> bookmarks = loadBookmarks(userId, lectureId);
+        return LectureResponseDto.from(lecture, bookmarks);
     }
     @Transactional
     public void delete(Long id){
@@ -178,5 +187,27 @@ public class LectureService {
         Lecture lecture = get(lectureId); // 기존 get 메서드 활용
         lecture.setCollectionId(collectionId);
         // 더티 체킹으로 자동 저장
+    }
+
+    private List<BookmarkResponseDto> loadBookmarks(Long userId, Long lectureId) {
+        return bookmarkRepository.findByUserIdAndLectureId(userId, lectureId)
+                .stream()
+                .sorted((b1, b2) -> Integer.compare(b1.getSectionIndex(), b2.getSectionIndex()))
+                .map(bm -> {
+                    Object content = null;
+
+                    if (bm.getTargetType() == Bookmark.TargetType.QNA) {
+                        content = qnaRepository.findById(bm.getTargetId())
+                                .map(QnaResponseDto::from)
+                                .orElse(null);
+                    } else if (bm.getTargetType() == Bookmark.TargetType.RESOURCE) {
+                        content = resourceRepository.findById(bm.getTargetId())
+                                .map(ResourceResponseDto::from)
+                                .orElse(null);
+                    }
+
+                    return BookmarkResponseDto.from(bm, content);
+                })
+                .collect(Collectors.toList());
     }
 }

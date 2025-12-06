@@ -16,11 +16,15 @@ public class BookmarkResponseDto {
 
     public static BookmarkResponseDto from(Bookmark b) {
 
+        String type = (b.getTargetType() != null)
+                ? b.getTargetType().name().toLowerCase()
+                : null;
+
         return BookmarkResponseDto.builder()
                 .id(b.getId())
                 .lectureId(b.getLectureId())
                 .sectionIndex(b.getSectionIndex())
-                .targetType(b.getTargetType().name())
+                .targetType(type)
                 .targetId(b.getTargetId())
                 .build();
     }
@@ -28,7 +32,7 @@ public class BookmarkResponseDto {
     public static BookmarkResponseDto from(Bookmark b, Object content) {
 
         String type = (b.getTargetType() != null)
-                ? b.getTargetType().name()
+                ? b.getTargetType().name().toLowerCase()
                 : null;
 
 

@@ -1,6 +1,7 @@
 package com.capstone.livenote.domain.lecture.dto;
 
 import com.capstone.livenote.domain.lecture.entity.Lecture;
+import com.capstone.livenote.domain.bookmark.dto.BookmarkResponseDto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,6 +9,8 @@ import lombok.Setter;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 
 @Getter
 @Setter
@@ -22,19 +25,13 @@ public class LectureResponseDto {
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime endAt;
-
-//    public LectureResponseDto(Long id, String title, String subject, String language, Lecture.Status status, LocalDateTime createdAt, LocalDateTime endAt) {
-//        this.id = id;
-//        this.title = title;
-//        this.subject = subject;
-//        this.sttLanguage = language;
-//        this.status = status.name();
-//        this.createdAt = createdAt;
-//        this.endAt = endAt;
-//    }
-
+    private List<BookmarkResponseDto> bookmarks;
 
     public static LectureResponseDto from(Lecture l) {
+        return from(l, Collections.emptyList());
+    }
+
+    public static LectureResponseDto from(Lecture l, List<BookmarkResponseDto> bookmarks) {
         return new LectureResponseDto(
                 l.getId(),
                 l.getUserId(),
@@ -43,7 +40,8 @@ public class LectureResponseDto {
                 l.getSttLanguage(),
                 l.getStatus().name(),
                 l.getCreatedAt(),
-                l.getEndAt()
+                l.getEndAt(),
+                bookmarks == null ? Collections.emptyList() : bookmarks
         );
     }
 
