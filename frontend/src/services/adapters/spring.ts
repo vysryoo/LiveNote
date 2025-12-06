@@ -24,8 +24,15 @@ const API_BASE = (import.meta as any).env?.VITE_API_URL || "/api";
 const WS_BASE = (import.meta as any).env?.VITE_WS_URL || "ws://localhost:8080";
 
 function authHeader(): Record<string, string> {
-  const token = (window as any).SPRING_TOKEN as string | undefined;
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  // Prefer in-memory token, fall back to persisted token so page reloads keep the session.
+  const tokenInWindow = (window as any).SPRING_TOKEN as string | undefined;
+  const tokenInStorage = typeof localStorage !== 'undefined' ? localStorage.getItem('SPRING_TOKEN') : null;
+  const token = tokenInWindow || tokenInStorage || undefined;
+  // Guard against literal strings 'undefined' or 'null' which can appear when code sets them accidentally
+  if (!token || token === 'undefined' || token === 'null') {
+    return {};
+  }
+  return { Authorization: `Bearer ${token}` };
 }
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
@@ -70,7 +77,17 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(errorMessage);
   }
   if (res.status === 204) return undefined as unknown as T;
-  return (await res.json()) as T;
+  // Some backend responses are wrapped in { ok: boolean, data: T, message: string }
+  const parsed = await res.json().catch(() => null);
+  if (parsed && typeof parsed === "object" && Object.prototype.hasOwnProperty.call(parsed, "ok") && Object.prototype.hasOwnProperty.call(parsed, "data")) {
+    if (parsed.ok) {
+      return parsed.data as T;
+    }
+    // backend reported failure
+    const msg = parsed.message || `Request failed`;
+    throw new Error(msg);
+  }
+  return parsed as T;
 }
 
 function buildAuth(): AuthPort {
@@ -78,6 +95,11 @@ function buildAuth(): AuthPort {
     async login(data: LoginRequest): Promise<AuthResponse> {
       const resp = await http<AuthResponse>(`/auth/login`, { method: "POST", body: JSON.stringify(data) });
       (window as any).SPRING_TOKEN = resp.token;
+      try {
+        localStorage.setItem('SPRING_TOKEN', resp.token);
+      } catch (e) {
+        // ignore storage errors in environments without localStorage
+      }
       return resp;
     },
     async signup(data) {
@@ -85,6 +107,11 @@ function buildAuth(): AuthPort {
     },
     async logout() {
       (window as any).SPRING_TOKEN = undefined;
+      try {
+        localStorage.removeItem('SPRING_TOKEN');
+      } catch (e) {
+        // ignore
+      }
     },
   };
 }
@@ -95,7 +122,7 @@ function buildLecture(): LecturePort {
       return http<Lecture[]>(`/lectures`);
     },
     async getLecture(id: number): Promise<SessionDetailResponse> {
-      return http<SessionDetailResponse>(`/lectures/${id}`);
+      return http<SessionDetailResponse>(`/lectures/${id}/detail`);
     },
     async createLecture(data: CreateLectureRequest): Promise<Lecture> {
       // 파일이 있는 경우 FormData 사용
@@ -136,10 +163,21 @@ function buildLecture(): LecturePort {
       return http<Lecture>(`/lectures/${id}/end`, { method: "POST", body: JSON.stringify(data || {}) });
     },
     async addBookmark(data: BookmarkRequest): Promise<Bookmark> {
-      return http<Bookmark>(`/bookmarks`, { method: "POST", body: JSON.stringify(data) });
+      const payload = {
+        ...data,
+        // 백엔드 Enum은 대문자(QNA/RESOURCE)만 허용
+        targetType: data.targetType.toUpperCase(),
+      };
+      const res = await http<Bookmark>(`/bookmarks`, { method: "POST", body: JSON.stringify(payload) });
+      return { ...res, targetType: res.targetType.toLowerCase() as Bookmark["targetType"] };
     },
     async getBookmarks(lectureId: number, sectionIndex: number): Promise<Bookmark[]> {
-      return http<Bookmark[]>(`/bookmarks?lectureId=${lectureId}&sectionIndex=${sectionIndex}`);
+      const res = await http<Bookmark[]>(`/bookmarks?lectureId=${lectureId}&sectionIndex=${sectionIndex}`);
+      return res.map((item) => ({
+        ...item,
+        // 서버 응답이 대문자일 경우 프런트 타입(소문자)로 정규화
+        targetType: item.targetType.toLowerCase() as Bookmark["targetType"],
+      }));
     },
     async deleteBookmark(bookmarkId: number): Promise<void> {
       await http<void>(`/bookmarks/${bookmarkId}`, { method: "DELETE" });
@@ -269,5 +307,3 @@ function buildSettings(): SettingsPort {
 export function createSpringBackend(): BackendPort {
   return { auth: buildAuth(), lecture: buildLecture(), settings: buildSettings() };
 }
-
-

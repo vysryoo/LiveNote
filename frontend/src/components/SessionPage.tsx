@@ -53,8 +53,9 @@ export function SessionPage({
   const backend = useBackend();
   const { t } = useI18n();
   const wsRef = useRef<WebSocket | null>(null);
-  const summaryRequestStateRef = useRef<Record<number, { midRequested?: boolean; finalRequested?: boolean }>>({});
-  const requestStreamingCardRef = useRef<Set<number>>(new Set()); // 섹션별 추가 카드 생성 요청 여부 추적
+  const finalSummaryRequestRef = useRef<Map<number, string>>(new Map());
+const requestStreamingCardRef = useRef<Set<number>>(new Set()); // 섹션별 추가 카드 생성 요청 여부 추적
+const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 요청 방지용
   const currentSectionIndexRef = useRef<number>(-1);
   const elapsedTimeRef = useRef<number>(0);
   const lectureScrollViewportRef = useRef<HTMLDivElement | null>(null);
@@ -81,7 +82,9 @@ export function SessionPage({
   const [bookmarks, setBookmarks] = useState<BookmarkType[]>([]);
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
   const [liveSectionTranscripts, setLiveSectionTranscripts] = useState<Record<number, string>>({});
-  
+  const [serverSectionIndex, setServerSectionIndex] = useState(0);
+  const [serverElapsedSec, setServerElapsedSec] = useState(0);
+
   // 새로운 섹션이 생기거나 내용이 갱신될 때 왼쪽 강의 뷰포트를 항상 맨 아래로 스크롤
   const stompClientRef = useRef<Client | null>(null);
   const [streamingCards, setStreamingCards] = useState<Map<string, StreamingCard>>(new Map());
@@ -90,12 +93,15 @@ export function SessionPage({
     isRecording,
     isEnded,
     elapsedTime,
+    currentSectionIndex,
     handleToggleRecording,
     hasRecordingStarted: recordingStartedFromHook,
   } = useRecording({
     lectureId,
     backend,
     t,
+    serverSectionIndex,
+    serverElapsedSec,
     onLiveTranscript: (sectionIndex, content, isFinal) => {
       setLiveSectionTranscripts((prev) => {
         const prevText = prev[sectionIndex] ?? "";
@@ -104,11 +110,11 @@ export function SessionPage({
             ? prevText + "\n" + content
             : content
           : (() => {
-              if (!prevText) return content;
-              const lines = prevText.split("\n");
-              lines[lines.length - 1] = content;
-              return lines.join("\n");
-            })();
+            if (!prevText) return content;
+            const lines = prevText.split("\n");
+            lines[lines.length - 1] = content;
+            return lines.join("\n");
+          })();
 
         if (
           sectionIndex === currentSectionIndexRef.current ||
@@ -183,10 +189,15 @@ export function SessionPage({
 
   const appendQnAForSection = useCallback((sectionIndex: number, items: QnA[]) => {
     if (!items || items.length === 0) return;
+    const normalized = items.map((item) => {
+      const type = typeof item.type === "string" ? item.type.toLowerCase() as QnA["type"] : item.type;
+      const summaryId = (item as any).summaryId ?? (item as any).summary_id ?? item.summaryId;
+      return { ...item, type, summaryId };
+    });
     setQnaBySection((prev) => {
       const existing = prev[sectionIndex] ?? [];
       const existingIds = new Set(existing.map((item) => item.id));
-      const deduped = items.filter((item) => !existingIds.has(item.id));
+      const deduped = normalized.filter((item) => !existingIds.has(item.id));
       if (deduped.length === 0) {
         return prev;
       }
@@ -196,7 +207,7 @@ export function SessionPage({
       };
     });
   }, []);
-  
+
   useLayoutEffect(() => {
     if (sectionScrollTrigger === 0) return;
     const viewport = lectureScrollViewportRef.current;
@@ -229,6 +240,7 @@ export function SessionPage({
     liveSectionTranscripts,
     isRecording,
     elapsedTime,
+    currentSectionIndex,
     selectedSummaryId,
     autoMode,
     transcription,
@@ -242,7 +254,7 @@ export function SessionPage({
     try {
       const detail = await backend.lecture.getLecture(lectureId);
       setLecture(detail);
-      
+
       // summaries 업데이트: 실제 변경이 있을 때만 업데이트
       setSummaries((prev) => {
         const newSummaries = detail.summaries ?? [];
@@ -253,12 +265,12 @@ export function SessionPage({
         // 섹션 인덱스별로 맵 생성하여 비교
         const prevMap = new Map<number, Summary>(prev.map(s => [s.sectionIndex, s]));
         const newMap = new Map<number, Summary>(newSummaries.map(s => [s.sectionIndex, s]));
-        
+
         // 섹션 인덱스가 다르면 업데이트
         if (prevMap.size !== newMap.size) {
           return newSummaries;
         }
-        
+
         // 각 섹션의 내용이 다른지 확인
         let hasChanges = false;
         for (const [sectionIndex, newSummary] of newMap.entries()) {
@@ -277,7 +289,7 @@ export function SessionPage({
         }
         return hasChanges ? newSummaries : prev;
       });
-      
+
       // transcripts 업데이트: 실제 변경이 있을 때만 업데이트
       setTranscripts((prev) => {
         const newTranscripts = detail.transcripts ?? [];
@@ -287,11 +299,11 @@ export function SessionPage({
         // 섹션 인덱스별로 맵 생성하여 비교
         const prevMap = new Map<number, Transcript>(prev.map(t => [t.sectionIndex, t]));
         const newMap = new Map<number, Transcript>(newTranscripts.map(t => [t.sectionIndex, t]));
-        
+
         if (prevMap.size !== newMap.size) {
           return newTranscripts;
         }
-        
+
         let hasChanges = false;
         for (const [sectionIndex, newTranscript] of newMap.entries()) {
           const oldTranscript = prevMap.get(sectionIndex);
@@ -309,10 +321,15 @@ export function SessionPage({
         }
         return hasChanges ? newTranscripts : prev;
       });
-      
+
       setResourcesBySection(groupBySection(detail.resources));
       setQnaBySection(groupBySection(detail.qna));
-      setBookmarks(detail.bookmarks ?? []);
+      const normalizedBookmarks =
+        detail.bookmarks?.map((bm) => ({
+          ...bm,
+          targetType: (bm.targetType as string)?.toLowerCase() as BookmarkType["targetType"],
+        })) ?? [];
+      setBookmarks(normalizedBookmarks);
       const hasPersistedRecordingData =
         (detail.transcripts?.length ?? 0) > 0 ||
         (detail.summaries?.length ?? 0) > 0 ||
@@ -321,7 +338,7 @@ export function SessionPage({
       if (hasPersistedRecordingData) {
         setHasRecordingStarted(true);
       }
-      
+
       // 강의 진행 시간 복원은 useRecording 훅 내부에서 관리
     } catch (err) {
       console.error(err);
@@ -332,13 +349,15 @@ export function SessionPage({
   }, [backend, lectureId, t, formatText]);
 
   useEffect(() => {
+    // 강의 새로고침 시 ref 초기화
+    requestStreamingCardRef.current.clear();
     refreshLecture();
   }, [refreshLecture]);
 
   // 카드 상태 업데이트 함수 (분할 모드에서 자동 업데이트용)
   // streamingCards를 ref로 관리하여 의존성 문제 해결
   const streamingCardsRef = useRef<Map<string, StreamingCard>>(new Map());
-  
+
   // streamingCards 상태 변경 시 ref도 업데이트
   useEffect(() => {
     streamingCardsRef.current = streamingCards;
@@ -354,7 +373,7 @@ export function SessionPage({
           const cardSectionIndex = parts.length >= 3 ? parseInt(parts[2]) : null;
           return cardSectionIndex === sectionIndex && !card.isComplete;
         });
-        
+
         // 카드 상태 조회
         console.log(`[updateCardsForSection] 카드 상태 조회 시작: sectionIndex=${sectionIndex}`);
         const cardsStatus = await backend.lecture.getCardsStatus(lectureId, sectionIndex);
@@ -362,18 +381,18 @@ export function SessionPage({
           qnaCards: cardsStatus.qnaCards.length,
           resourceCards: cardsStatus.resourceCards.length,
         });
-        
+
         // 완료된 카드 즉시 표시
         const completedQnAs = cardsStatus.qnaCards
           .filter(card => card.isComplete && card.data)
           .map(card => card.data as QnA);
-        
+
         const completedResources = cardsStatus.resourceCards
           .filter(card => card.isComplete && card.data)
           .map(card => card.data as Resource);
-        
+
         console.log(`[updateCardsForSection] 완료된 카드: QnA=${completedQnAs.length}, Resource=${completedResources.length}`);
-        
+
         // 스트리밍 중인 카드가 있으면 append만 사용 (리렌더링 방지)
         // 스트리밍 중인 카드가 없으면 replace 사용 (전체 교체)
         if (hasStreamingCards) {
@@ -420,19 +439,19 @@ export function SessionPage({
   }) => {
     const cardId = message.cardId;
     console.log('[handleStreamingMessage] 처리 시작', { cardId, type: message.type, hasToken: !!message.token, isComplete: message.isComplete });
-    
+
     setStreamingCards(prev => {
       const newMap = new Map<string, StreamingCard>(prev);
       const existingCard = newMap.get(cardId);
-      
+
       if (!existingCard) {
         // 새 카드 생성 (처음 토큰 수신 시)
         const [type, lectureIdStr, sectionIndexStr, cardIndexStr] = cardId.split('_');
         const cardIndex = parseInt(cardIndexStr);
-        
+
         // Resource 추가 생성 카드도 유형 정보가 없으면 기본 스타일(그라데이션)로 표시
         let resourceType: 'paper' | 'wiki' | 'video' | 'blog' | undefined = message.resourceType;
-        
+
         newMap.set(cardId, {
           cardId,
           type: type as 'qna' | 'resource',
@@ -465,37 +484,37 @@ export function SessionPage({
             }, 3000);
             return newMap;
           }
-          
+
           // 완료: 전체 데이터로 교체
           const finalData = message.data;
-          
+
           if (finalData) {
             // 완료된 카드를 실제 데이터로 추가
             // finalData에 sectionIndex가 있으면 우선 사용, 없으면 cardId에서 파싱
             let sectionIndex: number;
             if (message.type === 'qna_stream') {
               const qna = finalData as QnA;
-              sectionIndex = qna.sectionIndex !== undefined ? qna.sectionIndex : 
+              sectionIndex = qna.sectionIndex !== undefined ? qna.sectionIndex :
                 (() => {
                   const parts = cardId.split('_');
                   return parts.length >= 3 ? parseInt(parts[2]) : (selectedSectionIndex || 0);
                 })();
               appendQnAForSection(sectionIndex, [qna]);
-              
+
               // 카드 상태 업데이트는 제거 (불필요한 리렌더링 방지)
               // 완료된 카드는 이미 appendQnAForSection으로 추가되었으므로 별도 업데이트 불필요
             } else if (message.type === 'resource_stream') {
               const resource = finalData as Resource;
-              sectionIndex = resource.sectionIndex !== undefined ? resource.sectionIndex : 
+              sectionIndex = resource.sectionIndex !== undefined ? resource.sectionIndex :
                 (() => {
                   const parts = cardId.split('_');
                   return parts.length >= 3 ? parseInt(parts[2]) : (selectedSectionIndex || 0);
                 })();
               appendResourcesForSection(sectionIndex, [resource]);
-              
+
               // 카드 상태 업데이트는 제거 (불필요한 리렌더링 방지)
               // 완료된 카드는 이미 appendResourcesForSection으로 추가되었으므로 별도 업데이트 불필요
-              
+
               // 제목 정보 저장 (완료 직전에 제목 표시를 위해)
               if (existingCard && resource.title) {
                 const title = Array.isArray(resource.title) ? resource.title.join(' ') : resource.title;
@@ -507,7 +526,7 @@ export function SessionPage({
               }
             }
           }
-          
+
           // 스트리밍 카드에서 제거
           newMap.delete(cardId);
         } else if (message.token) {
@@ -515,7 +534,7 @@ export function SessionPage({
           if (existingCard) {
             const newContent = (existingCard.content || '') + message.token;
             console.log(`[handleStreamingMessage] 토큰 추가: ${cardId}, 길이: ${newContent.length}`);
-            
+
             // Resource 타입 정보 업데이트 (완료 데이터에서 타입 추출)
             let resourceType: 'paper' | 'wiki' | 'video' | 'blog' | undefined =
               message.resourceType || existingCard.resourceType;
@@ -525,7 +544,7 @@ export function SessionPage({
                 resourceType = resource.type as 'paper' | 'wiki' | 'video' | 'blog';
               }
             }
-            
+
             newMap.set(cardId, {
               ...existingCard,
               content: newContent,
@@ -539,7 +558,7 @@ export function SessionPage({
           console.warn(`[handleStreamingMessage] 알 수 없는 메시지 형식:`, message);
         }
       }
-      
+
       return newMap;
     });
   }, [selectedSectionIndex, appendQnAForSection, appendResourcesForSection, splitMode, updateCardsForSection]);
@@ -550,13 +569,13 @@ export function SessionPage({
     // 비동기로 처리하여 컴포넌트 렌더링을 블로킹하지 않음
     const initStomp = async () => {
       // 환경 변수에서 WebSocket URL 가져오기, 없으면 현재 페이지의 프로토콜/호스트 기반으로 생성
-      const WS_BASE = (import.meta as any).env?.VITE_WS_URL || 
+      const WS_BASE = (import.meta as any).env?.VITE_WS_URL ||
         (window.location.protocol === 'https:' ? 'wss://localhost:8080' : 'ws://localhost:8080');
-      
-        const brokerURL = `${WS_BASE}/ws`;
-        console.log(`[STOMP] 연결 시도: ${brokerURL}`);
-        
-        try {
+
+      const brokerURL = `${WS_BASE}/ws`;
+      console.log(`[STOMP] 연결 시도: ${brokerURL}`);
+
+      try {
         const client = new Client({
           brokerURL: brokerURL,
           reconnectDelay: 5000,
@@ -567,12 +586,12 @@ export function SessionPage({
           },
           onConnect: () => {
 
-            
+
             if (!client || !client.connected) {
               console.error('[STOMP] 클라이언트가 연결되지 않았습니다');
               return;
             }
-            
+
             // 각 타입별 토픽 구독
             // 요약 구독
             client.subscribe(`/topic/lectures/${lectureId}/summary`, (message) => {
@@ -599,8 +618,8 @@ export function SessionPage({
             client.subscribe(`/topic/lectures/${lectureId}/qna`, (message) => {
               try {
                 const data = JSON.parse(message.body);
-                if (data.sectionIndex !== undefined) {
-                  appendQnAForSection(data.sectionIndex, [data]);
+                if (data.sectionIndex !== undefined && Array.isArray(data.items)) {
+                  replaceQnAForSection(data.sectionIndex, data.items);
                   // 카드 상태 업데이트는 제거 (불필요한 리렌더링 방지)
                 }
               } catch (err) {
@@ -612,12 +631,24 @@ export function SessionPage({
             client.subscribe(`/topic/lectures/${lectureId}/resources`, (message) => {
               try {
                 const data = JSON.parse(message.body);
-                if (data.sectionIndex !== undefined) {
-                  appendResourcesForSection(data.sectionIndex, [data]);
+                if (data.sectionIndex !== undefined && Array.isArray(data.items)) {
+                  replaceResourcesForSection(data.sectionIndex, data.items);
                   // 카드 상태 업데이트는 제거 (불필요한 리렌더링 방지)
                 }
               } catch (err) {
                 console.error("자료 메시지 처리 오류", err);
+              }
+            });
+
+            // 섹션 상태 구독
+            client.subscribe(`/topic/lectures/${lectureId}/section`, (message) => {
+              try {
+                const data = JSON.parse(message.body);
+                if (typeof data.sectionIndex === "number") {
+                  setServerSectionIndex(data.sectionIndex);
+                }
+              } catch (err) {
+                console.error("섹션 상태 메시지 처리 오류", err);
               }
             });
 
@@ -634,6 +665,34 @@ export function SessionPage({
             });
             console.log('[STOMP] 스트리밍 토픽 구독 완료: /topic/lectures/' + lectureId + '/stream');
             console.log('[STOMP] 구독 객체:', streamSubscription);
+
+            // 전사 구독 (섹션/elapsed 동기화 및 transcripts 상태 업데이트)
+            client.subscribe(`/topic/lectures/${lectureId}/transcripts`, (message) => {
+              try {
+                const data = JSON.parse(message.body);
+                if (typeof data.sectionIndex === "number") {
+                  setServerSectionIndex(data.sectionIndex);
+                }
+                if (typeof data.endSec === "number") {
+                  setServerElapsedSec((prev) => Math.max(prev, data.endSec));
+                }
+                // DB 전사 목록에 반영
+                const t: Transcript = {
+                  id: Date.now(),
+                  lectureId,
+                  sectionIndex: data.sectionIndex ?? 0,
+                  startSec: data.startSec ?? 0,
+                  endSec: data.endSec ?? 0,
+                  text: data.text ?? "",
+                };
+                setTranscripts((prev) => {
+                  const exists = prev.some((p) => p.sectionIndex === t.sectionIndex && p.startSec === t.startSec && p.endSec === t.endSec && p.text === t.text);
+                  return exists ? prev : [...prev, t];
+                });
+              } catch (err) {
+                console.error("전사 메시지 처리 오류", err, message.body);
+              }
+            });
           },
           onStompError: (frame) => {
             console.error('[STOMP] STOMP 에러:', frame);
@@ -648,11 +707,11 @@ export function SessionPage({
             if (event?.target) {
               const ws = event.target as WebSocket;
               console.error('[STOMP] WebSocket 상태:', ws.readyState, 'URL:', ws.url);
-              console.error('[STOMP] WebSocket readyState 설명:', 
+              console.error('[STOMP] WebSocket readyState 설명:',
                 ws.readyState === 0 ? 'CONNECTING' :
-                ws.readyState === 1 ? 'OPEN' :
-                ws.readyState === 2 ? 'CLOSING' :
-                ws.readyState === 3 ? 'CLOSED' : 'UNKNOWN'
+                  ws.readyState === 1 ? 'OPEN' :
+                    ws.readyState === 2 ? 'CLOSING' :
+                      ws.readyState === 3 ? 'CLOSED' : 'UNKNOWN'
               );
             }
             // 에러가 발생해도 녹음은 계속 가능하도록 경고만 표시
@@ -664,12 +723,12 @@ export function SessionPage({
             console.log('[STOMP] 연결이 끊어졌습니다. 스트리밍 메시지를 받을 수 없습니다.');
           },
         });
-        
+
         // 연결 시도 (비동기, 실패해도 녹음은 계속 가능)
         console.log(`[STOMP] 클라이언트 활성화 시작: ${brokerURL}`);
         client.activate();
         stompClientRef.current = client;
-        
+
         // 연결 상태 확인을 위한 타이머
         setTimeout(() => {
           if (!client.connected) {
@@ -688,12 +747,12 @@ export function SessionPage({
         // 연결 실패해도 계속 진행 (녹음은 별도 WebSocket 사용)
       }
     };
-    
+
     // 비동기로 초기화 (렌더링 블로킹 방지)
     initStomp().catch(error => {
       console.error('STOMP 초기화 중 예외 발생:', error);
     });
-    
+
     return () => {
       try {
         if (stompClientRef.current) {
@@ -704,12 +763,12 @@ export function SessionPage({
       }
       stompClientRef.current = null;
     };
-  }, [lectureId, appendQnAForSection, appendResourcesForSection, handleStreamingMessage]);
+  }, [lectureId]);
 
   useEffect(() => {
     setLiveSectionTranscripts({});
-    summaryRequestStateRef.current = {};
     sectionKeyMapRef.current.clear();
+    finalSummaryRequestRef.current.clear();
   }, [lectureId]);
 
   useEffect(() => {
@@ -729,9 +788,9 @@ export function SessionPage({
         // 간단하게 2 + index로 설정 (기존 기본 카드가 0, 1이므로)
         const cardIndex = 2 + index;
         const cardId = `qna_${lectureId}_${sectionIndex}_${cardIndex}`;
-        
+
         console.log(`[추가 생성] QnA 스트리밍 시작: type=${qnaType}, cardIndex=${cardIndex}, cardId=${cardId}`);
-        
+
         return backend.lecture
           .startQnAStream(lectureId, sectionIndex, cardIndex, qnaType)
           .then((result) => {
@@ -751,9 +810,9 @@ export function SessionPage({
         // cardIndex는 기존 완료된 카드 수를 고려하여 설정 (기본 2개 + 추가 인덱스)
         const cardIndex = 2 + index;
         const cardId = `resource_${lectureId}_${sectionIndex}_${cardIndex}`;
-        
+
         console.log(`[추가 생성] Resource 스트리밍 시작: type=${resourceType}, cardIndex=${cardIndex}, cardId=${cardId}`);
-        
+
         return backend.lecture
           .startResourceStream(lectureId, sectionIndex, cardIndex, resourceType)
           .then((result) => {
@@ -766,58 +825,13 @@ export function SessionPage({
             throw error;
           });
       });
+
+      Promise.all([...qnaPromises, ...resourcePromises]).finally(() => {
+        setIsGeneratingExtended(false);
+      });
     },
     [backend, lectureId]
   );
-
-
-  // selectedSummaryId를 ref로 추적하여 의존성 문제 방지
-  const selectedSummaryIdRef = useRef<number | null>(null);
-  useEffect(() => {
-    selectedSummaryIdRef.current = selectedSummaryId;
-  }, [selectedSummaryId]);
-
-  const handleSummaryClick = useCallback(
-    async (summaryId: number, sectionIndex: number) => {
-      // ref를 사용하여 현재 값 확인 (의존성 문제 방지)
-      if (selectedSummaryIdRef.current === summaryId) {
-        // 같은 요약을 다시 클릭하면 해제
-        setSplitMode(false);
-        setSelectedSummaryId(null);
-        setSelectedSectionIndex(null);
-        return;
-      }
-
-
-      setSelectedSectionIndex(sectionIndex);
-      setSplitMode(true);
-
-      setSelectedSummaryId(summaryId);
-      updateCardsForSection(sectionIndex).catch(error => {
-        console.error("카드 상태 업데이트 실패:", error);
-      });
-
-      if (!requestStreamingCardRef.current.has(sectionIndex)) {
-        requestStreamingCardRef.current.add(sectionIndex);
-        setIsGeneratingExtended(true);
-        requestStreamingCard(sectionIndex);
-      } 
-    },
-    [
-      backend,
-      lectureId,
-      updateCardsForSection,
-      requestStreamingCard,
-    ]
-  );
-
-  useEffect(() => {
-    setLiveSectionTranscripts({});
-    summaryRequestStateRef.current = {};
-    requestStreamingCardRef.current.clear(); // 강의 변경 시 초기화
-    setResourcesBySection({});
-    setQnaBySection({});
-  }, [lectureId]);
 
   // summaries를 섹션 인덱스별로 빠르게 조회하기 위한 맵 (선택 상태 유지 등에 사용)
   const summariesBySection = useMemo(() => {
@@ -828,18 +842,138 @@ export function SessionPage({
     return map;
   }, [summaries]);
 
+
+  // selectedSummaryId를 ref로 추적하여 의존성 문제 방지
+  const selectedSummaryIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    selectedSummaryIdRef.current = selectedSummaryId;
+  }, [selectedSummaryId]);
+
+  const handleSummaryClick = useCallback(
+    async (summaryId: number, sectionIndex: number) => {
+      if (cardRequestInFlightRef.current.has(sectionIndex)) {
+        console.log(`[handleSummaryClick] 요청 진행 중인 섹션 → 스킵: section=${sectionIndex}`);
+        return;
+      }
+      cardRequestInFlightRef.current.add(sectionIndex);
+
+      // ref를 사용하여 현재 값 확인 (의존성 문제 방지)
+      if (selectedSummaryIdRef.current === summaryId) {
+        // 같은 요약을 다시 클릭하면 해제
+        setSplitMode(false);
+        setSelectedSummaryId(null);
+        setSelectedSectionIndex(null);
+        cardRequestInFlightRef.current.delete(sectionIndex);
+        return;
+      }
+
+      // 1단계: DB에서 카드 개수 먼저 확인 (추가 요청 필요 여부 판단)
+      let shouldRequestMore = false;
+      try {
+        const summary = summariesBySection.get(sectionIndex);
+        const phase = summary?.phase?.toUpperCase();
+        const isFinalSummary = phase ? phase === "FINAL" : true; // phase가 없으면 FINAL로 간주
+
+        // FINAL 요약이 아니면 추가 카드 요청을 하지 않음
+        if (!isFinalSummary) {
+          console.log(`[handleSummaryClick] FINAL 요약 아님 → 추가 요청 생략: section=${sectionIndex}`);
+          shouldRequestMore = false;
+        }
+
+        const cardsStatus = await backend.lecture.getCardsStatus(lectureId, sectionIndex);
+        const existingQnaCount = cardsStatus.qnaCards.filter(c => c.isComplete).length;
+        const existingResourceCount = cardsStatus.resourceCards.filter(c => c.isComplete).length;
+        
+        console.log(`[handleSummaryClick] sectionIndex=${sectionIndex}, QnA=${existingQnaCount}, Resource=${existingResourceCount}`);
+
+        // QnA나 Resource 중 하나라도 3개 이상이면 이미 요청했으므로 요청 안 함 (API 제한 고려)
+        if (existingQnaCount >= 3 || existingResourceCount >= 3) {
+          console.log(`[handleSummaryClick] 이미 3개 이상 → 최초 클릭 아님, 요청 생략 (API 제한): section=${sectionIndex}`);
+          shouldRequestMore = false;
+        } else if (isFinalSummary && existingQnaCount <= 2 && existingResourceCount <= 2 && !requestStreamingCardRef.current.has(sectionIndex)) {
+          // FINAL 최초 클릭: QnA ≤ 2, Resource ≤ 2 → 4개씩 요청
+          // (PARTIAL로 2개 이하 생성되었거나, AI 서버 내부 로직으로 2개보다 적게 생성된 경우 포함)
+          console.log(`[handleSummaryClick] FINAL 최초 클릭 (QnA≤2, Resource≤2) → 4개씩 요청: section=${sectionIndex}`);
+          shouldRequestMore = true;
+          requestStreamingCardRef.current.add(sectionIndex);
+        } else {
+          console.log(`[handleSummaryClick] 이미 요청했거나 조건 불일치: section=${sectionIndex}`);
+          shouldRequestMore = false;
+        }
+      } catch (error) {
+        console.error("카드 상태 확인 실패:", error);
+        // 에러 발생 시에는 요청하지 않음 (DB 확인 없이는 중복 요청 방지 불가)
+        shouldRequestMore = false;
+      }
+
+      // 2단계: UI 업데이트 (섹션 선택)
+      setSelectedSectionIndex(sectionIndex);
+      setSplitMode(true);
+      setSelectedSummaryId(summaryId);
+
+      // 3단계: 카드 표시 업데이트 (DB에서 가져와서 표시)
+      updateCardsForSection(sectionIndex).catch(error => {
+        console.error("카드 상태 업데이트 실패:", error);
+      });
+
+      // 4단계: 필요한 경우에만 추가 카드 요청
+      if (shouldRequestMore) {
+        setIsGeneratingExtended(true);
+        requestStreamingCard(sectionIndex);
+      }
+      cardRequestInFlightRef.current.delete(sectionIndex);
+    },
+    [
+      backend,
+      lectureId,
+      updateCardsForSection,
+      requestStreamingCard,
+      summariesBySection,
+    ]
+  );
+
+  // 컴포넌트 마운트 시 ref 초기화 (재로그인 대응)
+  useEffect(() => {
+    console.log("[SessionPage] 컴포넌트 마운트: ref 초기화");
+    requestStreamingCardRef.current.clear();
+    finalSummaryRequestRef.current.clear();
+    cardRequestInFlightRef.current.clear();
+  }, []);
+
+  useEffect(() => {
+    setLiveSectionTranscripts({});
+    requestStreamingCardRef.current.clear(); // 강의 변경 시 초기화
+    finalSummaryRequestRef.current.clear();
+    cardRequestInFlightRef.current.clear();
+    setResourcesBySection({});
+    setQnaBySection({});
+  }, [lectureId]);
+
+  useEffect(() => {
+    summaries.forEach((summary) => {
+      if (!summary || summary.phase?.toUpperCase() !== "FINAL") {
+        return;
+      }
+      const signature = `${summary.id ?? `section-${summary.sectionIndex}`}:${Array.isArray(summary.text) ? summary.text.join(" ") : summary.text ?? ""}`;
+      const stored = finalSummaryRequestRef.current.get(summary.sectionIndex);
+      if (stored && stored !== signature) {
+        finalSummaryRequestRef.current.delete(summary.sectionIndex);
+      }
+    });
+  }, [summaries]);
+
   // summaries 변경 시 selectedSummaryId 유지 (summaryKey가 변경되어도 선택 유지)
   // 예: id가 없는 요약(-(sectionIndex + 1))에서 id가 생긴 요약으로 변경될 때
   useEffect(() => {
     if (selectedSummaryId !== null && selectedSectionIndex !== null) {
       const summaryFromDb = summariesBySection.get(selectedSectionIndex);
       const currentSummaryKey = summaryFromDb?.id ?? -(selectedSectionIndex + 1);
-      
+
       // summaryKey가 변경되었지만 같은 섹션이면 selectedSummaryId 업데이트
       // 단, selectedSummaryId가 음수(임시 키)이고 currentSummaryKey가 양수(실제 id)인 경우만 업데이트
-      if (selectedSummaryId !== currentSummaryKey && 
-          selectedSummaryId < 0 && 
-          currentSummaryKey > 0) {
+      if (selectedSummaryId !== currentSummaryKey &&
+        selectedSummaryId < 0 &&
+        currentSummaryKey > 0) {
         // 같은 섹션의 요약이 id를 받았으면 새로운 summaryKey로 업데이트
         setSelectedSummaryId(currentSummaryKey);
       }
@@ -857,26 +991,30 @@ export function SessionPage({
     // 새로운 완료된 요약 찾기
     const prevSummaryMap = new Map<number, Summary>(prevSummariesRef.current.map(s => [s.sectionIndex, s]));
     const newCompletedSummaries = summaries.filter((summary: Summary) => {
+      // 오토모드는 FINAL 요약만 대상으로 동작
+      const phase = summary?.phase ? summary.phase.toUpperCase() : "FINAL";
+      if (phase !== "FINAL") return false;
+
       const prevSummary = prevSummaryMap.get(summary.sectionIndex);
       const summaryText = formatText(summary.text);
       const prevSummaryText = prevSummary ? formatText(prevSummary.text) : null;
-      const isNewlyCompleted = 
-        summaryText && 
+      const isNewlyCompleted =
+        summaryText &&
         summaryText !== "요약 생성 중..." &&
         summaryText !== t("session.noSummaryText") &&
-        (!prevSummary || 
-         !prevSummaryText ||
-         prevSummaryText === "요약 생성 중..." || 
-         prevSummaryText === t("session.noSummaryText") ||
-         prevSummaryText !== summaryText);
-      
+        (!prevSummary ||
+          !prevSummaryText ||
+          prevSummaryText === "요약 생성 중..." ||
+          prevSummaryText === t("session.noSummaryText") ||
+          prevSummaryText !== summaryText);
+
       // 이미 선택된 섹션이 아니어야 함
       return isNewlyCompleted && summary.sectionIndex !== selectedSectionIndex;
     });
 
     // 가장 최근 섹션의 요약을 자동으로 클릭
     if (newCompletedSummaries.length > 0) {
-      const latestSummary = newCompletedSummaries.reduce((latest, current) => 
+      const latestSummary = newCompletedSummaries.reduce((latest, current) =>
         current.sectionIndex > latest.sectionIndex ? current : latest
       );
       const summaryKey = latestSummary.id ?? -(latestSummary.sectionIndex + 1);
@@ -900,13 +1038,13 @@ export function SessionPage({
           const cardSectionIndex = parts.length >= 3 ? parseInt(parts[2]) : null;
           return cardSectionIndex === selectedSectionIndex && !card.isComplete;
         });
-        
+
         // 스트리밍 중인 카드가 없을 때만 업데이트
         if (!hasStreamingCards) {
           updateCardsForSection(selectedSectionIndex);
         }
       }, 5000);
-      
+
       return () => clearInterval(interval);
     }
   }, [splitMode, selectedSectionIndex, updateCardsForSection]);
@@ -955,17 +1093,16 @@ export function SessionPage({
       // 이전 섹션의 전사본은 summaries.map()에서 transcriptsBySection을 통해 표시됨
       return;
     }
-    
+
     // 녹음이 끝났을 때만 DB 전사로 초기화
     if (transcripts.length === 0) {
       setTranscription("");
       return;
     }
-    
+
     // 현재 섹션의 전사만 가져오기 (전체가 아닌)
-    const currentSectionIndex = Math.floor(elapsedTime / 30);
     const currentSectionTranscripts = transcripts.filter(t => t.sectionIndex === currentSectionIndex);
-    
+
     if (currentSectionTranscripts.length > 0) {
       const joined = currentSectionTranscripts
         .map((item) => formatText(item.text))
@@ -975,7 +1112,7 @@ export function SessionPage({
     } else {
       setTranscription("");
     }
-  }, [transcripts, formatText, isRecording, elapsedTime]);
+  }, [transcripts, formatText, isRecording, currentSectionIndex]);
 
   useEffect(() => {
     elapsedTimeRef.current = elapsedTime;
@@ -986,7 +1123,7 @@ export function SessionPage({
       currentSectionIndexRef.current = -1;
       return;
     }
-    const newSectionIndex = Math.floor(elapsedTime / 30);
+    const newSectionIndex = currentSectionIndex;
     if (newSectionIndex !== currentSectionIndexRef.current) {
       const previousSectionIndex = currentSectionIndexRef.current;
       currentSectionIndexRef.current = newSectionIndex;
@@ -998,7 +1135,7 @@ export function SessionPage({
       setSectionScrollTrigger((prev) => prev + 1);
       console.log(`🔄 섹션 전환: ${previousSectionIndex} → ${newSectionIndex}`);
     }
-  }, [elapsedTime, isRecording]);
+  }, [currentSectionIndex, isRecording]);
 
   const isBookmarked = useCallback(
     (type: BookmarkType["targetType"], targetId: number) =>
@@ -1038,91 +1175,6 @@ export function SessionPage({
     [backend, bookmarks, lectureId, t]
   );
 
-  const requestSectionSummary = useCallback(
-    async (sectionIndex: number, phase: "partial" | "final") => {
-      if (sectionIndex < 0) return;
-      const state = summaryRequestStateRef.current[sectionIndex] ?? {};
-      if (phase === "partial" && state.midRequested) {
-        return;
-      }
-      if (phase === "final" && state.finalRequested) {
-        return;
-      }
-      summaryRequestStateRef.current[sectionIndex] = {
-        midRequested: state.midRequested || phase === "partial",
-        finalRequested: state.finalRequested || phase === "final",
-      };
-
-      // 요약 생성 중 상태를 summaries에 추가
-      if (phase === "partial") {
-        setSummaries((prev) => {
-          const existingIndex = prev.findIndex(s => s.sectionIndex === sectionIndex);
-          if (existingIndex >= 0) {
-            // 이미 존재하면 업데이트
-            const updated = [...prev];
-            updated[existingIndex] = {
-              ...updated[existingIndex],
-              text: "요약 생성 중...",
-            };
-            return updated;
-          } else {
-            // 없으면 추가
-            return [...prev, {
-              lectureId,
-              sectionIndex,
-              startSec: sectionIndex * 30,
-              endSec: sectionIndex * 30 + 30,
-              text: "요약 생성 중...",
-            }];
-          }
-        });
-      }
-
-      try {
-        const result = await backend.lecture.generateSummary(lectureId, sectionIndex, phase);
-        if (result.success && result.summary) {
-          setSummaries((prev) => {
-            const existingIndex = prev.findIndex(s => s.sectionIndex === sectionIndex);
-            if (existingIndex >= 0) {
-              // 이미 존재하면 업데이트
-              const updated = [...prev];
-              updated[existingIndex] = {
-                ...updated[existingIndex],
-                ...result.summary,
-              };
-              return updated;
-            } else {
-              // 없으면 추가
-              return [...prev, result.summary!];
-            }
-          });
-        } else if (result.error) {
-          console.error(`Summary generation failed (section ${sectionIndex}):`, result.error);
-        }
-      } catch (error) {
-        console.error(`Summary generation error (section ${sectionIndex}):`, error);
-      }
-    },
-    [backend, lectureId, refreshLecture]
-  );
-
-  useEffect(() => {
-    if (!isRecording) return;
-    const sectionIndex = Math.floor(elapsedTime / 30);
-    const secondsIntoSection = elapsedTime % 30;
-
-    if (secondsIntoSection === 15) {
-      requestSectionSummary(sectionIndex, "partial");
-    }
-
-    if (secondsIntoSection === 0 && elapsedTime > 0) {
-      const previousSection = sectionIndex - 1;
-      if (previousSection >= 0) {
-        requestSectionSummary(previousSection, "final");
-      }
-    }
-  }, [elapsedTime, isRecording, requestSectionSummary]);
-
 
 
   // 스트리밍 중인 카드 목록 메모이제이션 (리렌더링 최소화)
@@ -1132,8 +1184,8 @@ export function SessionPage({
       .filter((card) => {
         const parts = card.cardId.split('_');
         const cardSectionIndex = parts.length >= 3 ? parseInt(parts[2]) : null;
-        return card.type === 'resource' 
-          && card.cardIndex !== undefined 
+        return card.type === 'resource'
+          && card.cardIndex !== undefined
           && cardSectionIndex === selectedSectionIndex
           && !(card.isComplete && card.data)
           && !card.error; // 에러 카드 제외
@@ -1147,8 +1199,8 @@ export function SessionPage({
       .filter((card) => {
         const parts = card.cardId.split('_');
         const cardSectionIndex = parts.length >= 3 ? parseInt(parts[2]) : null;
-        return card.type === 'qna' 
-          && card.cardIndex !== undefined 
+        return card.type === 'qna'
+          && card.cardIndex !== undefined
           && cardSectionIndex === selectedSectionIndex
           && !(card.isComplete && card.data)
           && !card.error; // 에러 카드 제외
@@ -1178,12 +1230,12 @@ export function SessionPage({
 
     const currentResourceCount = streamingResourcesForSection.length;
     const currentQnACount = streamingQnAsForSection.length;
-    
+
     // 스트리밍 카드가 도착하면 생성 중 상태 해제
     if (currentResourceCount > 0 || currentQnACount > 0) {
       setIsGeneratingExtended(false);
     }
-    
+
     // Resource: 새로운 스트리밍 카드가 추가되면 스크롤 맨 아래로
     if (currentResourceCount > prevStreamingResourceCountRef.current) {
       setTimeout(() => {
@@ -1313,17 +1365,16 @@ export function SessionPage({
                     onClick={() =>
                       setShowBookmarkedOnly(!showBookmarkedOnly)
                     }
-                    className={`w-3 h-3 rounded-full transition-colors cursor-pointer ${
-                      showBookmarkedOnly 
-                        ? "bg-[#FFBD44]" 
-                        : "bg-[#FFBD44] hover:bg-[#FFB000]"
-                    }`}
+                    className={`w-3 h-3 rounded-full transition-colors cursor-pointer ${showBookmarkedOnly
+                      ? "bg-[#FFBD44]"
+                      : "bg-[#FFBD44] hover:bg-[#FFB000]"
+                      }`}
                     title="북마크 필터"
                   />
                   <button
                     onClick={() => setAutoMode(!autoMode)}
                     className="w-3 h-3 rounded-full transition-colors cursor-pointer border border-white/20"
-                    style={autoMode 
+                    style={autoMode
                       ? { backgroundColor: '#66FFAA', boxShadow: '0 0 4px rgba(102,255,170,0.6)' }
                       : { backgroundColor: '#55EE99' }
                     }
@@ -1353,7 +1404,7 @@ export function SessionPage({
                   <h3 className="mb-2 text-[16px]">&nbsp;{t("session.resources")}</h3>
 
                   <ScrollArea className="flex-1 h-0">
-                    <div 
+                    <div
                       ref={(el) => {
                         if (el) {
                           const viewport = el.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLDivElement;
@@ -1373,68 +1424,68 @@ export function SessionPage({
                         const resourceTitle = formatText(resource.title) || "제목 없음";
                         const resourceDescription = formatText(resource.text) || "설명이 없습니다.";
                         return (
-                        <div
-                          key={resource.id}
-                          className="border rounded-lg p-6 bg-white opacity-0 animate-[fadeInUp_0.4s_ease_forwards] flex flex-col h-[325px]"
-                        >
-                          <div className="flex items-start justify-between mb-3 flex-shrink-0">
-                            <Badge
-                              className="text-xs text-[rgb(255,255,255)] flex-shrink-0 self-center"
-                              style={{
-                                background: resource.type === "paper"
-                                  ? "linear-gradient(90deg, #0c4997, #1e5fa8, #3b72dd, #4d82e0)"
+                          <div
+                            key={resource.id}
+                            className="border rounded-lg p-6 bg-white opacity-0 animate-[fadeInUp_0.4s_ease_forwards] flex flex-col h-[325px]"
+                          >
+                            <div className="flex items-start justify-between mb-3 flex-shrink-0">
+                              <Badge
+                                className="text-xs text-[rgb(255,255,255)] flex-shrink-0 self-center"
+                                style={{
+                                  background: resource.type === "paper"
+                                    ? "linear-gradient(90deg, #0c4997, #1e5fa8, #3b72dd, #4d82e0)"
+                                    : resource.type === "wiki"
+                                      ? "linear-gradient(90deg, #0c966b, #10b981, #34d399, #6ee7b7)"
+                                      : resource.type === "video"
+                                        ? "linear-gradient(90deg, #960c0c, #dc2626, #ef4444, #f87171)"
+                                        : "linear-gradient(90deg, #3f0c96, #6366f1, #8b5cf6, #a78bfa)"
+                                }}
+                              >
+                                {resource.type === "paper"
+                                  ? "학술자료"
                                   : resource.type === "wiki"
-                                    ? "linear-gradient(90deg, #0c966b, #10b981, #34d399, #6ee7b7)"
+                                    ? "위키백과"
                                     : resource.type === "video"
-                                      ? "linear-gradient(90deg, #960c0c, #dc2626, #ef4444, #f87171)"
-                                      : "linear-gradient(90deg, #3f0c96, #6366f1, #8b5cf6, #a78bfa)"
-                              }}
-                            >
-                              {resource.type === "paper"
-                                ? "학술자료"
-                                : resource.type === "wiki"
-                                  ? "위키백과"
-                                  : resource.type === "video"
-                                    ? "유튜브"
-                                    : "웹/블로그"}
-                            </Badge>
-                            <label className="ml-2 flex-shrink-0">
-                              <input
-                                type="checkbox"
-                                id={`checkboxInput-resource-${resource.id}`}
-                                checked={bookmarked}
-                                onChange={() =>
-                                  toggleBookmark(
-                                    "resource",
-                                    resource.id,
-                                    resource.sectionIndex
-                                  )
-                                }
-                              />
-                              <label htmlFor={`checkboxInput-resource-${resource.id}`} className="bookmark scale-[0.6] text-[rgb(163,172,183)]">
-                                <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 384 512" className="svgIcon">
-                                  <path d="M0 48V487.7C0 501.1 10.9 512 24.3 512c5 0 9.9-1.5 14-4.4L192 400 345.7 507.6c4.1 2.9 9 4.4 14 4.4c13.4 0 24.3-10.9 24.3-24.3V48c0-26.5-21.5-48-48-48H48C21.5 0 0 21.5 0 48z"></path>
-                                </svg>
+                                      ? "유튜브"
+                                      : "웹/블로그"}
+                              </Badge>
+                              <label className="ml-2 flex-shrink-0">
+                                <input
+                                  type="checkbox"
+                                  id={`checkboxInput-resource-${resource.id}`}
+                                  checked={bookmarked}
+                                  onChange={() =>
+                                    toggleBookmark(
+                                      "resource",
+                                      resource.id,
+                                      resource.sectionIndex
+                                    )
+                                  }
+                                />
+                                <label htmlFor={`checkboxInput-resource-${resource.id}`} className="bookmark scale-[0.6] text-[rgb(163,172,183)]">
+                                  <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 384 512" className="svgIcon">
+                                    <path d="M0 48V487.7C0 501.1 10.9 512 24.3 512c5 0 9.9-1.5 14-4.4L192 400 345.7 507.6c4.1 2.9 9 4.4 14 4.4c13.4 0 24.3-10.9 24.3-24.3V48c0-26.5-21.5-48-48-48H48C21.5 0 0 21.5 0 48z"></path>
+                                  </svg>
+                                </label>
                               </label>
-                            </label>
+                            </div>
+                            <div className="mb-3 flex-shrink-0">
+                              <p className="font-medium">
+                                {resourceTitle}
+                              </p>
+                            </div>
+                            <div className="flex-1 overflow-y-auto">
+                              <p className="text-sm text-muted-foreground">
+                                {resourceDescription}
+                              </p>
+                            </div>
+                            <div className="pt-3 text-right text-xs text-muted-foreground">
+                              <a href={resource.url} target="_blank" rel="noreferrer" className="underline">
+                                자세히 보기
+                              </a>
+                            </div>
                           </div>
-                          <div className="mb-3 flex-shrink-0">
-                            <p className="font-medium">
-                              {resourceTitle}
-                            </p>
-                          </div>
-                          <div className="flex-1 overflow-y-auto">
-                            <p className="text-sm text-muted-foreground">
-                              {resourceDescription}
-                            </p>
-                          </div>
-                          <div className="pt-3 text-right text-xs text-muted-foreground">
-                            <a href={resource.url} target="_blank" rel="noreferrer" className="underline">
-                              자세히 보기
-                            </a>
-                          </div>
-                        </div>
-                      );
+                        );
                       })}
                       {/* 스트리밍 중인 Resource 카드 표시 (완료된 카드 아래에) */}
                       {streamingResourcesForSection.map((streamingCard) => (
@@ -1447,11 +1498,11 @@ export function SessionPage({
                             streamingResourcesForSection.length === 0)) && (
                           <div className="flex items-center justify-start gap-2 mt-[3px]">
                             <AnimatedLoaderIcon id="grad-resources" />
-                          <span className="text-[rgb(125,128,136)] text-xs text-[14px]">
-                            자료를 찾고 있습니다...
-                          </span>
-                        </div>
-                      )}
+                            <span className="text-[rgb(125,128,136)] text-xs text-[14px]">
+                              자료를 찾고 있습니다...
+                            </span>
+                          </div>
+                        )}
                     </div>
                   </ScrollArea>
                 </div>
@@ -1461,7 +1512,7 @@ export function SessionPage({
                   <h3 className="mb-2 text-[16px]">&nbsp;{t("session.ai")}</h3>
 
                   <ScrollArea className="flex-1 h-0">
-                    <div 
+                    <div
                       ref={(el) => {
                         if (el) {
                           const viewport = el.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLDivElement;
@@ -1486,46 +1537,46 @@ export function SessionPage({
                               ? "심화질의"
                               : "비교분석";
                         return (
-                        <div
-                          key={qa.id}
-                          className="border rounded-lg p-6 bg-white opacity-0 animate-[fadeInUp_0.4s_ease_forwards] flex flex-col h-[325px]"
-                        >
-                          <div className="flex items-start justify-between mb-3 flex-shrink-0">
-                            <Badge className="text-xs text-[rgb(255,255,255)] flex-shrink-0" style={{background: 'linear-gradient(90deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)'}}>
-                              {typeLabel}
-                            </Badge>
-                            <label className="ml-2 flex-shrink-0">
-                              <input
-                                type="checkbox"
-                                id={`checkboxInput-ai-${qa.id}`}
-                                checked={bookmarked}
-                                onChange={() =>
-                                  toggleBookmark(
-                                    "qna",
-                                    qa.id,
-                                    qa.sectionIndex
-                                  )
-                                }
-                              />
-                              <label htmlFor={`checkboxInput-ai-${qa.id}`} className="bookmark scale-[0.6]">
-                                <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 384 512" className="svgIcon">
-                                  <path d="M0 48V487.7C0 501.1 10.9 512 24.3 512c5 0 9.9-1.5 14-4.4L192 400 345.7 507.6c4.1 2.9 9 4.4 14 4.4c13.4 0 24.3-10.9 24.3-24.3V48c0-26.5-21.5-48-48-48H48C21.5 0 0 21.5 0 48z"></path>
-                                </svg>
+                          <div
+                            key={qa.id}
+                            className="border rounded-lg p-6 bg-white opacity-0 animate-[fadeInUp_0.4s_ease_forwards] flex flex-col h-[325px]"
+                          >
+                            <div className="flex items-start justify-between mb-3 flex-shrink-0">
+                              <Badge className="text-xs text-[rgb(255,255,255)] flex-shrink-0" style={{ background: 'linear-gradient(90deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)' }}>
+                                {typeLabel}
+                              </Badge>
+                              <label className="ml-2 flex-shrink-0">
+                                <input
+                                  type="checkbox"
+                                  id={`checkboxInput-ai-${qa.id}`}
+                                  checked={bookmarked}
+                                  onChange={() =>
+                                    toggleBookmark(
+                                      "qna",
+                                      qa.id,
+                                      qa.sectionIndex
+                                    )
+                                  }
+                                />
+                                <label htmlFor={`checkboxInput-ai-${qa.id}`} className="bookmark scale-[0.6]">
+                                  <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 384 512" className="svgIcon">
+                                    <path d="M0 48V487.7C0 501.1 10.9 512 24.3 512c5 0 9.9-1.5 14-4.4L192 400 345.7 507.6c4.1 2.9 9 4.4 14 4.4c13.4 0 24.3-10.9 24.3-24.3V48c0-26.5-21.5-48-48-48H48C21.5 0 0 21.5 0 48z"></path>
+                                  </svg>
+                                </label>
                               </label>
-                            </label>
+                            </div>
+                            <div className="mb-3 flex-shrink-0">
+                              <p className="font-medium">
+                                {Array.isArray(qa.question) ? qa.question.join('\n') : qa.question}
+                              </p>
+                            </div>
+                            <div className="flex-1 overflow-y-auto">
+                              <p className="text-sm text-muted-foreground whitespace-pre-line">
+                                {Array.isArray(qa.answer) ? qa.answer.join('\n') : qa.answer}
+                              </p>
+                            </div>
                           </div>
-                          <div className="mb-3 flex-shrink-0">
-                            <p className="font-medium">
-                              {Array.isArray(qa.question) ? qa.question.join('\n') : qa.question}
-                            </p>
-                          </div>
-                          <div className="flex-1 overflow-y-auto">
-                            <p className="text-sm text-muted-foreground whitespace-pre-line">
-                              {Array.isArray(qa.answer) ? qa.answer.join('\n') : qa.answer}
-                            </p>
-                          </div>
-                        </div>
-                      );
+                        );
                       })}
                       {/* 스트리밍 중인 QnA 카드 표시 (완료된 카드 아래에) */}
                       {streamingQnAsForSection.map((streamingCard) => (
@@ -1538,11 +1589,11 @@ export function SessionPage({
                             streamingQnAsForSection.length === 0)) && (
                           <div className="flex items-center justify-start gap-2 mt-1">
                             <AnimatedLoaderIcon id="grad-ai" />
-                          <span className="text-[rgb(125,128,136)] text-xs text-[14px]">
-                            AI가 질문을 생성하고 있습니다...
-                          </span>
-                        </div>
-                      )}
+                            <span className="text-[rgb(125,128,136)] text-xs text-[14px]">
+                              AI가 질문을 생성하고 있습니다...
+                            </span>
+                          </div>
+                        )}
                     </div>
                   </ScrollArea>
                 </div>

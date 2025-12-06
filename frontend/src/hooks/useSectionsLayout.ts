@@ -11,6 +11,7 @@ interface UseSectionsLayoutParams {
   selectedSummaryId: number | null;
   autoMode: boolean;
   transcription: string;
+  currentSectionIndex?: number;
   getSectionKey: (sectionIndex: number) => string;
   formatText: (value: string | string[] | undefined) => string;
   t: (key: string) => string;
@@ -32,6 +33,7 @@ export function useSectionsLayout({
   selectedSummaryId,
   autoMode,
   transcription,
+  currentSectionIndex,
   getSectionKey,
   formatText,
   t,
@@ -78,7 +80,10 @@ export function useSectionsLayout({
     summariesSectionIndices.forEach((sectionIndex) => sections.add(sectionIndex));
     liveSectionTranscriptsKeys.forEach((key) => sections.add(key));
     if (isRecording) {
-      sections.add(Math.floor(elapsedTime / 30));
+      const sectionFromTime = Math.floor(elapsedTime / 30);
+      const effectiveSection =
+        currentSectionIndex != null ? Math.min(sectionFromTime, currentSectionIndex) : sectionFromTime;
+      sections.add(effectiveSection);
     }
     if (sections.size === 0) sections.add(0);
 
@@ -108,8 +113,10 @@ export function useSectionsLayout({
         .filter(Boolean)
         .join("\n");
       const liveTranscriptText = liveSectionTranscripts[sectionIndex] ?? "";
+      const currentSection =
+        currentSectionIndex != null ? currentSectionIndex : Math.floor(elapsedTime / 30);
       const isCurrentSection =
-        isRecording && sectionIndex === Math.floor(elapsedTime / 30);
+        isRecording && sectionIndex === currentSection;
       let displayText = [transcriptText, liveTranscriptText]
         .filter((text) => text && text.trim().length > 0)
         .join(transcriptText && liveTranscriptText ? "\n" : "");
@@ -128,7 +135,8 @@ export function useSectionsLayout({
 
       const hasNoSummary = summaryText === t("session.noSummaryText");
       const isGenerating = summaryFromDb?.text === "요약 생성 중...";
-      const isClickable = !hasNoSummary && !isGenerating && !autoMode;
+      const isFinalSummary = summaryFromDb?.phase?.toUpperCase() === "FINAL";
+      const isClickable = !hasNoSummary && !isGenerating && !autoMode && isFinalSummary;
 
       return {
         sectionIndex,
@@ -166,5 +174,4 @@ export function useSectionsLayout({
     updateSectionOrder,
   };
 }
-
 
