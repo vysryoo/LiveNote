@@ -80,6 +80,7 @@ class YouTubeService:
         ids = [it.video_id for it in dedup]
         details = await self.yt.get_videos(ids)
         detail_map = {d.video_id: d for d in details}
+        best_scores: list[float] = []  # min_score 탈락 후보 점수 추적
 
         # 🚀 NO_SCORING 모드: 검증 없이 검색 결과만 반환
         if flags.NO_SCORING:
@@ -146,7 +147,9 @@ class YouTubeService:
                     
                     # Heuristic only
                     base = best_heuristic_score(title=title, view_count=0, publish_time=it.publish_time)
+                    best_scores.append(base)
                     if base < request.min_score:
+                        logger.info(f"🧊 YT 필터링(min_score): {base:.2f} < {request.min_score} (no detail, url=https://www.youtube.com/watch?v={it.video_id})")
                         return None
                     
                     vi = YouTubeVideoInfo(url=url, title=title, extract=extract, lang=lang)
@@ -197,7 +200,9 @@ class YouTubeService:
                     )
                     reason = "Heuristic"
 
+                best_scores.append(score)
                 if score < request.min_score:
+                    logger.info(f"🧊 YT 필터링(min_score): {score:.2f} < {request.min_score} (title={d.title[:60]!r})")
                     return None
 
                 vi = YouTubeVideoInfo(
@@ -230,4 +235,10 @@ class YouTubeService:
 
         # 4) Sort and cap by effective top_k
         candidates.sort(key=lambda r: r.score, reverse=True)
-        return candidates[: request.effective_top_k()]
+        final = candidates[: request.effective_top_k()]
+
+        if not final:
+            best = max(best_scores) if best_scores else None
+            logger.info(f"🧊 YT 결과 없음: min_score={request.min_score}, best_score={best}")
+
+        return final

@@ -219,7 +219,16 @@ async def recommend_resources(
     async def provider_task(res_type: ResourceType, coro):
         try:
             result = await coro
-            await post_resources_callback(request, map_resources(res_type, result))
+            mapped = map_resources(res_type, result)
+            titles = [item.get("title") for item in mapped if item.get("title")]
+            # INFO 레벨에서 보이지 않는 환경을 위해 WARNING으로 남김
+            logger.warning(
+                "REC provider %s 결과: %s개 (titles: %s)",
+                res_type.value,
+                len(mapped),
+                ", ".join(titles[:5]) if titles else "none",
+            )
+            await post_resources_callback(request, mapped)
         except Exception as exc:  # pragma: no cover - 외부 서비스 예외
             logger.exception("REC provider %s 실패: %s", res_type.value, exc)
             await post_resources_callback(request, [])
