@@ -95,7 +95,7 @@ class RECSettings(BaseModel):
 class SummarySettings(BaseModel):
     """요약 생성 설정"""
 
-    model: str = Field(default="gpt-4o-mini", description="요약에 사용할 OpenAI 모델명")
+    model: str = Field(default="gpt-4o", description="요약에 사용할 OpenAI 모델명")
     temperature: float = Field(default=0.2, ge=0.0, le=2.0, description="샘플링 온도")
     max_tokens: int = Field(default=256, ge=1, description="최대 토큰")
     system_prompt: str = Field(
