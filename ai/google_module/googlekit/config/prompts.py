@@ -51,11 +51,6 @@ Rate the relevance on a scale of 0-10 and provide a brief reason in {language}.
 - 3-4: Somewhat relevant, mentions the topic but lacks depth
 - 0-2: Not relevant, off-topic or too general
 
-**Bonus Points (+0.5 each, max +1.0):**
-- Technical documentation from official sources (.edu, .gov, official project sites)
-- In-depth tutorials with practical examples
-- Educational content from reputable institutions
-
 **Response Format (JSON only):**
 {{"score": <float>, "reason": "<1-2 sentences in {language}>"}}
 

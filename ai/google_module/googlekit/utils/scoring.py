@@ -53,12 +53,11 @@ def heuristic_score(
     # 3. 도메인 신뢰도 점수 (0-10)
     domain_score = 5.0  # 기본값
     display_link_lower = display_link.lower()
-    
     for trusted_domain in flags.TRUSTED_DOMAINS:
         if trusted_domain.lower() in display_link_lower:
             domain_score = 10.0
             break
-    
+
     # 가중 평균
     final_score = (
         title_score * flags.WEIGHT_TITLE_MATCH +

@@ -53,7 +53,7 @@ class WikiSettings(BaseModel):
     """위키 추천 설정"""
     
     top_k: int = Field(default=1, ge=1, le=10, description="Wiki 추천 개수")
-    verify: bool = Field(default=False, description="LLM 검증 여부")
+    verify: bool = Field(default=True, description="LLM 검증 여부")
     #verify: bool = Field(default=True, description="LLM 검증 여부")
     wiki_lang: str = Field(default="en", description="Wikipedia 검색 언어")
     language: str = Field(default="ko", description="응답 언어")
