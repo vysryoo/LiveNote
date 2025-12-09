@@ -13,7 +13,7 @@ QUERY_MIN = 1  # 최소 검색 쿼리 개수
 QUERY_MAX = 1  # 최대 검색 쿼리 개수
 
 # ━━━ 검색 결과 설정 ━━━
-MAX_SEARCH_RESULTS = 8  # YouTube API 검색 시 최대 결과 수. 8
+MAX_SEARCH_RESULTS = 10  # YouTbe API 검색 시 최대 결과 수. 8
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 휴리스틱 필터 가중치 (합계 = 1.0)
