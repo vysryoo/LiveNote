@@ -61,7 +61,7 @@ app:
 
   transcription:
     padding-seconds: ${APP_TRANSCRIPTION_PADDING_SECONDS:2.0}
-    speed-multiplier: ${APP_TRANSCRIPTION_SPEED_MULTIPLIER:1.3}
+    speed-multiplier: ${APP_TRANSCRIPTION_SPEED_MULTIPLIER:1.2}
 
   streaming:
     chunk-size: ${APP_STREAMING_CHUNK_SIZE:10}
