@@ -45,6 +45,11 @@ public class OpenAiSttService {
             body.add("model", model);
             body.add("language", language);
             body.add("response_format", "json");
+            // Hallucination 방지를 위한 파라미터 추가
+            body.add("temperature", 0); 
+            if ("ko".equals(language)) {
+                body.add("prompt", "이것은 한국어 강의 녹음입니다. 문맥에 맞게 정확하게 전사해주세요.");
+            }
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
