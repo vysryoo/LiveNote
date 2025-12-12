@@ -97,6 +97,7 @@ cp .env.example .env  # 내용 수정 필요
 > [!IMPORTANT]
 > **서버 실행 명령어:**
 > ```bash
+> source .venv/bin/activate
 > uvicorn server.main:app --reload --port 8003
 > ```
 > 기본 포트는 **8003**입니다. <- 백엔드와의 정합성을 위해서 8003 포트를 추천. 
