@@ -1,0 +1,24 @@
+# --- Core ---
+chromadb>=0.5.10,<0.6
+openai>=1.30,<2
+python-dotenv>=1.0,<2
+pandas>=2.2,<3
+pypdf>=4.2,<5
+streamlit>=1.36,<2
+
+# --- LangChain (0.3 line) ---
+langchain-core>=0.3,<0.4
+langchain-community>=0.3,<0.4
+langchain-openai>=0.2,<0.3
+langchain-text-splitters>=0.3,<0.4
+langchain-chroma>=0.2,<0.3
+
+# --- Pydantic v2 (필수) ---
+pydantic>=2.7,<3
+
+# --- Testing ---
+pytest>=8.0,<9
+pytest-cov>=4.0,<5
+
+# --- PDF Generation (for test data) ---
+reportlab>=4.0,<5
