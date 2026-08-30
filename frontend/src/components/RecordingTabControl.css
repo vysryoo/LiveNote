@@ -1,0 +1,82 @@
+.recording-tab-container {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 2px;
+  background-color: #dadadb;
+  border-radius: 9px;
+}
+
+.recording-indicator {
+  content: "";
+  width: 130px;
+  height: 28px;
+  background: #ffffff;
+  position: absolute;
+  top: 2px;
+  left: calc(260px + 2px);
+  z-index: 1;
+  border: 0.5px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.12), 0px 3px 1px rgba(0, 0, 0, 0.04);
+  border-radius: 7px;
+  transition: all 0.2s ease-out;
+}
+
+.recording-tab {
+  width: 130px;
+  height: 28px;
+  position: absolute;
+  z-index: 2;
+  outline: none;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.recording-tab_label {
+  width: 130px;
+  height: 28px;
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: 'Paperlogy', sans-serif;
+  background-color: #f5f5f5;
+  border-radius: 7px;
+  box-shadow: 2px 2px 4px #d8d8d8, -2px -2px 4px #ffffff;
+  transition: all 0.3s ease;
+}
+
+.recording-tab_label:active,
+.recording-tab:checked + .recording-tab_label {
+  box-shadow: inset 2px 2px 4px #d8d8d8, inset -2px -2px 4px #ffffff;
+}
+
+.recording-end-button {
+  background-color: #f5f5f5;
+  outline: none;
+  border-radius: 7px;
+  box-shadow: 2px 2px 4px #d8d8d8, -2px -2px 4px #ffffff;
+  transition: all 0.3s ease;
+}
+
+.recording-end-button:active {
+  box-shadow: inset 2px 2px 4px #d8d8d8, inset -2px -2px 4px #ffffff;
+}
+
+.recording-end-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.recording-tab--1:checked ~ .recording-indicator {
+  left: 2px;
+}
+
+.recording-tab--2:checked ~ .recording-indicator {
+  left: calc(130px + 2px);
+}
