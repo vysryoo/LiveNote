@@ -28,7 +28,7 @@ OPENAI_API_KEY="YOUR_OPENAI_API_KEY"
 ### 2. 의존성 설치
 
 ```bash
-cd cap1_google_module
+cd google_module
 pip install -e .
 ```
 
@@ -100,7 +100,7 @@ results = await service.recommend_results(request)
 ## 🧪 테스트
 
 ```bash
-cd cap1_google_module
+cd google_module
 python test_google.py
 ```
 

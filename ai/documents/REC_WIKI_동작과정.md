@@ -80,7 +80,7 @@ class WikiSettings(BaseModel):
     wiki_lang: str = Field(default="ko")    # Wikipedia 언어
 ```
 
-### **cap1_wiki_module/wikikit/config/wiki_config.py**
+### **wiki_module/wikikit/config/wiki_config.py**
 ```python
 class WikiConfig:
     LLM_MODEL: str = "gpt-4o"
@@ -91,7 +91,7 @@ class WikiConfig:
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
 ```
 
-### **cap1_wiki_module/wikikit/config/flags.py**
+### **wiki_module/wikikit/config/flags.py**
 ```python
 NO_SCORING = False           # True: 검증 스킵
 QUERY_MAX = 3                # 최대 쿼리 수
@@ -138,6 +138,6 @@ MAX_SEARCH_RESULTS = 10      # 쿼리당 최대 검색 결과
 **작성일:** 2025년 11월 14일  
 **버전:** 1.0  
 **관련 파일:**
-- `cap1_wiki_module/wikikit/service.py`
-- `cap1_wiki_module/wikikit/llm/wiki_llm.py`
-- `cap1_wiki_module/wikikit/api/wiki_client.py`
+- `wiki_module/wikikit/service.py`
+- `wiki_module/wikikit/llm/wiki_llm.py`
+- `wiki_module/wikikit/api/wiki_client.py`

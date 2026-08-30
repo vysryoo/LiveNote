@@ -23,9 +23,9 @@ rapidfuzz==3.6.1
 
 # Local Modules (Editable Install)
 # Installed separately by setup.sh - DO NOT uncomment below lines
-# -e ./cap1_RAG_module
-# -e ./cap1_QA_module
-# -e ./cap1_openalex_module
-# -e ./cap1_wiki_module
-# -e ./cap1_youtube_module
-# -e ./cap1_google_module
+# -e ./RAG_module
+# -e ./QA_module
+# -e ./openalex_module
+# -e ./wiki_module
+# -e ./youtube_module
+# -e ./google_module

@@ -14,7 +14,7 @@
 ## 📦 설치
 
 ```bash
-cd module_intergration/cap1_youtube_module
+cd module_intergration/youtube_module
 chmod +x setup.sh
 ./setup.sh
 ```

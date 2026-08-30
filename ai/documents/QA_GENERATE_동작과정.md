@@ -125,7 +125,7 @@ def _retrieve():
 rag_chunks = await asyncio.to_thread(_retrieve)
 ```
 
-**RAG Service retrieve 함수** (`cap1_RAG_module/ragkit/service.py`, 라인 239):
+**RAG Service retrieve 함수** (`RAG_module/ragkit/service.py`, 라인 239):
 ```python
 def retrieve(
     self,
@@ -213,7 +213,7 @@ async for event in qa_service.generate_questions_stream(qa_req):
     yield event
 ```
 
-**QAService 내부 동작** (`cap1_QA_module/qakit/service.py`):
+**QAService 내부 동작** (`QA_module/qakit/service.py`):
 
 1. **프롬프트 구성**:
    ```python
@@ -729,5 +729,5 @@ curl -N -X POST "http://localhost:8000/qa/generate" \
 - [RAG_TEXT_UPSERT_동작과정.md](./RAG_TEXT_UPSERT_동작과정.md): RAG 업서트 프로세스
 - [API_specification.md](./API_specification.md): 전체 API 명세
 - [server/routes/qa.py](./server/routes/qa.py): QA 엔드포인트 구현
-- [cap1_QA_module/qakit/service.py](./cap1_QA_module/qakit/service.py): QA Service 구현
-- [cap1_RAG_module/ragkit/service.py](./cap1_RAG_module/ragkit/service.py): RAG Service 구현
+- [QA_module/qakit/service.py](./QA_module/qakit/service.py): QA Service 구현
+- [RAG_module/ragkit/service.py](./RAG_module/ragkit/service.py): RAG Service 구현

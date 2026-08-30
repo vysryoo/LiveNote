@@ -400,7 +400,7 @@ class OpenAlexSettings(BaseModel):
 - `year_from=1930` + TOKEN 병렬 검색 실패: 모든 TOKEN이 매칭 안 됨
 - **해결책**: `year_from=2015`, `min_score=7.0`, `verify=True`
 
-### **2. cap1_openalex_module/openalexkit/config/openalex_config.py**
+### **2. openalex_module/openalexkit/config/openalex_config.py**
 
 ```python
 class OpenAlexConfig:
@@ -438,7 +438,7 @@ class OpenAlexConfig:
 | Seminal paper 찾기 | `year_from=1930`, `sort_by=cited_by_count`, `min_score=9.0` |
 | 비용 절감 | `verify=False`, `CARD_LIMIT=5`, `PER_PAGE=10` |
 
-### **3. cap1_openalex_module/openalexkit/config/flags.py**
+### **3. openalex_module/openalexkit/config/flags.py**
 
 ```python
 NO_SCORING = False  # True: 검증 스킵, False: 검증 실행
@@ -705,7 +705,7 @@ class OpenAlexSettings(BaseModel):
     verify: bool = Field(default=False)  # Heuristic 스코어링
     top_k: int = Field(default=3)
 
-# cap1_openalex_module/openalexkit/config/openalex_config.py
+# openalex_module/openalexkit/config/openalex_config.py
 CARD_LIMIT = 5  # 검증 대상 줄이기
 PER_PAGE = 10   # API 호출 결과 줄이기
 ```
@@ -722,7 +722,7 @@ class OpenAlexSettings(BaseModel):
 ### **3. 비용 절감이 필요할 때**
 ```python
 # NO_SCORING 모드 활성화
-# cap1_openalex_module/openalexkit/config/flags.py
+# openalex_module/openalexkit/config/flags.py
 NO_SCORING = True  # 검증 스킵
 
 # 또는 Heuristic 스코어링
@@ -778,8 +778,8 @@ sort_by = "hybrid"  # relevance → hybrid (연관성 + 인용수)
 **버전:** 1.1  
 **업데이트:** TOKEN_MAX: 4→3, MAX_TOKENS_SCORE: 120→200, VERIFY_CONCURRENCY: 5→20  
 **관련 파일:**
-- `cap1_openalex_module/openalexkit/service.py` (메인 로직)
-- `cap1_openalex_module/openalexkit/llm/openai_client.py` (LLM 클라이언트)
-- `cap1_openalex_module/openalexkit/api/openalex_client.py` (API 클라이언트)
-- `cap1_openalex_module/openalexkit/config/prompts.py` (프롬프트)
+- `openalex_module/openalexkit/service.py` (메인 로직)
+- `openalex_module/openalexkit/llm/openai_client.py` (LLM 클라이언트)
+- `openalex_module/openalexkit/api/openalex_client.py` (API 클라이언트)
+- `openalex_module/openalexkit/config/prompts.py` (프롬프트)
 - `server/config.py` (서버 설정)

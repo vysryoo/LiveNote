@@ -11,22 +11,22 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import Field, HttpUrl, validator
 
-from cap1_openalex_module.openalexkit.models import (
+from openalex_module.openalexkit.models import (
     OpenAlexRequest,
     OpenAlexResponse,
     PreviousSectionSummary as OpenAlexPreviousSummary,
 )
-from cap1_wiki_module.wikikit.models import (
+from wiki_module.wikikit.models import (
     PreviousSummary as WikiPreviousSummary,
     WikiRequest,
     WikiResponse,
 )
-from cap1_youtube_module.youtubekit.models import (
+from youtube_module.youtubekit.models import (
     PreviousSummary as YouTubePreviousSummary,
     YouTubeRequest,
     YouTubeResponse,
 )
-from cap1_google_module.googlekit.models import (
+from google_module.googlekit.models import (
     PreviousSummary as GooglePreviousSummary,
     GoogleRequest,
     GoogleResponse,

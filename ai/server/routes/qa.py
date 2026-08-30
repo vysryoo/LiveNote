@@ -11,7 +11,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import Field, HttpUrl, validator
 
-from cap1_QA_module.qakit.models import QARequest, PreviousQA
+from QA_module.qakit.models import QARequest, PreviousQA
 
 from ..config import AppSettings
 from ..dependencies import get_qa_service, get_rag_service, get_settings

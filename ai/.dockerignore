@@ -55,7 +55,7 @@ test_data/
 test_result/
 
 # Submodule specific venvs
-cap1_*/.venv/
-cap1_*/.env
-cap1_*/tests/
-cap1_*/test_*.py
+*_module/.venv/
+*_module/.env
+*_module/tests/
+*_module/test_*.py

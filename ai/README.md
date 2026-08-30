@@ -41,14 +41,14 @@ LiveNote AI 게이트웨이는 다음과 같은 기능을 제공합니다.
            │
            ▼
 FastAPI (server/)
- ├─ RAG 라우터 → cap1_RAG_module (OpenAI Embedding + ChromaDB)
- ├─ QA 라우터  → cap1_QA_module (OpenAI Chat Completion)
- ├─ REC 라우터 → cap1_openalex_module / cap1_wiki_module / cap1_youtube_module / cap1_google_module
+ ├─ RAG 라우터 → RAG_module (OpenAI Embedding + ChromaDB)
+ ├─ QA 라우터  → QA_module (OpenAI Chat Completion)
+ ├─ REC 라우터 → openalex_module / wiki_module / youtube_module / google_module
  └─ Summary 라우터 → OpenAI Chat Completion
 ```
 
 - **server/**: FastAPI 앱, 라우터, 설정, 유틸리티
-- **cap1_*_module**: 각각의 기능을 담당하는 독립 모듈
+- **\*_module**: 각각의 기능을 담당하는 독립 모듈
 - **ChromaDB**: `RAG_PERSIST_DIR` 경로에 벡터 데이터 저장
 - **외부 API**: OpenAI, OpenAlex, Wikipedia, YouTube Data API, Google Custom Search
 
@@ -58,12 +58,12 @@ FastAPI (server/)
 
 | 경로 | 설명 |
 |------|------|
-| `cap1_QA_module/` | QA 생성 모듈 |
-| `cap1_RAG_module/` | RAG 저장/검색 모듈 (Chroma + Embedding) |
-| `cap1_openalex_module/` | 논문 추천 모듈 |
-| `cap1_wiki_module/` | 위키 추천 모듈 |
-| `cap1_youtube_module/` | 유튜브 추천 모듈 |
-| `cap1_google_module/` | 구글 추천 모듈 |
+| `QA_module/` | QA 생성 모듈 |
+| `RAG_module/` | RAG 저장/검색 모듈 (Chroma + Embedding) |
+| `openalex_module/` | 논문 추천 모듈 |
+| `wiki_module/` | 위키 추천 모듈 |
+| `youtube_module/` | 유튜브 추천 모듈 |
+| `google_module/` | 구글 추천 모듈 |
 | `server/` | FastAPI 서버 구성 |
 | `tests/` | 단위/통합 테스트 |
 | `setup.sh` | 환경 구축 자동 스크립트 |

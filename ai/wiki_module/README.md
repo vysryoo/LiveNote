@@ -59,7 +59,7 @@
 ### 1. 저장소 클론
 
 ```bash
-cd module_intergration/cap1_wiki_module
+cd module_intergration/wiki_module
 ```
 
 ### 2. 자동 설정 스크립트 실행
@@ -328,7 +328,7 @@ ValueError: OPENAI_API_KEY 환경 변수가 설정되지 않았습니다.
 
 **해결**:
 - `.env` 파일에 API 키가 올바르게 설정되었는지 확인
-- 파일 위치: `cap1_wiki_module/.env`
+- 파일 위치: `wiki_module/.env`
 
 ```bash
 OPENAI_API_KEY=sk-your-actual-key-here
@@ -464,7 +464,7 @@ if __name__ == "__main__":
 - **페이지 정보**: https://www.mediawiki.org/wiki/API:Query
 
 ### 기존 모듈 참고
-- **RAGKit**: `cap1_RAG_module/`
+- **RAGKit**: `RAG_module/`
 - **QAKit**: `cap2_QA_module/`
 - **OpenAlexKit**: `cap3_openalex_module/`
 

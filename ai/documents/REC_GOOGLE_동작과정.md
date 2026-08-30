@@ -79,7 +79,7 @@ class GoogleSettings(BaseModel):
     min_score: float = Field(default=0.0)   # 최소 점수
 ```
 
-### **cap1_google_module/googlekit/config/google_config.py**
+### **google_module/googlekit/config/google_config.py**
 ```python
 class GoogleConfig:
     LLM_MODEL: str = "gpt-4o"
@@ -92,7 +92,7 @@ class GoogleConfig:
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
 ```
 
-### **cap1_google_module/googlekit/config/flags.py**
+### **google_module/googlekit/config/flags.py**
 ```python
 NO_SCORING = False           # True: 검증 스킵
 QUERY_MAX = 3                # 최대 쿼리 수
@@ -139,6 +139,6 @@ MAX_SEARCH_RESULTS = 10      # 쿼리당 최대 검색 결과
 **작성일:** 2025년 11월 14일  
 **버전:** 1.0  
 **관련 파일:**
-- `cap1_google_module/googlekit/service.py`
-- `cap1_google_module/googlekit/llm/google_llm.py`
-- `cap1_google_module/googlekit/api/google_client.py`
+- `google_module/googlekit/service.py`
+- `google_module/googlekit/llm/google_llm.py`
+- `google_module/googlekit/api/google_client.py`

@@ -13,11 +13,11 @@ The README is intentionally detailed (over 500 lines) to serve as the single sou
 3. Architectural Diagram
 4. Repository Layout
 5. Module Summaries
-    - 5.1 cap1_QA_module
-    - 5.2 cap1_RAG_module
-    - 5.3 cap1_openalex_module
-    - 5.4 cap1_wiki_module
-    - 5.5 cap1_youtube_module
+    - 5.1 QA_module
+    - 5.2 RAG_module
+    - 5.3 openalex_module
+    - 5.4 wiki_module
+    - 5.5 youtube_module
     - 5.6 server
     - 5.7 tests
     - 5.8 scripts and utilities
@@ -108,14 +108,14 @@ Client (Spring / curl / Postman)
     v
 FastAPI (server/)
     |
-    | -> RAG Service (cap1_RAG_module)
-    |       |-- OpenAI Embedding (cap1_RAG_module/ragkit/embeddings)
-    |       |-- ChromaDB (cap1_RAG_module/ragkit/vectordb)
+    | -> RAG Service (RAG_module)
+    |       |-- OpenAI Embedding (RAG_module/ragkit/embeddings)
+    |       |-- ChromaDB (RAG_module/ragkit/vectordb)
     |
-    | -> QA Service (cap1_QA_module)
+    | -> QA Service (QA_module)
     |       |-- OpenAI Async Chat
     |
-    | -> REC Services (cap1_openalex_module, cap1_wiki_module, cap1_youtube_module)
+    | -> REC Services (openalex_module, wiki_module, youtube_module)
             |-- External APIs (OpenAlex, Wikipedia, YouTube)
             |-- OpenAI for validation & summarization
 ```
@@ -124,11 +124,11 @@ FastAPI (server/)
 
 ## 4. Repository Layout
 
-- `cap1_QA_module/` – Question generation module.
-- `cap1_RAG_module/` – Retrieval-augmented storage & retrieval.
-- `cap1_openalex_module/` – Scientific paper recommendations via OpenAlex API.
-- `cap1_wiki_module/` – Wikipedia article recommendations.
-- `cap1_youtube_module/` – YouTube video recommendations.
+- `QA_module/` – Question generation module.
+- `RAG_module/` – Retrieval-augmented storage & retrieval.
+- `openalex_module/` – Scientific paper recommendations via OpenAlex API.
+- `wiki_module/` – Wikipedia article recommendations.
+- `youtube_module/` – YouTube video recommendations.
 - `server/` – FastAPI app, routers, configuration utilities.
 - `tests/` – Stub services and SSE unit tests.
 - `setup.sh` – Automated environment bootstrap script.
@@ -143,8 +143,8 @@ Each module is scoped to a single responsibility but can be composed together th
 
 ## 5. Module Summaries
 
-### 5.1 cap1_QA_module
-- **Location**: `cap1_QA_module/`
+### 5.1 QA_module
+- **Location**: `QA_module/`
 - **Primary files**:
   - `qakit/service.py`: Orchestrates QA generation using async tasks.
   - `qakit/models.py`: Pydantic models for requests/responses.
@@ -153,8 +153,8 @@ Each module is scoped to a single responsibility but can be composed together th
 - **Key idea**: Accepts section summary and question types, generates sequential SSE events for each question-answer pair.
 - **Recent change**: `stream_questions` now uses `asyncio.wait` to eliminate `KeyError` race conditions.
 
-### 5.2 cap1_RAG_module
-- **Location**: `cap1_RAG_module/`
+### 5.2 RAG_module
+- **Location**: `RAG_module/`
 - **Primary files**:
   - `ragkit/service.py`: High-level API for upserting text/PDF, retrieving.
   - `ragkit/config.py`: Reads environment (`RAG_PERSIST_DIR`, `RAG_EMBEDDING_MODEL`, `RAG_OPENAI_API_KEY`).
@@ -163,24 +163,24 @@ Each module is scoped to a single responsibility but can be composed together th
 - **Key idea**: Each lecture maps to a single Chroma collection named `lecture_<id>`.
 - **Recent change**: Empty metadata is auto-filled with `{"source": "text"}` to satisfy Chroma requirements.
 
-### 5.3 cap1_openalex_module
-- **Location**: `cap1_openalex_module/`
+### 5.3 openalex_module
+- **Location**: `openalex_module/`
 - **Primary files**:
   - `openalexkit/service.py`: Handles token generation, paper fetching, LLM-based scoring.
   - `openalexkit/models.py`: Request/response structure (includes previous summaries, rag context).
 - **Key idea**: Accepts RAG chunks & previous summaries to craft targeted suggestions.
 - **Configuration**: `OpenAlexConfig` (within module) for concurrency, model choices, year range, min score.
 
-### 5.4 cap1_wiki_module
-- **Location**: `cap1_wiki_module/`
+### 5.4 wiki_module
+- **Location**: `wiki_module/`
 - **Primary files**:
   - `wikikit/service.py`: Multi-language fetching, fallback, heuristic scoring.
   - `wikikit/api/wiki_client.py`: HTTP interactions with Wikipedia API.
   - `wikikit/llm/openai_client.py`: LLM keyword generation and scoring.
 - **Recent change**: All internal imports use relative paths (`from .api import ...`) to avoid runtime `ModuleNotFoundError`.
 
-### 5.5 cap1_youtube_module
-- **Location**: `cap1_youtube_module/`
+### 5.5 youtube_module
+- **Location**: `youtube_module/`
 - **Primary files**:
   - `youtubekit/service.py`: Multi-query search, transcript summarization, scoring.
   - `youtubekit/api/youtube_client.py`: YouTube Data API handling.

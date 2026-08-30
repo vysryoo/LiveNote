@@ -18,7 +18,7 @@ os.environ["ANONYMIZED_TELEMETRY"] = "False"
 os.environ["CHROMA_TELEMETRY_ENABLED"] = "False"
 
 # RAG 모듈 경로 추가
-sys.path.insert(0, str(Path(__file__).parent / "cap1_RAG_module"))
+sys.path.insert(0, str(Path(__file__).parent / "RAG_module"))
 
 from ragkit.service import RAGService
 from ragkit.config import RAGConfig

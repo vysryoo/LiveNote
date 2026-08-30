@@ -8,7 +8,7 @@ import pytest
 
 @pytest.mark.anyio
 async def test_pdf_upsert_success(async_client, test_context):
-    pdf_path = Path("cap1_RAG_module/test_data/simple_test.pdf")
+    pdf_path = Path("RAG_module/test_data/simple_test.pdf")
     payload = pdf_path.read_bytes()
     response = await async_client.post(
         "/rag/pdf-upsert",
@@ -47,7 +47,7 @@ async def test_pdf_upsert_blocks_empty_file(async_client):
 
 @pytest.mark.anyio
 async def test_pdf_upsert_invalid_metadata(async_client):
-    pdf_path = Path("cap1_RAG_module/test_data/simple_test.pdf")
+    pdf_path = Path("RAG_module/test_data/simple_test.pdf")
     response = await async_client.post(
         "/rag/pdf-upsert",
         files={"file": ("simple_test.pdf", pdf_path.read_bytes(), "application/pdf")},
@@ -59,7 +59,7 @@ async def test_pdf_upsert_invalid_metadata(async_client):
 
 @pytest.mark.anyio
 async def test_pdf_upsert_blank_lecture_id(async_client):
-    pdf_path = Path("cap1_RAG_module/test_data/simple_test.pdf")
+    pdf_path = Path("RAG_module/test_data/simple_test.pdf")
     response = await async_client.post(
         "/rag/pdf-upsert",
         files={"file": ("simple_test.pdf", pdf_path.read_bytes(), "application/pdf")},

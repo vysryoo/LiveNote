@@ -80,7 +80,7 @@ class YouTubeSettings(BaseModel):
     yt_lang: str = Field(default="ko")      # 영상 언어
 ```
 
-### **cap1_youtube_module/youtubekit/config/youtube_config.py**
+### **youtube_module/youtubekit/config/youtube_config.py**
 ```python
 class YouTubeConfig:
     LLM_MODEL: str = "gpt-4o"
@@ -92,7 +92,7 @@ class YouTubeConfig:
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
 ```
 
-### **cap1_youtube_module/youtubekit/config/flags.py**
+### **youtube_module/youtubekit/config/flags.py**
 ```python
 NO_SCORING = False           # True: 검증 스킵
 QUERY_MAX = 3                # 최대 쿼리 수
@@ -138,6 +138,6 @@ MAX_SEARCH_RESULTS = 10      # 쿼리당 최대 검색 결과
 **작성일:** 2025년 11월 14일  
 **버전:** 1.0  
 **관련 파일:**
-- `cap1_youtube_module/youtubekit/service.py`
-- `cap1_youtube_module/youtubekit/llm/youtube_llm.py`
-- `cap1_youtube_module/youtubekit/api/youtube_client.py`
+- `youtube_module/youtubekit/service.py`
+- `youtube_module/youtubekit/llm/youtube_llm.py`
+- `youtube_module/youtubekit/api/youtube_client.py`
