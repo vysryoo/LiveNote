@@ -7,13 +7,13 @@ React + TypeScript + Vite 기반의 실시간 강의 노트 서비스입니다.
 ## 실행 방법
 
 ```bash
-cd Front-end
+cd frontend
 npm install
 npm run dev
 ```
 
 > [!IMPORTANT]
-> 실행 전 `Front-end/.env` 파일 설정이 필요합니다:
+> 실행 전 `frontend/.env` 파일 설정이 필요합니다:
 > ```
 > VITE_API_URL=http://localhost:8080
 > VITE_WS_URL=ws://localhost:8080
@@ -24,7 +24,7 @@ npm run dev
 ## 파일 구조
 
 ```
-Front-end/
+frontend/
 ├── src/
 │   ├── App.tsx           # 메인 애플리케이션
 │   ├── main.tsx          # 엔트리 포인트

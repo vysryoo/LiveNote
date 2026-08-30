@@ -1,8 +1,45 @@
+# 컴포넌트별 규칙은 frontend/.gitignore, backend/.gitignore, ai/.gitignore 에 있습니다.
+# 여기에는 모노레포 전체에 적용할 규칙만 둡니다.
+
+# --- 시크릿 (절대 커밋 금지) ---
+*.pem
+*.key
+*.p12
+*.keystore
+.env
+.env.*
+!.env.example
+
+# --- OS / 에디터 ---
 .DS_Store
+Thumbs.db
 .idea/
 *.iml
-*.log
-node_modules/
-.env
-build/
+*.iws
+.vscode/
+*.swp
+*~
 
+# --- 로그 ---
+*.log
+
+# --- Node (frontend) ---
+node_modules/
+frontend/build/
+frontend/dist/
+
+# --- Java / Gradle (backend) ---
+.gradle/
+backend/build/
+backend/out/
+*.class
+*.hprof
+
+# --- Python (ai) ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.coverage
