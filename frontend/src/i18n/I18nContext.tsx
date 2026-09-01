@@ -308,7 +308,9 @@ export function I18nProvider({ children, initialLanguage }: { children: any; ini
     setLanguageState(lang);
     try {
       localStorage.setItem("uiLanguage", lang);
-    } catch {}
+    } catch {
+      // 프라이빗 모드 등 localStorage 접근 불가 환경 무시
+    }
   }, []);
 
   const t = useCallback(

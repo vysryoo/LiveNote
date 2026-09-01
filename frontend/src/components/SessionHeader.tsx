@@ -8,7 +8,6 @@ import {
 } from "./ui/dropdown-menu";
 import { User, Settings, LogOut } from "lucide-react";
 import RecordingTabControl from "./RecordingTabControl";
-// @ts-ignore - vite에서 이미지 import 지원
 import logoImage from "../assets/logo.png";
 import type { SessionDetailResponse } from "../services/ports";
 

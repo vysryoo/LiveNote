@@ -450,7 +450,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
         const cardIndex = parseInt(cardIndexStr);
 
         // Resource 추가 생성 카드도 유형 정보가 없으면 기본 스타일(그라데이션)로 표시
-        let resourceType: 'paper' | 'wiki' | 'video' | 'blog' | undefined = message.resourceType;
+        const resourceType: 'paper' | 'wiki' | 'video' | 'blog' | undefined = message.resourceType;
 
         newMap.set(cardId, {
           cardId,
@@ -868,6 +868,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
       }
 
       // 1단계: DB에서 카드 개수 먼저 확인 (추가 요청 필요 여부 판단)
+      // eslint-disable-next-line no-useless-assignment -- 이 초기값은 아래 분기에서 항상 재대입되어 죽은 코드로 보이나, Phase 4에서 handleSummaryClick 전체를 재검토하며 함께 정리 예정
       let shouldRequestMore = false;
       try {
         const summary = summariesBySection.get(sectionIndex);
