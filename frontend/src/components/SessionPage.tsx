@@ -569,7 +569,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
     // 비동기로 처리하여 컴포넌트 렌더링을 블로킹하지 않음
     const initStomp = async () => {
       // 환경 변수에서 WebSocket URL 가져오기, 없으면 현재 페이지의 프로토콜/호스트 기반으로 생성
-      const WS_BASE = (import.meta as any).env?.VITE_WS_URL ||
+      const WS_BASE = import.meta.env.VITE_WS_URL ||
         (window.location.protocol === 'https:' ? 'wss://localhost:8080' : 'ws://localhost:8080');
 
       const brokerURL = `${WS_BASE}/ws`;

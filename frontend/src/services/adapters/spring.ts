@@ -20,8 +20,8 @@ import type {
   UserView,
 } from "../ports";
 
-const API_BASE = (import.meta as any).env?.VITE_API_URL || "/api";
-const WS_BASE = (import.meta as any).env?.VITE_WS_URL || "ws://localhost:8080";
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
+const WS_BASE = import.meta.env.VITE_WS_URL || "ws://localhost:8080";
 
 function authHeader(): Record<string, string> {
   // Prefer in-memory token, fall back to persisted token so page reloads keep the session.

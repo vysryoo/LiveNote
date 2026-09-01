@@ -1,5 +1,16 @@
 /// <reference types="vite/client" />
 
+interface ImportMetaEnv {
+  readonly VITE_BACKEND_TYPE?: "spring" | "supabase";
+  readonly VITE_API_URL?: string;
+  readonly VITE_WS_URL?: string;
+  readonly VITE_PUBLIC_KEY?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
 declare module '*.png' {
   const src: string;
   export default src;

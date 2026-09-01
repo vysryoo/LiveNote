@@ -5,7 +5,7 @@ import { createSupabaseBackend } from "./adapters/supabase";
 export type BackendType = "spring" | "supabase";
 
 function getBackendType(): BackendType {
-  return ((import.meta as any).env?.VITE_BACKEND_TYPE as BackendType) ?? "spring";
+  return import.meta.env.VITE_BACKEND_TYPE ?? "spring";
 }
 
 export function createBackend(): BackendPort {
