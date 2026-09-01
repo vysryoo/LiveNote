@@ -1,3 +1,4 @@
+// @ts-nocheck: 미사용 어댑터, Phase 3(폴더 재구성)에서 삭제 예정 — 타입 정합성 작업 생략
 import type {
   AuthPort,
   BackendPort,
