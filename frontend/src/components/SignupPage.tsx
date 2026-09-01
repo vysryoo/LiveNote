@@ -7,7 +7,12 @@ import logoImage from "../assets/logo.png";
 import { useI18n } from "../i18n/I18nContext";
 
 interface SignupPageProps {
-  onSignup: (data: { loginId: string; email: string; password: string; name: string }) => Promise<void> | void;
+  onSignup: (data: {
+    loginId: string;
+    email: string;
+    password: string;
+    name: string;
+  }) => Promise<void> | void;
   onBack: () => void;
 }
 
@@ -59,7 +64,7 @@ export function SignupPage({ onSignup, onBack }: SignupPageProps) {
     <div className="min-h-screen bg-[#F6F9FC] bg-wave-pattern-bottom flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         {/* Back Button */}
-        <button 
+        <button
           onClick={onBack}
           className="flex items-center gap-2 text-[#525252] hover:text-[#2A2A2A] mb-8 transition-colors"
         >
@@ -71,12 +76,12 @@ export function SignupPage({ onSignup, onBack }: SignupPageProps) {
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8">
           {/* Logo */}
           <div className="flex items-center mb-8 py-[0.4%]">
-            <img src={logoImage} alt="LiveNote" style={{ height: '3em' }} />
+            <img src={logoImage} alt="LiveNote" style={{ height: "3em" }} />
           </div>
 
           {/* Header */}
           <div className="mb-8">
-            <h1 
+            <h1
               className="text-[2rem] leading-[1.3] mb-2 text-[#2A2A2A]"
               style={{ fontWeight: 600 }}
             >
@@ -90,13 +95,10 @@ export function SignupPage({ onSignup, onBack }: SignupPageProps) {
           {/* Form */}
           <div className="space-y-5">
             <div className="space-y-2">
-              <Label 
-                htmlFor="signup-username"
-                className="text-sm text-[#2A2A2A]"
-              >
+              <Label htmlFor="signup-username" className="text-sm text-[#2A2A2A]">
                 {t("signup.username")}
               </Label>
-              <Input 
+              <Input
                 id="signup-username"
                 placeholder={t("signup.username")}
                 value={loginId}
@@ -106,13 +108,10 @@ export function SignupPage({ onSignup, onBack }: SignupPageProps) {
             </div>
 
             <div className="space-y-2">
-              <Label 
-                htmlFor="signup-password"
-                className="text-sm text-[#2A2A2A]"
-              >
+              <Label htmlFor="signup-password" className="text-sm text-[#2A2A2A]">
                 {t("signup.password")}
               </Label>
-              <Input 
+              <Input
                 id="signup-password"
                 type="password"
                 placeholder={t("signup.password")}
@@ -120,19 +119,14 @@ export function SignupPage({ onSignup, onBack }: SignupPageProps) {
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-11 rounded-lg border-gray-200 focus:border-[#635BFF] focus:ring-[#635BFF]/20"
               />
-              <p className="text-xs text-[#525252] mt-1">
-                최소 6자 이상 입력해주세요
-              </p>
+              <p className="text-xs text-[#525252] mt-1">최소 6자 이상 입력해주세요</p>
             </div>
 
             <div className="space-y-2">
-              <Label 
-                htmlFor="signup-confirm"
-                className="text-sm text-[#2A2A2A]"
-              >
+              <Label htmlFor="signup-confirm" className="text-sm text-[#2A2A2A]">
                 {t("signup.passwordConfirm")}
               </Label>
-              <Input 
+              <Input
                 id="signup-confirm"
                 type="password"
                 placeholder={t("signup.passwordConfirm")}
@@ -143,13 +137,10 @@ export function SignupPage({ onSignup, onBack }: SignupPageProps) {
             </div>
 
             <div className="space-y-2">
-              <Label 
-                htmlFor="signup-name"
-                className="text-sm text-[#2A2A2A]"
-              >
+              <Label htmlFor="signup-name" className="text-sm text-[#2A2A2A]">
                 {t("signup.name")}
               </Label>
-              <Input 
+              <Input
                 id="signup-name"
                 placeholder={t("signup.name")}
                 value={name}
@@ -159,13 +150,10 @@ export function SignupPage({ onSignup, onBack }: SignupPageProps) {
             </div>
 
             <div className="space-y-2">
-              <Label 
-                htmlFor="signup-email"
-                className="text-sm text-[#2A2A2A]"
-              >
+              <Label htmlFor="signup-email" className="text-sm text-[#2A2A2A]">
                 {t("signup.email")}
               </Label>
-              <Input 
+              <Input
                 id="signup-email"
                 type="email"
                 placeholder={t("signup.email")}
@@ -181,7 +169,7 @@ export function SignupPage({ onSignup, onBack }: SignupPageProps) {
               </div>
             )}
 
-            <Button 
+            <Button
               className="w-full bg-gradient-to-r from-[#639BEE] via-[#3B72DD] to-[#4D82E0] hover:from-[#5B60A2] hover:to-[#63A4FF] text-white rounded-lg h-11 mt-6 shadow-lg hover:shadow-xl transition-all"
               onClick={handleSubmit}
               disabled={submitting}
@@ -194,20 +182,17 @@ export function SignupPage({ onSignup, onBack }: SignupPageProps) {
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200"></div>
               </div>
-
             </div>
 
             {/* Social Login (Optional) */}
-            <div className="space-y-3">
-
-            </div>
+            <div className="space-y-3"></div>
           </div>
 
           {/* Login Link */}
           <div className="mt-8 text-center">
             <p className="text-sm text-[#525252]">
               이미 계정이 있으신가요?{" "}
-              <button 
+              <button
                 onClick={onBack}
                 className="text-[rgb(59,114,221)] hover:underline font-medium"
               >
@@ -221,9 +206,13 @@ export function SignupPage({ onSignup, onBack }: SignupPageProps) {
         <div className="mt-6 text-center">
           <p className="text-xs text-[#525252]">
             회원가입을 진행하면{" "}
-            <a href="#" className="text-[rgb(59,114,221)] hover:underline">이용약관</a>
-            {" "}및{" "}
-            <a href="#" className="text-[rgb(59,114,221)] hover:underline">개인정보처리방침</a>
+            <a href="#" className="text-[rgb(59,114,221)] hover:underline">
+              이용약관
+            </a>{" "}
+            및{" "}
+            <a href="#" className="text-[rgb(59,114,221)] hover:underline">
+              개인정보처리방침
+            </a>
             에 동의하는 것으로 간주됩니다.
           </p>
         </div>

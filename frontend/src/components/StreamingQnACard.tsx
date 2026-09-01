@@ -6,30 +6,22 @@ import type { StreamingCard } from "./StreamingCardTypes";
 const StreamingQnACard = memo(({ card }: { card: StreamingCard }) => {
   if (card.error) {
     return (
-      <div
-        className="border rounded-lg p-6 bg-white opacity-0 animate-[fadeInUp_0.4s_ease_forwards] flex flex-col h-[325px] border-red-300"
-      >
+      <div className="border rounded-lg p-6 bg-white opacity-0 animate-[fadeInUp_0.4s_ease_forwards] flex flex-col h-[325px] border-red-300">
         <div className="flex items-start justify-between mb-3 flex-shrink-0">
-          <Badge className="text-xs bg-red-500 text-white flex-shrink-0">
-            생성 실패
-          </Badge>
+          <Badge className="text-xs bg-red-500 text-white flex-shrink-0">생성 실패</Badge>
         </div>
         <div className="mb-3 flex-shrink-0">
           <p className="font-medium text-red-600">생성 실패</p>
         </div>
         <div className="flex-1 overflow-y-auto">
-          <p className="text-sm text-red-500 whitespace-pre-line">
-            {card.error}
-          </p>
+          <p className="text-sm text-red-500 whitespace-pre-line">{card.error}</p>
         </div>
       </div>
     );
   }
-  
+
   return (
-    <div
-      className="border rounded-lg p-6 bg-white opacity-0 animate-[fadeInUp_0.4s_ease_forwards] flex flex-col h-[325px]"
-    >
+    <div className="border rounded-lg p-6 bg-white opacity-0 animate-[fadeInUp_0.4s_ease_forwards] flex flex-col h-[325px]">
       <div className="flex items-start justify-between mb-3 flex-shrink-0">
         <Badge
           className="text-xs text-[rgb(255,255,255)] flex-shrink-0"
@@ -56,5 +48,3 @@ const StreamingQnACard = memo(({ card }: { card: StreamingCard }) => {
 StreamingQnACard.displayName = "StreamingQnACard";
 
 export default StreamingQnACard;
-
-

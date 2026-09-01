@@ -1,9 +1,6 @@
- 
-
-
 export interface User {
   id: number;
-  loginId: string; 
+  loginId: string;
   password: string;
   email: string;
   name: string;
@@ -41,9 +38,6 @@ export interface SignupRequest {
   name: string;
 }
 
-
- 
-
 export interface AuthPort {
   /** 로그인 */
   login(data: LoginRequest): Promise<AuthResponse>;
@@ -55,16 +49,13 @@ export interface AuthPort {
   logout(): Promise<void>;
 }
 
- 
-
-
 export interface Lecture {
   id: number;
   userId: number;
   title: string;
   subject: string;
   sttLanguage: string;
-  status: 'recording' | 'completed';
+  status: "recording" | "completed";
   createdAt: string;
   endAt: string | null;
   duration: number | null;
@@ -95,17 +86,16 @@ export interface Bookmark {
   userId: number;
   lectureId: number;
   sectionIndex: number;
-  targetType: 'resource' | 'qna';
+  targetType: "resource" | "qna";
   targetId: number;
 }
 
 export interface BookmarkRequest {
   lectureId: number;
   sectionIndex: number;
-  targetType: 'resource' | 'qna';
+  targetType: "resource" | "qna";
   targetId: number;
 }
-
 
 export interface Transcript {
   id: number;
@@ -123,14 +113,14 @@ export interface Summary {
   startSec: number;
   endSec: number;
   text: string | string[];
-  phase?: 'PARTIAL' | 'FINAL';
+  phase?: "PARTIAL" | "FINAL";
 }
 
 export interface Resource {
   id: number;
   lectureId: number;
   sectionIndex: number;
-  type: 'paper' | 'wiki' | 'video' | 'blog';
+  type: "paper" | "wiki" | "video" | "blog";
   title: string | string[];
   text: string | string[];
   url: string;
@@ -143,14 +133,14 @@ export interface QnA {
   lectureId: number;
   sectionIndex: number;
   summaryId?: number;
-  type: 'concept' | 'application' | 'advanced' | 'comparison';
+  type: "concept" | "application" | "advanced" | "comparison";
   question: string | string[];
   answer: string | string[];
 }
-// 개념확인 | 응용확장 | 심화질의 | 비교분서 
+// 개념확인 | 응용확장 | 심화질의 | 비교분서
 
 export interface WebSocketMessage {
-  type: 'transcript' | 'summary' | 'resource' | 'qna' | 'error';
+  type: "transcript" | "summary" | "resource" | "qna" | "error";
   data: {
     heading?: string | string[];
     content?: string | string[];
@@ -179,7 +169,6 @@ export interface LecturePort {
   /** 강의 종료 */
   endLecture(id: number, data?: UpdateLectureTitleRequest): Promise<Lecture>;
 
-
   /** 북마크 추가 */
   addBookmark(data: BookmarkRequest): Promise<Bookmark>;
 
@@ -199,14 +188,14 @@ export interface LecturePort {
   getResources(
     lectureId: number,
     sectionIndex: number,
-    type?: 'paper' | 'wiki' | 'video' | 'blog'
+    type?: "paper" | "wiki" | "video" | "blog",
   ): Promise<Resource[]>;
 
   /** Q&A 조회 (섹션 기준) */
   getQnA(
     lectureId: number,
     sectionIndex: number,
-    type?: 'concept' | 'application' | 'advanced' | 'comparison'
+    type?: "concept" | "application" | "advanced" | "comparison",
   ): Promise<QnA[]>;
 
   /** 외부 콜백 처리 */
@@ -216,14 +205,20 @@ export interface LecturePort {
   generateSummary(
     lectureId: number,
     sectionIndex: number,
-    phase?: 'partial' | 'final'
+    phase?: "partial" | "final",
   ): Promise<{ success: boolean; summary?: Summary; sectionIndex: number; error?: string }>;
 
   /** AI 질문 생성 */
-  generateQnA(lectureId: number, sectionIndex: number): Promise<{ success: boolean; qna?: any[]; sectionIndex: number; error?: string }>;
+  generateQnA(
+    lectureId: number,
+    sectionIndex: number,
+  ): Promise<{ success: boolean; qna?: any[]; sectionIndex: number; error?: string }>;
 
   /** AI 자료 추천 생성 */
-  generateResources(lectureId: number, sectionIndex: number): Promise<{ success: boolean; resources?: any[]; sectionIndex: number; error?: string }>;
+  generateResources(
+    lectureId: number,
+    sectionIndex: number,
+  ): Promise<{ success: boolean; resources?: any[]; sectionIndex: number; error?: string }>;
 
   /** 전사 WebSocket 연결 생성 */
   connectTranscription(sessionId: string | number): WebSocket;
@@ -234,7 +229,7 @@ export interface LecturePort {
   /** 카드 상태 조회 */
   getCardsStatus(
     lectureId: number,
-    sectionIndex: number
+    sectionIndex: number,
   ): Promise<{
     qnaCards: Array<{
       cardId: string;
@@ -259,7 +254,7 @@ export interface LecturePort {
     lectureId: number,
     sectionIndex: number,
     cardIndex: number,
-    qnaType?: string
+    qnaType?: string,
   ): Promise<{ success: boolean; cardId: string; type: string }>;
 
   /** Resource 스트리밍 시작 */
@@ -267,12 +262,9 @@ export interface LecturePort {
     lectureId: number,
     sectionIndex: number,
     cardIndex: number,
-    resourceType?: string
+    resourceType?: string,
   ): Promise<{ success: boolean; cardId: string; type: string }>;
 }
-
- 
-
 
 export interface SetLanguageRequest {
   language: string;
@@ -283,9 +275,7 @@ export interface SetPasswordRequest {
   newPassword: string;
 }
 
-
 export interface SettingsPort {
-
   /** 현재 사용자 조회 */
   getUser(): Promise<UserView>;
 
@@ -294,12 +284,8 @@ export interface SettingsPort {
 
   /** 비밀번호 변경 */
   setPassword(data: SetPasswordRequest): Promise<UserView>;
-
-
- 
 }
 
- 
 export interface BackendPort {
   auth: AuthPort;
   lecture: LecturePort;

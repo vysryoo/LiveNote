@@ -38,7 +38,7 @@ export function LoginModal({ open, onClose, onLogin, onSignupClick }: LoginModal
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
-        <button 
+        <button
           onClick={onClose}
           className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100"
         >
@@ -46,30 +46,28 @@ export function LoginModal({ open, onClose, onLogin, onSignupClick }: LoginModal
         </button>
         <DialogHeader>
           <DialogTitle>{t("login.title")}</DialogTitle>
-          <DialogDescription>
-            {t("login.desc")}
-          </DialogDescription>
+          <DialogDescription>{t("login.desc")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-4">
           <div className="space-y-2">
             <Label htmlFor="username">{t("login.username")}</Label>
-            <Input 
-              id="username" 
+            <Input
+              id="username"
               placeholder={t("login.username")}
               value={loginId}
               onChange={(e) => setLoginId(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">{t("login.password")}</Label>
-            <Input 
-              id="password" 
-              type="password" 
+            <Input
+              id="password"
+              type="password"
               placeholder={t("login.password")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
             />
           </div>
           {error && (
@@ -77,7 +75,7 @@ export function LoginModal({ open, onClose, onLogin, onSignupClick }: LoginModal
               {error}
             </div>
           )}
-          <Button 
+          <Button
             className="w-full bg-[rgb(59,114,221)] hover:bg-[#4D82E0] text-[rgb(255,255,255)]"
             onClick={handleLogin}
             disabled={submitting || !loginId || !password}
@@ -86,7 +84,7 @@ export function LoginModal({ open, onClose, onLogin, onSignupClick }: LoginModal
           </Button>
           <div className="text-center text-sm text-muted-foreground">
             {/* keep sentence minimal; only link translated */}
-            <button 
+            <button
               onClick={() => {
                 onClose();
                 onSignupClick();

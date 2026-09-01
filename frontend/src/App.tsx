@@ -100,13 +100,11 @@ export default function App() {
         toast.success("로그인되었습니다");
       } catch (error) {
         console.error(error);
-        toast.error(
-          error instanceof Error ? error.message : "로그인에 실패했습니다"
-        );
+        toast.error(error instanceof Error ? error.message : "로그인에 실패했습니다");
         throw error;
       }
     },
-    [backend, fetchLectures]
+    [backend, fetchLectures],
   );
 
   const handleSignup = useCallback(
@@ -121,13 +119,11 @@ export default function App() {
         await handleLogin(data.loginId, data.password);
       } catch (error) {
         console.error(error);
-        toast.error(
-          error instanceof Error ? error.message : "회원가입에 실패했습니다"
-        );
+        toast.error(error instanceof Error ? error.message : "회원가입에 실패했습니다");
         throw error;
       }
     },
-    [backend, handleLogin]
+    [backend, handleLogin],
   );
 
   const handleLogout = useCallback(async () => {
@@ -161,15 +157,11 @@ export default function App() {
         toast.success("새 강의가 시작되었습니다");
       } catch (error) {
         console.error(error);
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "새 강의를 시작하지 못했습니다"
-        );
+        toast.error(error instanceof Error ? error.message : "새 강의를 시작하지 못했습니다");
         throw error;
       }
     },
-    [backend, fetchLectures]
+    [backend, fetchLectures],
   );
 
   const handleSessionClick = useCallback((sessionId: number) => {
@@ -188,15 +180,11 @@ export default function App() {
         toast.success("강의가 저장되었습니다");
       } catch (error) {
         console.error(error);
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "강의 종료 처리에 실패했습니다"
-        );
+        toast.error(error instanceof Error ? error.message : "강의 종료 처리에 실패했습니다");
         throw error;
       }
     },
-    [backend, currentSessionId, fetchLectures]
+    [backend, currentSessionId, fetchLectures],
   );
 
   const handleDeleteSession = useCallback((sessionId: number) => {
@@ -214,9 +202,7 @@ export default function App() {
       toast.success("강의가 삭제되었습니다");
     } catch (error) {
       console.error(error);
-      toast.error(
-        error instanceof Error ? error.message : "강의를 삭제하지 못했습니다"
-      );
+      toast.error(error instanceof Error ? error.message : "강의를 삭제하지 못했습니다");
       throw error;
     } finally {
       setDeleteSessionModalOpen(false);
@@ -232,13 +218,11 @@ export default function App() {
         toast.success("강의 이름이 변경되었습니다");
       } catch (error) {
         console.error(error);
-        toast.error(
-          error instanceof Error ? error.message : "강의 이름 변경에 실패했습니다"
-        );
+        toast.error(error instanceof Error ? error.message : "강의 이름 변경에 실패했습니다");
         throw error;
       }
     },
-    [backend, fetchLectures]
+    [backend, fetchLectures],
   );
 
   const handleSettings = useCallback(
@@ -262,18 +246,16 @@ export default function App() {
         toast.success("설정이 저장되었습니다");
       } catch (error) {
         console.error(error);
-        toast.error(
-          error instanceof Error ? error.message : "설정을 저장하지 못했습니다"
-        );
+        toast.error(error instanceof Error ? error.message : "설정을 저장하지 못했습니다");
         throw error;
       }
     },
-    [backend]
+    [backend],
   );
 
   const sessionForDeletion = useMemo(
     () => lectures.find((lecture) => lecture.id === sessionToDelete),
-    [lectures, sessionToDelete]
+    [lectures, sessionToDelete],
   );
 
   if (initializing) {
@@ -297,10 +279,7 @@ export default function App() {
       )}
 
       {currentPage === "signup" && (
-        <SignupPage
-          onSignup={handleSignup}
-          onBack={() => setCurrentPage("landing")}
-        />
+        <SignupPage onSignup={handleSignup} onBack={() => setCurrentPage("landing")} />
       )}
 
       {currentPage === "main" && (
@@ -349,8 +328,6 @@ export default function App() {
         onClose={() => setNewLectureModalOpen(false)}
         onStart={handleNewLecture}
       />
-
-
 
       <DeleteSessionModal
         open={deleteSessionModalOpen}

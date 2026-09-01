@@ -57,7 +57,9 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
 
 async function getCurrentUser(): Promise<UserView> {
   if (currentUserId != null) {
-    const me = await http<UserView[]>(`/users?id=eq.${currentUserId}&select=id,loginId,name,email,uiLanguage`);
+    const me = await http<UserView[]>(
+      `/users?id=eq.${currentUserId}&select=id,loginId,name,email,uiLanguage`,
+    );
     if (me.length > 0) return me[0];
   }
   const me = await http<UserView[]>(`/users?select=id,loginId,name,email,uiLanguage&limit=1`);
@@ -68,7 +70,10 @@ function buildAuth(): AuthPort {
   return {
     async login(data: LoginRequest): Promise<AuthResponse> {
       // 테이블: users, RLS/함수 없이 단순 조회 가정
-      const q = new URLSearchParams({ select: "id,loginId,name,email,uiLanguage", loginId: `eq.${data.loginId}` });
+      const q = new URLSearchParams({
+        select: "id,loginId,name,email,uiLanguage",
+        loginId: `eq.${data.loginId}`,
+      });
       const users = await http<UserView[]>(`/users?${q.toString()}`);
       const user = users[0];
       if (!user) throw new Error("Invalid credentials");
@@ -85,10 +90,22 @@ function buildAuth(): AuthPort {
       };
     },
     async signup(data) {
-      const created = await http<UserView[]>(`/users`, { method: "POST", body: JSON.stringify([data]) });
+      const created = await http<UserView[]>(`/users`, {
+        method: "POST",
+        body: JSON.stringify([data]),
+      });
       const user = created[0];
       currentUserId = user.id;
-      return { token: PUBLIC_KEY || "sb-token", user: { id: user.id, loginId: user.loginId, name: user.name, email: user.email, uiLanguage: user.uiLanguage } };
+      return {
+        token: PUBLIC_KEY || "sb-token",
+        user: {
+          id: user.id,
+          loginId: user.loginId,
+          name: user.name,
+          email: user.email,
+          uiLanguage: user.uiLanguage,
+        },
+      };
     },
     async logout() {
       currentUserId = null;
@@ -112,7 +129,7 @@ function buildLecture(): LecturePort {
     async createLecture(data: CreateLectureRequest): Promise<Lecture> {
       // 현재 사용자 조회하여 userId 추가
       const currentUser = await getCurrentUser();
-      
+
       // Supabase PostgREST는 multipart/form-data를 지원하지 않으므로
       // 파일이 있는 경우 base64로 인코딩하여 JSON으로 전송
       if (data.files && data.files.length > 0) {
@@ -121,7 +138,7 @@ function buildLecture(): LecturePort {
           return new Promise<{ name: string; content: string; type: string }>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => {
-              const base64 = (reader.result as string).split(',')[1]; // data:...;base64, 부분 제거
+              const base64 = (reader.result as string).split(",")[1]; // data:...;base64, 부분 제거
               resolve({
                 name: file.name,
                 content: base64,
@@ -132,7 +149,7 @@ function buildLecture(): LecturePort {
             reader.readAsDataURL(file);
           });
         });
-        
+
         const encodedFiles = await Promise.all(filePromises);
         const payload = {
           title: data.title,
@@ -141,24 +158,27 @@ function buildLecture(): LecturePort {
           userId: currentUser.id,
           files: encodedFiles,
         };
-        
-        const created = await http<Lecture[]>(`/lectures`, { 
-          method: "POST", 
-          body: JSON.stringify([payload]) 
+
+        const created = await http<Lecture[]>(`/lectures`, {
+          method: "POST",
+          body: JSON.stringify([payload]),
         });
         return created[0];
       } else {
         // 파일이 없는 경우 기존 JSON 방식 사용
         const payload = { ...data, userId: currentUser.id };
-        const created = await http<Lecture[]>(`/lectures`, { 
-          method: "POST", 
-          body: JSON.stringify([payload]) 
+        const created = await http<Lecture[]>(`/lectures`, {
+          method: "POST",
+          body: JSON.stringify([payload]),
         });
         return created[0];
       }
     },
     async updateLectureTitle(id: number, data: UpdateLectureTitleRequest): Promise<Lecture> {
-      const updated = await http<Lecture[]>(`/lectures?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ title: data.title }) });
+      const updated = await http<Lecture[]>(`/lectures?id=eq.${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ title: data.title }),
+      });
       return updated[0];
     },
     async deleteLecture(id: number): Promise<void> {
@@ -166,18 +186,26 @@ function buildLecture(): LecturePort {
     },
     async endLecture(id: number, data?: UpdateLectureTitleRequest): Promise<Lecture> {
       const payload: Partial<Lecture> = { status: "completed", ...(data || {}) } as any;
-      const updated = await http<Lecture[]>(`/lectures?id=eq.${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+      const updated = await http<Lecture[]>(`/lectures?id=eq.${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
       return updated[0];
     },
     async addBookmark(data: BookmarkRequest): Promise<Bookmark> {
       // 현재 사용자 조회하여 userId 추가
       const currentUser = await getCurrentUser();
       const payload = { ...data, userId: currentUser.id };
-      const created = await http<Bookmark[]>(`/bookmarks`, { method: "POST", body: JSON.stringify([payload]) });
+      const created = await http<Bookmark[]>(`/bookmarks`, {
+        method: "POST",
+        body: JSON.stringify([payload]),
+      });
       return created[0];
     },
     async getBookmarks(lectureId: number, sectionIndex: number): Promise<Bookmark[]> {
-      return http<Bookmark[]>(`/bookmarks?lectureId=eq.${lectureId}&sectionIndex=eq.${sectionIndex}&select=*`);
+      return http<Bookmark[]>(
+        `/bookmarks?lectureId=eq.${lectureId}&sectionIndex=eq.${sectionIndex}&select=*`,
+      );
     },
     async deleteBookmark(bookmarkId: number): Promise<void> {
       await http<void>(`/bookmarks?id=eq.${bookmarkId}`, { method: "DELETE" });
@@ -192,7 +220,11 @@ function buildLecture(): LecturePort {
       if (sinceSection != null) filters.push(`sectionIndex=gte.${sinceSection}`);
       return http<Summary[]>(`/summaries?${filters.join("&")}&select=*`);
     },
-    async getResources(lectureId: number, sectionIndex: number, type?: Resource["type"]): Promise<Resource[]> {
+    async getResources(
+      lectureId: number,
+      sectionIndex: number,
+      type?: Resource["type"],
+    ): Promise<Resource[]> {
       const filters = [`lectureId=eq.${lectureId}`, `sectionIndex=eq.${sectionIndex}`];
       if (type) filters.push(`type=eq.${type}`);
       return http<Resource[]>(`/resources?${filters.join("&")}&select=*`);
@@ -206,15 +238,24 @@ function buildLecture(): LecturePort {
       // 함수 호출 대신 모의 성공
       return { message: "ok" };
     },
-    async generateSummary(lectureId: number, sectionIndex: number): Promise<{ success: boolean; summary?: string; sectionIndex: number; error?: string }> {
+    async generateSummary(
+      lectureId: number,
+      sectionIndex: number,
+    ): Promise<{ success: boolean; summary?: string; sectionIndex: number; error?: string }> {
       // Supabase 백엔드는 아직 구현되지 않음
       return { success: false, sectionIndex, error: "Not implemented" };
     },
-    async generateQnA(lectureId: number, sectionIndex: number): Promise<{ success: boolean; qna?: any[]; sectionIndex: number; error?: string }> {
+    async generateQnA(
+      lectureId: number,
+      sectionIndex: number,
+    ): Promise<{ success: boolean; qna?: any[]; sectionIndex: number; error?: string }> {
       // Supabase 백엔드는 아직 구현되지 않음
       return { success: false, sectionIndex, error: "Not implemented" };
     },
-    async generateResources(lectureId: number, sectionIndex: number): Promise<{ success: boolean; resources?: any[]; sectionIndex: number; error?: string }> {
+    async generateResources(
+      lectureId: number,
+      sectionIndex: number,
+    ): Promise<{ success: boolean; resources?: any[]; sectionIndex: number; error?: string }> {
       // Supabase 백엔드는 아직 구현되지 않음
       return { success: false, sectionIndex, error: "Not implemented" };
     },
@@ -244,7 +285,10 @@ function buildSettings(): SettingsPort {
     },
     async setPassword(data: SetPasswordRequest): Promise<UserView> {
       const me = await this.getUser();
-      const updated = await http<UserView[]>(`/users?id=eq.${me.id}`, { method: "PATCH", body: JSON.stringify({ password: data.newPassword }) });
+      const updated = await http<UserView[]>(`/users?id=eq.${me.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ password: data.newPassword }),
+      });
       return updated[0];
     },
   };
@@ -253,5 +297,3 @@ function buildSettings(): SettingsPort {
 export function createSupabaseBackend(): BackendPort {
   return { auth: buildAuth(), lecture: buildLecture(), settings: buildSettings() };
 }
-
-

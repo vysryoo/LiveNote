@@ -18,11 +18,7 @@ interface SplitPaneProps {
   streamingResourcesForSection: StreamingCard[];
   streamingQnAsForSection: StreamingCard[];
   isBookmarked: (type: "resource" | "qna", id: number) => boolean;
-  toggleBookmark: (
-    type: "resource" | "qna",
-    id: number,
-    sectionIndex: number
-  ) => void;
+  toggleBookmark: (type: "resource" | "qna", id: number, sectionIndex: number) => void;
   closeSplitMode: () => void;
   setShowBookmarkedOnly: (value: boolean) => void;
   setAutoMode: (value: boolean) => void;
@@ -69,9 +65,7 @@ export function SplitPane({
             <button
               onClick={() => setShowBookmarkedOnly(!showBookmarkedOnly)}
               className={`w-3 h-3 rounded-full transition-colors cursor-pointer ${
-                showBookmarkedOnly
-                  ? "bg-[#FFBD44]"
-                  : "bg-[#FFBD44] hover:bg-[#FFB000]"
+                showBookmarkedOnly ? "bg-[#FFBD44]" : "bg-[#FFBD44] hover:bg-[#FFB000]"
               }`}
               title="북마크 필터"
             />
@@ -117,9 +111,7 @@ export function SplitPane({
                   if (el) {
                     const viewport = el
                       .closest('[data-slot="scroll-area"]')
-                      ?.querySelector(
-                        '[data-slot="scroll-area-viewport"]'
-                      ) as HTMLDivElement;
+                      ?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLDivElement;
                     if (viewport) {
                       resourceScrollViewportRef.current = viewport;
                     }
@@ -134,13 +126,11 @@ export function SplitPane({
                     return null;
                   }
                   const resourceTitle =
-                    (Array.isArray(resource.title)
-                      ? resource.title.join(" ")
-                      : resource.title) || "제목 없음";
+                    (Array.isArray(resource.title) ? resource.title.join(" ") : resource.title) ||
+                    "제목 없음";
                   const resourceDescription =
-                    (Array.isArray(resource.text)
-                      ? resource.text.join(" ")
-                      : resource.text) || "설명이 없습니다.";
+                    (Array.isArray(resource.text) ? resource.text.join(" ") : resource.text) ||
+                    "설명이 없습니다.";
                   return (
                     <div
                       key={resource.id}
@@ -154,19 +144,19 @@ export function SplitPane({
                               resource.type === "paper"
                                 ? "linear-gradient(90deg, #0c4997, #1e5fa8, #3b72dd, #4d82e0)"
                                 : resource.type === "wiki"
-                                ? "linear-gradient(90deg, #0c966b, #10b981, #34d399, #6ee7b7)"
-                                : resource.type === "video"
-                                ? "linear-gradient(90deg, #960c0c, #dc2626, #ef4444, #f87171)"
-                                : "linear-gradient(90deg, #3f0c96, #6366f1, #8b5cf6, #a78bfa)",
+                                  ? "linear-gradient(90deg, #0c966b, #10b981, #34d399, #6ee7b7)"
+                                  : resource.type === "video"
+                                    ? "linear-gradient(90deg, #960c0c, #dc2626, #ef4444, #f87171)"
+                                    : "linear-gradient(90deg, #3f0c96, #6366f1, #8b5cf6, #a78bfa)",
                           }}
                         >
                           {resource.type === "paper"
                             ? "학술자료"
                             : resource.type === "wiki"
-                            ? "위키백과"
-                            : resource.type === "video"
-                            ? "유튜브"
-                            : "웹/블로그"}
+                              ? "위키백과"
+                              : resource.type === "video"
+                                ? "유튜브"
+                                : "웹/블로그"}
                         </Badge>
                         <label className="ml-2 flex-shrink-0">
                           <input
@@ -174,11 +164,7 @@ export function SplitPane({
                             id={`checkboxInput-resource-${resource.id}`}
                             checked={bookmarked}
                             onChange={() =>
-                              toggleBookmark(
-                                "resource",
-                                resource.id,
-                                resource.sectionIndex
-                              )
+                              toggleBookmark("resource", resource.id, resource.sectionIndex)
                             }
                           />
                           <label
@@ -200,9 +186,7 @@ export function SplitPane({
                         <p className="font-medium">{resourceTitle}</p>
                       </div>
                       <div className="flex-1 overflow-y-auto">
-                        <p className="text-sm text-muted-foreground">
-                          {resourceDescription}
-                        </p>
+                        <p className="text-sm text-muted-foreground">{resourceDescription}</p>
                       </div>
                       <div className="pt-3 text-right text-xs text-muted-foreground">
                         <a
@@ -219,16 +203,12 @@ export function SplitPane({
                 })}
                 {/* 스트리밍 중인 Resource 카드 표시 (완료된 카드 아래에) */}
                 {streamingResourcesForSection.map((streamingCard) => (
-                  <StreamingResourceCard
-                    key={streamingCard.cardId}
-                    card={streamingCard}
-                  />
+                  <StreamingResourceCard key={streamingCard.cardId} card={streamingCard} />
                 ))}
                 {!showBookmarkedOnly &&
                   !loading &&
                   (resourcesForView.length === 0 ||
-                    (isGeneratingExtended &&
-                      streamingResourcesForSection.length === 0)) && (
+                    (isGeneratingExtended && streamingResourcesForSection.length === 0)) && (
                     <div className="flex items-center justify-start gap-2 mt-[3px]">
                       <AnimatedLoaderIcon id="grad-resources" />
                       <span className="text-[rgb(125,128,136)] text-xs text-[14px]">
@@ -250,9 +230,7 @@ export function SplitPane({
                   if (el) {
                     const viewport = el
                       .closest('[data-slot="scroll-area"]')
-                      ?.querySelector(
-                        '[data-slot="scroll-area-viewport"]'
-                      ) as HTMLDivElement;
+                      ?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLDivElement;
                     if (viewport) {
                       qnaScrollViewportRef.current = viewport;
                     }
@@ -270,10 +248,10 @@ export function SplitPane({
                     qa.type === "concept"
                       ? "개념확인"
                       : qa.type === "application"
-                      ? "응용확장"
-                      : qa.type === "advanced"
-                      ? "심화질의"
-                      : "비교분석";
+                        ? "응용확장"
+                        : qa.type === "advanced"
+                          ? "심화질의"
+                          : "비교분석";
                   return (
                     <div
                       key={qa.id}
@@ -294,9 +272,7 @@ export function SplitPane({
                             type="checkbox"
                             id={`checkboxInput-ai-${qa.id}`}
                             checked={bookmarked}
-                            onChange={() =>
-                              toggleBookmark("qna", qa.id, qa.sectionIndex)
-                            }
+                            onChange={() => toggleBookmark("qna", qa.id, qa.sectionIndex)}
                           />
                           <label
                             htmlFor={`checkboxInput-ai-${qa.id}`}
@@ -315,16 +291,12 @@ export function SplitPane({
                       </div>
                       <div className="mb-3 flex-shrink-0">
                         <p className="font-medium">
-                          {Array.isArray(qa.question)
-                            ? qa.question.join("\n")
-                            : qa.question}
+                          {Array.isArray(qa.question) ? qa.question.join("\n") : qa.question}
                         </p>
                       </div>
                       <div className="flex-1 overflow-y-auto">
                         <p className="text-sm text-muted-foreground whitespace-pre-line">
-                          {Array.isArray(qa.answer)
-                            ? qa.answer.join("\n")
-                            : qa.answer}
+                          {Array.isArray(qa.answer) ? qa.answer.join("\n") : qa.answer}
                         </p>
                       </div>
                     </div>
@@ -332,16 +304,12 @@ export function SplitPane({
                 })}
                 {/* 스트리밍 중인 QnA 카드 표시 (완료된 카드 아래에) */}
                 {streamingQnAsForSection.map((streamingCard) => (
-                  <StreamingQnACard
-                    key={streamingCard.cardId}
-                    card={streamingCard}
-                  />
+                  <StreamingQnACard key={streamingCard.cardId} card={streamingCard} />
                 ))}
                 {!showBookmarkedOnly &&
                   !loading &&
                   (qnaForView.length === 0 ||
-                    (isGeneratingExtended &&
-                      streamingQnAsForSection.length === 0)) && (
+                    (isGeneratingExtended && streamingQnAsForSection.length === 0)) && (
                     <div className="flex items-center justify-start gap-2 mt-1">
                       <AnimatedLoaderIcon id="grad-ai" />
                       <span className="text-[rgb(125,128,136)] text-xs text-[14px]">
@@ -357,5 +325,3 @@ export function SplitPane({
     </div>
   );
 }
-
-

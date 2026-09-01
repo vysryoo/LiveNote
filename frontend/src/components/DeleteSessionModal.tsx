@@ -1,4 +1,13 @@
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "./ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "./ui/alert-dialog";
 
 interface DeleteSessionModalProps {
   open: boolean;
@@ -7,7 +16,12 @@ interface DeleteSessionModalProps {
   onConfirm: () => void;
 }
 
-export function DeleteSessionModal({ open, sessionName, onClose, onConfirm }: DeleteSessionModalProps) {
+export function DeleteSessionModal({
+  open,
+  sessionName,
+  onClose,
+  onConfirm,
+}: DeleteSessionModalProps) {
   return (
     <AlertDialog open={open} onOpenChange={onClose}>
       <AlertDialogContent>
@@ -19,7 +33,7 @@ export function DeleteSessionModal({ open, sessionName, onClose, onConfirm }: De
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onClose}>취소</AlertDialogCancel>
-          <AlertDialogAction 
+          <AlertDialogAction
             onClick={onConfirm}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >

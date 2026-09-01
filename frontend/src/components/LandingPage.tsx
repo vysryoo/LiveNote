@@ -1,50 +1,36 @@
 import { Button } from "./ui/button";
-import {
-  Check,
-  Chrome,
-  BookOpen,
-  Youtube,
-  GraduationCap,
-} from "lucide-react";
+import { Check, Chrome, BookOpen, Youtube, GraduationCap } from "lucide-react";
 import ctaBackground from "figma:asset/ctaBackground.png";
 import logoImage from "figma:asset/logo.png";
-import GradientText from './GradientText';
-import { DemoVideoModal } from './DemoVideoModal';
-import { useState } from 'react';
+import GradientText from "./GradientText";
+import { DemoVideoModal } from "./DemoVideoModal";
+import { useState } from "react";
 
 interface LandingPageProps {
   onLoginClick: () => void;
   onSignupClick: () => void;
 }
 
-export function LandingPage({
-  onLoginClick,
-  onSignupClick,
-}: LandingPageProps) {
+export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
   const [showDemoModal, setShowDemoModal] = useState(false);
 
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm shadow-lg">
-        <div className="px-[3%] py-[0.4%]" style={{ fontSize: 'clamp(14px, 1.2vw, 18px)' }}>
+        <div className="px-[3%] py-[0.4%]" style={{ fontSize: "clamp(14px, 1.2vw, 18px)" }}>
           <div className="flex justify-between items-center">
             <div className="flex items-center">
-              <img
-                src={logoImage}
-                alt="LiveNote"
-                style={{ height: '3em' }}
-              />
+              <img src={logoImage} alt="LiveNote" style={{ height: "3em" }} />
             </div>
 
-            <div className="flex" style={{ gap: '0.8em' }}>
+            <div className="flex" style={{ gap: "0.8em" }}>
               <Button
                 variant="ghost"
                 className="hover:bg-[#EEF2FF]"
                 onClick={onLoginClick}
                 style={{
-                  background:
-                    "linear-gradient(135deg, #639BEE, #3B72DD)",
+                  background: "linear-gradient(135deg, #639BEE, #3B72DD)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -86,8 +72,7 @@ export function LandingPage({
               <p className="text-[1.25rem] leading-[1.8] mb-10 text-[#4B5563] max-w-3xl mx-auto">
                 실시간 텍스트 변환 및 요약으로 집중력을 높이고
                 <br />
-                원클릭 자료탐색과 AI 질문답변으로 학습 효율을
-                극대화하세요
+                원클릭 자료탐색과 AI 질문답변으로 학습 효율을 극대화하세요
               </p>
               <div className="flex gap-4 justify-center">
                 <Button
@@ -102,8 +87,7 @@ export function LandingPage({
                   variant="outline"
                   className="border-0 hover:bg-[#EEF2FF] rounded-lg w-[320px] h-[50px] text-lg bg-white"
                   style={{
-                    background:
-                      "linear-gradient(135deg, #639BEE, #3B72DD)",
+                    background: "linear-gradient(135deg, #639BEE, #3B72DD)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
@@ -118,8 +102,8 @@ export function LandingPage({
         </section>
 
         {/* Padding Area - 그라데이션 확장을 위한 공간 */}
-        <div className="h-20 relative z-10" style={{ minHeight: '160px' }}></div>
-        
+        <div className="h-20 relative z-10" style={{ minHeight: "160px" }}></div>
+
         {/* Wave Background - 부모 컨테이너에 적용 (패딩 영역까지 포함) */}
         <div
           className="absolute inset-0 z-0"
@@ -143,9 +127,7 @@ export function LandingPage({
               <div className="relative">
                 <div className="bg-[rgb(246,246,246)] rounded-2xl p-8 shadow-2xl">
                   <div className="flex items-center gap-2 mb-6">
-                    <span className="ml-auto text-[#9CA3AF] text-sm">
-                      LiveNote Session
-                    </span>
+                    <span className="ml-auto text-[#9CA3AF] text-sm">LiveNote Session</span>
                   </div>
 
                   <div className="space-y-6">
@@ -153,14 +135,11 @@ export function LandingPage({
                     <div className="rounded-lg p-6 bg-white">
                       <h4 className="mb-4">강의 기록</h4>
                       <p className="text-sm text-muted-foreground">
-                        오늘은 인공지능의 언어 이해를 혁신적으로
-                        바꾼 Transformer 모델을 다뤄보겠습니다.
-                        이전의 RNN이나 CNN 기반 모델들은 순차적
-                        연산으로 병렬화가 어려웠죠. 하지만
-                        Transformer는 이를 Self-Attention
-                        메커니즘으로 완전히 대체하여, 문장 내
-                        단어 간 관계를 한 번에 파악하고 훨씬
-                        빠르고 효율적인 학습을 가능하게...
+                        오늘은 인공지능의 언어 이해를 혁신적으로 바꾼 Transformer 모델을
+                        다뤄보겠습니다. 이전의 RNN이나 CNN 기반 모델들은 순차적 연산으로 병렬화가
+                        어려웠죠. 하지만 Transformer는 이를 Self-Attention 메커니즘으로 완전히
+                        대체하여, 문장 내 단어 간 관계를 한 번에 파악하고 훨씬 빠르고 효율적인
+                        학습을 가능하게...
                       </p>
                     </div>
 
@@ -172,16 +151,13 @@ export function LandingPage({
                         backgroundImage:
                           "linear-gradient(white, white), linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
                         backgroundOrigin: "border-box",
-                        backgroundClip:
-                          "padding-box, border-box",
+                        backgroundClip: "padding-box, border-box",
                       }}
                     >
                       <h4 className="mb-4">실시간 요약</h4>
                       <p className="text-sm text-muted-foreground">
-                        Transformer는 RNN·CNN을 대체한
-                        Self-Attention 기반 구조로, 병렬 연산과
-                        문맥 이해를 동시에 개선해 현대
-                        언어모델의 핵심이 됨.
+                        Transformer는 RNN·CNN을 대체한 Self-Attention 기반 구조로, 병렬 연산과 문맥
+                        이해를 동시에 개선해 현대 언어모델의 핵심이 됨.
                       </p>
                     </div>
 
@@ -244,8 +220,7 @@ export function LandingPage({
                   원클릭 자료 탐색
                 </h3>
                 <p className="text-[1.125rem] leading-[1.8] text-[#6B7280] mb-8">
-                  검색어 입력도, 수많은 결과 속 선별도 이제 필요
-                  없습니다.<br></br>
+                  검색어 입력도, 수많은 결과 속 선별도 이제 필요 없습니다.<br></br>
                   AI가 가장 적절한 자료를 한 번에 연결해드립니다
                 </p>
 
@@ -260,12 +235,8 @@ export function LandingPage({
                     <div className="flex items-center mb-3">
                       <GraduationCap className="w-8 h-8 text-white" />
                     </div>
-                    <div className="font-semibold text-white mb-1">
-                      학술자료
-                    </div>
-                    <div className="text-sm text-white/90">
-                      논문, 연구 자료
-                    </div>
+                    <div className="font-semibold text-white mb-1">학술자료</div>
+                    <div className="text-sm text-white/90">논문, 연구 자료</div>
                   </div>
                   <div
                     className="rounded-xl p-5"
@@ -277,12 +248,8 @@ export function LandingPage({
                     <div className="flex items-center mb-3">
                       <BookOpen className="w-8 h-8 text-white" />
                     </div>
-                    <div className="font-semibold text-white mb-1">
-                      위키백과
-                    </div>
-                    <div className="text-sm text-white/90">
-                      기본 개념 설명
-                    </div>
+                    <div className="font-semibold text-white mb-1">위키백과</div>
+                    <div className="text-sm text-white/90">기본 개념 설명</div>
                   </div>
                   <div
                     className="rounded-xl p-5"
@@ -294,12 +261,8 @@ export function LandingPage({
                     <div className="flex items-center mb-3">
                       <Youtube className="w-8 h-8 text-white" />
                     </div>
-                    <div className="font-semibold text-white mb-1">
-                      유튜브
-                    </div>
-                    <div className="text-sm text-white/90">
-                      시각적 학습 자료
-                    </div>
+                    <div className="font-semibold text-white mb-1">유튜브</div>
+                    <div className="text-sm text-white/90">시각적 학습 자료</div>
                   </div>
                   <div
                     className="rounded-xl p-5"
@@ -311,12 +274,8 @@ export function LandingPage({
                     <div className="flex items-center mb-3">
                       <Chrome className="w-8 h-8 text-white" />
                     </div>
-                    <div className="font-semibold text-white mb-1">
-                      웹/블로그
-                    </div>
-                    <div className="text-sm text-white/90">
-                      실무 예제, 튜토리얼
-                    </div>
+                    <div className="font-semibold text-white mb-1">웹/블로그</div>
+                    <div className="text-sm text-white/90">실무 예제, 튜토리얼</div>
                   </div>
                 </div>
               </div>
@@ -325,9 +284,7 @@ export function LandingPage({
               <div>
                 <div className="bg-[rgb(246,246,246)] rounded-2xl p-8 shadow-2xl h-full">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="ml-auto text-[#9CA3AF] text-sm">
-                      LiveNote Session
-                    </span>
+                    <span className="ml-auto text-[#9CA3AF] text-sm">LiveNote Session</span>
                   </div>
 
                   <div className="flex flex-col gap-3">
@@ -338,14 +295,11 @@ export function LandingPage({
                         </span>
                       </div>
                       <div className="mb-3">
-                        <p className="font-medium text-[#1F2937]">
-                          Attention Is All You Need 
-                        </p>
+                        <p className="font-medium text-[#1F2937]">Attention Is All You Need</p>
                       </div>
                       <div className="flex-1 overflow-hidden">
                         <p className="text-sm text-muted-foreground line-clamp-2">
-                          We present the Transformer, a model
-                          based entirely on self-attention
+                          We present the Transformer, a model based entirely on self-attention
                           without recurrence or convolution...
                         </p>
                       </div>
@@ -362,15 +316,13 @@ export function LandingPage({
                       </div>
                       <div className="mb-3">
                         <p className="font-medium text-[#1F2937]">
-                          Transformers, the tech behind LLMs |
-                          Deep Learning Chapter 5
+                          Transformers, the tech behind LLMs | Deep Learning Chapter 5
                         </p>
                       </div>
                       <div className="flex-1 overflow-hidden">
                         <p className="text-sm text-muted-foreground line-clamp-2">
-                          This video visually explains how Large
-                          Language Models (LLMs) work, focusing
-                          on Transformers...
+                          This video visually explains how Large Language Models (LLMs) work,
+                          focusing on Transformers...
                         </p>
                       </div>
                     </div>
@@ -388,9 +340,7 @@ export function LandingPage({
                 {/* Question Card 1 */}
                 <div className="bg-[rgb(246,246,246)] rounded-2xl p-8 shadow-2xl">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="ml-auto text-[#9CA3AF] text-sm">
-                      LiveNote Session
-                    </span>
+                    <span className="ml-auto text-[#9CA3AF] text-sm">LiveNote Session</span>
                   </div>
 
                   <div className="flex flex-col gap-3">
@@ -402,13 +352,13 @@ export function LandingPage({
                       </div>
                       <div className="mb-3">
                         <p className="font-medium text-[#1F2937]">
-                          Transformer는 왜 RNN보다 빠르다고
-                          하나요?
+                          Transformer는 왜 RNN보다 빠르다고 하나요?
                         </p>
                       </div>
                       <div className="flex-1 overflow-hidden">
                         <p className="text-sm text-muted-foreground line-clamp-2">
-                          Transformer는 순차적으로 단어를 처리하지 않고, 모든 단어 간 관계를 병렬로 계산합니다...
+                          Transformer는 순차적으로 단어를 처리하지 않고, 모든 단어 간 관계를 병렬로
+                          계산합니다...
                         </p>
                       </div>
                     </div>
@@ -429,7 +379,8 @@ export function LandingPage({
                       </div>
                       <div className="flex-1 overflow-hidden">
                         <p className="text-sm text-muted-foreground line-clamp-2">
-                          Transformer는 순서를 따라가며 처리하지 않기 때문에, 위치 정보를 따로 제공해야 합니다...
+                          Transformer는 순서를 따라가며 처리하지 않기 때문에, 위치 정보를 따로
+                          제공해야 합니다...
                         </p>
                       </div>
                     </div>
@@ -448,8 +399,7 @@ export function LandingPage({
                 <p className="text-[1.125rem] leading-[1.8] text-[#6B7280] mb-8">
                   지금 궁금할 만한 질문, AI가 먼저 생각합니다.
                   <br></br>
-                  강의 맥락을 바탕으로 예상 질문을 제안하고,
-                  답변까지 바로 제공합니다.
+                  강의 맥락을 바탕으로 예상 질문을 제안하고, 답변까지 바로 제공합니다.
                 </p>
 
                 <div className="space-y-4">
@@ -458,8 +408,7 @@ export function LandingPage({
                       <Check className="w-4 h-4 text-white" />
                     </div>
                     <span className="text-[1.125rem] text-[#4B5563]">
-                      프롬프트 입력 없이, 질문과 답변을 즉시
-                      확인
+                      프롬프트 입력 없이, 질문과 답변을 즉시 확인
                     </span>
                   </div>
                   <div className="flex items-start gap-3">
@@ -512,19 +461,16 @@ export function LandingPage({
                 {/* Step 1 */}
                 <div className="relative">
                   <div className="flex flex-col items-center">
-                    <div 
+                    <div
                       className="w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg"
                       style={{
-                        background: "linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)"
+                        background:
+                          "linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
                       }}
                     >
-                      <span className="text-white text-4xl font-bold">
-                        1
-                      </span>
+                      <span className="text-white text-4xl font-bold">1</span>
                     </div>
-                    <h4 className="text-xl font-bold text-[#1F2937] mb-3">
-                      강의 설정
-                    </h4>
+                    <h4 className="text-xl font-bold text-[#1F2937] mb-3">강의 설정</h4>
                     <p className="text-[#6B7280] leading-relaxed">
                       과목명을 입력하고 언어를 선택합니다.
                       <br></br>
@@ -538,19 +484,16 @@ export function LandingPage({
                 {/* Step 2 */}
                 <div className="relative">
                   <div className="flex flex-col items-center">
-                    <div 
+                    <div
                       className="w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg"
                       style={{
-                        background: "linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)"
+                        background:
+                          "linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
                       }}
                     >
-                      <span className="text-white text-4xl font-bold">
-                        2
-                      </span>
+                      <span className="text-white text-4xl font-bold">2</span>
                     </div>
-                    <h4 className="text-xl font-bold text-[#1F2937] mb-3">
-                      실시간 전사
-                    </h4>
+                    <h4 className="text-xl font-bold text-[#1F2937] mb-3">실시간 전사</h4>
                     <p className="text-[#6B7280] leading-relaxed">
                       강의가 시작되면 자동으로 음성을 인식하고
                       <br></br>
@@ -564,19 +507,16 @@ export function LandingPage({
                 {/* Step 3 */}
                 <div>
                   <div className="flex flex-col items-center">
-                    <div 
+                    <div
                       className="w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg"
                       style={{
-                        background: "linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)"
+                        background:
+                          "linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
                       }}
                     >
-                      <span className="text-white text-4xl font-bold">
-                        3
-                      </span>
+                      <span className="text-white text-4xl font-bold">3</span>
                     </div>
-                    <h4 className="text-xl font-bold text-[#1F2937] mb-3">
-                      원클릭 학습
-                    </h4>
+                    <h4 className="text-xl font-bold text-[#1F2937] mb-3">원클릭 학습</h4>
                     <p className="text-[#6B7280] leading-relaxed">
                       궁금한 부분을 클릭하면<br></br>
                       관련 자료와 AI답변을 확인할 수 있습니다.
@@ -603,15 +543,11 @@ export function LandingPage({
         ></div>
 
         <div className="max-w-[1400px] mx-auto text-center relative z-10">
-          <h2
-            className="text-[3rem] leading-[1.2] mb-6 text-white"
-            style={{ fontWeight: 700 }}
-          >
+          <h2 className="text-[3rem] leading-[1.2] mb-6 text-white" style={{ fontWeight: 700 }}>
             지금 바로 시작하세요
           </h2>
           <p className="text-[1.125rem] leading-[1.6] text-white/90 mb-8 max-w-2xl mx-auto">
-            무료로 시작하고 AI 학습 도우미의 강력한 기능을
-            경험해보세요
+            무료로 시작하고 AI 학습 도우미의 강력한 기능을 경험해보세요
           </p>
           <Button
             size="lg"
@@ -620,8 +556,7 @@ export function LandingPage({
           >
             <span
               style={{
-                background:
-                  "linear-gradient(135deg, #639BEE, #3B72DD, #4D82E0)",
+                background: "linear-gradient(135deg, #639BEE, #3B72DD, #4D82E0)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -633,9 +568,7 @@ export function LandingPage({
 
           {/* Copyright */}
           <div className="mt-16 pt-8 border-t border-white/20">
-            <p className="text-sm text-white/60">
-              © 2025 LiveNote. All rights reserved.
-            </p>
+            <p className="text-sm text-white/60">© 2025 LiveNote. All rights reserved.</p>
           </div>
         </div>
       </section>
@@ -654,10 +587,7 @@ export function LandingPage({
       `}</style>
 
       {/* Demo Video Modal */}
-      <DemoVideoModal
-        isOpen={showDemoModal}
-        onClose={() => setShowDemoModal(false)}
-      />
+      <DemoVideoModal isOpen={showDemoModal} onClose={() => setShowDemoModal(false)} />
     </div>
   );
 }

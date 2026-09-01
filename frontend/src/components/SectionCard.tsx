@@ -37,12 +37,10 @@ const SectionCard = memo(
     t,
   }: SectionCardProps) => {
     const hasNoSummary = summaryText === t("session.noSummaryText");
-  
+
     // currentSection일 때만 transcription 사용
     const finalDisplayText =
-      !displayText && isCurrentSection
-        ? transcription
-        : displayText || t("session.noTranscript");
+      !displayText && isCurrentSection ? transcription : displayText || t("session.noTranscript");
 
     return (
       <div key={sectionKey}>
@@ -51,21 +49,15 @@ const SectionCard = memo(
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-[16px]">{t("session.header.record")}</h4>
             {isCurrentSection && (
-              <span className="text-xs font-semibold text-[#6A737D]">
-                실시간
-              </span>
+              <span className="text-xs font-semibold text-[#6A737D]">실시간</span>
             )}
           </div>
-          <p className="text-sm text-muted-foreground whitespace-pre-line">
-            {finalDisplayText}
-          </p>
+          <p className="text-sm text-muted-foreground whitespace-pre-line">{finalDisplayText}</p>
         </div>
 
         {/* 실시간 요약 컴포넌트 */}
         <div
-          onClick={
-            isClickable ? () => onSummaryClick(summaryKey, sectionIndex) : undefined
-          }
+          onClick={isClickable ? () => onSummaryClick(summaryKey, sectionIndex) : undefined}
           className={`rounded-lg p-6 transition-all relative ${
             isClickable ? "cursor-pointer" : "cursor-not-allowed opacity-60"
           } ${
@@ -80,36 +72,30 @@ const SectionCard = memo(
                     border: "2px solid #C3C7CB",
                   }
                 : isGenerating
-                ? {
-                    border: "2px solid transparent",
-                    backgroundImage:
-                      "linear-gradient(white, white), linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
-                    backgroundOrigin: "border-box",
-                    backgroundClip: "padding-box, border-box",
-                  }
-                : {
-                    border: "2px solid transparent",
-                    backgroundImage:
-                      "linear-gradient(white, white), linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
-                    backgroundOrigin: "border-box",
-                    backgroundClip: "padding-box, border-box",
-                  }
+                  ? {
+                      border: "2px solid transparent",
+                      backgroundImage:
+                        "linear-gradient(white, white), linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
+                      backgroundOrigin: "border-box",
+                      backgroundClip: "padding-box, border-box",
+                    }
+                  : {
+                      border: "2px solid transparent",
+                      backgroundImage:
+                        "linear-gradient(white, white), linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
+                      backgroundOrigin: "border-box",
+                      backgroundClip: "padding-box, border-box",
+                    }
               : undefined
           }
         >
           <div className="flex items-center justify-between mb-4">
-            <h4 className={isSelected ? "text-white" : ""}>
-              {t("session.header.summary")}
-            </h4>
+            <h4 className={isSelected ? "text-white" : ""}>{t("session.header.summary")}</h4>
           </div>
           {isGenerating ? (
             <div className="flex items-center gap-2">
               <AnimatedLoaderIcon id={`grad-summary-${sectionIndex}`} />
-              <p
-                className={`text-sm ${
-                  isSelected ? "text-white" : "text-muted-foreground"
-                }`}
-              >
+              <p className={`text-sm ${isSelected ? "text-white" : "text-muted-foreground"}`}>
                 {summaryText}
               </p>
             </div>
@@ -141,14 +127,11 @@ const SectionCard = memo(
       prevProps.isGenerating === nextProps.isGenerating &&
       prevProps.isClickable === nextProps.isClickable &&
       // currentSection이 아닌 경우 transcription 비교 생략
-      (!nextProps.isCurrentSection ||
-        prevProps.transcription === nextProps.transcription)
+      (!nextProps.isCurrentSection || prevProps.transcription === nextProps.transcription)
     );
-  }
+  },
 );
 
 SectionCard.displayName = "SectionCard";
 
 export default SectionCard;
-
-

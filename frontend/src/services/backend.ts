@@ -13,5 +13,3 @@ export function createBackend(): BackendPort {
   if (type === "supabase") return createSupabaseBackend();
   return createSpringBackend();
 }
-
-

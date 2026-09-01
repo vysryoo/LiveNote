@@ -1,9 +1,14 @@
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { User, Settings, LogOut, Plus, MoreVertical, BookOpen, Clock, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import logoImage from 'figma:asset/logo.png';
+import logoImage from "figma:asset/logo.png";
 import type { Lecture } from "../services/ports";
 import { useI18n } from "../i18n/I18nContext";
 
@@ -36,11 +41,11 @@ function formatLectureDate(value: string) {
   return date.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
-export function MainPage({ 
-  onNewLecture, 
-  onSessionClick, 
-  onSettings, 
-  onLogout, 
+export function MainPage({
+  onNewLecture,
+  onSessionClick,
+  onSettings,
+  onLogout,
   onDeleteSession,
   onRenameSession,
   lectures,
@@ -70,38 +75,38 @@ export function MainPage({
   };
 
   const orderedLectures = useMemo(
-    () => [...lectures].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    [lectures]
+    () =>
+      [...lectures].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ),
+    [lectures],
   );
 
   return (
     <div className="min-h-screen bg-background bg-wave-pattern-bottom">
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm shadow-lg">
-        <div className="px-[3%] py-[0.4%]" style={{ fontSize: 'clamp(14px, 1.2vw, 18px)' }}>
+        <div className="px-[3%] py-[0.4%]" style={{ fontSize: "clamp(14px, 1.2vw, 18px)" }}>
           <div className="flex justify-between items-center">
             <div className="flex items-center">
-              <img src={logoImage} alt="LiveNote" style={{ height: '3em' }} />
+              <img src={logoImage} alt="LiveNote" style={{ height: "3em" }} />
             </div>
-            
-            <div className="flex items-center" style={{ gap: '1.2em' }}>
-              <Button 
-                onClick={onNewLecture}
-                className="bg-[#3B72DD] hover:bg-[#4D82E0]"
-              >
-                <Plus style={{ width: '1.4em', height: '1.4em', marginRight: '0.5em' }} />
+
+            <div className="flex items-center" style={{ gap: "1.2em" }}>
+              <Button onClick={onNewLecture} className="bg-[#3B72DD] hover:bg-[#4D82E0]">
+                <Plus style={{ width: "1.4em", height: "1.4em", marginRight: "0.5em" }} />
                 {t("main.startNewLecture")}
               </Button>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
                     className="rounded-full bg-[#f5f5f5] transition-all duration-300 [box-shadow:2px_2px_4px_#d8d8d8,-2px_-2px_4px_#ffffff] data-[state=open]:[box-shadow:inset_2px_2px_4px_#d8d8d8,inset_-2px_-2px_4px_#ffffff] active:[box-shadow:inset_2px_2px_4px_#d8d8d8,inset_-2px_-2px_4px_#ffffff] hover:bg-[#f5f5f5]"
-                    style={{ width: '32px', height: '32px' }}
+                    style={{ width: "32px", height: "32px" }}
                   >
-                    <User style={{ width: '16px', height: '16px' }} color="#6A737D" />
+                    <User style={{ width: "16px", height: "16px" }} color="#6A737D" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -122,26 +127,26 @@ export function MainPage({
 
       {/* Main Content */}
       <main className="max-w-[1400px] mx-auto px-6 py-12">
-          <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl mb-2">{t("main.myLectures")}</h1>
-              <p className="text-muted-foreground">
-                {(() => {
-                  const n = lectures.length;
-                  switch (language) {
-                    case "English":
-                      return n === 1
-                        ? `So far you’ve run ${n} lecture`
-                        : `So far you’ve run ${n} lectures`;
-                    case "日本語":
-                      return `これまでに ${n} 件の講義を実施しました`;
-                    case "汉语":
-                      return `到目前为止已进行 ${n} 次课程`;
-                    default:
-                      return `지금까지 ${n}개의 강의를 진행했습니다`;
-                  }
-                })()}
-              </p>
+            <p className="text-muted-foreground">
+              {(() => {
+                const n = lectures.length;
+                switch (language) {
+                  case "English":
+                    return n === 1
+                      ? `So far you’ve run ${n} lecture`
+                      : `So far you’ve run ${n} lectures`;
+                  case "日本語":
+                    return `これまでに ${n} 件の講義を実施しました`;
+                  case "汉语":
+                    return `到目前为止已进行 ${n} 次课程`;
+                  default:
+                    return `지금까지 ${n}개의 강의를 진행했습니다`;
+                }
+              })()}
+            </p>
           </div>
         </div>
 
@@ -154,13 +159,8 @@ export function MainPage({
           <div className="text-center py-20">
             <div className="text-6xl mb-4">📚</div>
             <h3 className="text-xl mb-2">{t("main.noLecturesTitle")}</h3>
-            <p className="text-muted-foreground mb-6">
-              {t("main.noLecturesDesc")}
-            </p>
-            <Button 
-              onClick={onNewLecture}
-              className="bg-[#3B72DD] hover:bg-[#4D82E0]"
-            >
+            <p className="text-muted-foreground mb-6">{t("main.noLecturesDesc")}</p>
+            <Button onClick={onNewLecture} className="bg-[#3B72DD] hover:bg-[#4D82E0]">
               <Plus className="w-5 h-5 mr-2" />
               {t("main.startNewLecture")}
             </Button>
@@ -168,16 +168,16 @@ export function MainPage({
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {orderedLectures.map((lecture) => (
-              <Card 
-                key={lecture.id} 
+              <Card
+                key={lecture.id}
                 className="p-6 hover:shadow-lg transition-shadow cursor-pointer relative"
                 onClick={(e) => {
                   // Don't navigate if clicking on dropdown or editing
                   const target = e.target as HTMLElement;
                   if (
-                    target.closest('button') || 
+                    target.closest("button") ||
                     target.closest('[role="menuitem"]') ||
-                    target.tagName === 'INPUT' ||
+                    target.tagName === "INPUT" ||
                     editingId === lecture.id
                   ) {
                     return;
@@ -200,11 +200,11 @@ export function MainPage({
                           void handleRename(lecture.id);
                         }}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
+                          if (e.key === "Enter") {
                             e.preventDefault();
                             void handleRename(lecture.id);
                           }
-                          if (e.key === 'Escape') {
+                          if (e.key === "Escape") {
                             setEditingId(null);
                             setEditName("");
                           }
@@ -224,7 +224,7 @@ export function MainPage({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
                           startEdit(lecture);
@@ -232,7 +232,7 @@ export function MainPage({
                       >
                         {t("common.edit")}
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
                           onDeleteSession(lecture.id);
@@ -247,9 +247,10 @@ export function MainPage({
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4" />
-                    {formatLectureDate(lecture.createdAt)} • {formatLectureDuration(lecture.duration, lecture.status)}
+                    {formatLectureDate(lecture.createdAt)} •{" "}
+                    {formatLectureDuration(lecture.duration, lecture.status)}
                   </div>
-                  <div>언어: {lecture.sttLanguage || '-'}</div>
+                  <div>언어: {lecture.sttLanguage || "-"}</div>
                 </div>
               </Card>
             ))}

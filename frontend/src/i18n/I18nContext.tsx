@@ -8,20 +8,20 @@ type Dictionary = Record<string, string>;
 // 언어 표시명과 DB 코드 간 변환 함수
 export function languageToCode(lang: SupportedLanguage): LanguageCode {
   const map: Record<SupportedLanguage, LanguageCode> = {
-    "한국어": "ko",
-    "English": "en",
-    "日本語": "ja",
-    "汉语": "zh",
+    한국어: "ko",
+    English: "en",
+    日本語: "ja",
+    汉语: "zh",
   };
   return map[lang] || "ko";
 }
 
 export function codeToLanguage(code: string): SupportedLanguage {
   const map: Record<string, SupportedLanguage> = {
-    "ko": "한국어",
-    "en": "English",
-    "ja": "日本語",
-    "zh": "汉语",
+    ko: "한국어",
+    en: "English",
+    ja: "日本語",
+    zh: "汉语",
   };
   return map[code] || "한국어";
 }
@@ -297,7 +297,13 @@ type I18nContextValue = {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
-export function I18nProvider({ children, initialLanguage }: { children: any; initialLanguage?: SupportedLanguage }) {
+export function I18nProvider({
+  children,
+  initialLanguage,
+}: {
+  children: any;
+  initialLanguage?: SupportedLanguage;
+}) {
   const [language, setLanguageState] = useState<SupportedLanguage>(initialLanguage ?? "한국어");
 
   useEffect(() => {
@@ -318,7 +324,7 @@ export function I18nProvider({ children, initialLanguage }: { children: any; ini
       const dict = dictionaries[language] || dictionaries["한국어"];
       return dict[key] ?? key;
     },
-    [language]
+    [language],
   );
 
   const value = useMemo(() => ({ language, setLanguage, t }), [language, setLanguage, t]);
@@ -330,5 +336,3 @@ export function useI18n(): I18nContextValue {
   if (!ctx) throw new Error("useI18n must be used within I18nProvider");
   return ctx;
 }
-
-

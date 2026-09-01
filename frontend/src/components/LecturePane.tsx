@@ -42,9 +42,7 @@ export function LecturePane({
             </div>
           )}
           {loading ? (
-            <div className="text-center text-muted-foreground py-12">
-              {t("session.loading")}
-            </div>
+            <div className="text-center text-muted-foreground py-12">{t("session.loading")}</div>
           ) : !hasRecordingStarted ? (
             <div className="text-center text-muted-foreground py-12">
               강의 시작 버튼을 눌러 실시간 기록을 시작하세요.
@@ -79,5 +77,3 @@ export function LecturePane({
     </div>
   );
 }
-
-

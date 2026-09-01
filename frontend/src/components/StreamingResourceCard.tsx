@@ -7,32 +7,25 @@ import type { StreamingCard } from "./StreamingCardTypes";
 const StreamingResourceCard = memo(({ card }: { card: StreamingCard }) => {
   if (card.error) {
     return (
-      <div
-        className="border rounded-lg p-6 bg-white opacity-0 animate-[fadeInUp_0.4s_ease_forwards] flex flex-col h-[325px] border-red-300"
-      >
+      <div className="border rounded-lg p-6 bg-white opacity-0 animate-[fadeInUp_0.4s_ease_forwards] flex flex-col h-[325px] border-red-300">
         <div className="flex items-start justify-between mb-3 flex-shrink-0">
-          <Badge className="text-xs bg-red-500 text-white flex-shrink-0">
-            생성 실패
-          </Badge>
+          <Badge className="text-xs bg-red-500 text-white flex-shrink-0">생성 실패</Badge>
         </div>
         <div className="mb-3 flex-shrink-0">
           <p className="font-medium text-red-600">생성 실패</p>
         </div>
         <div className="flex-1 overflow-y-auto">
-          <p className="text-sm text-red-500">
-            {card.error}
-          </p>
+          <p className="text-sm text-red-500">{card.error}</p>
         </div>
       </div>
     );
   }
-  
+
   // 타입별 색상 결정
   // 1. card.resourceType이 있으면 사용
   // 2. 없으면 기본 색상 사용
-  const resourceType: "paper" | "wiki" | "video" | "blog" | null =
-    card.resourceType || null;
-  
+  const resourceType: "paper" | "wiki" | "video" | "blog" | null = card.resourceType || null;
+
   // 타입별 배지 색상
   const badgeStyle = resourceType
     ? resourceType === "paper"
@@ -42,8 +35,10 @@ const StreamingResourceCard = memo(({ card }: { card: StreamingCard }) => {
         : resourceType === "video"
           ? { background: "linear-gradient(90deg, #960c0c, #dc2626, #ef4444, #f87171)" }
           : { background: "linear-gradient(90deg, #3f0c96, #6366f1, #8b5cf6, #a78bfa)" }
-    : { background: "linear-gradient(90deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)" };
-  
+    : {
+        background: "linear-gradient(90deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
+      };
+
   // 제목 추출 우선순위:
   // 1. 완료된 데이터 (card.data.title)가 있으면 사용
   // 2. card.title이 있으면 사용
@@ -63,11 +58,9 @@ const StreamingResourceCard = memo(({ card }: { card: StreamingCard }) => {
   };
 
   const title = getTitle();
-  
+
   return (
-    <div
-      className="border rounded-lg p-6 bg-white opacity-0 animate-[fadeInUp_0.4s_ease_forwards] flex flex-col h-[325px]"
-    >
+    <div className="border rounded-lg p-6 bg-white opacity-0 animate-[fadeInUp_0.4s_ease_forwards] flex flex-col h-[325px]">
       <div className="flex items-start justify-between mb-3 flex-shrink-0">
         <Badge className="text-xs text-[rgb(255,255,255)] flex-shrink-0" style={badgeStyle}>
           생성 중...
@@ -77,9 +70,7 @@ const StreamingResourceCard = memo(({ card }: { card: StreamingCard }) => {
         <p className="font-medium">{title}</p>
       </div>
       <div className="flex-1 overflow-y-auto">
-        <p className="text-sm text-muted-foreground">
-          {card.content || "생성 중..."}
-        </p>
+        <p className="text-sm text-muted-foreground">{card.content || "생성 중..."}</p>
       </div>
     </div>
   );
@@ -88,5 +79,3 @@ const StreamingResourceCard = memo(({ card }: { card: StreamingCard }) => {
 StreamingResourceCard.displayName = "StreamingResourceCard";
 
 export default StreamingResourceCard;
-
-

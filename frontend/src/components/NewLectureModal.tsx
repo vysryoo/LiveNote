@@ -1,20 +1,8 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { X, Upload, FileText } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useI18n, languageToCode, type SupportedLanguage } from "../i18n/I18nContext";
@@ -30,11 +18,7 @@ interface NewLectureModalProps {
   }) => Promise<void> | void;
 }
 
-export function NewLectureModal({
-  open,
-  onClose,
-  onStart,
-}: NewLectureModalProps) {
+export function NewLectureModal({ open, onClose, onStart }: NewLectureModalProps) {
   const { t, language: uiLanguage } = useI18n();
   const [language, setLanguage] = useState(uiLanguage);
   const [category, setCategory] = useState("");
@@ -43,9 +27,7 @@ export function NewLectureModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleFileSelect = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setFiles([...files, ...Array.from(e.target.files)]);
     }
@@ -93,9 +75,7 @@ export function NewLectureModal({
         </button>
         <DialogHeader>
           <DialogTitle>{t("newLecture.title")}</DialogTitle>
-          <DialogDescription>
-            {t("newLecture.desc")}
-          </DialogDescription>
+          <DialogDescription>{t("newLecture.desc")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-4">
           <div className="space-y-2">
@@ -118,28 +98,17 @@ export function NewLectureModal({
 
           <div className="space-y-2">
             <Label>{t("newLecture.category")}</Label>
-            <Select
-              value={category}
-              onValueChange={setCategory}
-            >
+            <Select value={category} onValueChange={setCategory}>
               <SelectTrigger>
                 <SelectValue placeholder={t("newLecture.categoryPH")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Computer Science">
-                  Computer Science
-                </SelectItem>
-                <SelectItem value="Mathematics">
-                  Mathematics
-                </SelectItem>
+                <SelectItem value="Computer Science">Computer Science</SelectItem>
+                <SelectItem value="Mathematics">Mathematics</SelectItem>
                 <SelectItem value="Physics">Physics</SelectItem>
-                <SelectItem value="Chemistry">
-                  Chemistry
-                </SelectItem>
+                <SelectItem value="Chemistry">Chemistry</SelectItem>
                 <SelectItem value="Biology">Biology</SelectItem>
-                <SelectItem value="Econimics">
-                  Economics
-                </SelectItem>
+                <SelectItem value="Econimics">Economics</SelectItem>
                 <SelectItem value="Others">Others</SelectItem>
               </SelectContent>
             </Select>
@@ -166,14 +135,9 @@ export function NewLectureModal({
                 onChange={handleFileSelect}
                 accept=".pdf,.doc,.docx,.txt,.ppt,.pptx"
               />
-              <label
-                htmlFor="file-upload"
-                className="cursor-pointer"
-              >
+              <label htmlFor="file-upload" className="cursor-pointer">
                 <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  {t("newLecture.clickToAddFiles")}
-                </p>
+                <p className="text-sm text-muted-foreground">{t("newLecture.clickToAddFiles")}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {t("newLecture.supportedTypes")}
                 </p>
@@ -192,9 +156,7 @@ export function NewLectureModal({
                   >
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm">
-                        {file.name}
-                      </span>
+                      <span className="text-sm">{file.name}</span>
                     </div>
                     <button
                       onClick={() => removeFile(index)}

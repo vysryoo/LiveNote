@@ -51,10 +51,7 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": "warn",
       "react-refresh/only-export-components": "warn",
-      "@typescript-eslint/ban-ts-comment": [
-        "error",
-        { "ts-nocheck": "allow-with-description" },
-      ],
+      "@typescript-eslint/ban-ts-comment": ["error", { "ts-nocheck": "allow-with-description" }],
     },
   },
   prettierConfig,

@@ -14,6 +14,7 @@ npm run dev
 
 > [!IMPORTANT]
 > 실행 전 `frontend/.env` 파일 설정이 필요합니다:
+>
 > ```
 > VITE_API_URL=http://localhost:8080
 > VITE_WS_URL=ws://localhost:8080

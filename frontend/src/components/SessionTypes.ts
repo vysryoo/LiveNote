@@ -11,5 +11,3 @@ export interface SectionData {
   isGenerating: boolean;
   isClickable: boolean;
 }
-
-

@@ -59,18 +59,21 @@ export function useSectionsLayout({
   }, [summaries]);
 
   const liveSectionTranscriptsKeys = useMemo(
-    () => Object.keys(liveSectionTranscripts).map(Number).sort((a, b) => a - b),
-    [liveSectionTranscripts]
+    () =>
+      Object.keys(liveSectionTranscripts)
+        .map(Number)
+        .sort((a, b) => a - b),
+    [liveSectionTranscripts],
   );
 
   const summariesSectionIndices = useMemo(
     () => summaries.map((s) => s.sectionIndex).sort((a, b) => a - b),
-    [summaries]
+    [summaries],
   );
 
   const transcriptsSectionIndices = useMemo(
     () => transcripts.map((t) => t.sectionIndex).sort((a, b) => a - b),
-    [transcripts]
+    [transcripts],
   );
 
   const updateSectionOrder = useCallback(() => {
@@ -82,7 +85,9 @@ export function useSectionsLayout({
     if (isRecording) {
       const sectionFromTime = Math.floor(elapsedTime / 30);
       const effectiveSection =
-        currentSectionIndex != null ? Math.min(sectionFromTime, currentSectionIndex) : sectionFromTime;
+        currentSectionIndex != null
+          ? Math.min(sectionFromTime, currentSectionIndex)
+          : sectionFromTime;
       sections.add(effectiveSection);
     }
     if (sections.size === 0) sections.add(0);
@@ -115,8 +120,7 @@ export function useSectionsLayout({
       const liveTranscriptText = liveSectionTranscripts[sectionIndex] ?? "";
       const currentSection =
         currentSectionIndex != null ? currentSectionIndex : Math.floor(elapsedTime / 30);
-      const isCurrentSection =
-        isRecording && sectionIndex === currentSection;
+      const isCurrentSection = isRecording && sectionIndex === currentSection;
       let displayText = [transcriptText, liveTranscriptText]
         .filter((text) => text && text.trim().length > 0)
         .join(transcriptText && liveTranscriptText ? "\n" : "");
@@ -129,8 +133,7 @@ export function useSectionsLayout({
 
       const summaryFromDb = summariesBySection.get(sectionIndex);
       const summaryKey = summaryFromDb?.id ?? -(sectionIndex + 1);
-      const summaryText =
-        formatText(summaryFromDb?.text) || t("session.noSummaryText");
+      const summaryText = formatText(summaryFromDb?.text) || t("session.noSummaryText");
       const isSelected = selectedSummaryId === summaryKey;
 
       const hasNoSummary = summaryText === t("session.noSummaryText");
@@ -174,4 +177,3 @@ export function useSectionsLayout({
     updateSectionOrder,
   };
 }
-

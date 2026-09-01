@@ -43,9 +43,7 @@ export function DemoVideoModal({ isOpen, onClose }: DemoVideoModalProps) {
 
         {/* Footer */}
         <div className="p-6 bg-gray-50">
-          <p className="text-sm text-[#6B7280] text-center">
-            LiveNote의 주요 기능을 확인해보세요
-          </p>
+          <p className="text-sm text-[#6B7280] text-center">LiveNote의 주요 기능을 확인해보세요</p>
         </div>
       </div>
     </div>

@@ -77,8 +77,7 @@ export function useRecording({
         setIsAudioActive(true);
 
         try {
-          const AudioContextClass =
-            window.AudioContext || (window as any).webkitAudioContext;
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
           const targetSampleRate = 24000;
           const audioContext = new AudioContextClass({
             sampleRate: targetSampleRate,
@@ -86,15 +85,10 @@ export function useRecording({
           audioContextRef.current = audioContext;
 
           const actualSampleRate = audioContext.sampleRate;
-          const needsResampling =
-            Math.abs(actualSampleRate - targetSampleRate) > 100;
+          const needsResampling = Math.abs(actualSampleRate - targetSampleRate) > 100;
 
           const bufferSize = 4096;
-          const scriptProcessor = audioContext.createScriptProcessor(
-            bufferSize,
-            1,
-            1
-          );
+          const scriptProcessor = audioContext.createScriptProcessor(bufferSize, 1, 1);
           scriptProcessorRef.current = scriptProcessor;
 
           scriptProcessor.onaudioprocess = (event) => {
@@ -113,15 +107,11 @@ export function useRecording({
               for (let i = 0; i < outputLength; i++) {
                 const srcIndex = i / ratio;
                 const srcIndexFloor = Math.floor(srcIndex);
-                const srcIndexCeil = Math.min(
-                  srcIndexFloor + 1,
-                  inputData.length - 1
-                );
+                const srcIndexCeil = Math.min(srcIndexFloor + 1, inputData.length - 1);
                 const fraction = srcIndex - srcIndexFloor;
 
                 resampledData[i] =
-                  inputData[srcIndexFloor] * (1 - fraction) +
-                  inputData[srcIndexCeil] * fraction;
+                  inputData[srcIndexFloor] * (1 - fraction) + inputData[srcIndexCeil] * fraction;
               }
               inputData = resampledData;
             }
@@ -189,8 +179,8 @@ export function useRecording({
                   console.log(
                     `📝 실시간 전사 수신: isFinal=${isFinal}, content="${content.substring(
                       0,
-                      50
-                    )}..."`
+                      50,
+                    )}..."`,
                   );
                   const sectionIndex = Math.max(currentSectionIndexRef.current, 0);
                   onLiveTranscript(sectionIndex, content, isFinal);
@@ -234,7 +224,7 @@ export function useRecording({
           alert(
             error instanceof Error && error.name === "NotAllowedError"
               ? t("session.micPermissionDenied")
-              : t("session.recordingError")
+              : t("session.recordingError"),
           );
 
           if (audioStreamRef.current) {
@@ -284,7 +274,15 @@ export function useRecording({
         }
       }
     },
-    [backend, hasRecordingStarted, lectureId, onLiveTranscript, onRecordingStartedOnce, stopSourceNode, t]
+    [
+      backend,
+      hasRecordingStarted,
+      lectureId,
+      onLiveTranscript,
+      onRecordingStartedOnce,
+      stopSourceNode,
+      t,
+    ],
   );
 
   useEffect(() => {
@@ -326,9 +324,7 @@ export function useRecording({
     }
     const localSection = Math.floor(elapsedTime / 30);
     const effectiveSection =
-      serverSectionIndex != null
-        ? Math.min(localSection, serverSectionIndex)
-        : localSection;
+      serverSectionIndex != null ? Math.min(localSection, serverSectionIndex) : localSection;
     if (effectiveSection !== currentSectionIndexRef.current) {
       currentSectionIndexRef.current = effectiveSection;
       setCurrentSectionIndex(effectiveSection);
@@ -369,10 +365,7 @@ export function useRecording({
         try {
           wsRef.current.close();
         } catch (error) {
-          console.error(
-            "Failed to close transcription websocket on cleanup",
-            error
-          );
+          console.error("Failed to close transcription websocket on cleanup", error);
         }
         wsRef.current = null;
       }

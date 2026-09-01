@@ -14,5 +14,3 @@ export function useBackend(): BackendPort {
   if (!ctx) throw new Error("useBackend must be used within BackendProvider");
   return ctx;
 }
-
-

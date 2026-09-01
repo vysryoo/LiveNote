@@ -1,6 +1,6 @@
-import './RecordingTabControl.css';
-import { useEffect, useState } from 'react';
-import { Play, Pause, Square } from 'lucide-react';
+import "./RecordingTabControl.css";
+import { useEffect, useState } from "react";
+import { Play, Pause, Square } from "lucide-react";
 
 interface RecordingTabControlProps {
   isRecording: boolean;
@@ -15,7 +15,7 @@ export default function RecordingTabControl({
   onToggle,
   elapsedTime,
   onEnd,
-  isEnded = false
+  isEnded = false,
 }: RecordingTabControlProps) {
   const [currentTime, setCurrentTime] = useState(elapsedTime);
 
@@ -26,7 +26,7 @@ export default function RecordingTabControl({
   useEffect(() => {
     if (isRecording) {
       const interval = setInterval(() => {
-        setCurrentTime(prev => prev + 1);
+        setCurrentTime((prev) => prev + 1);
       }, 1000);
       return () => clearInterval(interval);
     }
@@ -36,7 +36,7 @@ export default function RecordingTabControl({
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   return (
@@ -54,7 +54,7 @@ export default function RecordingTabControl({
         {isEnded ? (
           <Play className="w-4 h-4" color="#6A737D" />
         ) : isRecording ? (
-          <span style={{ color: '#6A737D' }}>{formatTime(currentTime)}</span>
+          <span style={{ color: "#6A737D" }}>{formatTime(currentTime)}</span>
         ) : (
           <Play size={15} color="#6A737D" strokeWidth={1.5} />
         )}
@@ -73,7 +73,7 @@ export default function RecordingTabControl({
         {isEnded ? (
           <Pause size={15} color="#6A737D" strokeWidth={1.5} />
         ) : !isRecording ? (
-          <span style={{ color: '#6A737D' }}>{formatTime(currentTime)}</span>
+          <span style={{ color: "#6A737D" }}>{formatTime(currentTime)}</span>
         ) : (
           <Pause size={15} color="#6A737D" strokeWidth={1.5} />
         )}
@@ -86,7 +86,7 @@ export default function RecordingTabControl({
         disabled={isEnded}
       >
         {isEnded ? (
-          <span style={{ color: '#6A737D' }}>{formatTime(currentTime)}</span>
+          <span style={{ color: "#6A737D" }}>{formatTime(currentTime)}</span>
         ) : (
           <Square size={12.5} color="#6A737D" strokeWidth={2.0} />
         )}

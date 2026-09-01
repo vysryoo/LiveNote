@@ -25,7 +25,7 @@ import { Client } from "@stomp/stompjs";
 import { useSectionsLayout } from "../hooks/useSectionsLayout";
 import { useRecording } from "../hooks/useRecording";
 
-type SummaryPhase = 'partial' | 'final';
+type SummaryPhase = "partial" | "final";
 
 function groupBySection<T extends { sectionIndex: number }>(items?: T[]): Record<number, T[]> {
   if (!items) return {};
@@ -54,8 +54,8 @@ export function SessionPage({
   const { t } = useI18n();
   const wsRef = useRef<WebSocket | null>(null);
   const finalSummaryRequestRef = useRef<Map<number, string>>(new Map());
-const requestStreamingCardRef = useRef<Set<number>>(new Set()); // 섹션별 추가 카드 생성 요청 여부 추적
-const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 요청 방지용
+  const requestStreamingCardRef = useRef<Set<number>>(new Set()); // 섹션별 추가 카드 생성 요청 여부 추적
+  const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 요청 방지용
   const currentSectionIndexRef = useRef<number>(-1);
   const elapsedTimeRef = useRef<number>(0);
   const lectureScrollViewportRef = useRef<HTMLDivElement | null>(null);
@@ -110,11 +110,11 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
             ? prevText + "\n" + content
             : content
           : (() => {
-            if (!prevText) return content;
-            const lines = prevText.split("\n");
-            lines[lines.length - 1] = content;
-            return lines.join("\n");
-          })();
+              if (!prevText) return content;
+              const lines = prevText.split("\n");
+              lines[lines.length - 1] = content;
+              return lines.join("\n");
+            })();
 
         if (
           sectionIndex === currentSectionIndexRef.current ||
@@ -190,7 +190,8 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
   const appendQnAForSection = useCallback((sectionIndex: number, items: QnA[]) => {
     if (!items || items.length === 0) return;
     const normalized = items.map((item) => {
-      const type = typeof item.type === "string" ? item.type.toLowerCase() as QnA["type"] : item.type;
+      const type =
+        typeof item.type === "string" ? (item.type.toLowerCase() as QnA["type"]) : item.type;
       const summaryId = (item as any).summaryId ?? (item as any).summary_id ?? item.summaryId;
       return { ...item, type, summaryId };
     });
@@ -229,12 +230,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const {
-    sectionOrder,
-    sectionsData,
-    hasAnySectionData,
-    updateSectionOrder,
-  } = useSectionsLayout({
+  const { sectionOrder, sectionsData, hasAnySectionData, updateSectionOrder } = useSectionsLayout({
     transcripts,
     summaries,
     liveSectionTranscripts,
@@ -263,8 +259,8 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
           return newSummaries;
         }
         // 섹션 인덱스별로 맵 생성하여 비교
-        const prevMap = new Map<number, Summary>(prev.map(s => [s.sectionIndex, s]));
-        const newMap = new Map<number, Summary>(newSummaries.map(s => [s.sectionIndex, s]));
+        const prevMap = new Map<number, Summary>(prev.map((s) => [s.sectionIndex, s]));
+        const newMap = new Map<number, Summary>(newSummaries.map((s) => [s.sectionIndex, s]));
 
         // 섹션 인덱스가 다르면 업데이트
         if (prevMap.size !== newMap.size) {
@@ -297,8 +293,8 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
           return newTranscripts;
         }
         // 섹션 인덱스별로 맵 생성하여 비교
-        const prevMap = new Map<number, Transcript>(prev.map(t => [t.sectionIndex, t]));
-        const newMap = new Map<number, Transcript>(newTranscripts.map(t => [t.sectionIndex, t]));
+        const prevMap = new Map<number, Transcript>(prev.map((t) => [t.sectionIndex, t]));
+        const newMap = new Map<number, Transcript>(newTranscripts.map((t) => [t.sectionIndex, t]));
 
         if (prevMap.size !== newMap.size) {
           return newTranscripts;
@@ -368,8 +364,10 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
       try {
         // 해당 섹션에 스트리밍 중인 카드가 있는지 확인 (ref 사용)
         const currentStreamingCards = streamingCardsRef.current;
-        const hasStreamingCards = (Array.from(currentStreamingCards.values()) as StreamingCard[]).some((card) => {
-          const parts = card.cardId.split('_');
+        const hasStreamingCards = (
+          Array.from(currentStreamingCards.values()) as StreamingCard[]
+        ).some((card) => {
+          const parts = card.cardId.split("_");
           const cardSectionIndex = parts.length >= 3 ? parseInt(parts[2]) : null;
           return cardSectionIndex === sectionIndex && !card.isComplete;
         });
@@ -384,14 +382,16 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
 
         // 완료된 카드 즉시 표시
         const completedQnAs = cardsStatus.qnaCards
-          .filter(card => card.isComplete && card.data)
-          .map(card => card.data as QnA);
+          .filter((card) => card.isComplete && card.data)
+          .map((card) => card.data as QnA);
 
         const completedResources = cardsStatus.resourceCards
-          .filter(card => card.isComplete && card.data)
-          .map(card => card.data as Resource);
+          .filter((card) => card.isComplete && card.data)
+          .map((card) => card.data as Resource);
 
-        console.log(`[updateCardsForSection] 완료된 카드: QnA=${completedQnAs.length}, Resource=${completedResources.length}`);
+        console.log(
+          `[updateCardsForSection] 완료된 카드: QnA=${completedQnAs.length}, Resource=${completedResources.length}`,
+        );
 
         // 스트리밍 중인 카드가 있으면 append만 사용 (리렌더링 방지)
         // 스트리밍 중인 카드가 없으면 replace 사용 (전체 교체)
@@ -423,145 +423,170 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
       replaceResourcesForSection,
       appendQnAForSection,
       appendResourcesForSection,
-    ]
+    ],
   );
 
   // 스트리밍 메시지 처리 (STOMP 클라이언트보다 먼저 정의)
-  const handleStreamingMessage = useCallback((message: {
-    type: string;
-    cardId: string;
-    token?: string;
-    isComplete: boolean;
-    data?: QnA | Resource;
-    error?: string;
-    resourceType?: 'paper' | 'wiki' | 'video' | 'blog';
-    title?: string;
-  }) => {
-    const cardId = message.cardId;
-    console.log('[handleStreamingMessage] 처리 시작', { cardId, type: message.type, hasToken: !!message.token, isComplete: message.isComplete });
+  const handleStreamingMessage = useCallback(
+    (message: {
+      type: string;
+      cardId: string;
+      token?: string;
+      isComplete: boolean;
+      data?: QnA | Resource;
+      error?: string;
+      resourceType?: "paper" | "wiki" | "video" | "blog";
+      title?: string;
+    }) => {
+      const cardId = message.cardId;
+      console.log("[handleStreamingMessage] 처리 시작", {
+        cardId,
+        type: message.type,
+        hasToken: !!message.token,
+        isComplete: message.isComplete,
+      });
 
-    setStreamingCards(prev => {
-      const newMap = new Map<string, StreamingCard>(prev);
-      const existingCard = newMap.get(cardId);
+      setStreamingCards((prev) => {
+        const newMap = new Map<string, StreamingCard>(prev);
+        const existingCard = newMap.get(cardId);
 
-      if (!existingCard) {
-        // 새 카드 생성 (처음 토큰 수신 시)
-        const [type, lectureIdStr, sectionIndexStr, cardIndexStr] = cardId.split('_');
-        const cardIndex = parseInt(cardIndexStr);
+        if (!existingCard) {
+          // 새 카드 생성 (처음 토큰 수신 시)
+          const [type, lectureIdStr, sectionIndexStr, cardIndexStr] = cardId.split("_");
+          const cardIndex = parseInt(cardIndexStr);
 
-        // Resource 추가 생성 카드도 유형 정보가 없으면 기본 스타일(그라데이션)로 표시
-        const resourceType: 'paper' | 'wiki' | 'video' | 'blog' | undefined = message.resourceType;
+          // Resource 추가 생성 카드도 유형 정보가 없으면 기본 스타일(그라데이션)로 표시
+          const resourceType: "paper" | "wiki" | "video" | "blog" | undefined =
+            message.resourceType;
 
-        newMap.set(cardId, {
-          cardId,
-          type: type as 'qna' | 'resource',
-          cardIndex,
-          content: message.token || '',
-          isComplete: message.isComplete,
-          data: message.data,
-          error: message.error,
-          resourceType,
-          title: message.title,
-        });
-      } else {
-        if (message.isComplete) {
-          // 에러가 있으면 에러 처리
-          if (message.error) {
-            console.error(`[handleStreamingMessage] 에러 발생: ${cardId}, 에러: ${message.error}`);
-            // 에러 카드 업데이트
-            newMap.set(cardId, {
-              ...existingCard,
-              isComplete: true,
-              error: message.error,
-            });
-            // 에러 카드는 3초 후 자동 제거
-            setTimeout(() => {
-              setStreamingCards(prev => {
-                const newMap = new Map(prev);
-                newMap.delete(cardId);
-                return newMap;
-              });
-            }, 3000);
-            return newMap;
-          }
-
-          // 완료: 전체 데이터로 교체
-          const finalData = message.data;
-
-          if (finalData) {
-            // 완료된 카드를 실제 데이터로 추가
-            // finalData에 sectionIndex가 있으면 우선 사용, 없으면 cardId에서 파싱
-            let sectionIndex: number;
-            if (message.type === 'qna_stream') {
-              const qna = finalData as QnA;
-              sectionIndex = qna.sectionIndex !== undefined ? qna.sectionIndex :
-                (() => {
-                  const parts = cardId.split('_');
-                  return parts.length >= 3 ? parseInt(parts[2]) : (selectedSectionIndex || 0);
-                })();
-              appendQnAForSection(sectionIndex, [qna]);
-
-              // 카드 상태 업데이트는 제거 (불필요한 리렌더링 방지)
-              // 완료된 카드는 이미 appendQnAForSection으로 추가되었으므로 별도 업데이트 불필요
-            } else if (message.type === 'resource_stream') {
-              const resource = finalData as Resource;
-              sectionIndex = resource.sectionIndex !== undefined ? resource.sectionIndex :
-                (() => {
-                  const parts = cardId.split('_');
-                  return parts.length >= 3 ? parseInt(parts[2]) : (selectedSectionIndex || 0);
-                })();
-              appendResourcesForSection(sectionIndex, [resource]);
-
-              // 카드 상태 업데이트는 제거 (불필요한 리렌더링 방지)
-              // 완료된 카드는 이미 appendResourcesForSection으로 추가되었으므로 별도 업데이트 불필요
-
-              // 제목 정보 저장 (완료 직전에 제목 표시를 위해)
-              if (existingCard && resource.title) {
-                const title = Array.isArray(resource.title) ? resource.title.join(' ') : resource.title;
-                newMap.set(cardId, {
-                  ...existingCard,
-                  title,
-                  data: resource,
-                });
-              }
-            }
-          }
-
-          // 스트리밍 카드에서 제거
-          newMap.delete(cardId);
-        } else if (message.token) {
-          // 토큰 추가
-          if (existingCard) {
-            const newContent = (existingCard.content || '') + message.token;
-            console.log(`[handleStreamingMessage] 토큰 추가: ${cardId}, 길이: ${newContent.length}`);
-
-            // Resource 타입 정보 업데이트 (완료 데이터에서 타입 추출)
-            let resourceType: 'paper' | 'wiki' | 'video' | 'blog' | undefined =
-              message.resourceType || existingCard.resourceType;
-            if (message.data && existingCard.type === 'resource') {
-              const resource = message.data as Resource;
-              if (resource.type) {
-                resourceType = resource.type as 'paper' | 'wiki' | 'video' | 'blog';
-              }
-            }
-
-            newMap.set(cardId, {
-              ...existingCard,
-              content: newContent,
-              resourceType,
-              title: message.title ?? existingCard.title,
-            });
-          } else {
-            console.warn(`[handleStreamingMessage] 토큰 수신했지만 카드 없음: ${cardId}`);
-          }
+          newMap.set(cardId, {
+            cardId,
+            type: type as "qna" | "resource",
+            cardIndex,
+            content: message.token || "",
+            isComplete: message.isComplete,
+            data: message.data,
+            error: message.error,
+            resourceType,
+            title: message.title,
+          });
         } else {
-          console.warn(`[handleStreamingMessage] 알 수 없는 메시지 형식:`, message);
-        }
-      }
+          if (message.isComplete) {
+            // 에러가 있으면 에러 처리
+            if (message.error) {
+              console.error(
+                `[handleStreamingMessage] 에러 발생: ${cardId}, 에러: ${message.error}`,
+              );
+              // 에러 카드 업데이트
+              newMap.set(cardId, {
+                ...existingCard,
+                isComplete: true,
+                error: message.error,
+              });
+              // 에러 카드는 3초 후 자동 제거
+              setTimeout(() => {
+                setStreamingCards((prev) => {
+                  const newMap = new Map(prev);
+                  newMap.delete(cardId);
+                  return newMap;
+                });
+              }, 3000);
+              return newMap;
+            }
 
-      return newMap;
-    });
-  }, [selectedSectionIndex, appendQnAForSection, appendResourcesForSection, splitMode, updateCardsForSection]);
+            // 완료: 전체 데이터로 교체
+            const finalData = message.data;
+
+            if (finalData) {
+              // 완료된 카드를 실제 데이터로 추가
+              // finalData에 sectionIndex가 있으면 우선 사용, 없으면 cardId에서 파싱
+              let sectionIndex: number;
+              if (message.type === "qna_stream") {
+                const qna = finalData as QnA;
+                sectionIndex =
+                  qna.sectionIndex !== undefined
+                    ? qna.sectionIndex
+                    : (() => {
+                        const parts = cardId.split("_");
+                        return parts.length >= 3 ? parseInt(parts[2]) : selectedSectionIndex || 0;
+                      })();
+                appendQnAForSection(sectionIndex, [qna]);
+
+                // 카드 상태 업데이트는 제거 (불필요한 리렌더링 방지)
+                // 완료된 카드는 이미 appendQnAForSection으로 추가되었으므로 별도 업데이트 불필요
+              } else if (message.type === "resource_stream") {
+                const resource = finalData as Resource;
+                sectionIndex =
+                  resource.sectionIndex !== undefined
+                    ? resource.sectionIndex
+                    : (() => {
+                        const parts = cardId.split("_");
+                        return parts.length >= 3 ? parseInt(parts[2]) : selectedSectionIndex || 0;
+                      })();
+                appendResourcesForSection(sectionIndex, [resource]);
+
+                // 카드 상태 업데이트는 제거 (불필요한 리렌더링 방지)
+                // 완료된 카드는 이미 appendResourcesForSection으로 추가되었으므로 별도 업데이트 불필요
+
+                // 제목 정보 저장 (완료 직전에 제목 표시를 위해)
+                if (existingCard && resource.title) {
+                  const title = Array.isArray(resource.title)
+                    ? resource.title.join(" ")
+                    : resource.title;
+                  newMap.set(cardId, {
+                    ...existingCard,
+                    title,
+                    data: resource,
+                  });
+                }
+              }
+            }
+
+            // 스트리밍 카드에서 제거
+            newMap.delete(cardId);
+          } else if (message.token) {
+            // 토큰 추가
+            if (existingCard) {
+              const newContent = (existingCard.content || "") + message.token;
+              console.log(
+                `[handleStreamingMessage] 토큰 추가: ${cardId}, 길이: ${newContent.length}`,
+              );
+
+              // Resource 타입 정보 업데이트 (완료 데이터에서 타입 추출)
+              let resourceType: "paper" | "wiki" | "video" | "blog" | undefined =
+                message.resourceType || existingCard.resourceType;
+              if (message.data && existingCard.type === "resource") {
+                const resource = message.data as Resource;
+                if (resource.type) {
+                  resourceType = resource.type as "paper" | "wiki" | "video" | "blog";
+                }
+              }
+
+              newMap.set(cardId, {
+                ...existingCard,
+                content: newContent,
+                resourceType,
+                title: message.title ?? existingCard.title,
+              });
+            } else {
+              console.warn(`[handleStreamingMessage] 토큰 수신했지만 카드 없음: ${cardId}`);
+            }
+          } else {
+            console.warn(`[handleStreamingMessage] 알 수 없는 메시지 형식:`, message);
+          }
+        }
+
+        return newMap;
+      });
+    },
+    [
+      selectedSectionIndex,
+      appendQnAForSection,
+      appendResourcesForSection,
+      splitMode,
+      updateCardsForSection,
+    ],
+  );
 
   // STOMP 클라이언트 초기화 및 토픽 구독 (선택적 - 실패해도 녹음은 가능)
   useEffect(() => {
@@ -569,8 +594,9 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
     // 비동기로 처리하여 컴포넌트 렌더링을 블로킹하지 않음
     const initStomp = async () => {
       // 환경 변수에서 WebSocket URL 가져오기, 없으면 현재 페이지의 프로토콜/호스트 기반으로 생성
-      const WS_BASE = import.meta.env.VITE_WS_URL ||
-        (window.location.protocol === 'https:' ? 'wss://localhost:8080' : 'ws://localhost:8080');
+      const WS_BASE =
+        import.meta.env.VITE_WS_URL ||
+        (window.location.protocol === "https:" ? "wss://localhost:8080" : "ws://localhost:8080");
 
       const brokerURL = `${WS_BASE}/ws`;
       console.log(`[STOMP] 연결 시도: ${brokerURL}`);
@@ -585,10 +611,8 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
             console.log(`[STOMP Debug] ${str}`);
           },
           onConnect: () => {
-
-
             if (!client || !client.connected) {
-              console.error('[STOMP] 클라이언트가 연결되지 않았습니다');
+              console.error("[STOMP] 클라이언트가 연결되지 않았습니다");
               return;
             }
 
@@ -599,7 +623,9 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
                 const data = JSON.parse(message.body);
                 if (data.sectionIndex !== undefined) {
                   setSummaries((prev) => {
-                    const existingIndex = prev.findIndex(s => s.sectionIndex === data.sectionIndex);
+                    const existingIndex = prev.findIndex(
+                      (s) => s.sectionIndex === data.sectionIndex,
+                    );
                     if (existingIndex >= 0) {
                       const updated = [...prev];
                       updated[existingIndex] = { ...updated[existingIndex], ...data };
@@ -653,18 +679,23 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
             });
 
             // 스트리밍 카드 구독
-            const streamSubscription = client.subscribe(`/topic/lectures/${lectureId}/stream`, (message) => {
-              try {
-                console.log('[STOMP] 스트리밍 메시지 수신 (raw):', message.body);
-                const parsedMessage = JSON.parse(message.body);
-                console.log('[STOMP] 스트리밍 메시지 수신 (parsed):', parsedMessage);
-                handleStreamingMessage(parsedMessage);
-              } catch (err) {
-                console.error('[STOMP] 스트리밍 메시지 파싱 실패:', err, message.body);
-              }
-            });
-            console.log('[STOMP] 스트리밍 토픽 구독 완료: /topic/lectures/' + lectureId + '/stream');
-            console.log('[STOMP] 구독 객체:', streamSubscription);
+            const streamSubscription = client.subscribe(
+              `/topic/lectures/${lectureId}/stream`,
+              (message) => {
+                try {
+                  console.log("[STOMP] 스트리밍 메시지 수신 (raw):", message.body);
+                  const parsedMessage = JSON.parse(message.body);
+                  console.log("[STOMP] 스트리밍 메시지 수신 (parsed):", parsedMessage);
+                  handleStreamingMessage(parsedMessage);
+                } catch (err) {
+                  console.error("[STOMP] 스트리밍 메시지 파싱 실패:", err, message.body);
+                }
+              },
+            );
+            console.log(
+              "[STOMP] 스트리밍 토픽 구독 완료: /topic/lectures/" + lectureId + "/stream",
+            );
+            console.log("[STOMP] 구독 객체:", streamSubscription);
 
             // 전사 구독 (섹션/elapsed 동기화 및 transcripts 상태 업데이트)
             client.subscribe(`/topic/lectures/${lectureId}/transcripts`, (message) => {
@@ -686,7 +717,13 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
                   text: data.text ?? "",
                 };
                 setTranscripts((prev) => {
-                  const exists = prev.some((p) => p.sectionIndex === t.sectionIndex && p.startSec === t.startSec && p.endSec === t.endSec && p.text === t.text);
+                  const exists = prev.some(
+                    (p) =>
+                      p.sectionIndex === t.sectionIndex &&
+                      p.startSec === t.startSec &&
+                      p.endSec === t.endSec &&
+                      p.text === t.text,
+                  );
                   return exists ? prev : [...prev, t];
                 });
               } catch (err) {
@@ -695,32 +732,45 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
             });
           },
           onStompError: (frame) => {
-            console.error('[STOMP] STOMP 에러:', frame);
-            console.error('[STOMP] 에러 메시지:', frame?.headers?.['message'] || frame?.body || '알 수 없는 에러');
+            console.error("[STOMP] STOMP 에러:", frame);
+            console.error(
+              "[STOMP] 에러 메시지:",
+              frame?.headers?.["message"] || frame?.body || "알 수 없는 에러",
+            );
             // 에러가 발생해도 녹음은 계속 가능하도록 경고만 표시
-            console.warn('[STOMP] STOMP 연결 실패 - 스트리밍 카드 기능만 사용 불가, 녹음은 정상 작동');
+            console.warn(
+              "[STOMP] STOMP 연결 실패 - 스트리밍 카드 기능만 사용 불가, 녹음은 정상 작동",
+            );
           },
           onWebSocketError: (event) => {
-            console.error('[STOMP] WebSocket 에러 상세:', event);
-            console.error('[STOMP] WebSocket 에러 타입:', event?.type);
-            console.error('[STOMP] WebSocket 에러 타겟:', event?.target);
+            console.error("[STOMP] WebSocket 에러 상세:", event);
+            console.error("[STOMP] WebSocket 에러 타입:", event?.type);
+            console.error("[STOMP] WebSocket 에러 타겟:", event?.target);
             if (event?.target) {
               const ws = event.target as WebSocket;
-              console.error('[STOMP] WebSocket 상태:', ws.readyState, 'URL:', ws.url);
-              console.error('[STOMP] WebSocket readyState 설명:',
-                ws.readyState === 0 ? 'CONNECTING' :
-                  ws.readyState === 1 ? 'OPEN' :
-                    ws.readyState === 2 ? 'CLOSING' :
-                      ws.readyState === 3 ? 'CLOSED' : 'UNKNOWN'
+              console.error("[STOMP] WebSocket 상태:", ws.readyState, "URL:", ws.url);
+              console.error(
+                "[STOMP] WebSocket readyState 설명:",
+                ws.readyState === 0
+                  ? "CONNECTING"
+                  : ws.readyState === 1
+                    ? "OPEN"
+                    : ws.readyState === 2
+                      ? "CLOSING"
+                      : ws.readyState === 3
+                        ? "CLOSED"
+                        : "UNKNOWN",
               );
             }
             // 에러가 발생해도 녹음은 계속 가능하도록 경고만 표시
-            console.warn('[STOMP] WebSocket 연결 실패 - 스트리밍 카드 기능만 사용 불가, 녹음은 정상 작동');
-            console.warn('[STOMP] 연결 URL 확인 필요:', brokerURL);
+            console.warn(
+              "[STOMP] WebSocket 연결 실패 - 스트리밍 카드 기능만 사용 불가, 녹음은 정상 작동",
+            );
+            console.warn("[STOMP] 연결 URL 확인 필요:", brokerURL);
           },
           onDisconnect: () => {
-            console.log('[STOMP] 연결 종료 ❌');
-            console.log('[STOMP] 연결이 끊어졌습니다. 스트리밍 메시지를 받을 수 없습니다.');
+            console.log("[STOMP] 연결 종료 ❌");
+            console.log("[STOMP] 연결이 끊어졌습니다. 스트리밍 메시지를 받을 수 없습니다.");
           },
         });
 
@@ -733,24 +783,24 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
         setTimeout(() => {
           if (!client.connected) {
             console.warn(`[STOMP] 연결 타임아웃: ${brokerURL}`);
-            console.warn('[STOMP] 백엔드 서버가 실행 중인지 확인하세요');
-            console.warn('[STOMP] WebSocket 엔드포인트(/ws)가 올바르게 설정되었는지 확인하세요');
-            console.warn('[STOMP] 브라우저 콘솔에서 WebSocket 연결 에러를 확인하세요');
+            console.warn("[STOMP] 백엔드 서버가 실행 중인지 확인하세요");
+            console.warn("[STOMP] WebSocket 엔드포인트(/ws)가 올바르게 설정되었는지 확인하세요");
+            console.warn("[STOMP] 브라우저 콘솔에서 WebSocket 연결 에러를 확인하세요");
           }
         }, 3000);
       } catch (error) {
-        console.error('[STOMP] 클라이언트 초기화 실패:', error);
-        console.error('[STOMP] 에러 상세:', error instanceof Error ? error.message : String(error));
-        console.error('[STOMP] 스택 트레이스:', error instanceof Error ? error.stack : 'N/A');
-        console.warn('[STOMP] 연결 실패 - 스트리밍 카드 기능만 사용 불가, 녹음은 정상 작동');
+        console.error("[STOMP] 클라이언트 초기화 실패:", error);
+        console.error("[STOMP] 에러 상세:", error instanceof Error ? error.message : String(error));
+        console.error("[STOMP] 스택 트레이스:", error instanceof Error ? error.stack : "N/A");
+        console.warn("[STOMP] 연결 실패 - 스트리밍 카드 기능만 사용 불가, 녹음은 정상 작동");
         console.warn(`[STOMP] 연결 시도 URL: ${brokerURL}`);
         // 연결 실패해도 계속 진행 (녹음은 별도 WebSocket 사용)
       }
     };
 
     // 비동기로 초기화 (렌더링 블로킹 방지)
-    initStomp().catch(error => {
-      console.error('STOMP 초기화 중 예외 발생:', error);
+    initStomp().catch((error) => {
+      console.error("STOMP 초기화 중 예외 발생:", error);
     });
 
     return () => {
@@ -759,7 +809,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
           stompClientRef.current.deactivate();
         }
       } catch (error) {
-        console.error('STOMP 클라이언트 비활성화 실패:', error);
+        console.error("STOMP 클라이언트 비활성화 실패:", error);
       }
       stompClientRef.current = null;
     };
@@ -789,7 +839,9 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
         const cardIndex = 2 + index;
         const cardId = `qna_${lectureId}_${sectionIndex}_${cardIndex}`;
 
-        console.log(`[추가 생성] QnA 스트리밍 시작: type=${qnaType}, cardIndex=${cardIndex}, cardId=${cardId}`);
+        console.log(
+          `[추가 생성] QnA 스트리밍 시작: type=${qnaType}, cardIndex=${cardIndex}, cardId=${cardId}`,
+        );
 
         return backend.lecture
           .startQnAStream(lectureId, sectionIndex, cardIndex, qnaType)
@@ -811,7 +863,9 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
         const cardIndex = 2 + index;
         const cardId = `resource_${lectureId}_${sectionIndex}_${cardIndex}`;
 
-        console.log(`[추가 생성] Resource 스트리밍 시작: type=${resourceType}, cardIndex=${cardIndex}, cardId=${cardId}`);
+        console.log(
+          `[추가 생성] Resource 스트리밍 시작: type=${resourceType}, cardIndex=${cardIndex}, cardId=${cardId}`,
+        );
 
         return backend.lecture
           .startResourceStream(lectureId, sectionIndex, cardIndex, resourceType)
@@ -830,7 +884,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
         setIsGeneratingExtended(false);
       });
     },
-    [backend, lectureId]
+    [backend, lectureId],
   );
 
   // summaries를 섹션 인덱스별로 빠르게 조회하기 위한 맵 (선택 상태 유지 등에 사용)
@@ -841,7 +895,6 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
     }
     return map;
   }, [summaries]);
-
 
   // selectedSummaryId를 ref로 추적하여 의존성 문제 방지
   const selectedSummaryIdRef = useRef<number | null>(null);
@@ -877,24 +930,37 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
 
         // FINAL 요약이 아니면 추가 카드 요청을 하지 않음
         if (!isFinalSummary) {
-          console.log(`[handleSummaryClick] FINAL 요약 아님 → 추가 요청 생략: section=${sectionIndex}`);
+          console.log(
+            `[handleSummaryClick] FINAL 요약 아님 → 추가 요청 생략: section=${sectionIndex}`,
+          );
           shouldRequestMore = false;
         }
 
         const cardsStatus = await backend.lecture.getCardsStatus(lectureId, sectionIndex);
-        const existingQnaCount = cardsStatus.qnaCards.filter(c => c.isComplete).length;
-        const existingResourceCount = cardsStatus.resourceCards.filter(c => c.isComplete).length;
-        
-        console.log(`[handleSummaryClick] sectionIndex=${sectionIndex}, QnA=${existingQnaCount}, Resource=${existingResourceCount}`);
+        const existingQnaCount = cardsStatus.qnaCards.filter((c) => c.isComplete).length;
+        const existingResourceCount = cardsStatus.resourceCards.filter((c) => c.isComplete).length;
+
+        console.log(
+          `[handleSummaryClick] sectionIndex=${sectionIndex}, QnA=${existingQnaCount}, Resource=${existingResourceCount}`,
+        );
 
         // QnA나 Resource 중 하나라도 3개 이상이면 이미 요청했으므로 요청 안 함 (API 제한 고려)
         if (existingQnaCount >= 3 || existingResourceCount >= 3) {
-          console.log(`[handleSummaryClick] 이미 3개 이상 → 최초 클릭 아님, 요청 생략 (API 제한): section=${sectionIndex}`);
+          console.log(
+            `[handleSummaryClick] 이미 3개 이상 → 최초 클릭 아님, 요청 생략 (API 제한): section=${sectionIndex}`,
+          );
           shouldRequestMore = false;
-        } else if (isFinalSummary && existingQnaCount <= 2 && existingResourceCount <= 2 && !requestStreamingCardRef.current.has(sectionIndex)) {
+        } else if (
+          isFinalSummary &&
+          existingQnaCount <= 2 &&
+          existingResourceCount <= 2 &&
+          !requestStreamingCardRef.current.has(sectionIndex)
+        ) {
           // FINAL 최초 클릭: QnA ≤ 2, Resource ≤ 2 → 4개씩 요청
           // (PARTIAL로 2개 이하 생성되었거나, AI 서버 내부 로직으로 2개보다 적게 생성된 경우 포함)
-          console.log(`[handleSummaryClick] FINAL 최초 클릭 (QnA≤2, Resource≤2) → 4개씩 요청: section=${sectionIndex}`);
+          console.log(
+            `[handleSummaryClick] FINAL 최초 클릭 (QnA≤2, Resource≤2) → 4개씩 요청: section=${sectionIndex}`,
+          );
           shouldRequestMore = true;
           requestStreamingCardRef.current.add(sectionIndex);
         } else {
@@ -913,7 +979,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
       setSelectedSummaryId(summaryId);
 
       // 3단계: 카드 표시 업데이트 (DB에서 가져와서 표시)
-      updateCardsForSection(sectionIndex).catch(error => {
+      updateCardsForSection(sectionIndex).catch((error) => {
         console.error("카드 상태 업데이트 실패:", error);
       });
 
@@ -924,13 +990,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
       }
       cardRequestInFlightRef.current.delete(sectionIndex);
     },
-    [
-      backend,
-      lectureId,
-      updateCardsForSection,
-      requestStreamingCard,
-      summariesBySection,
-    ]
+    [backend, lectureId, updateCardsForSection, requestStreamingCard, summariesBySection],
   );
 
   // 컴포넌트 마운트 시 ref 초기화 (재로그인 대응)
@@ -955,7 +1015,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
       if (!summary || summary.phase?.toUpperCase() !== "FINAL") {
         return;
       }
-      const signature = `${summary.id ?? `section-${summary.sectionIndex}`}:${Array.isArray(summary.text) ? summary.text.join(" ") : summary.text ?? ""}`;
+      const signature = `${summary.id ?? `section-${summary.sectionIndex}`}:${Array.isArray(summary.text) ? summary.text.join(" ") : (summary.text ?? "")}`;
       const stored = finalSummaryRequestRef.current.get(summary.sectionIndex);
       if (stored && stored !== signature) {
         finalSummaryRequestRef.current.delete(summary.sectionIndex);
@@ -972,9 +1032,11 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
 
       // summaryKey가 변경되었지만 같은 섹션이면 selectedSummaryId 업데이트
       // 단, selectedSummaryId가 음수(임시 키)이고 currentSummaryKey가 양수(실제 id)인 경우만 업데이트
-      if (selectedSummaryId !== currentSummaryKey &&
+      if (
+        selectedSummaryId !== currentSummaryKey &&
         selectedSummaryId < 0 &&
-        currentSummaryKey > 0) {
+        currentSummaryKey > 0
+      ) {
         // 같은 섹션의 요약이 id를 받았으면 새로운 summaryKey로 업데이트
         setSelectedSummaryId(currentSummaryKey);
       }
@@ -990,7 +1052,9 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
     }
 
     // 새로운 완료된 요약 찾기
-    const prevSummaryMap = new Map<number, Summary>(prevSummariesRef.current.map(s => [s.sectionIndex, s]));
+    const prevSummaryMap = new Map<number, Summary>(
+      prevSummariesRef.current.map((s) => [s.sectionIndex, s]),
+    );
     const newCompletedSummaries = summaries.filter((summary: Summary) => {
       // 오토모드는 FINAL 요약만 대상으로 동작
       const phase = summary?.phase ? summary.phase.toUpperCase() : "FINAL";
@@ -1016,7 +1080,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
     // 가장 최근 섹션의 요약을 자동으로 클릭
     if (newCompletedSummaries.length > 0) {
       const latestSummary = newCompletedSummaries.reduce((latest, current) =>
-        current.sectionIndex > latest.sectionIndex ? current : latest
+        current.sectionIndex > latest.sectionIndex ? current : latest,
       );
       const summaryKey = latestSummary.id ?? -(latestSummary.sectionIndex + 1);
       handleSummaryClick(summaryKey, latestSummary.sectionIndex);
@@ -1034,8 +1098,10 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
       const interval = setInterval(() => {
         // 해당 섹션에 스트리밍 중인 카드가 있는지 확인 (ref 사용)
         const currentStreamingCards = streamingCardsRef.current;
-        const hasStreamingCards = (Array.from(currentStreamingCards.values()) as StreamingCard[]).some((card) => {
-          const parts = card.cardId.split('_');
+        const hasStreamingCards = (
+          Array.from(currentStreamingCards.values()) as StreamingCard[]
+        ).some((card) => {
+          const parts = card.cardId.split("_");
           const cardSectionIndex = parts.length >= 3 ? parseInt(parts[2]) : null;
           return cardSectionIndex === selectedSectionIndex && !card.isComplete;
         });
@@ -1071,7 +1137,6 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
     });
   }, [transcripts]);
 
-
   // refreshLecture에서 이미 처리하므로 이 useEffect는 제거
   // useEffect(() => {
   //   if (!lecture) return;
@@ -1102,7 +1167,9 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
     }
 
     // 현재 섹션의 전사만 가져오기 (전체가 아닌)
-    const currentSectionTranscripts = transcripts.filter(t => t.sectionIndex === currentSectionIndex);
+    const currentSectionTranscripts = transcripts.filter(
+      (t) => t.sectionIndex === currentSectionIndex,
+    );
 
     if (currentSectionTranscripts.length > 0) {
       const joined = currentSectionTranscripts
@@ -1141,17 +1208,13 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
   const isBookmarked = useCallback(
     (type: BookmarkType["targetType"], targetId: number) =>
       bookmarks.some((bookmark) => bookmark.targetType === type && bookmark.targetId === targetId),
-    [bookmarks]
+    [bookmarks],
   );
 
   const toggleBookmark = useCallback(
-    async (
-      type: BookmarkType["targetType"],
-      targetId: number,
-      sectionIndex: number
-    ) => {
+    async (type: BookmarkType["targetType"], targetId: number, sectionIndex: number) => {
       const existing = bookmarks.find(
-        (bookmark) => bookmark.targetType === type && bookmark.targetId === targetId
+        (bookmark) => bookmark.targetType === type && bookmark.targetId === targetId,
       );
       try {
         if (existing) {
@@ -1173,23 +1236,23 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
         toast.error(err instanceof Error ? err.message : t("session.bookmarkFailed"));
       }
     },
-    [backend, bookmarks, lectureId, t]
+    [backend, bookmarks, lectureId, t],
   );
-
-
 
   // 스트리밍 중인 카드 목록 메모이제이션 (리렌더링 최소화)
   const streamingResourcesForSection = useMemo(() => {
     if (selectedSectionIndex === null) return [];
     return (Array.from(streamingCards.values()) as StreamingCard[])
       .filter((card) => {
-        const parts = card.cardId.split('_');
+        const parts = card.cardId.split("_");
         const cardSectionIndex = parts.length >= 3 ? parseInt(parts[2]) : null;
-        return card.type === 'resource'
-          && card.cardIndex !== undefined
-          && cardSectionIndex === selectedSectionIndex
-          && !(card.isComplete && card.data)
-          && !card.error; // 에러 카드 제외
+        return (
+          card.type === "resource" &&
+          card.cardIndex !== undefined &&
+          cardSectionIndex === selectedSectionIndex &&
+          !(card.isComplete && card.data) &&
+          !card.error
+        ); // 에러 카드 제외
       })
       .sort((a, b) => (a.cardIndex || 0) - (b.cardIndex || 0));
   }, [streamingCards, selectedSectionIndex]);
@@ -1198,18 +1261,23 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
     if (selectedSectionIndex === null) return [];
     return (Array.from(streamingCards.values()) as StreamingCard[])
       .filter((card) => {
-        const parts = card.cardId.split('_');
+        const parts = card.cardId.split("_");
         const cardSectionIndex = parts.length >= 3 ? parseInt(parts[2]) : null;
-        return card.type === 'qna'
-          && card.cardIndex !== undefined
-          && cardSectionIndex === selectedSectionIndex
-          && !(card.isComplete && card.data)
-          && !card.error; // 에러 카드 제외
+        return (
+          card.type === "qna" &&
+          card.cardIndex !== undefined &&
+          cardSectionIndex === selectedSectionIndex &&
+          !(card.isComplete && card.data) &&
+          !card.error
+        ); // 에러 카드 제외
       })
       .sort((a, b) => (a.cardIndex || 0) - (b.cardIndex || 0));
   }, [streamingCards, selectedSectionIndex]);
 
-  const allResources = useMemo(() => Object.values(resourcesBySection).flat(), [resourcesBySection]);
+  const allResources = useMemo(
+    () => Object.values(resourcesBySection).flat(),
+    [resourcesBySection],
+  );
   const resourcesForView = useMemo(() => {
     if (selectedSectionIndex == null) return allResources;
     const sectionResources = resourcesBySection[selectedSectionIndex];
@@ -1300,10 +1368,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
         <div
           className={`${!splitMode ? "w-full" : "w-1/3"} overflow-hidden p-6 transition-all duration-300`}
         >
-          <div
-            ref={lectureScrollViewportRef}
-            className="h-full overflow-y-auto"
-          >
+          <div ref={lectureScrollViewportRef} className="h-full overflow-y-auto">
             <div className="space-y-6 safe-scroll">
               {error && (
                 <div className="bg-red-50 text-red-600 border border-red-200 rounded-lg p-4 text-sm">
@@ -1363,34 +1428,32 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
                     title="창 닫기"
                   />
                   <button
-                    onClick={() =>
-                      setShowBookmarkedOnly(!showBookmarkedOnly)
-                    }
-                    className={`w-3 h-3 rounded-full transition-colors cursor-pointer ${showBookmarkedOnly
-                      ? "bg-[#FFBD44]"
-                      : "bg-[#FFBD44] hover:bg-[#FFB000]"
-                      }`}
+                    onClick={() => setShowBookmarkedOnly(!showBookmarkedOnly)}
+                    className={`w-3 h-3 rounded-full transition-colors cursor-pointer ${
+                      showBookmarkedOnly ? "bg-[#FFBD44]" : "bg-[#FFBD44] hover:bg-[#FFB000]"
+                    }`}
                     title="북마크 필터"
                   />
                   <button
                     onClick={() => setAutoMode(!autoMode)}
                     className="w-3 h-3 rounded-full transition-colors cursor-pointer border border-white/20"
-                    style={autoMode
-                      ? { backgroundColor: '#66FFAA', boxShadow: '0 0 4px rgba(102,255,170,0.6)' }
-                      : { backgroundColor: '#55EE99' }
+                    style={
+                      autoMode
+                        ? { backgroundColor: "#66FFAA", boxShadow: "0 0 4px rgba(102,255,170,0.6)" }
+                        : { backgroundColor: "#55EE99" }
                     }
                     onMouseEnter={(e) => {
                       if (autoMode) {
-                        e.currentTarget.style.backgroundColor = '#88FFCC';
+                        e.currentTarget.style.backgroundColor = "#88FFCC";
                       } else {
-                        e.currentTarget.style.backgroundColor = '#66FFAA';
+                        e.currentTarget.style.backgroundColor = "#66FFAA";
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (autoMode) {
-                        e.currentTarget.style.backgroundColor = '#66FFAA';
+                        e.currentTarget.style.backgroundColor = "#66FFAA";
                       } else {
-                        e.currentTarget.style.backgroundColor = '#55EE99';
+                        e.currentTarget.style.backgroundColor = "#55EE99";
                       }
                     }}
                     title={autoMode ? "오토모드 끄기" : "오토모드 켜기"}
@@ -1408,7 +1471,9 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
                     <div
                       ref={(el) => {
                         if (el) {
-                          const viewport = el.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLDivElement;
+                          const viewport = el
+                            .closest('[data-slot="scroll-area"]')
+                            ?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLDivElement;
                           if (viewport) {
                             resourceScrollViewportRef.current = viewport;
                           }
@@ -1433,13 +1498,14 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
                               <Badge
                                 className="text-xs text-[rgb(255,255,255)] flex-shrink-0 self-center"
                                 style={{
-                                  background: resource.type === "paper"
-                                    ? "linear-gradient(90deg, #0c4997, #1e5fa8, #3b72dd, #4d82e0)"
-                                    : resource.type === "wiki"
-                                      ? "linear-gradient(90deg, #0c966b, #10b981, #34d399, #6ee7b7)"
-                                      : resource.type === "video"
-                                        ? "linear-gradient(90deg, #960c0c, #dc2626, #ef4444, #f87171)"
-                                        : "linear-gradient(90deg, #3f0c96, #6366f1, #8b5cf6, #a78bfa)"
+                                  background:
+                                    resource.type === "paper"
+                                      ? "linear-gradient(90deg, #0c4997, #1e5fa8, #3b72dd, #4d82e0)"
+                                      : resource.type === "wiki"
+                                        ? "linear-gradient(90deg, #0c966b, #10b981, #34d399, #6ee7b7)"
+                                        : resource.type === "video"
+                                          ? "linear-gradient(90deg, #960c0c, #dc2626, #ef4444, #f87171)"
+                                          : "linear-gradient(90deg, #3f0c96, #6366f1, #8b5cf6, #a78bfa)",
                                 }}
                               >
                                 {resource.type === "paper"
@@ -1456,32 +1522,37 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
                                   id={`checkboxInput-resource-${resource.id}`}
                                   checked={bookmarked}
                                   onChange={() =>
-                                    toggleBookmark(
-                                      "resource",
-                                      resource.id,
-                                      resource.sectionIndex
-                                    )
+                                    toggleBookmark("resource", resource.id, resource.sectionIndex)
                                   }
                                 />
-                                <label htmlFor={`checkboxInput-resource-${resource.id}`} className="bookmark scale-[0.6] text-[rgb(163,172,183)]">
-                                  <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 384 512" className="svgIcon">
+                                <label
+                                  htmlFor={`checkboxInput-resource-${resource.id}`}
+                                  className="bookmark scale-[0.6] text-[rgb(163,172,183)]"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    height="1em"
+                                    viewBox="0 0 384 512"
+                                    className="svgIcon"
+                                  >
                                     <path d="M0 48V487.7C0 501.1 10.9 512 24.3 512c5 0 9.9-1.5 14-4.4L192 400 345.7 507.6c4.1 2.9 9 4.4 14 4.4c13.4 0 24.3-10.9 24.3-24.3V48c0-26.5-21.5-48-48-48H48C21.5 0 0 21.5 0 48z"></path>
                                   </svg>
                                 </label>
                               </label>
                             </div>
                             <div className="mb-3 flex-shrink-0">
-                              <p className="font-medium">
-                                {resourceTitle}
-                              </p>
+                              <p className="font-medium">{resourceTitle}</p>
                             </div>
                             <div className="flex-1 overflow-y-auto">
-                              <p className="text-sm text-muted-foreground">
-                                {resourceDescription}
-                              </p>
+                              <p className="text-sm text-muted-foreground">{resourceDescription}</p>
                             </div>
                             <div className="pt-3 text-right text-xs text-muted-foreground">
-                              <a href={resource.url} target="_blank" rel="noreferrer" className="underline">
+                              <a
+                                href={resource.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="underline"
+                              >
                                 자세히 보기
                               </a>
                             </div>
@@ -1495,8 +1566,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
                       {!showBookmarkedOnly &&
                         !loading &&
                         (resourcesForView.length === 0 ||
-                          (isGeneratingExtended &&
-                            streamingResourcesForSection.length === 0)) && (
+                          (isGeneratingExtended && streamingResourcesForSection.length === 0)) && (
                           <div className="flex items-center justify-start gap-2 mt-[3px]">
                             <AnimatedLoaderIcon id="grad-resources" />
                             <span className="text-[rgb(125,128,136)] text-xs text-[14px]">
@@ -1516,7 +1586,9 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
                     <div
                       ref={(el) => {
                         if (el) {
-                          const viewport = el.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLDivElement;
+                          const viewport = el
+                            .closest('[data-slot="scroll-area"]')
+                            ?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLDivElement;
                           if (viewport) {
                             qnaScrollViewportRef.current = viewport;
                           }
@@ -1530,20 +1602,27 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
                         if (showBookmarkedOnly && !bookmarked) {
                           return null;
                         }
-                        const typeLabel = qa.type === "concept"
-                          ? "개념확인"
-                          : qa.type === "application"
-                            ? "응용확장"
-                            : qa.type === "advanced"
-                              ? "심화질의"
-                              : "비교분석";
+                        const typeLabel =
+                          qa.type === "concept"
+                            ? "개념확인"
+                            : qa.type === "application"
+                              ? "응용확장"
+                              : qa.type === "advanced"
+                                ? "심화질의"
+                                : "비교분석";
                         return (
                           <div
                             key={qa.id}
                             className="border rounded-lg p-6 bg-white opacity-0 animate-[fadeInUp_0.4s_ease_forwards] flex flex-col h-[325px]"
                           >
                             <div className="flex items-start justify-between mb-3 flex-shrink-0">
-                              <Badge className="text-xs text-[rgb(255,255,255)] flex-shrink-0" style={{ background: 'linear-gradient(90deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)' }}>
+                              <Badge
+                                className="text-xs text-[rgb(255,255,255)] flex-shrink-0"
+                                style={{
+                                  background:
+                                    "linear-gradient(90deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
+                                }}
+                              >
                                 {typeLabel}
                               </Badge>
                               <label className="ml-2 flex-shrink-0">
@@ -1551,16 +1630,18 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
                                   type="checkbox"
                                   id={`checkboxInput-ai-${qa.id}`}
                                   checked={bookmarked}
-                                  onChange={() =>
-                                    toggleBookmark(
-                                      "qna",
-                                      qa.id,
-                                      qa.sectionIndex
-                                    )
-                                  }
+                                  onChange={() => toggleBookmark("qna", qa.id, qa.sectionIndex)}
                                 />
-                                <label htmlFor={`checkboxInput-ai-${qa.id}`} className="bookmark scale-[0.6]">
-                                  <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 384 512" className="svgIcon">
+                                <label
+                                  htmlFor={`checkboxInput-ai-${qa.id}`}
+                                  className="bookmark scale-[0.6]"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    height="1em"
+                                    viewBox="0 0 384 512"
+                                    className="svgIcon"
+                                  >
                                     <path d="M0 48V487.7C0 501.1 10.9 512 24.3 512c5 0 9.9-1.5 14-4.4L192 400 345.7 507.6c4.1 2.9 9 4.4 14 4.4c13.4 0 24.3-10.9 24.3-24.3V48c0-26.5-21.5-48-48-48H48C21.5 0 0 21.5 0 48z"></path>
                                   </svg>
                                 </label>
@@ -1568,12 +1649,12 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
                             </div>
                             <div className="mb-3 flex-shrink-0">
                               <p className="font-medium">
-                                {Array.isArray(qa.question) ? qa.question.join('\n') : qa.question}
+                                {Array.isArray(qa.question) ? qa.question.join("\n") : qa.question}
                               </p>
                             </div>
                             <div className="flex-1 overflow-y-auto">
                               <p className="text-sm text-muted-foreground whitespace-pre-line">
-                                {Array.isArray(qa.answer) ? qa.answer.join('\n') : qa.answer}
+                                {Array.isArray(qa.answer) ? qa.answer.join("\n") : qa.answer}
                               </p>
                             </div>
                           </div>
@@ -1586,8 +1667,7 @@ const cardRequestInFlightRef = useRef<Set<number>>(new Set()); // 동시 중복 
                       {!showBookmarkedOnly &&
                         !loading &&
                         (qnaForView.length === 0 ||
-                          (isGeneratingExtended &&
-                            streamingQnAsForSection.length === 0)) && (
+                          (isGeneratingExtended && streamingQnAsForSection.length === 0)) && (
                           <div className="flex items-center justify-start gap-2 mt-1">
                             <AnimatedLoaderIcon id="grad-ai" />
                             <span className="text-[rgb(125,128,136)] text-xs text-[14px]">

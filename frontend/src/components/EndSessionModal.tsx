@@ -1,4 +1,11 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
@@ -13,7 +20,12 @@ interface EndSessionModalProps {
   defaultName?: string;
 }
 
-export function EndSessionModal({ open, onClose, onSaveAndEnd, defaultName = "" }: EndSessionModalProps) {
+export function EndSessionModal({
+  open,
+  onClose,
+  onSaveAndEnd,
+  defaultName = "",
+}: EndSessionModalProps) {
   const { t } = useI18n();
   const [sessionName, setSessionName] = useState(defaultName);
   const [submitting, setSubmitting] = useState(false);
@@ -45,7 +57,7 @@ export function EndSessionModal({ open, onClose, onSaveAndEnd, defaultName = "" 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md z-[100]">
-        <button 
+        <button
           onClick={onClose}
           className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100"
         >
@@ -53,19 +65,17 @@ export function EndSessionModal({ open, onClose, onSaveAndEnd, defaultName = "" 
         </button>
         <DialogHeader>
           <DialogTitle>{t("endSession.title")}</DialogTitle>
-          <DialogDescription>
-            {t("endSession.desc")}
-          </DialogDescription>
+          <DialogDescription>{t("endSession.desc")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-4">
           <div className="space-y-2">
             <Label htmlFor="session-name">{t("endSession.inputLabel")}</Label>
-            <Input 
+            <Input
               id="session-name"
               placeholder="강의 이름을 입력하세요"
               value={sessionName}
               onChange={(e) => setSessionName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+              onKeyDown={(e) => e.key === "Enter" && handleSave()}
             />
           </div>
           {error && (
@@ -75,13 +85,10 @@ export function EndSessionModal({ open, onClose, onSaveAndEnd, defaultName = "" 
           )}
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button 
-            variant="outline"
-            onClick={onClose}
-          >
+          <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button 
+          <Button
             className="bg-[#3B72DD] hover:bg-[#4D82E0]"
             onClick={handleSave}
             disabled={!sessionName.trim() || submitting}
