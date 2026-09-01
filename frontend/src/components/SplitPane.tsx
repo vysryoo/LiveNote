@@ -26,8 +26,8 @@ interface SplitPaneProps {
   closeSplitMode: () => void;
   setShowBookmarkedOnly: (value: boolean) => void;
   setAutoMode: (value: boolean) => void;
-  resourceScrollViewportRef: React.RefObject<HTMLDivElement>;
-  qnaScrollViewportRef: React.RefObject<HTMLDivElement>;
+  resourceScrollViewportRef: React.MutableRefObject<HTMLDivElement | null>;
+  qnaScrollViewportRef: React.MutableRefObject<HTMLDivElement | null>;
   t: (key: string) => string;
 }
 

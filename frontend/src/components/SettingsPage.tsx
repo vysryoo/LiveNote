@@ -4,7 +4,7 @@ import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { ArrowLeft } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { useI18n, codeToLanguage, languageToCode } from "../i18n/I18nContext";
+import { useI18n, codeToLanguage, languageToCode, type SupportedLanguage } from "../i18n/I18nContext";
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -14,7 +14,7 @@ interface SettingsPageProps {
 
 export function SettingsPage({ onBack, onSave, currentLanguage }: SettingsPageProps) {
   const { t } = useI18n();
-  const [language, setLanguage] = useState(currentLanguage);
+  const [language, setLanguage] = useState<SupportedLanguage>(() => codeToLanguage(currentLanguage));
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -89,7 +89,7 @@ export function SettingsPage({ onBack, onSave, currentLanguage }: SettingsPagePr
           <div className="bg-white rounded-lg border p-8 space-y-6">
             <div className="space-y-2">
               <Label>{t("common.language")}</Label>
-              <Select value={language} onValueChange={setLanguage}>
+              <Select value={language} onValueChange={(value) => setLanguage(value as SupportedLanguage)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

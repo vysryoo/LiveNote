@@ -17,7 +17,7 @@ import {
 } from "./ui/select";
 import { X, Upload, FileText } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { useI18n, languageToCode } from "../i18n/I18nContext";
+import { useI18n, languageToCode, type SupportedLanguage } from "../i18n/I18nContext";
 
 interface NewLectureModalProps {
   open: boolean;
@@ -102,7 +102,7 @@ export function NewLectureModal({
             <Label>{t("common.language")}</Label>
             <Select
               value={language}
-              onValueChange={setLanguage}
+              onValueChange={(value) => setLanguage(value as SupportedLanguage)}
             >
               <SelectTrigger>
                 <SelectValue />
