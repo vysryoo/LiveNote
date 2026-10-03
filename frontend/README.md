@@ -28,8 +28,12 @@ npm run dev
 frontend/
 ├── src/
 │   ├── main.tsx          # 엔트리 포인트
-│   ├── legacy/           # 재작성 전 구 코드 (화면, 훅, API 서비스, 다국어)
-│   ├── shared/ui/        # shadcn/ui 컴포넌트
+│   ├── app/              # 라우터, 전역 프로바이더
+│   ├── legacy/           # 재작성 전 구 코드 (화면, 훅, API 서비스)
+│   ├── shared/
+│   │   ├── ui/           # shadcn/ui 컴포넌트
+│   │   ├── lib/          # 공용 HTTP 클라이언트
+│   │   └── i18n/         # i18next 설정, 언어별 번역 파일
 │   ├── styles/           # 글로벌 스타일 (globals.css)
 │   └── assets/           # 정적 파일
 ├── public/               # 정적 자산

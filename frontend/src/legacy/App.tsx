@@ -1,24 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { LandingPage } from "./components/LandingPage";
+import { Outlet, useNavigate } from "react-router";
 import { LoginModal } from "./components/LoginModal";
-import { SignupPage } from "./components/SignupPage";
-import { MainPage } from "./components/MainPage";
 import { NewLectureModal } from "./components/NewLectureModal";
-import { SessionPage } from "./components/SessionPage";
-import { SettingsPage } from "./components/SettingsPage";
 import { DeleteSessionModal } from "./components/DeleteSessionModal";
 import { Toaster } from "@/shared/ui/sonner";
 import { toast } from "sonner";
 import { useBackend } from "./services/BackendContext";
 import type { Lecture, UserView } from "./services/ports";
 import { useI18n, codeToLanguage } from "./i18n/I18nContext";
-
-type Page = "landing" | "signup" | "main" | "session" | "settings";
+import type { LegacyAppContext } from "./appContext";
 
 export default function App() {
   const backend = useBackend();
+  const navigate = useNavigate();
   const { setLanguage } = useI18n();
-  const [currentPage, setCurrentPage] = useState<Page>("landing");
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [newLectureModalOpen, setNewLectureModalOpen] = useState(false);
   const [deleteSessionModalOpen, setDeleteSessionModalOpen] = useState(false);
@@ -27,7 +22,6 @@ export default function App() {
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [lecturesLoading, setLecturesLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
-  const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
 
   const filteredLectures = useMemo(() => {
     if (!user) return [] as Lecture[];
@@ -95,7 +89,7 @@ export default function App() {
         setUser(effectiveUser);
         setLanguage(displayLang);
         setLoginModalOpen(false);
-        setCurrentPage("main");
+        navigate("/lectures");
         await fetchLectures();
         toast.success("로그인되었습니다");
       } catch (error) {
@@ -104,7 +98,7 @@ export default function App() {
         throw error;
       }
     },
-    [backend, fetchLectures],
+    [backend, fetchLectures, navigate],
   );
 
   const handleSignup = useCallback(
@@ -134,12 +128,11 @@ export default function App() {
     }
     setUser(null);
     setLectures([]);
-    setCurrentSessionId(null);
-    setCurrentPage("landing");
+    navigate("/");
     // 로그아웃 시 UI 언어는 한국어로 고정
     setLanguage("한국어");
     toast.success("로그아웃되었습니다");
-  }, [backend]);
+  }, [backend, navigate]);
 
   const handleNewLecture = useCallback(
     async (data: { language: string; category: string; subject: string; files: File[] }) => {
@@ -151,9 +144,8 @@ export default function App() {
           files: data.files,
         });
         await fetchLectures();
-        setCurrentSessionId(lecture.id);
         setNewLectureModalOpen(false);
-        setCurrentPage("session");
+        navigate(`/lectures/${lecture.id}`);
         toast.success("새 강의가 시작되었습니다");
       } catch (error) {
         console.error(error);
@@ -161,22 +153,15 @@ export default function App() {
         throw error;
       }
     },
-    [backend, fetchLectures],
+    [backend, fetchLectures, navigate],
   );
 
-  const handleSessionClick = useCallback((sessionId: number) => {
-    setCurrentSessionId(sessionId);
-    setCurrentPage("session");
-  }, []);
-
   const handleEndSession = useCallback(
-    async (sessionName: string) => {
-      if (!currentSessionId) return;
+    async (lectureId: number, sessionName: string) => {
       try {
-        await backend.lecture.endLecture(currentSessionId, { title: sessionName });
+        await backend.lecture.endLecture(lectureId, { title: sessionName });
         await fetchLectures();
-        setCurrentSessionId(null);
-        setCurrentPage("main");
+        navigate("/lectures");
         toast.success("강의가 저장되었습니다");
       } catch (error) {
         console.error(error);
@@ -184,7 +169,7 @@ export default function App() {
         throw error;
       }
     },
-    [backend, currentSessionId, fetchLectures],
+    [backend, fetchLectures, navigate],
   );
 
   const handleDeleteSession = useCallback((sessionId: number) => {
@@ -242,7 +227,7 @@ export default function App() {
           });
           toast.success("비밀번호가 변경되었습니다");
         }
-        setCurrentPage("main");
+        navigate("/lectures");
         toast.success("설정이 저장되었습니다");
       } catch (error) {
         console.error(error);
@@ -250,7 +235,7 @@ export default function App() {
         throw error;
       }
     },
-    [backend],
+    [backend, navigate],
   );
 
   const sessionForDeletion = useMemo(
@@ -258,60 +243,24 @@ export default function App() {
     [lectures, sessionToDelete],
   );
 
-  if (initializing) {
-    return (
-      <>
-        <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-          초기화 중입니다...
-        </div>
-        <Toaster />
-      </>
-    );
-  }
+  const outletContext: LegacyAppContext = {
+    user,
+    initializing,
+    lectures: filteredLectures,
+    lecturesLoading,
+    openLoginModal: () => setLoginModalOpen(true),
+    openNewLectureModal: () => setNewLectureModalOpen(true),
+    handleSignup,
+    handleLogout,
+    handleDeleteSession,
+    handleRenameSession,
+    handleEndSession,
+    handleSettings,
+  };
 
   return (
     <>
-      {currentPage === "landing" && (
-        <LandingPage
-          onLoginClick={() => setLoginModalOpen(true)}
-          onSignupClick={() => setCurrentPage("signup")}
-        />
-      )}
-
-      {currentPage === "signup" && (
-        <SignupPage onSignup={handleSignup} onBack={() => setCurrentPage("landing")} />
-      )}
-
-      {currentPage === "main" && (
-        <MainPage
-          onNewLecture={() => setNewLectureModalOpen(true)}
-          onSessionClick={handleSessionClick}
-          onSettings={() => setCurrentPage("settings")}
-          onLogout={handleLogout}
-          onDeleteSession={handleDeleteSession}
-          onRenameSession={handleRenameSession}
-          lectures={filteredLectures}
-          loading={lecturesLoading}
-        />
-      )}
-
-      {currentPage === "session" && currentSessionId != null && (
-        <SessionPage
-          lectureId={currentSessionId}
-          onLogoClick={() => setCurrentPage("main")}
-          onSettings={() => setCurrentPage("settings")}
-          onLogout={handleLogout}
-          onSaveAndEnd={handleEndSession}
-        />
-      )}
-
-      {currentPage === "settings" && user && (
-        <SettingsPage
-          onBack={() => setCurrentPage("main")}
-          onSave={handleSettings}
-          currentLanguage={user.uiLanguage || "ko"}
-        />
-      )}
+      <Outlet context={outletContext} />
 
       <LoginModal
         open={loginModalOpen}
@@ -319,7 +268,7 @@ export default function App() {
         onLogin={handleLogin}
         onSignupClick={() => {
           setLoginModalOpen(false);
-          setCurrentPage("signup");
+          navigate("/signup");
         }}
       />
 

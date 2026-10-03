@@ -1,11 +1,6 @@
 import { createRoot } from "react-dom/client";
 import "./shared/i18n";
-import App from "./legacy/App.tsx";
 import "./styles/globals.css";
-import { BackendProvider } from "./legacy/services/BackendContext";
+import { App } from "./app/App";
 
-createRoot(document.getElementById("root")!).render(
-  <BackendProvider>
-    <App />
-  </BackendProvider>,
-);
+createRoot(document.getElementById("root")!).render(<App />);
