@@ -19,81 +19,12 @@ import type {
   UpdateLectureTitleRequest,
   UserView,
 } from "../ports";
+import { request } from "@/shared/lib/http";
 
-const API_BASE = import.meta.env.VITE_API_URL || "/api";
 const WS_BASE = import.meta.env.VITE_WS_URL || "ws://localhost:8080";
 
-function authHeader(): Record<string, string> {
-  // Prefer in-memory token, fall back to persisted token so page reloads keep the session.
-  const tokenInWindow = (window as any).SPRING_TOKEN as string | undefined;
-  const tokenInStorage =
-    typeof localStorage !== "undefined" ? localStorage.getItem("SPRING_TOKEN") : null;
-  const token = tokenInWindow || tokenInStorage || undefined;
-  // Guard against literal strings 'undefined' or 'null' which can appear when code sets them accidentally
-  if (!token || token === "undefined" || token === "null") {
-    return {};
-  }
-  return { Authorization: `Bearer ${token}` };
-}
-
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
-  // FormData를 사용하는 경우 Content-Type을 설정하지 않음 (브라우저가 자동으로 boundary 설정)
-  const isFormData = init?.body instanceof FormData;
-  const base = new Headers();
-
-  if (!isFormData) {
-    base.set("Content-Type", "application/json");
-    const auth = authHeader();
-    Object.entries(auth).forEach(([key, value]) => base.set(key, value));
-  } else {
-    // FormData인 경우에도 인증 헤더는 필요
-    const auth = authHeader();
-    Object.entries(auth).forEach(([key, value]) => base.set(key, value));
-  }
-
-  if (init?.headers) {
-    const extra = new Headers(init.headers as HeadersInit);
-    extra.forEach((value, key) => base.set(key, value));
-  }
-
-  const res = await fetch(`${API_BASE}${path}`, { ...init, headers: base });
-  if (!res.ok) {
-    // 에러 응답을 JSON으로 파싱 시도
-    let errorMessage = `HTTP ${res.status} ${res.statusText}`;
-    try {
-      const errorData = await res.json();
-      // 백엔드에서 {message: "..."} 형태로 반환하는 경우
-      if (errorData.message) {
-        errorMessage = errorData.message;
-      } else if (typeof errorData === "string") {
-        errorMessage = errorData;
-      }
-    } catch {
-      // JSON 파싱 실패 시 텍스트로 시도
-      const text = await res.text().catch(() => "");
-      if (text) {
-        errorMessage = text;
-      }
-    }
-    throw new Error(errorMessage);
-  }
-  if (res.status === 204) return undefined as unknown as T;
-  // Some backend responses are wrapped in { ok: boolean, data: T, message: string }
-  const parsed = await res.json().catch(() => null);
-  if (
-    parsed &&
-    typeof parsed === "object" &&
-    Object.prototype.hasOwnProperty.call(parsed, "ok") &&
-    Object.prototype.hasOwnProperty.call(parsed, "data")
-  ) {
-    if (parsed.ok) {
-      return parsed.data as T;
-    }
-    // backend reported failure
-    const msg = parsed.message || `Request failed`;
-    throw new Error(msg);
-  }
-  return parsed as T;
+  return (await request(path, init)) as T;
 }
 
 function buildAuth(): AuthPort {
