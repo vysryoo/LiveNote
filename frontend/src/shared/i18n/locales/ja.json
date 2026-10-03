@@ -1,0 +1,83 @@
+{
+  "common": {
+    "settings": "設定",
+    "logout": "ログアウト",
+    "edit": "編集",
+    "delete": "削除",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "saveAndEnd": "保存して終了",
+    "language": "言語"
+  },
+  "main": {
+    "myLectures": "マイ講義",
+    "startNewLecture": "新しい講義を開始",
+    "noLecturesTitle": "講義はまだありません",
+    "noLecturesDesc": "新しい講義を開始して LiveNote を体験しましょう"
+  },
+  "login": {
+    "title": "ログイン",
+    "desc": "ID とパスワードを入力してください。",
+    "username": "ID",
+    "password": "パスワード",
+    "login": "ログイン",
+    "signupLink": "新規登録"
+  },
+  "signup": {
+    "title": "新規登録",
+    "username": "ID",
+    "password": "パスワード",
+    "passwordConfirm": "パスワード確認",
+    "name": "名前",
+    "email": "メール",
+    "submit": "登録"
+  },
+  "settings": {
+    "title": "設定",
+    "changePassword": "パスワード変更",
+    "currentPassword": "現在のパスワード",
+    "newPassword": "新しいパスワード",
+    "confirmPassword": "確認用パスワード",
+    "currentPasswordPH": "現在のパスワードを入力してください",
+    "newPasswordPH": "新しいパスワードを入力してください",
+    "confirmPasswordPH": "もう一度パスワードを入力してください",
+    "save": "保存",
+    "back": "戻る"
+  },
+  "session": {
+    "header": {
+      "record": "講義記録",
+      "summary": "ライブ要約"
+    },
+    "resources": "資料",
+    "ai": "AI 質問",
+    "fetchError": "講義情報の読み込みに失敗しました",
+    "loading": "講義データを読み込んでいます...",
+    "noSummaries": "要約データはまだありません。",
+    "noTranscript": "書き起こしデータがありません。",
+    "noSummaryText": "要約はありません。",
+    "bookmarkAdded": "ブックマークを追加しました",
+    "bookmarkRemoved": "ブックマークを削除しました",
+    "bookmarkFailed": "ブックマーク処理に失敗しました",
+    "wsError": "録音用の接続でエラーが発生しました",
+    "recordingError": "録音を開始できませんでした",
+    "micPermissionDenied": "マイクの権限が必要です"
+  },
+  "endSession": {
+    "title": "セッション終了",
+    "desc": "保存して終了します。名前を入力してください。",
+    "inputLabel": "保存する講義名"
+  },
+  "newLecture": {
+    "title": "新しい講義の設定",
+    "desc": "新しい講義を開始するための情報を入力してください。",
+    "category": "分類",
+    "categoryPH": "分類を選択してください",
+    "subject": "科目名",
+    "subjectPH": "科目名を入力してください",
+    "filesOptional": "参考資料（任意）",
+    "clickToAddFiles": "クリックしてファイルを追加",
+    "supportedTypes": "PDF、DOC、TXT、PPT 対応",
+    "addedFiles": "追加されたファイル"
+  }
+}

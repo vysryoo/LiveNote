@@ -1,0 +1,83 @@
+{
+  "common": {
+    "settings": "Settings",
+    "logout": "Log out",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saveAndEnd": "Save and End",
+    "language": "Language"
+  },
+  "main": {
+    "myLectures": "My Lectures",
+    "startNewLecture": "Start New Lecture",
+    "noLecturesTitle": "No lectures yet",
+    "noLecturesDesc": "Start a new lecture to experience LiveNote"
+  },
+  "login": {
+    "title": "Login",
+    "desc": "Enter your ID and password to sign in.",
+    "username": "ID",
+    "password": "Password",
+    "login": "Login",
+    "signupLink": "Sign up"
+  },
+  "signup": {
+    "title": "Sign Up",
+    "username": "ID",
+    "password": "Password",
+    "passwordConfirm": "Confirm Password",
+    "name": "Name",
+    "email": "Email",
+    "submit": "Create account"
+  },
+  "settings": {
+    "title": "Settings",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "currentPasswordPH": "Enter current password",
+    "newPasswordPH": "Enter new password",
+    "confirmPasswordPH": "Re-enter password",
+    "save": "Save",
+    "back": "Back"
+  },
+  "session": {
+    "header": {
+      "record": "Lecture Record",
+      "summary": "Live Summary"
+    },
+    "resources": "Resources",
+    "ai": "AI Q&A",
+    "fetchError": "Failed to load lecture information",
+    "loading": "Loading lecture data...",
+    "noSummaries": "No summary data yet.",
+    "noTranscript": "No transcript available.",
+    "noSummaryText": "No summary available.",
+    "bookmarkAdded": "Bookmark added",
+    "bookmarkRemoved": "Bookmark removed",
+    "bookmarkFailed": "Failed to process bookmark",
+    "wsError": "An error occurred while connecting for recording",
+    "recordingError": "Failed to start recording",
+    "micPermissionDenied": "Microphone permission is required"
+  },
+  "endSession": {
+    "title": "End Session",
+    "desc": "Save and end the lecture. Enter a name.",
+    "inputLabel": "Lecture name to save"
+  },
+  "newLecture": {
+    "title": "New Lecture Settings",
+    "desc": "Enter details to start a new lecture.",
+    "category": "Category",
+    "categoryPH": "Select a category",
+    "subject": "Subject",
+    "subjectPH": "Enter subject name",
+    "filesOptional": "Reference files (optional)",
+    "clickToAddFiles": "Click to add files",
+    "supportedTypes": "Supports PDF, DOC, TXT, PPT",
+    "addedFiles": "Added files"
+  }
+}

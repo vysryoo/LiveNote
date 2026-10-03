@@ -1,0 +1,83 @@
+{
+  "common": {
+    "settings": "설정",
+    "logout": "로그아웃",
+    "edit": "수정",
+    "delete": "삭제",
+    "cancel": "취소",
+    "save": "저장",
+    "saveAndEnd": "저장하고 종료",
+    "language": "언어"
+  },
+  "main": {
+    "myLectures": "내 강의",
+    "startNewLecture": "새 강의 시작하기",
+    "noLecturesTitle": "아직 강의가 없습니다",
+    "noLecturesDesc": "새 강의를 시작하여 LiveNote를 경험해보세요"
+  },
+  "login": {
+    "title": "로그인",
+    "desc": "아이디와 비밀번호를 입력하여 로그인하세요.",
+    "username": "아이디",
+    "password": "비밀번호",
+    "login": "로그인",
+    "signupLink": "회원 가입"
+  },
+  "signup": {
+    "title": "회원가입",
+    "username": "아이디",
+    "password": "비밀번호",
+    "passwordConfirm": "비밀번호 확인",
+    "name": "이름",
+    "email": "이메일",
+    "submit": "가입 완료"
+  },
+  "settings": {
+    "title": "설정",
+    "changePassword": "비밀번호 변경",
+    "currentPassword": "현재 비밀번호",
+    "newPassword": "새 비밀번호",
+    "confirmPassword": "비밀번호 확인",
+    "currentPasswordPH": "현재 비밀번호를 입력하세요",
+    "newPasswordPH": "새 비밀번호를 입력하세요",
+    "confirmPasswordPH": "비밀번호를 다시 입력하세요",
+    "save": "수정",
+    "back": "돌아가기"
+  },
+  "session": {
+    "header": {
+      "record": "강의 기록",
+      "summary": "실시간 요약"
+    },
+    "resources": "자료 탐색",
+    "ai": "AI 질문",
+    "fetchError": "강의 정보를 불러오지 못했습니다",
+    "loading": "강의 데이터를 불러오는 중입니다...",
+    "noSummaries": "아직 요약 데이터가 없습니다.",
+    "noTranscript": "전사 데이터가 없습니다.",
+    "noSummaryText": "요약 데이터가 없습니다.",
+    "bookmarkAdded": "북마크가 추가되었습니다",
+    "bookmarkRemoved": "북마크가 제거되었습니다",
+    "bookmarkFailed": "북마크 처리에 실패했습니다",
+    "wsError": "녹음 연결 중 오류가 발생했습니다",
+    "recordingError": "녹음을 시작할 수 없습니다",
+    "micPermissionDenied": "마이크 권한이 필요합니다"
+  },
+  "endSession": {
+    "title": "강의 세션 종료",
+    "desc": "강의를 저장하고 종료합니다. 강의 이름을 입력하세요.",
+    "inputLabel": "저장할 강의 이름"
+  },
+  "newLecture": {
+    "title": "새 강의 설정",
+    "desc": "새로운 강의를 시작하기 위한 정보를 입력하세요.",
+    "category": "분류",
+    "categoryPH": "분류를 선택하세요",
+    "subject": "과목명",
+    "subjectPH": "과목명을 입력하세요",
+    "filesOptional": "참고 자료 (선택)",
+    "clickToAddFiles": "클릭하여 파일 추가",
+    "supportedTypes": "PDF, DOC, TXT, PPT 지원",
+    "addedFiles": "추가된 파일"
+  }
+}

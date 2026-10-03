@@ -1,0 +1,83 @@
+{
+  "common": {
+    "settings": "设置",
+    "logout": "登出",
+    "edit": "编辑",
+    "delete": "删除",
+    "cancel": "取消",
+    "save": "保存",
+    "saveAndEnd": "保存并结束",
+    "language": "语言"
+  },
+  "main": {
+    "myLectures": "我的课程",
+    "startNewLecture": "开始新课程",
+    "noLecturesTitle": "暂无课程",
+    "noLecturesDesc": "开始新课程体验 LiveNote"
+  },
+  "login": {
+    "title": "登录",
+    "desc": "请输入账号和密码登录。",
+    "username": "账号",
+    "password": "密码",
+    "login": "登录",
+    "signupLink": "注册"
+  },
+  "signup": {
+    "title": "注册",
+    "username": "账号",
+    "password": "密码",
+    "passwordConfirm": "确认密码",
+    "name": "姓名",
+    "email": "邮箱",
+    "submit": "完成注册"
+  },
+  "settings": {
+    "title": "设置",
+    "changePassword": "修改密码",
+    "currentPassword": "当前密码",
+    "newPassword": "新密码",
+    "confirmPassword": "确认密码",
+    "currentPasswordPH": "请输入当前密码",
+    "newPasswordPH": "请输入新密码",
+    "confirmPasswordPH": "请再次输入密码",
+    "save": "保存",
+    "back": "返回"
+  },
+  "session": {
+    "header": {
+      "record": "课程记录",
+      "summary": "实时摘要"
+    },
+    "resources": "资料检索",
+    "ai": "AI 提问",
+    "fetchError": "无法加载课程信息",
+    "loading": "正在加载课程数据...",
+    "noSummaries": "暂时没有摘要数据。",
+    "noTranscript": "暂无转写数据。",
+    "noSummaryText": "暂无摘要。",
+    "bookmarkAdded": "已添加书签",
+    "bookmarkRemoved": "已移除书签",
+    "bookmarkFailed": "书签处理失败",
+    "wsError": "录音连接时发生错误",
+    "recordingError": "无法开始录音",
+    "micPermissionDenied": "需要麦克风权限"
+  },
+  "endSession": {
+    "title": "结束会话",
+    "desc": "保存并结束课程。请输入名称。",
+    "inputLabel": "保存的课程名称"
+  },
+  "newLecture": {
+    "title": "新课程设置",
+    "desc": "请输入信息以开始新课程。",
+    "category": "分类",
+    "categoryPH": "请选择分类",
+    "subject": "科目名",
+    "subjectPH": "请输入科目名称",
+    "filesOptional": "参考资料（可选）",
+    "clickToAddFiles": "点击添加文件",
+    "supportedTypes": "支持 PDF、DOC、TXT、PPT",
+    "addedFiles": "已添加文件"
+  }
+}
