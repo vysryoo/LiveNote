@@ -1,11 +1,11 @@
-import { Button } from "./ui/button";
-import { Card } from "./ui/card";
+import { Button } from "@/shared/ui/button";
+import { Card } from "@/shared/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+} from "@/shared/ui/dropdown-menu";
 import { User, Settings, LogOut, Plus, MoreVertical, BookOpen, Clock, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import logoImage from "figma:asset/logo.png";

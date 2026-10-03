@@ -1,9 +1,9 @@
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
+import { Button } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
 import React, { useState } from "react";
 import { ArrowLeft } from "lucide-react";
-import logoImage from "../assets/logo.png";
+import logoImage from "@/assets/logo.png";
 import { useI18n } from "../i18n/I18nContext";
 
 interface SignupPageProps {

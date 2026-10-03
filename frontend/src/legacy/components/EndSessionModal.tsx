@@ -5,10 +5,10 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "./ui/dialog";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Button } from "./ui/button";
+} from "@/shared/ui/dialog";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
+import { Button } from "@/shared/ui/button";
 import { X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useI18n } from "../i18n/I18nContext";

@@ -1,6 +1,6 @@
 import React from "react";
-import { ScrollArea } from "./ui/scroll-area";
-import { Badge } from "./ui/badge";
+import { ScrollArea } from "@/shared/ui/scroll-area";
+import { Badge } from "@/shared/ui/badge";
 import { AnimatedLoaderIcon } from "./AnimatedLoaderIcon";
 import type { Resource, QnA } from "../services/ports";
 import StreamingResourceCard from "./StreamingResourceCard";

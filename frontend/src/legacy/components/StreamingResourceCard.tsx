@@ -1,5 +1,5 @@
 import React, { memo } from "react";
-import { Badge } from "./ui/badge";
+import { Badge } from "@/shared/ui/badge";
 import type { Resource } from "../services/ports";
 import type { StreamingCard } from "./StreamingCardTypes";
 

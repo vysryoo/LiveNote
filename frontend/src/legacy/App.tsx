@@ -7,7 +7,7 @@ import { NewLectureModal } from "./components/NewLectureModal";
 import { SessionPage } from "./components/SessionPage";
 import { SettingsPage } from "./components/SettingsPage";
 import { DeleteSessionModal } from "./components/DeleteSessionModal";
-import { Toaster } from "./components/ui/sonner";
+import { Toaster } from "@/shared/ui/sonner";
 import { toast } from "sonner";
 import { useBackend } from "./services/BackendContext";
 import type { Lecture, UserView } from "./services/ports";

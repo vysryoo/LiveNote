@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ScrollArea } from "./ui/scroll-area";
-import { Badge } from "./ui/badge";
+import { ScrollArea } from "@/shared/ui/scroll-area";
+import { Badge } from "@/shared/ui/badge";
 import SectionCard from "./SectionCard";
 import StreamingResourceCard from "./StreamingResourceCard";
 import StreamingQnACard from "./StreamingQnACard";

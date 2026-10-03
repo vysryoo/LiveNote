@@ -1,5 +1,5 @@
 import React, { memo } from "react";
-import { Badge } from "./ui/badge";
+import { Badge } from "@/shared/ui/badge";
 import type { StreamingCard } from "./StreamingCardTypes";
 
 // 스트리밍 QnA 카드 컴포넌트 (메모이제이션으로 리렌더링 최소화)

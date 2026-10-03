@@ -1,4 +1,4 @@
-import { Button } from "./ui/button";
+import { Button } from "@/shared/ui/button";
 import { Check, Chrome, BookOpen, Youtube, GraduationCap } from "lucide-react";
 import ctaBackground from "figma:asset/ctaBackground.png";
 import logoImage from "figma:asset/logo.png";

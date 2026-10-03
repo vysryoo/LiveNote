@@ -1,14 +1,14 @@
 import React from "react";
-import { Button } from "./ui/button";
+import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+} from "@/shared/ui/dropdown-menu";
 import { User, Settings, LogOut } from "lucide-react";
 import RecordingTabControl from "./RecordingTabControl";
-import logoImage from "../assets/logo.png";
+import logoImage from "@/assets/logo.png";
 import type { SessionDetailResponse } from "../services/ports";
 
 interface SessionHeaderProps {

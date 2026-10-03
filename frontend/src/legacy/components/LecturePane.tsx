@@ -1,5 +1,5 @@
 import React from "react";
-import { ScrollArea } from "./ui/scroll-area";
+import { ScrollArea } from "@/shared/ui/scroll-area";
 import SectionCard from "./SectionCard";
 import type { SectionData } from "./SessionTypes";
 

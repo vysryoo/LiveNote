@@ -27,13 +27,10 @@ npm run dev
 ```
 frontend/
 ├── src/
-│   ├── App.tsx           # 메인 애플리케이션
 │   ├── main.tsx          # 엔트리 포인트
-│   ├── index.css         # 글로벌 스타일
-│   ├── components/       # UI 컴포넌트
-│   ├── hooks/            # 커스텀 훅
-│   ├── services/         # API 서비스
-│   ├── i18n/             # 다국어 지원
+│   ├── legacy/           # 재작성 전 구 코드 (화면, 훅, API 서비스, 다국어)
+│   ├── shared/ui/        # shadcn/ui 컴포넌트
+│   ├── styles/           # 글로벌 스타일 (globals.css)
 │   └── assets/           # 정적 파일
 ├── public/               # 정적 자산
 ├── index.html            # HTML 템플릿
