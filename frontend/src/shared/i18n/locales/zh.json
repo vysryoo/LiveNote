@@ -7,7 +7,9 @@
     "cancel": "取消",
     "save": "保存",
     "saveAndEnd": "保存并结束",
-    "language": "语言"
+    "language": "语言",
+    "requestFailed": "无法处理请求，请稍后再试。",
+    "loading": "加载中..."
   },
   "main": {
     "myLectures": "我的课程",
@@ -30,7 +32,12 @@
     "passwordConfirm": "确认密码",
     "name": "姓名",
     "email": "邮箱",
-    "submit": "完成注册"
+    "submit": "完成注册",
+    "subtitle": "通过 LiveNote 体验强大的 AI 功能",
+    "passwordHint": "请至少输入6个字符",
+    "haveAccount": "已有账号？",
+    "loginLink": "登录",
+    "terms": "注册即表示您同意<terms>服务条款</terms>和<privacy>隐私政策</privacy>。"
   },
   "settings": {
     "title": "设置",
@@ -79,5 +86,27 @@
     "clickToAddFiles": "点击添加文件",
     "supportedTypes": "支持 PDF、DOC、TXT、PPT",
     "addedFiles": "已添加文件"
+  },
+  "validation": {
+    "required": "此项为必填项",
+    "invalidEmail": "请输入有效的电子邮件地址",
+    "passwordMin": "密码至少需要6个字符",
+    "passwordMismatch": "两次输入的密码不一致",
+    "currentPasswordRequired": "请输入当前密码"
+  },
+  "auth": {
+    "errors": {
+      "badCredential": "账号或密码不正确",
+      "duplicatedLoginId": "该账号已被使用",
+      "duplicatedEmail": "该电子邮件已被使用",
+      "invalidCurrentPassword": "当前密码不正确"
+    },
+    "toast": {
+      "loginSuccess": "登录成功",
+      "signupSuccess": "注册成功",
+      "logoutSuccess": "已退出登录",
+      "settingsSaved": "设置已保存",
+      "passwordChanged": "密码已修改"
+    }
   }
 }

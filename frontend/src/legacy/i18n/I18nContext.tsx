@@ -28,7 +28,6 @@ export function codeToLanguage(code: string): SupportedLanguage {
 
 type I18nContextValue = {
   language: SupportedLanguage;
-  setLanguage: (lang: SupportedLanguage) => void;
   t: (key: string) => string;
 };
 
@@ -36,17 +35,10 @@ type I18nContextValue = {
 export function useI18n(): I18nContextValue {
   const { t, i18n } = useTranslation();
 
-  const setLanguage = useCallback(
-    (lang: SupportedLanguage) => {
-      void i18n.changeLanguage(languageToCode(lang));
-    },
-    [i18n],
-  );
-
   const translate = useCallback((key: string) => t(key as ParseKeys), [t]);
 
   return useMemo(
-    () => ({ language: codeToLanguage(i18n.language), setLanguage, t: translate }),
-    [i18n.language, setLanguage, translate],
+    () => ({ language: codeToLanguage(i18n.language), t: translate }),
+    [i18n.language, translate],
   );
 }

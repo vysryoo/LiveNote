@@ -1,54 +1,3 @@
-export interface User {
-  id: number;
-  loginId: string;
-  password: string;
-  email: string;
-  name: string;
-  uiLanguage: string;
-}
-
-export interface UserView {
-  id: number;
-  loginId: string;
-  email: string;
-  name: string;
-  uiLanguage: string;
-}
-
-export interface AuthResponse {
-  token: string;
-  user: {
-    id: number;
-    loginId: string;
-    name: string;
-    email: string;
-    uiLanguage?: string;
-  };
-}
-
-export interface LoginRequest {
-  loginId: string;
-  password: string;
-}
-
-export interface SignupRequest {
-  loginId: string;
-  password: string;
-  email: string;
-  name: string;
-}
-
-export interface AuthPort {
-  /** 로그인 */
-  login(data: LoginRequest): Promise<AuthResponse>;
-
-  /** 회원가입 */
-  signup(data: SignupRequest): Promise<AuthResponse>;
-
-  /** 로그아웃 */
-  logout(): Promise<void>;
-}
-
 export interface Lecture {
   id: number;
   userId: number;
@@ -266,28 +215,6 @@ export interface LecturePort {
   ): Promise<{ success: boolean; cardId: string; type: string }>;
 }
 
-export interface SetLanguageRequest {
-  language: string;
-}
-
-export interface SetPasswordRequest {
-  currentPassword: string;
-  newPassword: string;
-}
-
-export interface SettingsPort {
-  /** 현재 사용자 조회 */
-  getUser(): Promise<UserView>;
-
-  /** UI 표시 언어 변경 */
-  setLanguage(data: SetLanguageRequest): Promise<UserView>;
-
-  /** 비밀번호 변경 */
-  setPassword(data: SetPasswordRequest): Promise<UserView>;
-}
-
 export interface BackendPort {
-  auth: AuthPort;
   lecture: LecturePort;
-  settings: SettingsPort;
 }

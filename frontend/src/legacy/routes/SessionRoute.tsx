@@ -1,10 +1,12 @@
 import { Navigate, useNavigate, useParams } from "react-router";
+import { useLogout } from "@/features/auth/hooks/useLogout";
 import { SessionPage } from "../components/SessionPage";
 import { useLegacyApp } from "../appContext";
 
 export function SessionRoute() {
   const navigate = useNavigate();
-  const { handleLogout, handleEndSession } = useLegacyApp();
+  const { handleEndSession } = useLegacyApp();
+  const logout = useLogout();
   const lectureId = Number(useParams().lectureId);
 
   if (!Number.isInteger(lectureId)) return <Navigate to="/lectures" replace />;
@@ -16,7 +18,7 @@ export function SessionRoute() {
       lectureId={lectureId}
       onLogoClick={() => navigate("/lectures")}
       onSettings={() => navigate("/settings")}
-      onLogout={handleLogout}
+      onLogout={logout}
       onSaveAndEnd={(sessionName) => handleEndSession(lectureId, sessionName)}
     />
   );

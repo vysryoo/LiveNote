@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router";
 import LegacyApp from "@/legacy/App";
 import { LandingRoute } from "@/legacy/routes/LandingRoute";
-import { RequireAuth } from "@/legacy/routes/RequireAuth";
+import { RequireAuth } from "./RequireAuth";
 
 export const router = createBrowserRouter([
   {
@@ -12,7 +12,7 @@ export const router = createBrowserRouter([
       {
         path: "/signup",
         lazy: async () => ({
-          Component: (await import("@/legacy/routes/SignupRoute")).SignupRoute,
+          Component: (await import("@/features/auth/components/SignupPage")).SignupPage,
         }),
       },
       {
@@ -33,7 +33,7 @@ export const router = createBrowserRouter([
           {
             path: "/settings",
             lazy: async () => ({
-              Component: (await import("@/legacy/routes/SettingsRoute")).SettingsRoute,
+              Component: (await import("@/features/auth/components/SettingsPage")).SettingsPage,
             }),
           },
         ],

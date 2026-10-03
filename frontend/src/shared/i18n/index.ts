@@ -14,6 +14,16 @@ export const resources = {
 
 export type LanguageCode = keyof typeof resources;
 
+export const LANGUAGE_CODES = ["ko", "en", "ja", "zh"] as const satisfies readonly LanguageCode[];
+
+// 언어 선택 UI에서 각 언어를 자기 언어로 표기
+export const LANGUAGE_LABELS: Record<LanguageCode, string> = {
+  ko: "한국어",
+  en: "English",
+  ja: "日本語",
+  zh: "汉语",
+};
+
 // 번역 리소스를 번들에 포함하므로 동기 초기화로 첫 렌더부터 번역문을 표시
 void i18n.use(initReactI18next).init({
   resources,

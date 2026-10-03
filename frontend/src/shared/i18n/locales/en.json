@@ -7,7 +7,9 @@
     "cancel": "Cancel",
     "save": "Save",
     "saveAndEnd": "Save and End",
-    "language": "Language"
+    "language": "Language",
+    "requestFailed": "Could not process the request. Please try again later.",
+    "loading": "Loading..."
   },
   "main": {
     "myLectures": "My Lectures",
@@ -30,7 +32,12 @@
     "passwordConfirm": "Confirm Password",
     "name": "Name",
     "email": "Email",
-    "submit": "Create account"
+    "submit": "Create account",
+    "subtitle": "Experience powerful AI features with LiveNote",
+    "passwordHint": "Enter at least 6 characters",
+    "haveAccount": "Already have an account?",
+    "loginLink": "Log in",
+    "terms": "By signing up, you agree to the <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>."
   },
   "settings": {
     "title": "Settings",
@@ -79,5 +86,27 @@
     "clickToAddFiles": "Click to add files",
     "supportedTypes": "Supports PDF, DOC, TXT, PPT",
     "addedFiles": "Added files"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidEmail": "Please enter a valid email address",
+    "passwordMin": "Password must be at least 6 characters",
+    "passwordMismatch": "Passwords do not match",
+    "currentPasswordRequired": "Please enter your current password"
+  },
+  "auth": {
+    "errors": {
+      "badCredential": "Incorrect ID or password",
+      "duplicatedLoginId": "This ID is already in use",
+      "duplicatedEmail": "This email is already in use",
+      "invalidCurrentPassword": "Current password is incorrect"
+    },
+    "toast": {
+      "loginSuccess": "Logged in",
+      "signupSuccess": "Your account has been created",
+      "logoutSuccess": "Logged out",
+      "settingsSaved": "Settings saved",
+      "passwordChanged": "Password changed"
+    }
   }
 }

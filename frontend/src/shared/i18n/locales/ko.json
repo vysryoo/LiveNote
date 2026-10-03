@@ -7,7 +7,9 @@
     "cancel": "취소",
     "save": "저장",
     "saveAndEnd": "저장하고 종료",
-    "language": "언어"
+    "language": "언어",
+    "requestFailed": "요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요",
+    "loading": "불러오는 중..."
   },
   "main": {
     "myLectures": "내 강의",
@@ -30,7 +32,12 @@
     "passwordConfirm": "비밀번호 확인",
     "name": "이름",
     "email": "이메일",
-    "submit": "가입 완료"
+    "submit": "가입 완료",
+    "subtitle": "LiveNote와 함께 강력한 AI 기능을 경험하세요",
+    "passwordHint": "최소 6자 이상 입력해주세요",
+    "haveAccount": "이미 계정이 있으신가요?",
+    "loginLink": "로그인",
+    "terms": "회원가입을 진행하면 <terms>이용약관</terms> 및 <privacy>개인정보처리방침</privacy>에 동의하는 것으로 간주됩니다."
   },
   "settings": {
     "title": "설정",
@@ -79,5 +86,27 @@
     "clickToAddFiles": "클릭하여 파일 추가",
     "supportedTypes": "PDF, DOC, TXT, PPT 지원",
     "addedFiles": "추가된 파일"
+  },
+  "validation": {
+    "required": "필수 입력 항목입니다",
+    "invalidEmail": "유효한 이메일 주소를 입력해주세요",
+    "passwordMin": "비밀번호는 최소 6자 이상이어야 합니다",
+    "passwordMismatch": "비밀번호가 일치하지 않습니다",
+    "currentPasswordRequired": "현재 비밀번호를 입력해주세요"
+  },
+  "auth": {
+    "errors": {
+      "badCredential": "아이디 또는 비밀번호가 올바르지 않습니다",
+      "duplicatedLoginId": "이미 사용 중인 아이디입니다",
+      "duplicatedEmail": "이미 사용 중인 이메일입니다",
+      "invalidCurrentPassword": "현재 비밀번호가 올바르지 않습니다"
+    },
+    "toast": {
+      "loginSuccess": "로그인되었습니다",
+      "signupSuccess": "회원가입이 완료되었습니다",
+      "logoutSuccess": "로그아웃되었습니다",
+      "settingsSaved": "설정이 저장되었습니다",
+      "passwordChanged": "비밀번호가 변경되었습니다"
+    }
   }
 }

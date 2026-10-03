@@ -1,23 +1,16 @@
 import type {
-  AuthPort,
   BackendPort,
   Bookmark,
   BookmarkRequest,
   CreateLectureRequest,
   Lecture,
   LecturePort,
-  LoginRequest,
-  AuthResponse,
   SessionDetailResponse,
-  SetLanguageRequest,
-  SetPasswordRequest,
-  SettingsPort,
   Summary,
   Transcript,
   QnA,
   Resource,
   UpdateLectureTitleRequest,
-  UserView,
 } from "../ports";
 import { request } from "@/shared/lib/http";
 
@@ -25,35 +18,6 @@ const WS_BASE = import.meta.env.VITE_WS_URL || "ws://localhost:8080";
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   return (await request(path, init)) as T;
-}
-
-function buildAuth(): AuthPort {
-  return {
-    async login(data: LoginRequest): Promise<AuthResponse> {
-      const resp = await http<AuthResponse>(`/auth/login`, {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-      (window as any).SPRING_TOKEN = resp.token;
-      try {
-        localStorage.setItem("SPRING_TOKEN", resp.token);
-      } catch (e) {
-        // ignore storage errors in environments without localStorage
-      }
-      return resp;
-    },
-    async signup(data) {
-      return http<AuthResponse>(`/auth/signup`, { method: "POST", body: JSON.stringify(data) });
-    },
-    async logout() {
-      (window as any).SPRING_TOKEN = undefined;
-      try {
-        localStorage.removeItem("SPRING_TOKEN");
-      } catch (e) {
-        // ignore
-      }
-    },
-  };
 }
 
 function buildLecture(): LecturePort {
@@ -258,20 +222,6 @@ function buildLecture(): LecturePort {
   };
 }
 
-function buildSettings(): SettingsPort {
-  return {
-    async getUser(): Promise<UserView> {
-      return http<UserView>(`/users/me`);
-    },
-    async setLanguage(data: SetLanguageRequest): Promise<UserView> {
-      return http<UserView>(`/users/me/language`, { method: "PATCH", body: JSON.stringify(data) });
-    },
-    async setPassword(data: SetPasswordRequest): Promise<UserView> {
-      return http<UserView>(`/users/me/password`, { method: "PATCH", body: JSON.stringify(data) });
-    },
-  };
-}
-
 export function createSpringBackend(): BackendPort {
-  return { auth: buildAuth(), lecture: buildLecture(), settings: buildSettings() };
+  return { lecture: buildLecture() };
 }
