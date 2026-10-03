@@ -1,5 +1,6 @@
+import { getAuthToken } from "./authToken";
+
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
-const TOKEN_KEY = "SPRING_TOKEN";
 
 export class HttpError extends Error {
   constructor(
@@ -11,27 +12,13 @@ export class HttpError extends Error {
   }
 }
 
-function readToken(): string | null {
-  const tokenInMemory = (globalThis as { SPRING_TOKEN?: string }).SPRING_TOKEN;
-  let tokenInStorage: string | null = null;
-  try {
-    tokenInStorage = globalThis.localStorage?.getItem(TOKEN_KEY) ?? null;
-  } catch {
-    // 프라이빗 모드 등 localStorage 접근 불가 환경
-  }
-  const token = tokenInMemory || tokenInStorage;
-  // 잘못된 대입으로 문자열 'undefined', 'null'이 저장될 수 있어 토큰으로 취급하지 않음
-  if (!token || token === "undefined" || token === "null") return null;
-  return token;
-}
-
 function buildHeaders(init?: RequestInit): Headers {
   const headers = new Headers();
   // FormData는 브라우저가 boundary를 포함한 Content-Type을 직접 설정해야 함
   if (!(init?.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
-  const token = readToken();
+  const token = getAuthToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
   new Headers(init?.headers).forEach((value, key) => headers.set(key, value));
   return headers;
