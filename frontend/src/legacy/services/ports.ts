@@ -11,17 +11,6 @@ export interface Lecture {
   files?: File[];
 }
 
-export interface CreateLectureRequest {
-  title: string;
-  subject: string;
-  sttLanguage: string;
-  files?: File[];
-}
-
-export interface UpdateLectureTitleRequest {
-  title: string;
-}
-
 export interface SessionDetailResponse extends Lecture {
   transcripts?: Transcript[];
   summaries?: Summary[];
@@ -100,23 +89,8 @@ export interface WebSocketMessage {
 }
 
 export interface LecturePort {
-  /** 강의 목록 조회 */
-  getLectures(): Promise<Lecture[]>;
-
   /** 강의 상세 조회 */
   getLecture(id: number): Promise<SessionDetailResponse>;
-
-  /** 강의 생성 */
-  createLecture(data: CreateLectureRequest): Promise<Lecture>;
-
-  /** 강의 제목 수정 */
-  updateLectureTitle(id: number, data: UpdateLectureTitleRequest): Promise<Lecture>;
-
-  /** 강의 삭제 */
-  deleteLecture(id: number): Promise<void>;
-
-  /** 강의 종료 */
-  endLecture(id: number, data?: UpdateLectureTitleRequest): Promise<Lecture>;
 
   /** 북마크 추가 */
   addBookmark(data: BookmarkRequest): Promise<Bookmark>;

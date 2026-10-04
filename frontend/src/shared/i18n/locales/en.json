@@ -15,7 +15,9 @@
     "myLectures": "My Lectures",
     "startNewLecture": "Start New Lecture",
     "noLecturesTitle": "No lectures yet",
-    "noLecturesDesc": "Start a new lecture to experience LiveNote"
+    "noLecturesDesc": "Start a new lecture to experience LiveNote",
+    "lectureCount_other": "So far you’ve run {{count}} lectures",
+    "lectureCount_one": "So far you’ve run {{count}} lecture"
   },
   "login": {
     "title": "Login",
@@ -84,8 +86,10 @@
     "subjectPH": "Enter subject name",
     "filesOptional": "Reference files (optional)",
     "clickToAddFiles": "Click to add files",
-    "supportedTypes": "Supports PDF, DOC, TXT, PPT",
-    "addedFiles": "Added files"
+    "supportedTypes": "You can attach one PDF file",
+    "addedFiles": "Added files",
+    "createFailed": "Could not start a new lecture",
+    "pdfOnly": "Only PDF files can be attached"
   },
   "validation": {
     "required": "This field is required",
@@ -107,6 +111,28 @@
       "logoutSuccess": "Logged out",
       "settingsSaved": "Settings saved",
       "passwordChanged": "Password changed"
+    }
+  },
+  "lectures": {
+    "inProgress": "In progress",
+    "durationHoursMinutes": "{{hours}}h {{minutes}}m",
+    "durationMinutes": "{{minutes}}m",
+    "untitled": "Untitled",
+    "uncategorized": "Other",
+    "loadFailed": "Could not load your lectures",
+    "retry": "Try again",
+    "endFailed": "Could not end the lecture",
+    "delete": {
+      "title": "Delete this lecture session?",
+      "desc": "\"{{title}}\" will be permanently deleted. This cannot be undone."
+    },
+    "toast": {
+      "created": "New lecture started",
+      "renamed": "Lecture renamed",
+      "renameFailed": "Could not rename the lecture",
+      "deleted": "Lecture deleted",
+      "deleteFailed": "Could not delete the lecture",
+      "ended": "Lecture saved"
     }
   }
 }

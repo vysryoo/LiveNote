@@ -30,10 +30,12 @@ frontend/
 │   ├── main.tsx          # 엔트리 포인트
 │   ├── app/              # 라우터, 전역 프로바이더
 │   ├── features/
-│   │   └── auth/         # 로그인, 회원가입, 설정 (api, hooks, components)
-│   ├── legacy/           # 재작성 전 구 코드 (화면, 훅, API 서비스)
+│   │   ├── auth/         # 로그인, 회원가입, 설정 (api, hooks, components)
+│   │   └── lectures/     # 강의 목록, 생성, 이름 변경, 삭제, 종료
+│   ├── legacy/           # 재작성 전 구 코드 (세션 화면과 관련 훅, API 서비스)
 │   ├── shared/
 │   │   ├── ui/           # shadcn/ui 컴포넌트
+│   │   ├── components/   # 기능 공용 컴포넌트
 │   │   ├── lib/          # 공용 HTTP 클라이언트, 로그인 토큰 저장
 │   │   └── i18n/         # i18next 설정, 언어별 번역 파일
 │   ├── styles/           # 글로벌 스타일 (globals.css)

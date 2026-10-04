@@ -15,7 +15,8 @@
     "myLectures": "マイ講義",
     "startNewLecture": "新しい講義を開始",
     "noLecturesTitle": "講義はまだありません",
-    "noLecturesDesc": "新しい講義を開始して LiveNote を体験しましょう"
+    "noLecturesDesc": "新しい講義を開始して LiveNote を体験しましょう",
+    "lectureCount_other": "これまでに {{count}} 件の講義を実施しました"
   },
   "login": {
     "title": "ログイン",
@@ -84,8 +85,10 @@
     "subjectPH": "科目名を入力してください",
     "filesOptional": "参考資料（任意）",
     "clickToAddFiles": "クリックしてファイルを追加",
-    "supportedTypes": "PDF、DOC、TXT、PPT 対応",
-    "addedFiles": "追加されたファイル"
+    "supportedTypes": "PDFファイルを1つ添付できます",
+    "addedFiles": "追加されたファイル",
+    "createFailed": "新しい講義を開始できませんでした",
+    "pdfOnly": "PDFファイルのみ添付できます"
   },
   "validation": {
     "required": "必須項目です",
@@ -107,6 +110,28 @@
       "logoutSuccess": "ログアウトしました",
       "settingsSaved": "設定を保存しました",
       "passwordChanged": "パスワードを変更しました"
+    }
+  },
+  "lectures": {
+    "inProgress": "進行中",
+    "durationHoursMinutes": "{{hours}}時間{{minutes}}分",
+    "durationMinutes": "{{minutes}}分",
+    "untitled": "無題",
+    "uncategorized": "その他",
+    "loadFailed": "講義一覧を読み込めませんでした",
+    "retry": "再試行",
+    "endFailed": "講義を終了できませんでした",
+    "delete": {
+      "title": "この講義セッションを削除しますか？",
+      "desc": "「{{title}}」は完全に削除されます。この操作は取り消せません。"
+    },
+    "toast": {
+      "created": "新しい講義を開始しました",
+      "renamed": "講義名を変更しました",
+      "renameFailed": "講義名を変更できませんでした",
+      "deleted": "講義を削除しました",
+      "deleteFailed": "講義を削除できませんでした",
+      "ended": "講義を保存しました"
     }
   }
 }

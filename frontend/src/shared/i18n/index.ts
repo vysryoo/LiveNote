@@ -16,6 +16,16 @@ export type LanguageCode = keyof typeof resources;
 
 export const LANGUAGE_CODES = ["ko", "en", "ja", "zh"] as const satisfies readonly LanguageCode[];
 
+/**
+ * 값이 지원하는 언어 코드인지 판별한다.
+ *
+ * @param value 판별할 값
+ * @returns 지원하는 언어 코드이면 `true`
+ */
+export function isLanguageCode(value: unknown): value is LanguageCode {
+  return LANGUAGE_CODES.some((code) => code === value);
+}
+
 // 언어 선택 UI에서 각 언어를 자기 언어로 표기
 export const LANGUAGE_LABELS: Record<LanguageCode, string> = {
   ko: "한국어",

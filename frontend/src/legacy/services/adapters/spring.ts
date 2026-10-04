@@ -2,15 +2,12 @@ import type {
   BackendPort,
   Bookmark,
   BookmarkRequest,
-  CreateLectureRequest,
-  Lecture,
   LecturePort,
   SessionDetailResponse,
   Summary,
   Transcript,
   QnA,
   Resource,
-  UpdateLectureTitleRequest,
 } from "../ports";
 import { request } from "@/shared/lib/http";
 
@@ -22,55 +19,8 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
 
 function buildLecture(): LecturePort {
   return {
-    async getLectures(): Promise<Lecture[]> {
-      return http<Lecture[]>(`/lectures`);
-    },
     async getLecture(id: number): Promise<SessionDetailResponse> {
       return http<SessionDetailResponse>(`/lectures/${id}/detail`);
-    },
-    async createLecture(data: CreateLectureRequest): Promise<Lecture> {
-      // 파일이 있는 경우 FormData 사용
-      if (data.files && data.files.length > 0) {
-        const formData = new FormData();
-        formData.append("title", data.title);
-        formData.append("subject", data.subject);
-        formData.append("sttLanguage", data.sttLanguage);
-
-        // 파일들을 FormData에 추가
-        data.files.forEach((file) => {
-          formData.append("files", file);
-        });
-
-        return http<Lecture>(`/lectures`, {
-          method: "POST",
-          body: formData,
-        });
-      } else {
-        // 파일이 없는 경우 기존 JSON 방식 사용 (files 필드 제거)
-        const { files, ...jsonData } = data;
-        return http<Lecture>(`/lectures`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(jsonData),
-        });
-      }
-    },
-    async updateLectureTitle(id: number, data: UpdateLectureTitleRequest): Promise<Lecture> {
-      return http<Lecture>(`/lectures/${id}/title`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      });
-    },
-    async deleteLecture(id: number): Promise<void> {
-      await http<void>(`/lectures/${id}`, { method: "DELETE" });
-    },
-    async endLecture(id: number, data?: UpdateLectureTitleRequest): Promise<Lecture> {
-      return http<Lecture>(`/lectures/${id}/end`, {
-        method: "POST",
-        body: JSON.stringify(data || {}),
-      });
     },
     async addBookmark(data: BookmarkRequest): Promise<Bookmark> {
       const payload = {

@@ -15,7 +15,8 @@
     "myLectures": "我的课程",
     "startNewLecture": "开始新课程",
     "noLecturesTitle": "暂无课程",
-    "noLecturesDesc": "开始新课程体验 LiveNote"
+    "noLecturesDesc": "开始新课程体验 LiveNote",
+    "lectureCount_other": "到目前为止已进行 {{count}} 次课程"
   },
   "login": {
     "title": "登录",
@@ -84,8 +85,10 @@
     "subjectPH": "请输入科目名称",
     "filesOptional": "参考资料（可选）",
     "clickToAddFiles": "点击添加文件",
-    "supportedTypes": "支持 PDF、DOC、TXT、PPT",
-    "addedFiles": "已添加文件"
+    "supportedTypes": "可附加 1 个 PDF 文件",
+    "addedFiles": "已添加文件",
+    "createFailed": "无法开始新课程",
+    "pdfOnly": "仅可附加 PDF 文件"
   },
   "validation": {
     "required": "此项为必填项",
@@ -107,6 +110,28 @@
       "logoutSuccess": "已退出登录",
       "settingsSaved": "设置已保存",
       "passwordChanged": "密码已修改"
+    }
+  },
+  "lectures": {
+    "inProgress": "进行中",
+    "durationHoursMinutes": "{{hours}}小时{{minutes}}分钟",
+    "durationMinutes": "{{minutes}}分钟",
+    "untitled": "无标题",
+    "uncategorized": "其他",
+    "loadFailed": "无法加载课程列表",
+    "retry": "重试",
+    "endFailed": "无法结束课程",
+    "delete": {
+      "title": "要删除此课程吗？",
+      "desc": "“{{title}}”将被永久删除，此操作无法撤销。"
+    },
+    "toast": {
+      "created": "新课程已开始",
+      "renamed": "课程名称已修改",
+      "renameFailed": "无法修改课程名称",
+      "deleted": "课程已删除",
+      "deleteFailed": "无法删除课程",
+      "ended": "课程已保存"
     }
   }
 }

@@ -15,7 +15,8 @@
     "myLectures": "내 강의",
     "startNewLecture": "새 강의 시작하기",
     "noLecturesTitle": "아직 강의가 없습니다",
-    "noLecturesDesc": "새 강의를 시작하여 LiveNote를 경험해보세요"
+    "noLecturesDesc": "새 강의를 시작하여 LiveNote를 경험해보세요",
+    "lectureCount_other": "지금까지 {{count}}개의 강의를 진행했습니다"
   },
   "login": {
     "title": "로그인",
@@ -84,8 +85,10 @@
     "subjectPH": "과목명을 입력하세요",
     "filesOptional": "참고 자료 (선택)",
     "clickToAddFiles": "클릭하여 파일 추가",
-    "supportedTypes": "PDF, DOC, TXT, PPT 지원",
-    "addedFiles": "추가된 파일"
+    "supportedTypes": "PDF 파일 1개를 첨부할 수 있습니다",
+    "addedFiles": "추가된 파일",
+    "createFailed": "새 강의를 시작하지 못했습니다",
+    "pdfOnly": "PDF 파일만 첨부할 수 있습니다"
   },
   "validation": {
     "required": "필수 입력 항목입니다",
@@ -107,6 +110,28 @@
       "logoutSuccess": "로그아웃되었습니다",
       "settingsSaved": "설정이 저장되었습니다",
       "passwordChanged": "비밀번호가 변경되었습니다"
+    }
+  },
+  "lectures": {
+    "inProgress": "진행 중",
+    "durationHoursMinutes": "{{hours}}시간 {{minutes}}분",
+    "durationMinutes": "{{minutes}}분",
+    "untitled": "제목 없음",
+    "uncategorized": "기타",
+    "loadFailed": "강의 목록을 불러오지 못했습니다",
+    "retry": "다시 시도",
+    "endFailed": "강의 종료 처리에 실패했습니다",
+    "delete": {
+      "title": "강의 세션을 삭제하시겠어요?",
+      "desc": "\"{{title}}\" 강의가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
+    },
+    "toast": {
+      "created": "새 강의가 시작되었습니다",
+      "renamed": "강의 이름이 변경되었습니다",
+      "renameFailed": "강의 이름 변경에 실패했습니다",
+      "deleted": "강의가 삭제되었습니다",
+      "deleteFailed": "강의를 삭제하지 못했습니다",
+      "ended": "강의가 저장되었습니다"
     }
   }
 }

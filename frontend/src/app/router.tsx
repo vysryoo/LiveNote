@@ -1,11 +1,11 @@
 import { createBrowserRouter, Navigate } from "react-router";
-import LegacyApp from "@/legacy/App";
 import { LandingRoute } from "@/legacy/routes/LandingRoute";
 import { RequireAuth } from "./RequireAuth";
+import { RootLayout } from "./RootLayout";
 
 export const router = createBrowserRouter([
   {
-    Component: LegacyApp,
+    Component: RootLayout,
     HydrateFallback: () => null,
     children: [
       { path: "/", Component: LandingRoute },
@@ -21,7 +21,8 @@ export const router = createBrowserRouter([
           {
             path: "/lectures",
             lazy: async () => ({
-              Component: (await import("@/legacy/routes/MainRoute")).MainRoute,
+              Component: (await import("@/features/lectures/components/LectureListPage"))
+                .LectureListPage,
             }),
           },
           {
