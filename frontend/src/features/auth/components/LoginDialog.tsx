@@ -17,7 +17,7 @@ import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { toAuthErrorKey } from "../api/errors";
 import { useLogin } from "../hooks/useAuthMutations";
-import { FieldError } from "./FieldError";
+import { FieldError } from "@/shared/components/FieldError";
 
 const loginSchema = z.object({
   loginId: z.string().min(1, "validation.required"),

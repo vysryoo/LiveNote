@@ -15,7 +15,7 @@ import { toAuthErrorKey } from "../api/errors";
 import type { User } from "../api/schemas";
 import { useUpdateSettings } from "../hooks/useAuthMutations";
 import { useMe } from "../hooks/useMe";
-import { FieldError } from "./FieldError";
+import { FieldError } from "@/shared/components/FieldError";
 
 const settingsSchema = z
   .object({

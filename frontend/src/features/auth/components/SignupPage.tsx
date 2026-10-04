@@ -12,7 +12,7 @@ import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { toAuthErrorKey } from "../api/errors";
 import { useSignup } from "../hooks/useAuthMutations";
-import { FieldError } from "./FieldError";
+import { FieldError } from "@/shared/components/FieldError";
 
 const signupSchema = z
   .object({
