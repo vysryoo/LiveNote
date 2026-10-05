@@ -6,26 +6,25 @@ import globals from "globals";
 import prettierConfig from "eslint-config-prettier";
 
 // eslint-plugin-react-hooks v7이 흡수한 React Compiler 안전성 규칙.
-// SessionPage.tsx 등 기존 코드가 아직 위반 중이므로 Phase 4 분해 전까지는 warn으로 시작.
 const reactCompilerRules = {
-  "react-hooks/capitalized-calls": "warn",
-  "react-hooks/static-components": "warn",
-  "react-hooks/use-memo": "warn",
-  "react-hooks/void-use-memo": "warn",
-  "react-hooks/preserve-manual-memoization": "warn",
-  "react-hooks/memo-dependencies": "warn",
-  "react-hooks/incompatible-library": "warn",
-  "react-hooks/immutability": "warn",
-  "react-hooks/globals": "warn",
-  "react-hooks/refs": "warn",
-  "react-hooks/memoized-effect-dependencies": "warn",
-  "react-hooks/exhaustive-effect-dependencies": "warn",
-  "react-hooks/set-state-in-effect": "warn",
-  "react-hooks/no-deriving-state-in-effects": "warn",
-  "react-hooks/error-boundaries": "warn",
-  "react-hooks/purity": "warn",
-  "react-hooks/set-state-in-render": "warn",
-  "react-hooks/hooks": "warn",
+  "react-hooks/capitalized-calls": "error",
+  "react-hooks/static-components": "error",
+  "react-hooks/use-memo": "error",
+  "react-hooks/void-use-memo": "error",
+  "react-hooks/preserve-manual-memoization": "error",
+  "react-hooks/memo-dependencies": "error",
+  "react-hooks/incompatible-library": "error",
+  "react-hooks/immutability": "error",
+  "react-hooks/globals": "error",
+  "react-hooks/refs": "error",
+  "react-hooks/memoized-effect-dependencies": "error",
+  "react-hooks/exhaustive-effect-dependencies": "error",
+  "react-hooks/set-state-in-effect": "error",
+  "react-hooks/no-deriving-state-in-effects": "error",
+  "react-hooks/error-boundaries": "error",
+  "react-hooks/purity": "error",
+  "react-hooks/set-state-in-render": "error",
+  "react-hooks/hooks": "error",
 };
 
 export default tseslint.config(
