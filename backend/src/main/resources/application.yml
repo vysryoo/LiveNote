@@ -35,6 +35,8 @@ app:
       key: ${OPENAI_API_KEY}
     stt:
       model: ${APP_OPENAI_STT_MODEL:whisper-1}
+    realtime:
+      transcription-model: ${APP_OPENAI_REALTIME_TRANSCRIPTION_MODEL:gpt-4o-transcribe}
     summary:
       model: gpt-4o-mini
       max-tokens: 500

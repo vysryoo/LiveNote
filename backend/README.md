@@ -86,6 +86,7 @@ APP_CALLBACK_BASE_URL=http://localhost:8080
 | `APP_JWT_SECRET` | - | JWT 토큰 서명키 |
 | `APP_CALLBACK_BASE_URL` | localhost:8080 | AI 서버 콜백을 받을 백엔드 URL |
 | `APP_OPENAI_STT_MODEL` | whisper-1 | OpenAI STT 모델 |
+| `APP_OPENAI_REALTIME_TRANSCRIPTION_MODEL` | gpt-4o-transcribe | 실시간 전사 세션의 전사 모델 |
 | `APP_TRANSCRIPTION_PADDING_SECONDS` | 2.0 | 전사 패딩 시간(초) |
 | `APP_TRANSCRIPTION_SPEED_MULTIPLIER` | 1.2 | 전사 속도 배율 |
 | `APP_STREAMING_CHUNK_SIZE` | 10 | 스트리밍 청크 크기 |

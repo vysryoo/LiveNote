@@ -23,6 +23,7 @@ import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
@@ -34,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 프론트 → 백엔드 바이너리 PCM(24kHz, mono) 전송을 받아
- * OpenAI Realtime(gpt-4o-transcribe)로 중계하는 WebSocket 핸들러.
+ * OpenAI Realtime API의 전사 전용 세션으로 중계하는 WebSocket 핸들러.
  *
  * 클라이언트 요청: /ws/transcription?sessionId=<lectureId>
  * - BinaryMessage만 전송(PCM16). 서버가 Base64 인코딩 후 input_audio_buffer.append로 전달.
@@ -45,8 +46,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHandler {
 
+    // 응답 생성 없이 받아 적기만 하는 전사 전용 세션
     private static final URI OPENAI_REALTIME_URI =
-            URI.create("wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01");
+            URI.create("wss://api.openai.com/v1/realtime?intent=transcription");
 
     private final LectureRepository lectureRepository;
     private final TranscriptRepository transcriptRepository;
@@ -55,6 +57,9 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
 
     @Value("${OPENAI_API_KEY}")
     private String openAiApiKey;
+
+    @Value("${app.openai.realtime.transcription-model:gpt-4o-transcribe}")
+    private String transcriptionModel;
 
     @Value("${app.callback-base-url:http://localhost:8080}")
     private String callbackBaseUrl;
@@ -149,7 +154,6 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
 
         CompletableFuture<WebSocket> future = client.newWebSocketBuilder()
                 .header("Authorization", "Bearer " + openAiApiKey)
-                .header("OpenAI-Beta", "realtime=v1")
                 .connectTimeout(Duration.ofSeconds(5))
                 .buildAsync(OPENAI_REALTIME_URI, new OpenAiListener(ctx));
 
@@ -254,35 +258,10 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
 
         @Override
         public void onOpen(WebSocket webSocket) {
-            // OpenAI Realtime 세션 설정: 오디오 입력, 텍스트 출력, VAD 활성화
             try {
-                String sessionConfig = """
-                    {
-                      "type": "session.update",
-                      "session": {
-                        "modalities": ["text"],
-                        "instructions": "You are a helpful assistant that transcribes audio to text. Respond with transcriptions only. Only return korean.",
-                        "voice": "alloy",
-                        "input_audio_format": "pcm16",
-                        "output_audio_format": "pcm16",
-                        "input_audio_transcription": {
-                          "model": "whisper-1"
-                        },
-                        "turn_detection": {
-                          "type": "server_vad",
-                          "threshold": 0.5,
-                          "prefix_padding_ms": 300,
-                          "silence_duration_ms": 500
-                        },
-                        "tools": [],
-                        "tool_choice": "none",
-                        "temperature": 0.6,
-                        "max_response_output_tokens": "inf"
-                      }
-                    }
-                    """;
-                webSocket.sendText(sessionConfig, true);
-                log.info("[RealtimeWS] Sent session.update with audio input enabled");
+                webSocket.sendText(buildSessionConfig(ctx.language), true);
+                log.info("[RealtimeWS] Sent transcription session.update model={} lang={}",
+                        transcriptionModel, ctx.language);
             } catch (Exception e) {
                 log.warn("[RealtimeWS] Failed to send session config: {}", e.getMessage());
             }
@@ -357,52 +336,13 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
                 return;
             }
 
-            // delta / done 처리 (가능한 이벤트 다양성을 커버)
-            if (type.contains("output_text.delta") || type.contains("audio_transcript.delta")) {
-                String delta = extractDelta(root);
+            // 말하는 중인 문장의 부분 전사. 프론트 표시용이며 저장하지 않음
+            if (type.equals("conversation.item.input_audio_transcription.delta")) {
+                String delta = root.path("delta").asText("");
                 if (!delta.isEmpty()) {
                     ctx.transcriptBuffer.append(delta);
                     sendTranscript(ctx, ctx.transcriptBuffer.toString(), false);
                 }
-                return;
-            }
-
-            if (type.contains("output_text.done") || type.contains("audio_transcript.done") || type.contains("response.done")) {
-                String finalText = ctx.transcriptBuffer.toString();
-                if (!finalText.isEmpty()) {
-                    sendTranscript(ctx, finalText, true);
-                    ctx.transcriptBuffer.setLength(0);
-                }
-                return;
-            }
-
-            // 기타 타입: response.output_text 혹은 transcript가 바로 content에 있을 경우
-            if (root.has("content")) {
-                String content = root.path("content").asText("");
-                if (!content.isEmpty()) {
-                    ctx.transcriptBuffer.append(content);
-                    sendTranscript(ctx, ctx.transcriptBuffer.toString(), true);
-                    ctx.transcriptBuffer.setLength(0);
-                }
-            }
-
-            // 전사 완료 이벤트
-            if (type.equals("conversation.item.input_audio_transcription.completed")) {
-                String transcript = root.path("transcript").asText("").trim();
-                if (!transcript.isEmpty()) {
-                    log.info("🎤 [RealtimeWS] Transcribed: {}", transcript);
-                    sendTranscript(ctx, transcript, true); // DB 저장 트리거
-                }
-                return;
-            }
-
-            // 실시간 부분 전사 (User Experience용)
-            if (type.equals("response.audio_transcript.delta")) {
-                String delta = root.path("delta").asText("");
-                if (!delta.isEmpty()) {
-                    sendTranscript(ctx, delta, false); // 프론트에만 보여줌 (저장 X)
-                }
-                return;
             }
 
         } catch (Exception e) {
@@ -410,23 +350,31 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
         }
     }
 
-    private String extractDelta(JsonNode root) {
-        // 우선순위: delta 필드, text 필드, content 배열
-        if (root.has("delta")) {
-            JsonNode delta = root.get("delta");
-            if (delta.isTextual()) return delta.asText("");
+    private String buildSessionConfig(String language) throws Exception {
+        Map<String, Object> transcription = new HashMap<>();
+        transcription.put("model", transcriptionModel);
+        if (language != null && !language.isBlank()) {
+            transcription.put("language", language);
         }
-        if (root.has("text") && root.get("text").isTextual()) {
-            return root.get("text").asText("");
-        }
-        if (root.has("content") && root.get("content").isArray()) {
-            StringBuilder sb = new StringBuilder();
-            root.get("content").forEach(n -> {
-                if (n.isTextual()) sb.append(n.asText());
-            });
-            return sb.toString();
-        }
-        return "";
+        Map<String, Object> config = Map.of(
+                "type", "session.update",
+                "session", Map.of(
+                        "type", "transcription",
+                        "audio", Map.of(
+                                "input", Map.of(
+                                        "format", Map.of("type", "audio/pcm", "rate", 24000),
+                                        "transcription", transcription,
+                                        "turn_detection", Map.of(
+                                                "type", "server_vad",
+                                                "threshold", 0.5,
+                                                "prefix_padding_ms", 300,
+                                                "silence_duration_ms", 500
+                                        )
+                                )
+                        )
+                )
+        );
+        return objectMapper.writeValueAsString(config);
     }
 
     private static class SessionContext {
