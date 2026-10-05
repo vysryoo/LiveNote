@@ -28,7 +28,7 @@ export const router = createBrowserRouter([
           {
             path: "/lectures/:lectureId",
             lazy: async () => ({
-              Component: (await import("@/legacy/routes/SessionRoute")).SessionRoute,
+              Component: (await import("@/features/session/components/SessionPage")).SessionPage,
             }),
           },
           {
