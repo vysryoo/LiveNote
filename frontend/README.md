@@ -12,11 +12,12 @@ npm install
 npm run dev
 ```
 
-> [!IMPORTANT]
-> 실행 전 `frontend/.env` 파일 설정이 필요합니다:
+> [!NOTE]
+> 백엔드가 `localhost:8080`에서 실행 중이면 별도 설정 없이 동작합니다. 개발 서버가 `/api` 요청을 8080으로 전달하고, 실시간 연결은 `ws://localhost:8080`에 직접 연결합니다.
+> 다른 주소를 쓰려면 `frontend/.env`에 설정합니다:
 >
 > ```
-> VITE_API_URL=http://localhost:8080
+> VITE_API_URL=http://localhost:8080/api
 > VITE_WS_URL=ws://localhost:8080
 > ```
 
@@ -32,8 +33,8 @@ frontend/
 │   ├── features/
 │   │   ├── auth/         # 로그인, 회원가입, 설정 (api, hooks, components)
 │   │   ├── lectures/     # 강의 목록, 생성, 이름 변경, 삭제, 종료
-│   │   └── session/      # 세션 상태, 실시간 구독, 녹음 (화면은 아직 legacy)
-│   ├── legacy/           # 재작성 전 구 코드 (세션 화면과 관련 훅, API 서비스)
+│   │   └── session/      # 세션 화면, 실시간 구독, 녹음
+│   ├── legacy/           # 재작성 전 구 코드 (랜딩 페이지)
 │   ├── shared/
 │   │   ├── ui/           # shadcn/ui 컴포넌트
 │   │   ├── components/   # 기능 공용 컴포넌트
