@@ -34,6 +34,7 @@ const inputClassName =
 const linkClassName = "text-[rgb(59,114,221)] hover:underline";
 
 export function SignupPage() {
+  // Trans에 t를 넘겨야 언어가 바뀔 때 다시 그려짐. 넘기지 않으면 React Compiler가 이전 언어의 Trans를 재사용함
   const { t } = useTranslation();
   const navigate = useNavigate();
   const signupMutation = useSignup();
@@ -196,6 +197,7 @@ export function SignupPage() {
         <div className="mt-6 text-center">
           <p className="text-xs text-[#525252]">
             <Trans
+              t={t}
               i18nKey="signup.terms"
               components={{
                 terms: <a href="#" className={linkClassName} />,
