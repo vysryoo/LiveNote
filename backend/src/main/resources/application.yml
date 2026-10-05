@@ -9,10 +9,8 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
+      # 스키마는 Flyway 마이그레이션(db/migration)으로만 변경하고, 엔티티와 일치하는지만 검사
+      ddl-auto: validate
 
   servlet:
     multipart:

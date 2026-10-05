@@ -35,8 +35,7 @@ public class Summary {
     @Column(nullable = false)
     private Integer endSec;
 
-    @Lob
-    @Column(nullable = false, columnDefinition = "LONGTEXT")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String text;
 
     @Enumerated(EnumType.STRING)

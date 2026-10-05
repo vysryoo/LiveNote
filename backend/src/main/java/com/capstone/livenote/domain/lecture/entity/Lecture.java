@@ -35,7 +35,7 @@ public class Lecture {
 
     private Integer duration; // endAt - createdAt
 
-    @Lob
+    @Column(columnDefinition = "TEXT")
     private String files;
 
     @PrePersist void prePersist() {

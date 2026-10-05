@@ -15,6 +15,20 @@ Spring Boot 기반의 실시간 강의 노트 서비스 백엔드입니다.
 > [!NOTE]
 > **gradlew**는 Gradle Wrapper로, **Java 17**만 설치되어 있으면 Gradle을 별도 설치하지 않아도 자동으로 필요한 Gradle 버전을 다운로드하고 실행합니다.
 
+### PostgreSQL 준비
+
+PostgreSQL 17 기준입니다. 빈 데이터베이스만 만들면 테이블은 앱 시작 시 Flyway가 `src/main/resources/db/migration`의 마이그레이션으로 생성합니다.
+
+```bash
+brew install postgresql@17
+brew services start postgresql@17
+psql -d postgres -c "CREATE ROLE livenote LOGIN PASSWORD '비밀번호';"
+psql -d postgres -c "CREATE DATABASE livenote OWNER livenote;"
+```
+
+> [!IMPORTANT]
+> 스키마 변경은 `db/migration`에 `V{번호}__{설명}.sql` 파일을 추가하는 방식으로만 합니다. `ddl-auto`가 `validate`라서 엔티티와 테이블이 다르면 앱이 시작되지 않습니다.
+
 ### Gradle 빌드 및 실행
 
 ```bash
@@ -41,8 +55,8 @@ chmod +x gradlew
 
 ```properties
 # 데이터베이스
-SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/livenote
-SPRING_DATASOURCE_USERNAME=root
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/livenote
+SPRING_DATASOURCE_USERNAME=livenote
 SPRING_DATASOURCE_PASSWORD=password
 
 # AI 서버
@@ -64,7 +78,7 @@ APP_CALLBACK_BASE_URL=http://localhost:8080
 
 | 변수명 | 기본값 | 설명 |
 |--------|--------|------|
-| `SPRING_DATASOURCE_URL` | - | MySQL 데이터베이스 JDBC URL |
+| `SPRING_DATASOURCE_URL` | - | PostgreSQL 데이터베이스 JDBC URL |
 | `SPRING_DATASOURCE_USERNAME` | - | DB 사용자명 |
 | `SPRING_DATASOURCE_PASSWORD` | - | DB 비밀번호 |
 | `AI_SERVER_URL` | - | AI 서버 URL (QA/REC/요약 생성) |
@@ -109,6 +123,7 @@ backend/
 │   └── global/                      # 전역 설정/예외처리
 ├── src/main/resources/
 │   ├── application.yml              # 애플리케이션 설정
+│   ├── db/migration/                # Flyway 스키마 마이그레이션
 │   └── env.properties               # 환경 변수 (gitignore)
 ├── build.gradle                     # Gradle 빌드 설정
 └── gradlew                          # Gradle 래퍼
@@ -260,7 +275,7 @@ backend/
 
 - **Java 17** + **Spring Boot 3**
 - **Spring WebSocket** + **STOMP**
-- **Spring Data JPA** + **MySQL**
+- **Spring Data JPA** + **PostgreSQL** + **Flyway**
 - **JWT** (인증)
 - **OpenAI Whisper** (STT)
 - **Gradle**

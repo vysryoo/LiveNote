@@ -64,7 +64,7 @@ public class Resource {
     @Column(nullable = false)
     private String title;
 
-    @Lob
+    @Column(columnDefinition = "TEXT")
     private String text;
 
     @Column(nullable = false, length = 2048)
@@ -74,10 +74,10 @@ public class Resource {
 
     private Double score;
 
-    @Lob
+    @Column(columnDefinition = "TEXT")
     private String reason;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "json")
+    @Column(columnDefinition = "jsonb")
     private JsonNode detail;
 }
