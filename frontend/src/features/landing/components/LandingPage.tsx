@@ -2,7 +2,7 @@ import { BookOpen, Check, Chrome, GraduationCap, Youtube } from "lucide-react";
 import { useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import ctaBackground from "@/assets/ctaBackground.png";
+import ctaBackground from "@/assets/ctaBackground.webp";
 import logoImage from "@/assets/logo.png";
 import { LoginDialog } from "@/features/auth/components/LoginDialog";
 import { Button } from "@/shared/ui/button";
