@@ -69,12 +69,39 @@
     "bookmarkFailed": "ブックマーク処理に失敗しました",
     "wsError": "録音用の接続でエラーが発生しました",
     "recordingError": "録音を開始できませんでした",
-    "micPermissionDenied": "マイクの権限が必要です"
+    "micPermissionDenied": "マイクの権限が必要です",
+    "startHint": "開始ボタンを押してリアルタイム記録を始めてください。",
+    "live": "リアルタイム",
+    "streamFailed": "カードを生成できませんでした",
+    "transcriptionServerError": "音声認識サーバーのエラーにより録音が停止しました",
+    "recordingInterrupted": "接続が切れたため録音が停止しました",
+    "resourceTypes": {
+      "paper": "学術資料",
+      "wiki": "ウィキペディア",
+      "video": "YouTube",
+      "blog": "Web/ブログ"
+    },
+    "qnaTypes": {
+      "concept": "概念確認",
+      "application": "応用展開",
+      "advanced": "深掘り質問",
+      "comparison": "比較分析"
+    },
+    "viewDetails": "詳しく見る",
+    "noDescription": "説明がありません。",
+    "findingResources": "資料を探しています...",
+    "generatingQuestions": "AIが質問を生成しています...",
+    "generating": "生成中...",
+    "closeSplit": "閉じる",
+    "bookmarkFilter": "ブックマークフィルター",
+    "autoModeOn": "オートモードをオン",
+    "autoModeOff": "オートモードをオフ"
   },
   "endSession": {
     "title": "セッション終了",
     "desc": "保存して終了します。名前を入力してください。",
-    "inputLabel": "保存する講義名"
+    "inputLabel": "保存する講義名",
+    "inputPlaceholder": "講義名を入力してください"
   },
   "newLecture": {
     "title": "新しい講義の設定",

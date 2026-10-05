@@ -70,12 +70,39 @@
     "bookmarkFailed": "Failed to process bookmark",
     "wsError": "An error occurred while connecting for recording",
     "recordingError": "Failed to start recording",
-    "micPermissionDenied": "Microphone permission is required"
+    "micPermissionDenied": "Microphone permission is required",
+    "startHint": "Press the start button to begin live note-taking.",
+    "live": "Live",
+    "streamFailed": "Could not generate cards",
+    "transcriptionServerError": "Recording stopped due to a speech recognition server error",
+    "recordingInterrupted": "Recording stopped because the connection was lost",
+    "resourceTypes": {
+      "paper": "Paper",
+      "wiki": "Wikipedia",
+      "video": "YouTube",
+      "blog": "Web/Blog"
+    },
+    "qnaTypes": {
+      "concept": "Concept check",
+      "application": "Application",
+      "advanced": "Advanced",
+      "comparison": "Comparison"
+    },
+    "viewDetails": "View details",
+    "noDescription": "No description.",
+    "findingResources": "Finding resources...",
+    "generatingQuestions": "AI is generating questions...",
+    "generating": "Generating...",
+    "closeSplit": "Close",
+    "bookmarkFilter": "Bookmark filter",
+    "autoModeOn": "Turn on auto mode",
+    "autoModeOff": "Turn off auto mode"
   },
   "endSession": {
     "title": "End Session",
     "desc": "Save and end the lecture. Enter a name.",
-    "inputLabel": "Lecture name to save"
+    "inputLabel": "Lecture name to save",
+    "inputPlaceholder": "Enter the lecture name"
   },
   "newLecture": {
     "title": "New Lecture Settings",

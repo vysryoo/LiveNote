@@ -69,12 +69,39 @@
     "bookmarkFailed": "북마크 처리에 실패했습니다",
     "wsError": "녹음 연결 중 오류가 발생했습니다",
     "recordingError": "녹음을 시작할 수 없습니다",
-    "micPermissionDenied": "마이크 권한이 필요합니다"
+    "micPermissionDenied": "마이크 권한이 필요합니다",
+    "startHint": "강의 시작 버튼을 눌러 실시간 기록을 시작하세요.",
+    "live": "실시간",
+    "streamFailed": "카드 생성에 실패했습니다",
+    "transcriptionServerError": "음성 인식 서버 오류로 녹음이 중지되었습니다",
+    "recordingInterrupted": "녹음 연결이 끊어져 녹음이 중지되었습니다",
+    "resourceTypes": {
+      "paper": "학술자료",
+      "wiki": "위키백과",
+      "video": "유튜브",
+      "blog": "웹/블로그"
+    },
+    "qnaTypes": {
+      "concept": "개념확인",
+      "application": "응용확장",
+      "advanced": "심화질의",
+      "comparison": "비교분석"
+    },
+    "viewDetails": "자세히 보기",
+    "noDescription": "설명이 없습니다.",
+    "findingResources": "자료를 찾고 있습니다...",
+    "generatingQuestions": "AI가 질문을 생성하고 있습니다...",
+    "generating": "생성 중...",
+    "closeSplit": "창 닫기",
+    "bookmarkFilter": "북마크 필터",
+    "autoModeOn": "오토모드 켜기",
+    "autoModeOff": "오토모드 끄기"
   },
   "endSession": {
     "title": "강의 세션 종료",
     "desc": "강의를 저장하고 종료합니다. 강의 이름을 입력하세요.",
-    "inputLabel": "저장할 강의 이름"
+    "inputLabel": "저장할 강의 이름",
+    "inputPlaceholder": "강의 이름을 입력하세요"
   },
   "newLecture": {
     "title": "새 강의 설정",

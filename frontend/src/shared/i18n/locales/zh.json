@@ -69,12 +69,39 @@
     "bookmarkFailed": "书签处理失败",
     "wsError": "录音连接时发生错误",
     "recordingError": "无法开始录音",
-    "micPermissionDenied": "需要麦克风权限"
+    "micPermissionDenied": "需要麦克风权限",
+    "startHint": "请按开始按钮开始实时记录。",
+    "live": "实时",
+    "streamFailed": "卡片生成失败",
+    "transcriptionServerError": "由于语音识别服务器错误，录音已停止",
+    "recordingInterrupted": "连接中断，录音已停止",
+    "resourceTypes": {
+      "paper": "学术资料",
+      "wiki": "维基百科",
+      "video": "YouTube",
+      "blog": "网页/博客"
+    },
+    "qnaTypes": {
+      "concept": "概念确认",
+      "application": "应用拓展",
+      "advanced": "深入提问",
+      "comparison": "比较分析"
+    },
+    "viewDetails": "查看详情",
+    "noDescription": "暂无说明。",
+    "findingResources": "正在查找资料...",
+    "generatingQuestions": "AI 正在生成问题...",
+    "generating": "生成中...",
+    "closeSplit": "关闭",
+    "bookmarkFilter": "书签筛选",
+    "autoModeOn": "开启自动模式",
+    "autoModeOff": "关闭自动模式"
   },
   "endSession": {
     "title": "结束会话",
     "desc": "保存并结束课程。请输入名称。",
-    "inputLabel": "保存的课程名称"
+    "inputLabel": "保存的课程名称",
+    "inputPlaceholder": "请输入课程名称"
   },
   "newLecture": {
     "title": "新课程设置",

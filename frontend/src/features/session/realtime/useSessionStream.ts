@@ -2,6 +2,7 @@ import { Client, type IMessage } from "@stomp/stompjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useEffectEvent } from "react";
 import type { z } from "zod";
+import { sessionKeys } from "../api/sessionApi";
 import type { SessionAction } from "../state/sessionReducer";
 import { STOMP_BROKER_URL } from "./endpoints";
 import {
@@ -52,6 +53,7 @@ type UseSessionStreamOptions = {
  * 강의의 STOMP 토픽을 구독하고 메시지를 Query 캐시와 세션 reducer에 반영한다.
  *
  * 연결은 `lectureId`가 바뀔 때만 다시 맺는다. 처리 함수는 Query 캐시와 dispatch만 사용해 화면 상태를 붙잡지 않는다.
+ * 연결(재연결 포함)될 때마다 강의 상세를 다시 받아, 연결이 없던 동안의 변경을 반영한다.
  *
  * @param options.lectureId 강의 ID
  * @param options.dispatch 세션 reducer의 dispatch
@@ -98,6 +100,8 @@ export function useSessionStream({ lectureId, dispatch, onStreamError }: UseSess
         applyStreamError(dispatch);
         notifyStreamError();
       });
+      // 첫 연결 전이나 끊긴 동안 놓친 메시지를 보충하기 위해 구독 직후 상세를 다시 받음
+      void queryClient.invalidateQueries({ queryKey: sessionKeys.detail(lectureId) });
     };
 
     client.activate();
