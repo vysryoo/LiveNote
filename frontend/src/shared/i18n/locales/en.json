@@ -161,5 +161,60 @@
       "deleteFailed": "Could not delete the lecture",
       "ended": "Lecture saved"
     }
+  },
+  "landing": {
+    "hero": {
+      "title": "Keep your learning flow<br/>with a single click",
+      "desc": "Stay focused with real-time transcription and summaries,<br/>and learn more efficiently with one-click resources and AI Q&A"
+    },
+    "startNow": "Get started →",
+    "demoVideo": "Demo video",
+    "mock": {
+      "transcript": "Today we'll cover the Transformer, the model that revolutionized how AI understands language. Earlier RNN- and CNN-based models relied on sequential computation, which made parallelization difficult. The Transformer replaces this entirely with self-attention, capturing relationships between all words in a sentence at once and enabling much faster, more efficient training...",
+      "summary": "The Transformer is a self-attention architecture that replaced RNNs and CNNs, improving both parallel computation and context understanding, and became the core of modern language models."
+    },
+    "summary": {
+      "desc": "Follow the lecture as it happens. Understand everything with real-time summaries.",
+      "point1": "Accurate speech recognition",
+      "point2": "Real-time summaries of key points",
+      "point3": "An organized learning history based on speech recognition"
+    },
+    "resources": {
+      "title": "One-click resource discovery",
+      "desc": "No more typing search terms or sifting through endless results.<br/>AI connects you to the most relevant resources at once",
+      "paperDesc": "Papers and research",
+      "wikiDesc": "Core concept explanations",
+      "videoDesc": "Visual learning materials",
+      "blogDesc": "Practical examples and tutorials"
+    },
+    "qna": {
+      "title": "AI Q&A",
+      "desc": "AI thinks of the questions you're likely to have.<br/>It suggests questions based on the lecture context and answers them right away.",
+      "point1": "See questions and answers instantly, no prompts needed",
+      "point2": "Explanations from multiple angles to organize and deepen understanding",
+      "point3": "Q&A history saved automatically",
+      "sampleQ1": "Why is the Transformer said to be faster than RNNs?",
+      "sampleA1": "Instead of processing words one by one, the Transformer computes the relationships between all words in parallel...",
+      "sampleQ2": "Why is positional encoding necessary?",
+      "sampleA2": "Because the Transformer doesn't process words in order, position information has to be provided separately..."
+    },
+    "steps": {
+      "title": "As simple as <highlight>3 steps</highlight>",
+      "subtitle": "Start right away with no complicated setup",
+      "step1Title": "Set up a lecture",
+      "step1Desc": "Enter the course name and choose a language.<br/>You can upload related materials if you have them.",
+      "step2Title": "Live transcription",
+      "step2Desc": "Once the lecture starts, speech is recognized automatically<br/>and text and summaries are generated in real time.",
+      "step3Title": "One-click learning",
+      "step3Desc": "Click on anything you're curious about<br/>to see related resources and AI answers."
+    },
+    "cta": {
+      "title": "Start now",
+      "desc": "Start for free and experience the powerful features of your AI study assistant"
+    },
+    "demoModal": {
+      "footer": "Check out LiveNote's key features",
+      "close": "Close"
+    }
   }
 }

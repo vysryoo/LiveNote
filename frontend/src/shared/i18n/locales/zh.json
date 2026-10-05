@@ -160,5 +160,60 @@
       "deleteFailed": "无法删除课程",
       "ended": "课程已保存"
     }
+  },
+  "landing": {
+    "hero": {
+      "title": "一键点击<br/>保持学习节奏",
+      "desc": "通过实时转写和摘要提升专注力，<br/>借助一键资料检索和 AI 问答最大化学习效率"
+    },
+    "startNow": "立即开始 →",
+    "demoVideo": "演示视频",
+    "mock": {
+      "transcript": "今天我们来讲讲彻底改变了人工智能语言理解方式的 Transformer 模型。以前基于 RNN 或 CNN 的模型依赖顺序计算，难以并行化。而 Transformer 用 Self-Attention 机制完全取代了这一点，一次性把握句子中单词之间的关系，实现更快、更高效的训练...",
+      "summary": "Transformer 是取代 RNN、CNN 的基于 Self-Attention 的结构，同时提升了并行计算和上下文理解能力，成为现代语言模型的核心。"
+    },
+    "summary": {
+      "desc": "紧跟课程进度，借助实时摘要不错过任何内容。",
+      "point1": "精准的语音识别",
+      "point2": "实时提供核心信息摘要",
+      "point3": "基于语音识别的条理化学习记录"
+    },
+    "resources": {
+      "title": "一键资料检索",
+      "desc": "无需再输入搜索词，也无需在大量结果中筛选。<br/>AI 会一次性为你找到最合适的资料",
+      "paperDesc": "论文、研究资料",
+      "wikiDesc": "基础概念说明",
+      "videoDesc": "可视化学习资料",
+      "blogDesc": "实战示例、教程"
+    },
+    "qna": {
+      "title": "AI 问答",
+      "desc": "AI 会先想到你可能好奇的问题。<br/>根据课程上下文推荐可能的问题，并立即给出答案。",
+      "point1": "无需输入提示词，即刻查看问题与答案",
+      "point2": "多角度讲解，帮助整理和理解概念",
+      "point3": "自动保存问答记录",
+      "sampleQ1": "为什么说 Transformer 比 RNN 更快？",
+      "sampleA1": "Transformer 不按顺序处理单词，而是并行计算所有单词之间的关系...",
+      "sampleQ2": "为什么必须使用 Positional Encoding？",
+      "sampleA2": "由于 Transformer 不按顺序处理，需要单独提供位置信息..."
+    },
+    "steps": {
+      "title": "只需<highlight>3 步</highlight>",
+      "subtitle": "无需复杂设置即可立即开始",
+      "step1Title": "设置课程",
+      "step1Desc": "输入科目名称并选择语言。<br/>如有相关资料，可以上传。",
+      "step2Title": "实时转写",
+      "step2Desc": "课程开始后自动识别语音，<br/>并实时生成文本和摘要。",
+      "step3Title": "一键学习",
+      "step3Desc": "点击感兴趣的部分，<br/>即可查看相关资料和 AI 回答。"
+    },
+    "cta": {
+      "title": "现在就开始吧",
+      "desc": "免费开始，体验 AI 学习助手的强大功能"
+    },
+    "demoModal": {
+      "footer": "了解 LiveNote 的主要功能",
+      "close": "关闭"
+    }
   }
 }

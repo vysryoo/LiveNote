@@ -32,9 +32,9 @@ frontend/
 │   ├── app/              # 라우터, 전역 프로바이더
 │   ├── features/
 │   │   ├── auth/         # 로그인, 회원가입, 설정 (api, hooks, components)
+│   │   ├── landing/      # 랜딩 페이지
 │   │   ├── lectures/     # 강의 목록, 생성, 이름 변경, 삭제, 종료
 │   │   └── session/      # 세션 화면, 실시간 구독, 녹음
-│   ├── legacy/           # 재작성 전 구 코드 (랜딩 페이지)
 │   ├── shared/
 │   │   ├── ui/           # shadcn/ui 컴포넌트
 │   │   ├── components/   # 기능 공용 컴포넌트

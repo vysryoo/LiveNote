@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from "react-router";
-import { LandingRoute } from "@/legacy/routes/LandingRoute";
+import { LandingPage } from "@/features/landing/components/LandingPage";
 import { RequireAuth } from "./RequireAuth";
 import { RootLayout } from "./RootLayout";
 
@@ -8,7 +8,7 @@ export const router = createBrowserRouter([
     Component: RootLayout,
     HydrateFallback: () => null,
     children: [
-      { path: "/", Component: LandingRoute },
+      { path: "/", Component: LandingPage },
       {
         path: "/signup",
         lazy: async () => ({

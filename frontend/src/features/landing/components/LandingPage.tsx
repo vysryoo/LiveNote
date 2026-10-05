@@ -1,18 +1,22 @@
-import { Button } from "@/shared/ui/button";
-import { Check, Chrome, BookOpen, Youtube, GraduationCap } from "lucide-react";
-import ctaBackground from "figma:asset/ctaBackground.png";
-import logoImage from "figma:asset/logo.png";
-import GradientText from "./GradientText";
-import { DemoVideoModal } from "./DemoVideoModal";
+import { BookOpen, Check, Chrome, GraduationCap, Youtube } from "lucide-react";
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
+import { useNavigate } from "react-router";
+import ctaBackground from "@/assets/ctaBackground.png";
+import logoImage from "@/assets/logo.png";
+import { LoginDialog } from "@/features/auth/components/LoginDialog";
+import { Button } from "@/shared/ui/button";
+import { DemoVideoModal } from "./DemoVideoModal";
+import GradientText from "./GradientText";
 
-interface LandingPageProps {
-  onLoginClick: () => void;
-  onSignupClick: () => void;
-}
-
-export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
+export function LandingPage() {
+  // Trans에 t를 넘겨야 언어가 바뀔 때 다시 그려짐. 넘기지 않으면 React Compiler가 이전 언어의 Trans를 재사용함
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const [showDemoModal, setShowDemoModal] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const openLogin = () => setLoginOpen(true);
+  const goToSignup = () => navigate("/signup");
 
   return (
     <div className="min-h-screen bg-white">
@@ -28,7 +32,7 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
               <Button
                 variant="ghost"
                 className="hover:bg-[#EEF2FF]"
-                onClick={onLoginClick}
+                onClick={openLogin}
                 style={{
                   background: "linear-gradient(135deg, #639BEE, #3B72DD)",
                   WebkitBackgroundClip: "text",
@@ -36,13 +40,13 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                   backgroundClip: "text",
                 }}
               >
-                로그인
+                {t("login.login")}
               </Button>
               <Button
                 className="bg-gradient-to-r from-[#639BEE] via-[#3B72DD] to-[#4D82E0] hover:from-[#5B60A2] hover:to-[#63A4FF] text-white rounded-lg px-6 shadow-md hover:shadow-lg transition-all"
-                onClick={onSignupClick}
+                onClick={goToSignup}
               >
-                회원가입
+                {t("signup.title")}
               </Button>
             </div>
           </div>
@@ -64,23 +68,19 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                   animationSpeed={3}
                   showBorder={false}
                 >
-                  클릭 한 번으로
-                  <br />
-                  학습 흐름을 유지하세요
+                  <Trans t={t} i18nKey="landing.hero.title" />
                 </GradientText>
               </h1>
               <p className="text-[1.25rem] leading-[1.8] mb-10 text-[#4B5563] max-w-3xl mx-auto">
-                실시간 텍스트 변환 및 요약으로 집중력을 높이고
-                <br />
-                원클릭 자료탐색과 AI 질문답변으로 학습 효율을 극대화하세요
+                <Trans t={t} i18nKey="landing.hero.desc" />
               </p>
               <div className="flex gap-4 justify-center">
                 <Button
                   size="lg"
                   className="bg-gradient-to-r from-[#639BEE] via-[#3B72DD] to-[#4D82E0] hover:from-[#5B60A2] hover:to-[#83EAF1] text-white rounded-lg w-[320px] h-[50px] text-lg shadow-lg hover:shadow-xl transition-all"
-                  onClick={onLoginClick}
+                  onClick={openLogin}
                 >
-                  지금 시작하기 →
+                  {t("landing.startNow")}
                 </Button>
                 <Button
                   size="lg"
@@ -94,7 +94,7 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                   }}
                   onClick={() => setShowDemoModal(true)}
                 >
-                  데모 비디오
+                  {t("landing.demoVideo")}
                 </Button>
               </div>
             </div>
@@ -133,13 +133,9 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                   <div className="space-y-6">
                     {/* 강의 기록 컴포넌트 */}
                     <div className="rounded-lg p-6 bg-white">
-                      <h4 className="mb-4">강의 기록</h4>
+                      <h4 className="mb-4">{t("session.header.record")}</h4>
                       <p className="text-sm text-muted-foreground">
-                        오늘은 인공지능의 언어 이해를 혁신적으로 바꾼 Transformer 모델을
-                        다뤄보겠습니다. 이전의 RNN이나 CNN 기반 모델들은 순차적 연산으로 병렬화가
-                        어려웠죠. 하지만 Transformer는 이를 Self-Attention 메커니즘으로 완전히
-                        대체하여, 문장 내 단어 간 관계를 한 번에 파악하고 훨씬 빠르고 효율적인
-                        학습을 가능하게...
+                        {t("landing.mock.transcript")}
                       </p>
                     </div>
 
@@ -154,11 +150,8 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                         backgroundClip: "padding-box, border-box",
                       }}
                     >
-                      <h4 className="mb-4">실시간 요약</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Transformer는 RNN·CNN을 대체한 Self-Attention 기반 구조로, 병렬 연산과 문맥
-                        이해를 동시에 개선해 현대 언어모델의 핵심이 됨.
-                      </p>
+                      <h4 className="mb-4">{t("session.header.summary")}</h4>
+                      <p className="text-sm text-muted-foreground">{t("landing.mock.summary")}</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3"></div>
@@ -172,10 +165,10 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                   className="text-[2.5rem] leading-[1.3] mb-6 text-[#1F2937]"
                   style={{ fontWeight: 700 }}
                 >
-                  실시간 요약
+                  {t("session.header.summary")}
                 </h3>
                 <p className="text-[1.125rem] leading-[1.8] text-[#6B7280] mb-8">
-                  강의 흐름을 그대로 따라갑니다. 실시간 요약으로 놓침 없이 이해하세요.
+                  {t("landing.summary.desc")}
                 </p>
 
                 <div className="space-y-4">
@@ -184,7 +177,7 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                       <Check className="w-4 h-4 text-white" />
                     </div>
                     <span className="text-[1.125rem] text-[#4B5563] font-[Paperlogy]">
-                      정확한 음성 인식
+                      {t("landing.summary.point1")}
                     </span>
                   </div>
                   <div className="flex items-start gap-3">
@@ -192,7 +185,7 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                       <Check className="w-4 h-4 text-white" />
                     </div>
                     <span className="text-[1.125rem] text-[#4B5563]">
-                      핵심 정보의 실시간 요약 제공
+                      {t("landing.summary.point2")}
                     </span>
                   </div>
                   <div className="flex items-start gap-3">
@@ -200,7 +193,7 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                       <Check className="w-4 h-4 text-white" />
                     </div>
                     <span className="text-[1.125rem] text-[#4B5563]">
-                      음성 인식 기반 정리된 학습 히스토리 제공
+                      {t("landing.summary.point3")}
                     </span>
                   </div>
                 </div>
@@ -217,11 +210,10 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                   className="text-[2.5rem] leading-[1.3] mb-6 text-[#1F2937]"
                   style={{ fontWeight: 700 }}
                 >
-                  원클릭 자료 탐색
+                  {t("landing.resources.title")}
                 </h3>
                 <p className="text-[1.125rem] leading-[1.8] text-[#6B7280] mb-8">
-                  검색어 입력도, 수많은 결과 속 선별도 이제 필요 없습니다.<br></br>
-                  AI가 가장 적절한 자료를 한 번에 연결해드립니다
+                  <Trans t={t} i18nKey="landing.resources.desc" />
                 </p>
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
@@ -235,8 +227,10 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                     <div className="flex items-center mb-3">
                       <GraduationCap className="w-8 h-8 text-white" />
                     </div>
-                    <div className="font-semibold text-white mb-1">학술자료</div>
-                    <div className="text-sm text-white/90">논문, 연구 자료</div>
+                    <div className="font-semibold text-white mb-1">
+                      {t("session.resourceTypes.paper")}
+                    </div>
+                    <div className="text-sm text-white/90">{t("landing.resources.paperDesc")}</div>
                   </div>
                   <div
                     className="rounded-xl p-5"
@@ -248,8 +242,10 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                     <div className="flex items-center mb-3">
                       <BookOpen className="w-8 h-8 text-white" />
                     </div>
-                    <div className="font-semibold text-white mb-1">위키백과</div>
-                    <div className="text-sm text-white/90">기본 개념 설명</div>
+                    <div className="font-semibold text-white mb-1">
+                      {t("session.resourceTypes.wiki")}
+                    </div>
+                    <div className="text-sm text-white/90">{t("landing.resources.wikiDesc")}</div>
                   </div>
                   <div
                     className="rounded-xl p-5"
@@ -261,8 +257,10 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                     <div className="flex items-center mb-3">
                       <Youtube className="w-8 h-8 text-white" />
                     </div>
-                    <div className="font-semibold text-white mb-1">유튜브</div>
-                    <div className="text-sm text-white/90">시각적 학습 자료</div>
+                    <div className="font-semibold text-white mb-1">
+                      {t("session.resourceTypes.video")}
+                    </div>
+                    <div className="text-sm text-white/90">{t("landing.resources.videoDesc")}</div>
                   </div>
                   <div
                     className="rounded-xl p-5"
@@ -274,8 +272,10 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                     <div className="flex items-center mb-3">
                       <Chrome className="w-8 h-8 text-white" />
                     </div>
-                    <div className="font-semibold text-white mb-1">웹/블로그</div>
-                    <div className="text-sm text-white/90">실무 예제, 튜토리얼</div>
+                    <div className="font-semibold text-white mb-1">
+                      {t("session.resourceTypes.blog")}
+                    </div>
+                    <div className="text-sm text-white/90">{t("landing.resources.blogDesc")}</div>
                   </div>
                 </div>
               </div>
@@ -291,7 +291,7 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                     <div className="border rounded-lg p-6 bg-white flex-1 opacity-0 animate-[fadeInUp_0.4s_ease_forwards] flex flex-col">
                       <div className="flex items-start justify-between mb-3">
                         <span className="px-2 py-1 bg-[rgb(12,73,151)] text-xs text-[rgb(255,255,255)] rounded flex-shrink-0">
-                          학술자료
+                          {t("session.resourceTypes.paper")}
                         </span>
                       </div>
                       <div className="mb-3">
@@ -311,7 +311,7 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                     >
                       <div className="flex items-start justify-between mb-3">
                         <span className="px-2 py-1 bg-[#960c0c] text-xs text-[rgb(255,255,255)] rounded flex-shrink-0">
-                          유튜브
+                          {t("session.resourceTypes.video")}
                         </span>
                       </div>
                       <div className="mb-3">
@@ -347,18 +347,15 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                     <div className="border rounded-lg p-6 bg-white flex-1 opacity-0 animate-[fadeInUp_0.4s_ease_forwards] flex flex-col">
                       <div className="flex items-start justify-between mb-3">
                         <span className="px-2 py-1 bg-[#6b7280] text-xs text-[rgb(255,255,255)] rounded flex-shrink-0">
-                          개념확인
+                          {t("session.qnaTypes.concept")}
                         </span>
                       </div>
                       <div className="mb-3">
-                        <p className="font-medium text-[#1F2937]">
-                          Transformer는 왜 RNN보다 빠르다고 하나요?
-                        </p>
+                        <p className="font-medium text-[#1F2937]">{t("landing.qna.sampleQ1")}</p>
                       </div>
                       <div className="flex-1 overflow-hidden">
                         <p className="text-sm text-muted-foreground line-clamp-2">
-                          Transformer는 순차적으로 단어를 처리하지 않고, 모든 단어 간 관계를 병렬로
-                          계산합니다...
+                          {t("landing.qna.sampleA1")}
                         </p>
                       </div>
                     </div>
@@ -369,18 +366,15 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                     >
                       <div className="flex items-start justify-between mb-3">
                         <span className="px-2 py-1 bg-[#6b7280] text-xs text-[rgb(255,255,255)] rounded flex-shrink-0">
-                          응용확장
+                          {t("session.qnaTypes.application")}
                         </span>
                       </div>
                       <div className="mb-3">
-                        <p className="font-medium text-[#1F2937]">
-                          Positional Encoding은 왜 꼭 필요한가요?
-                        </p>
+                        <p className="font-medium text-[#1F2937]">{t("landing.qna.sampleQ2")}</p>
                       </div>
                       <div className="flex-1 overflow-hidden">
                         <p className="text-sm text-muted-foreground line-clamp-2">
-                          Transformer는 순서를 따라가며 처리하지 않기 때문에, 위치 정보를 따로
-                          제공해야 합니다...
+                          {t("landing.qna.sampleA2")}
                         </p>
                       </div>
                     </div>
@@ -394,12 +388,10 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                   className="text-[2.5rem] leading-[1.3] mb-6 text-[#1F2937]"
                   style={{ fontWeight: 700 }}
                 >
-                  AI 질문 답변
+                  {t("landing.qna.title")}
                 </h3>
                 <p className="text-[1.125rem] leading-[1.8] text-[#6B7280] mb-8">
-                  지금 궁금할 만한 질문, AI가 먼저 생각합니다.
-                  <br></br>
-                  강의 맥락을 바탕으로 예상 질문을 제안하고, 답변까지 바로 제공합니다.
+                  <Trans t={t} i18nKey="landing.qna.desc" />
                 </p>
 
                 <div className="space-y-4">
@@ -408,7 +400,7 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                       <Check className="w-4 h-4 text-white" />
                     </div>
                     <span className="text-[1.125rem] text-[#4B5563]">
-                      프롬프트 입력 없이, 질문과 답변을 즉시 확인
+                      {t("landing.qna.point1")}
                     </span>
                   </div>
                   <div className="flex items-start gap-3">
@@ -416,7 +408,7 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                       <Check className="w-4 h-4 text-white" />
                     </div>
                     <span className="text-[1.125rem] text-[#4B5563]">
-                      개념 정리와 이해를 돕는 다각도 설명
+                      {t("landing.qna.point2")}
                     </span>
                   </div>
                   <div className="flex items-start gap-3">
@@ -424,7 +416,7 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                       <Check className="w-4 h-4 text-white" />
                     </div>
                     <span className="text-[1.125rem] text-[#4B5563]">
-                      질문·답변 히스토리 자동 저장
+                      {t("landing.qna.point3")}
                     </span>
                   </div>
                 </div>
@@ -439,22 +431,25 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                 className="text-[3rem] leading-[1.2] mb-4 text-[#1F2937]"
                 style={{ fontWeight: 700 }}
               >
-                <span
-                  style={{
-                    background:
-                      "linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
+                <Trans
+                  t={t}
+                  i18nKey="landing.steps.title"
+                  components={{
+                    highlight: (
+                      <span
+                        style={{
+                          background:
+                            "linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
+                          WebkitBackgroundClip: "text",
+                          WebkitTextFillColor: "transparent",
+                          backgroundClip: "text",
+                        }}
+                      />
+                    ),
                   }}
-                >
-                  3단계
-                </span>
-                로 간단하게
+                />
               </h3>
-              <p className="text-[1.125rem] text-[#6B7280] mb-16">
-                복잡한 설정 없이 바로 시작할 수 있습니다
-              </p>
+              <p className="text-[1.125rem] text-[#6B7280] mb-16">{t("landing.steps.subtitle")}</p>
 
               {/* Steps */}
               <div className="grid md:grid-cols-3 gap-12 max-w-5xl mx-auto">
@@ -470,11 +465,11 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                     >
                       <span className="text-white text-4xl font-bold">1</span>
                     </div>
-                    <h4 className="text-xl font-bold text-[#1F2937] mb-3">강의 설정</h4>
+                    <h4 className="text-xl font-bold text-[#1F2937] mb-3">
+                      {t("landing.steps.step1Title")}
+                    </h4>
                     <p className="text-[#6B7280] leading-relaxed">
-                      과목명을 입력하고 언어를 선택합니다.
-                      <br></br>
-                      관련 자료가 있다면 업로드할 수 있습니다.
+                      <Trans t={t} i18nKey="landing.steps.step1Desc" />
                     </p>
                   </div>
                   {/* Connector Line */}
@@ -493,11 +488,11 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                     >
                       <span className="text-white text-4xl font-bold">2</span>
                     </div>
-                    <h4 className="text-xl font-bold text-[#1F2937] mb-3">실시간 전사</h4>
+                    <h4 className="text-xl font-bold text-[#1F2937] mb-3">
+                      {t("landing.steps.step2Title")}
+                    </h4>
                     <p className="text-[#6B7280] leading-relaxed">
-                      강의가 시작되면 자동으로 음성을 인식하고
-                      <br></br>
-                      실시간으로 텍스트와 요약을 생성합니다.
+                      <Trans t={t} i18nKey="landing.steps.step2Desc" />
                     </p>
                   </div>
                   {/* Connector Line */}
@@ -516,10 +511,11 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                     >
                       <span className="text-white text-4xl font-bold">3</span>
                     </div>
-                    <h4 className="text-xl font-bold text-[#1F2937] mb-3">원클릭 학습</h4>
+                    <h4 className="text-xl font-bold text-[#1F2937] mb-3">
+                      {t("landing.steps.step3Title")}
+                    </h4>
                     <p className="text-[#6B7280] leading-relaxed">
-                      궁금한 부분을 클릭하면<br></br>
-                      관련 자료와 AI답변을 확인할 수 있습니다.
+                      <Trans t={t} i18nKey="landing.steps.step3Desc" />
                     </p>
                   </div>
                 </div>
@@ -544,15 +540,15 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
 
         <div className="max-w-[1400px] mx-auto text-center relative z-10">
           <h2 className="text-[3rem] leading-[1.2] mb-6 text-white" style={{ fontWeight: 700 }}>
-            지금 바로 시작하세요
+            {t("landing.cta.title")}
           </h2>
           <p className="text-[1.125rem] leading-[1.6] text-white/90 mb-8 max-w-2xl mx-auto">
-            무료로 시작하고 AI 학습 도우미의 강력한 기능을 경험해보세요
+            {t("landing.cta.desc")}
           </p>
           <Button
             size="lg"
             className="bg-white hover:bg-gray-50 rounded-lg px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all font-semibold"
-            onClick={onLoginClick}
+            onClick={openLogin}
           >
             <span
               style={{
@@ -562,7 +558,7 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
                 backgroundClip: "text",
               }}
             >
-              지금 시작하기 →
+              {t("landing.startNow")}
             </span>
           </Button>
 
@@ -588,6 +584,7 @@ export function LandingPage({ onLoginClick, onSignupClick }: LandingPageProps) {
 
       {/* Demo Video Modal */}
       <DemoVideoModal isOpen={showDemoModal} onClose={() => setShowDemoModal(false)} />
+      <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} onSignupClick={goToSignup} />
     </div>
   );
 }

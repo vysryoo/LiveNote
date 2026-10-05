@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface DemoVideoModalProps {
   isOpen: boolean;
@@ -6,6 +7,7 @@ interface DemoVideoModalProps {
 }
 
 export function DemoVideoModal({ isOpen, onClose }: DemoVideoModalProps) {
+  const { t } = useTranslation();
   if (!isOpen) return null;
 
   return (
@@ -19,11 +21,12 @@ export function DemoVideoModal({ isOpen, onClose }: DemoVideoModalProps) {
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-2xl font-semibold text-[#1F2937]">데모 비디오</h2>
+          <h2 className="text-2xl font-semibold text-[#1F2937]">{t("landing.demoVideo")}</h2>
           <button
+            type="button"
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label="닫기"
+            aria-label={t("landing.demoModal.close")}
           >
             <X className="w-6 h-6 text-[#6A737D]" />
           </button>
@@ -43,7 +46,7 @@ export function DemoVideoModal({ isOpen, onClose }: DemoVideoModalProps) {
 
         {/* Footer */}
         <div className="p-6 bg-gray-50">
-          <p className="text-sm text-[#6B7280] text-center">LiveNote의 주요 기능을 확인해보세요</p>
+          <p className="text-sm text-[#6B7280] text-center">{t("landing.demoModal.footer")}</p>
         </div>
       </div>
     </div>

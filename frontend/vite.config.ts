@@ -16,8 +16,6 @@ export default defineConfig({
   resolve: {
     extensions: [".js", ".jsx", ".ts", ".tsx", ".json"],
     alias: {
-      "figma:asset/logo.png": path.resolve(__dirname, "./src/assets/logo.png"),
-      "figma:asset/ctaBackground.png": path.resolve(__dirname, "./src/assets/ctaBackground.png"),
       "@": path.resolve(__dirname, "./src"),
     },
   },

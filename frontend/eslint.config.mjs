@@ -31,8 +31,7 @@ const reactCompilerRules = {
 export default tseslint.config(
   {
     // shared/ui는 shadcn/ui에서 그대로 가져온 벤더 코드라 린트 대상에서 제외.
-    // legacy는 재작성 전까지 유지하는 구 코드라 제외. 새 코드에만 규칙을 적용하기 위함.
-    ignores: ["build/**", "node_modules/**", "src/shared/ui/**", "src/legacy/**"],
+    ignores: ["build/**", "node_modules/**", "src/shared/ui/**"],
   },
   {
     files: ["**/*.{ts,tsx}"],
