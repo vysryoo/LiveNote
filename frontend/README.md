@@ -31,7 +31,8 @@ frontend/
 │   ├── app/              # 라우터, 전역 프로바이더
 │   ├── features/
 │   │   ├── auth/         # 로그인, 회원가입, 설정 (api, hooks, components)
-│   │   └── lectures/     # 강의 목록, 생성, 이름 변경, 삭제, 종료
+│   │   ├── lectures/     # 강의 목록, 생성, 이름 변경, 삭제, 종료
+│   │   └── session/      # 세션 상태, 실시간 구독, 녹음 (화면은 아직 legacy)
 │   ├── legacy/           # 재작성 전 구 코드 (세션 화면과 관련 훅, API 서비스)
 │   ├── shared/
 │   │   ├── ui/           # shadcn/ui 컴포넌트
