@@ -203,6 +203,7 @@ function SessionView({ lectureId }: { lectureId: number }) {
         />
         {selectedSection !== null && (
           <SplitPane
+            key={selectedSection}
             resources={(detail?.resources ?? []).filter((r) => r.sectionIndex === selectedSection)}
             qna={(detail?.qna ?? []).filter((q) => q.sectionIndex === selectedSection)}
             streamingResources={streamingCards.filter((card) => card.kind === "resource")}

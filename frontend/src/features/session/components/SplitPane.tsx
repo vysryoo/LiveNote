@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import type { Bookmark, QnA, Resource } from "../api/schemas";
@@ -67,6 +67,9 @@ export function SplitPane({
   const { t } = useTranslation();
   const resourceListRef = useScrollToBottomOnGrow(streamingResources.length);
   const qnaListRef = useScrollToBottomOnGrow(streamingQna.length);
+  // 화면을 열 때 이미 있던 카드는 바로 보여 주고, 그 뒤 도착한 카드에만 글자 연출을 적용
+  const [initialResourceIds] = useState(() => new Set(resources.map((r) => r.id)));
+  const [initialQnaIds] = useState(() => new Set(qna.map((q) => q.id)));
 
   const visibleResources = showBookmarkedOnly
     ? resources.filter((r) => isBookmarked("resource", r.id))
@@ -121,6 +124,7 @@ export function SplitPane({
                     key={resource.id}
                     resource={resource}
                     bookmarked={isBookmarked("resource", resource.id)}
+                    animate={!initialResourceIds.has(resource.id)}
                     onToggleBookmark={() =>
                       onToggleBookmark({
                         targetType: "resource",
@@ -149,6 +153,7 @@ export function SplitPane({
                     key={item.id}
                     qna={item}
                     bookmarked={isBookmarked("qna", item.id)}
+                    animate={!initialQnaIds.has(item.id)}
                     onToggleBookmark={() =>
                       onToggleBookmark({
                         targetType: "qna",

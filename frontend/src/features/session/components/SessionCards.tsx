@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/shared/ui/badge";
 import type { QnA, Resource } from "../api/schemas";
+import { useTypewriter } from "../hooks/useTypewriter";
 import type { StreamingCard } from "../state/sessionReducer";
 
 const CARD_CLASS =
@@ -62,14 +63,17 @@ function BookmarkToggle({
 export function ResourceCard({
   resource,
   bookmarked,
+  animate,
   onToggleBookmark,
 }: {
   resource: Resource;
   bookmarked: boolean;
+  animate: boolean;
   onToggleBookmark: () => void;
 }) {
   const { t } = useTranslation();
   const category = toResourceCategory(resource.type);
+  const description = useTypewriter(resource.text, animate);
   return (
     <div className={CARD_CLASS}>
       <div className="flex items-start justify-between mb-3 flex-shrink-0">
@@ -91,7 +95,7 @@ export function ResourceCard({
       </div>
       <div className="flex-1 overflow-y-auto">
         <p className="text-sm text-muted-foreground">
-          {resource.text || t("session.noDescription")}
+          {resource.text ? description : t("session.noDescription")}
         </p>
       </div>
       {resource.url && (
@@ -108,13 +112,16 @@ export function ResourceCard({
 export function QnaCard({
   qna,
   bookmarked,
+  animate,
   onToggleBookmark,
 }: {
   qna: QnA;
   bookmarked: boolean;
+  animate: boolean;
   onToggleBookmark: () => void;
 }) {
   const { t } = useTranslation();
+  const answer = useTypewriter(qna.answer, animate);
   const typeKey = QNA_TYPE_KEYS[qna.type as keyof typeof QNA_TYPE_KEYS] ?? QNA_TYPE_KEYS.comparison;
   return (
     <div className={CARD_CLASS}>
@@ -135,7 +142,7 @@ export function QnaCard({
         <p className="font-medium">{qna.question}</p>
       </div>
       <div className="flex-1 overflow-y-auto">
-        <p className="text-sm text-muted-foreground whitespace-pre-line">{qna.answer}</p>
+        <p className="text-sm text-muted-foreground whitespace-pre-line">{answer}</p>
       </div>
     </div>
   );
