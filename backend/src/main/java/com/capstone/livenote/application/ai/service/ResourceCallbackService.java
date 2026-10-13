@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,7 +16,6 @@ import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 
 @Service
 @RequiredArgsConstructor
@@ -27,10 +25,6 @@ public class ResourceCallbackService {
     private final ResourceRepository resourceRepository;
     private final StreamGateway streamGateway;
     private final ObjectMapper objectMapper;
-    @Value("${app.streaming.chunk-size:40}")
-    private int streamChunk;
-    @Value("${app.streaming.delay-ms:50}")
-    private long streamDelayMs;
 
     @Transactional
     public void handleResourceCallback(ResourceCallbackDto dto) {
@@ -83,15 +77,7 @@ public class ResourceCallbackService {
                 );
                 signature.add(sig);
 
-                // 1) 토큰 스트리밍
-                streamTokens(
-                        dto.getLectureId(),
-                        cardId,
-                        item.getTitle(),
-                        item.getType(),
-                        item.getDescription()
-                );
-                // 2) 완료 스트리밍 (최종 데이터)
+                // 완성된 카드를 즉시 전송. 글자가 써지는 연출은 프론트엔드가 담당
                 streamGateway.sendStreamToken(
                         dto.getLectureId(),
                         "resource_stream",
@@ -136,34 +122,6 @@ public class ResourceCallbackService {
 
     private String sig(String title, String url) {
         return (title == null ? "" : title.trim()) + "|" + (url == null ? "" : url.trim());
-    }
-
-    private void streamTokens(Long lectureId, String cardId, String title, String resourceType, String content) {
-        if (content == null || content.isBlank()) {
-            return;
-        }
-        String text = content.trim();
-        int chunk = Math.max(1, streamChunk);
-        for (int i = 0; i < text.length(); i += chunk) {
-            int end = Math.min(text.length(), i + chunk);
-            String token = text.substring(i, end);
-            streamGateway.sendStreamToken(
-                lectureId,
-                "resource_stream",
-                cardId,
-                token,
-                false,
-                null,
-                title,
-                resourceType
-            );
-            try {
-                Thread.sleep(streamDelayMs);
-            } catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-        }
     }
 
     private int nextCursor(List<Resource> existing) {

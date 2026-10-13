@@ -8,7 +8,6 @@ import com.capstone.livenote.domain.qna.repository.QnaRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -23,12 +22,6 @@ public class QnaCallbackService {
 
     private final QnaRepository qnaRepository;
     private final StreamGateway streamGateway;
-
-    @Value("${app.streaming.chunk-size:40}")
-    private int streamChunk;
-
-    @Value("${app.streaming.delay-ms:50}")
-    private long streamDelayMs;
 
     @Transactional
     public void handleQnaCallback(QnaCallbackDto dto) {
@@ -77,14 +70,7 @@ public class QnaCallbackService {
                 );
                 signature.add(sig);
 
-                // 1) 토큰 스트리밍
-                streamTokens(
-                        dto.getLectureId(),
-                        cardId,
-                        item.getQuestion(),
-                        item.getAnswer()
-                );
-                // 2) 완료 스트리밍 (최종 데이터)
+                // 완성된 카드를 즉시 전송. 글자가 써지는 연출은 프론트엔드가 담당
                 streamGateway.sendStreamToken(
                         dto.getLectureId(),
                         "qna_stream",
@@ -126,34 +112,6 @@ public class QnaCallbackService {
 
     private String sig(String question, String answer) {
         return (question == null ? "" : question.trim()) + "|" + (answer == null ? "" : answer.trim());
-    }
-
-    private void streamTokens(Long lectureId, String cardId, String title, String content) {
-        if (content == null || content.isBlank()) {
-            return;
-        }
-        String text = content.trim();
-        int chunk = Math.max(1, streamChunk);
-        for (int i = 0; i < text.length(); i += chunk) {
-            int end = Math.min(text.length(), i + chunk);
-            String token = text.substring(i, end);
-            streamGateway.sendStreamToken(
-                    lectureId,
-                    "qna_stream",
-                    cardId,
-                    token,
-                    false,
-                    null,
-                    title,
-                    null
-            );
-            try {
-                Thread.sleep(streamDelayMs);
-            } catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-        }
     }
 
     private int nextCursor(List<Qna> existing) {
