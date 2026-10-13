@@ -41,10 +41,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSoc
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // 기존: 전사/요약/자료/QnA 결과 수신용
-        registry.addEndpoint("/api/ws/transcription")
-                .setAllowedOriginPatterns("*");
-
         // 프론트 STOMP용 기본 엔드포인트 (/ws)
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*");
