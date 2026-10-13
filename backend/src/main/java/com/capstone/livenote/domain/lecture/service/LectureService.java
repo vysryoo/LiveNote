@@ -58,6 +58,21 @@ public class LectureService {
         return saved;
     }
 
+    /**
+     * 요청한 사용자 본인의 강의를 조회한다.
+     *
+     * @param lectureId 강의 ID
+     * @param userId 요청한 사용자 ID
+     * @return 강의
+     * @throws EntityNotFoundException 강의가 없거나 다른 사용자의 강의인 경우.
+     *         강의 존재 여부가 드러나지 않도록 두 경우를 구분하지 않음
+     */
+    @Transactional(readOnly = true)
+    public Lecture getOwned(Long lectureId, Long userId) {
+        return lectureRepo.findByIdAndUserId(lectureId, userId)
+                .orElseThrow(() -> new EntityNotFoundException("lecture"));
+    }
+
     @Transactional(readOnly = true)
     public Page<Lecture> list(Long userId, Pageable pageable){
         log.info("📂 [DB READ] Fetching lecture list: userId={}", userId);

@@ -8,10 +8,14 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 public interface LectureRepository extends JpaRepository<Lecture, Long> {
     //Page<Lecture> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     Page<Lecture> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+
+    Optional<Lecture> findByIdAndUserId(Long id, Long userId);
 
     @Modifying
     @Query("update Lecture l set l.status=:status where l.id=:id")

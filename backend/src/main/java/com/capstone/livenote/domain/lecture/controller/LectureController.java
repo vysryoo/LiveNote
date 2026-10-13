@@ -67,6 +67,7 @@ public class LectureController {
     @GetMapping("/{lectureId}")
     public ApiResponse<LectureResponseDto> get(@PathVariable Long lectureId){
         Long userId = currentUserId();
+        lectureService.getOwned(lectureId, userId);
         var l = lectureService.getWithBookmarks(lectureId, userId);
         return ApiResponse.ok(l);
     }
@@ -75,6 +76,7 @@ public class LectureController {
     @Operation(summary = "강의의 모든 상세 정보 조회 (transcripts, summaries, resources, qna, bookmarks 포함)")
     @GetMapping("/{lectureId}/detail")
     public ApiResponse<SessionDetailResponse> getDetail(@PathVariable Long lectureId){
+        lectureService.getOwned(lectureId, currentUserId());
         var detail = lectureService.getSessionDetail(lectureId);
         return ApiResponse.ok(detail);
     }
@@ -129,6 +131,7 @@ public class LectureController {
             @RequestParam int startSec,
             @RequestParam int endSec
     ) throws IOException {
+        lectureService.getOwned(lectureId, currentUserId());
         audio.uploadChunk(lectureId, chunkSeq, startSec, endSec, file);
         return ApiResponse.ok();
     }
@@ -137,6 +140,7 @@ public class LectureController {
     @Operation(summary = "녹음을 종료하고 강의 상태를 완료로 변경")
     @PostMapping("/{lectureId}/end")
     public ApiResponse<LectureResponseDto> endLecture(@PathVariable Long lectureId) {
+        lectureService.getOwned(lectureId, currentUserId());
         var lecture = lectureService.endLecture(lectureId);
         audio.markComplete(lectureId);
         return ApiResponse.ok(LectureResponseDto.from(lecture));
@@ -153,6 +157,7 @@ public class LectureController {
     @Operation(summary = "특정 강의와 관련 데이터를 삭제")
     @DeleteMapping("/{lectureId}")
     public ApiResponse<Void> delete(@PathVariable Long lectureId){
+        lectureService.getOwned(lectureId, currentUserId());
         lectureService.delete(lectureId);
         return ApiResponse.ok();
     }
@@ -163,6 +168,7 @@ public class LectureController {
             @PathVariable Long lectureId,
             @RequestBody UpdateLectureTitleRequest req
     ) {
+        lectureService.getOwned(lectureId, currentUserId());
         var updated = lectureService.updateLectureTitle(lectureId, req.getTitle());
         return ApiResponse.ok(LectureResponseDto.from(updated));
     }
@@ -175,9 +181,8 @@ public class LectureController {
             @PathVariable Long lectureId,
             @RequestPart("file") MultipartFile file
     ) {
-        // 1. 사용자 권한 검증 (선택 사항이나 권장)
-        //Long userId = currentUserId();
-        // lectureService.validateOwner(lectureId, userId); // 필요 시 추가
+        // 1. 사용자 권한 검증
+        lectureService.getOwned(lectureId, currentUserId());
 
         // 2. AI 서버로 전송하여 RAG 업서트 수행 및 collectionId 획득
         // (RagClient.upsertPdf는 이제 String collectionId를 반환해야 함)

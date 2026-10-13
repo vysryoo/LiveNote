@@ -3,13 +3,18 @@ package com.capstone.livenote.application.ai.controller;
 import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.application.ai.dto.CardStatusDto;
 import com.capstone.livenote.application.ai.service.AiRequestService;
+import com.capstone.livenote.domain.lecture.service.LectureService;
 import com.capstone.livenote.domain.transcript.service.TranscriptService;
 import com.capstone.livenote.global.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 
@@ -23,6 +28,22 @@ public class AiController {
     private final RagClient ragClient;
     private final TranscriptService transcriptService;
     private final AiRequestService aiRequestService;
+    private final LectureService lectureService;
+
+    // 다른 사용자의 강의로 AI 생성을 요청하지 못하도록 소유자를 확인. 아니면 404
+    private void requireOwnedLecture(Long lectureId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "not authenticated");
+        }
+        Long userId;
+        try {
+            userId = Long.parseLong(authentication.getName());
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "invalid user id");
+        }
+        lectureService.getOwned(lectureId, userId);
+    }
 
     // 1. 요약 생성 (수동 트리거)
     @Operation(summary = "수동 요약 생성 요청 (테스트용)")
@@ -32,6 +53,7 @@ public class AiController {
             @RequestParam Integer sectionIndex,
             @RequestParam(defaultValue = "FINAL") String phase
     ) {
+        requireOwnedLecture(lectureId);
         // 1) DB에서 전사 텍스트 조회
         String transcript = transcriptService.getCombinedText(lectureId, sectionIndex);
 
@@ -61,6 +83,7 @@ public class AiController {
             @RequestParam Long lectureId,
             @RequestParam Integer sectionIndex
     ) {
+        requireOwnedLecture(lectureId);
         aiRequestService.requestResources(lectureId, sectionIndex);
         return ApiResponse.ok(Map.of("success", true));
     }
@@ -70,6 +93,7 @@ public class AiController {
             @RequestParam Long lectureId,
             @RequestParam Integer sectionIndex
     ) {
+        requireOwnedLecture(lectureId);
         aiRequestService.requestQna(lectureId, sectionIndex);
         return ApiResponse.ok(Map.of("success", true));
     }
@@ -83,6 +107,7 @@ public class AiController {
             @RequestParam Long lectureId,
             @RequestParam Integer sectionIndex
     ) {
+        requireOwnedLecture(lectureId);
         return ApiResponse.ok(aiRequestService.getCardsStatus(lectureId, sectionIndex));
     }
 
@@ -95,6 +120,7 @@ public class AiController {
             @RequestParam Integer cardIndex,
             @RequestParam String qnaType
     ) {
+        requireOwnedLecture(lectureId);
         aiRequestService.requestQnaWithType(lectureId, sectionIndex, qnaType);
         String cardId = "qna_" + lectureId + "_" + sectionIndex + "_" + cardIndex;
         return ApiResponse.ok(Map.of("success", true, "cardId", cardId, "type", "qna"));
@@ -109,6 +135,7 @@ public class AiController {
             @RequestParam Integer cardIndex,
             @RequestParam String resourceType
     ) {
+        requireOwnedLecture(lectureId);
         aiRequestService.requestResourcesWithType(lectureId, sectionIndex, resourceType);
         String cardId = "res_" + lectureId + "_" + sectionIndex + "_" + cardIndex;
         return ApiResponse.ok(Map.of("success", true, "cardId", cardId, "type", "resource_stream"));
