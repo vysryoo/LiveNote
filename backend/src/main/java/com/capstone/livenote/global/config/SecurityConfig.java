@@ -47,11 +47,6 @@ public class SecurityConfig {
                                 // Swagger
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                
-                                // 디버그용
-                                "/api/dev/**",
-                                "/debug/**",
-                                "/test/**",
 
                                 // AI 서버 콜백. 공유 키로 컨트롤러에서 확인
                                 "/api/ai/callback/**"

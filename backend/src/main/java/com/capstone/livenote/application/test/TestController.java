@@ -2,12 +2,15 @@ package com.capstone.livenote.application.test; // 패키지명 확인
 
 import com.capstone.livenote.domain.transcript.service.TranscriptService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+// 실제 강의에 가짜 데이터를 넣는 개발용 API라 dev 프로필로 실행할 때만 등록
+@Profile("dev")
 @RestController
 @RequestMapping("/test")
 @RequiredArgsConstructor

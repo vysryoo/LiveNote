@@ -4,6 +4,7 @@ import com.capstone.livenote.domain.summary.dto.SummaryResponseDto;
 import com.capstone.livenote.domain.transcript.dto.TranscriptResponseDto;
 import com.capstone.livenote.global.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 // 임시테스트용
+// 실제 강의에 가짜 데이터를 넣는 개발용 API라 dev 프로필로 실행할 때만 등록
+@Profile("dev")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/dev/ws")
