@@ -28,9 +28,13 @@ class QnaCallbackServiceTest {
 
     @Test
     void saveQnaWithTypeMapping() {
+        List<Qna> stored = new java.util.ArrayList<>();
+        when(qnaRepository.findByLectureIdAndSectionIndexOrderByIdAsc(1L, 5))
+                .thenAnswer(inv -> List.copyOf(stored));
         when(qnaRepository.save(any(Qna.class))).thenAnswer(inv -> {
             Qna q = inv.getArgument(0);
             q.setId(123L);
+            stored.add(q);
             return q;
         });
 

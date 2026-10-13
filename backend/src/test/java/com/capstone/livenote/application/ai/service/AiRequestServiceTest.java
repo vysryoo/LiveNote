@@ -3,6 +3,7 @@ package com.capstone.livenote.application.ai.service;
 import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.application.ai.config.AiHistoryProperties;
 import com.capstone.livenote.application.ai.dto.AiRequestPayloads;
+import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.lecture.entity.Lecture;
 import com.capstone.livenote.domain.lecture.service.LectureService;
 import com.capstone.livenote.domain.qna.entity.Qna;
@@ -33,6 +34,7 @@ class AiRequestServiceTest {
     @Mock ResourceService resourceService;
     @Mock QnaService qnaService;
     @Mock LectureService lectureService;
+    @Mock StreamGateway streamGateway;
 
     @Test
     void requestResources_buildsPreviousAndExcludes() {
@@ -47,6 +49,8 @@ class AiRequestServiceTest {
                 Summary.builder().sectionIndex(2).text("prev2").build(),
                 Summary.builder().sectionIndex(1).text("prev1").build()
         ));
+        // 현재 섹션 자료가 3개 미만이어야 추천을 요청함
+        when(resourceService.findBySectionRange(1L, 3, 3)).thenReturn(List.of());
         when(resourceService.findBySectionRange(1L, 1, 2)).thenReturn(List.of(
                 Resource.builder().type(Resource.Type.VIDEO).title("old video").build(),
                 Resource.builder().type(Resource.Type.WIKI).title("old wiki").build(),
@@ -55,14 +59,14 @@ class AiRequestServiceTest {
         ));
 
         AiRequestService service = new AiRequestService(
-                ragClient, summaryService, resourceService, qnaService, lectureService, props
+                ragClient, summaryService, resourceService, qnaService, lectureService, props, streamGateway
         );
 
         service.requestResources(1L, 3);
 
         ArgumentCaptor<AiRequestPayloads.ResourceRecommendPayload> captor =
                 ArgumentCaptor.forClass(AiRequestPayloads.ResourceRecommendPayload.class);
-        verify(ragClient).requestResourceRecommendation(captor.capture());
+        verify(ragClient).requestResourceRecommendation(captor.capture(), isNull());
         var payload = captor.getValue();
 
         assertThat(payload.getPreviousSummaries()).hasSize(2);
@@ -88,14 +92,14 @@ class AiRequestServiceTest {
         ));
 
         AiRequestService service = new AiRequestService(
-                ragClient, summaryService, resourceService, qnaService, lectureService, props
+                ragClient, summaryService, resourceService, qnaService, lectureService, props, streamGateway
         );
 
         service.requestQna(7L, 4);
 
         ArgumentCaptor<AiRequestPayloads.QnaGeneratePayload> captor =
                 ArgumentCaptor.forClass(AiRequestPayloads.QnaGeneratePayload.class);
-        verify(ragClient).requestQnaGeneration(captor.capture());
+        verify(ragClient).requestQnaGeneration(captor.capture(), isNull());
         var payload = captor.getValue();
 
         assertThat(payload.getSubject()).isEqualTo("math");

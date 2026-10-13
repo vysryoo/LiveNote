@@ -27,9 +27,13 @@ class ResourceCallbackServiceTest {
     @Test
     void saveResourceWithReasonAndDetail() {
         // given
+        List<Resource> stored = new java.util.ArrayList<>();
+        when(resourceRepository.findByLectureIdAndSectionIndexOrderByIdAsc(1L, 3))
+                .thenAnswer(inv -> List.copyOf(stored));
         when(resourceRepository.save(any(Resource.class))).thenAnswer(inv -> {
             Resource r = inv.getArgument(0);
             r.setId(99L);
+            stored.add(r);
             return r;
         });
 
