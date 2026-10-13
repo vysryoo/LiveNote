@@ -5,6 +5,7 @@ import com.capstone.livenote.domain.lecture.repository.LectureRepository;
 import com.capstone.livenote.domain.transcript.entity.Transcript;
 import com.capstone.livenote.domain.transcript.repository.TranscriptRepository;
 import com.capstone.livenote.domain.transcript.service.TranscriptService;
+import com.capstone.livenote.global.security.JwtTokenProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +38,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 프론트 → 백엔드 바이너리 PCM(24kHz, mono) 전송을 받아
  * OpenAI Realtime API의 전사 전용 세션으로 중계하는 WebSocket 핸들러.
  *
- * 클라이언트 요청: /ws/transcription?sessionId=<lectureId>
+ * 클라이언트 요청: /ws/transcription?sessionId=<lectureId>&token=<JWT>
+ * - 브라우저 WebSocket은 헤더를 붙일 수 없어 로그인 토큰을 쿼리로 받음. 본인 강의가 아니면 연결을 끊음.
  * - BinaryMessage만 전송(PCM16). 서버가 Base64 인코딩 후 input_audio_buffer.append로 전달.
  * - OpenAI 결과 중 transcript 계열 이벤트를 {type:"transcript", data:{content,isFinal}}로 클라이언트에 전달.
  */
@@ -54,6 +56,7 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
     private final TranscriptRepository transcriptRepository;
     private final TranscriptService transcriptService;
     private final ObjectMapper objectMapper;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Value("${OPENAI_API_KEY}")
     private String openAiApiKey;
@@ -88,7 +91,16 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
             return;
         }
 
-        Optional<Lecture> lectureOpt = lectureRepository.findById(lectureId);
+        String token = getQueryParam(session, "token");
+        if (token == null || !jwtTokenProvider.validateToken(token)) {
+            sendErrorAndClose(session, "unauthorized");
+            return;
+        }
+        Long userId = jwtTokenProvider.getUserIdFromToken(token);
+
+        // 다른 사용자의 강의도 없는 강의와 같은 응답으로 처리해 존재 여부를 드러내지 않음
+        Optional<Lecture> lectureOpt = lectureRepository.findById(lectureId)
+                .filter(lecture -> userId.equals(lecture.getUserId()));
         if (lectureOpt.isEmpty()) {
             sendErrorAndClose(session, "lecture not found");
             return;

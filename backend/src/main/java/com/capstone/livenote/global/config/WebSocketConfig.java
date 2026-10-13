@@ -1,11 +1,13 @@
 package com.capstone.livenote.global.config;
 
 import com.capstone.livenote.application.ws.RealtimeTranscriptionWebSocketHandler;
+import com.capstone.livenote.global.security.StompAuthChannelInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -21,6 +23,12 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSocketConfigurer {
 
     private final RealtimeTranscriptionWebSocketHandler realtimeTranscriptionWebSocketHandler;
+    private final StompAuthChannelInterceptor stompAuthChannelInterceptor;
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(stompAuthChannelInterceptor);
+    }
 
     // === STOMP 설정 (기존: 결과 전송용) ===
     @Override
