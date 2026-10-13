@@ -42,6 +42,7 @@ from ..dependencies import (
     get_google_service,
 )
 from ..models import ResourceType
+from ..security import internal_auth_headers
 from ..utils import (
     CamelModel,
     build_collection_id,
@@ -342,6 +343,6 @@ async def post_resources_callback(request: RECRequest, resources: List[dict]):
     }
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            await client.post(str(request.callback_url), json=payload)
+            await client.post(str(request.callback_url), json=payload, headers=internal_auth_headers())
     except Exception as exc:  # pragma: no cover - 네트워크 예외
         logger.exception("콜백 전송 실패: %s", exc)

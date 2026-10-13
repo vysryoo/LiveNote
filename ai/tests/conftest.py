@@ -282,10 +282,24 @@ def fastapi_app(test_context: TestContext) -> FastAPI:
     )
 
 
+TEST_INTERNAL_API_KEY = "test-internal-key"
+
+
+@pytest.fixture(autouse=True)
+def internal_api_key(monkeypatch):
+    """모든 테스트에서 백엔드와 공유하는 내부 키를 설정"""
+    monkeypatch.setenv("INTERNAL_API_KEY", TEST_INTERNAL_API_KEY)
+    return TEST_INTERNAL_API_KEY
+
+
 @pytest.fixture
-async def async_client(fastapi_app: FastAPI):
+async def async_client(fastapi_app: FastAPI, internal_api_key: str):
     transport = ASGITransport(app=fastapi_app)
-    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://testserver",
+        headers={"X-Internal-Api-Key": internal_api_key},
+    ) as client:
         yield client
 
 
@@ -306,8 +320,8 @@ def callback_recorder(monkeypatch):
         async def __aexit__(self, exc_type, exc, tb):
             return False
 
-        async def post(self, url, json):
-            captured.append({"url": url, "json": json})
+        async def post(self, url, json, headers=None):
+            captured.append({"url": url, "json": json, "headers": headers})
             return type("Resp", (), {"status_code": 200})
 
     monkeypatch.setattr("server.routes.qa.httpx.AsyncClient", _RecorderClient)

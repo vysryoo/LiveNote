@@ -70,6 +70,9 @@ APP_JWT_SECRET=your-secret-key-here
 
 # 콜백 (프론트엔드가 접근 가능한 백엔드 URL)
 APP_CALLBACK_BASE_URL=http://localhost:8080
+
+# AI 서버와 공유하는 내부 키 (ai/.env의 INTERNAL_API_KEY와 같은 값)
+INTERNAL_API_KEY=openssl-rand-hex-32로-생성한-값
 ```
 
 ---
@@ -85,6 +88,7 @@ APP_CALLBACK_BASE_URL=http://localhost:8080
 | `OPENAI_API_KEY` | - | OpenAI API 키 (STT용) |
 | `APP_JWT_SECRET` | - | JWT 토큰 서명키 |
 | `APP_CALLBACK_BASE_URL` | localhost:8080 | AI 서버 콜백을 받을 백엔드 URL |
+| `INTERNAL_API_KEY` | - | AI 서버와 공유하는 내부 키. 백엔드→AI 요청과 AI→백엔드 콜백의 `X-Internal-Api-Key` 헤더로 사용 |
 | `APP_OPENAI_STT_MODEL` | whisper-1 | OpenAI STT 모델 |
 | `APP_OPENAI_REALTIME_TRANSCRIPTION_MODEL` | gpt-4o-transcribe | 실시간 전사 세션의 전사 모델 |
 | `APP_TRANSCRIPTION_PADDING_SECONDS` | 2.0 | 전사 패딩 시간(초) |

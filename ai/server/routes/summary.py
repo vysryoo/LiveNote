@@ -16,6 +16,7 @@ from pydantic import Field, HttpUrl, validator
 
 from ..config import AppSettings
 from ..dependencies import get_settings
+from ..security import internal_auth_headers
 from ..utils import CamelModel
 
 router = APIRouter(prefix="/summary", tags=["SUMMARY"])
@@ -120,7 +121,7 @@ async def _post_summary_callback(callback_url: str, payload: dict):
     """콜백 URL로 요약 결과 전송"""
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            await client.post(callback_url, json=payload)
+            await client.post(callback_url, json=payload, headers=internal_auth_headers())
     except Exception as exc:  # pragma: no cover - 네트워크 예외
         logger.exception("요약 콜백 전송 실패: %s", exc)
 

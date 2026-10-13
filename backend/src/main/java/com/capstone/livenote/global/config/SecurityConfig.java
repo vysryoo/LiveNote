@@ -52,6 +52,8 @@ public class SecurityConfig {
                                 "/api/dev/**",
                                 "/debug/**",
                                 "/test/**",
+
+                                // AI 서버 콜백. 공유 키로 컨트롤러에서 확인
                                 "/api/ai/callback/**"
                         ).permitAll()
                         .anyRequest().authenticated()

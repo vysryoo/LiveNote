@@ -12,10 +12,11 @@ from dotenv import load_dotenv
 # Ensure .env is loaded even if the working directory differs (override stale env)
 load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
 from .config import AppSettings
 from .routes import qa_router, rag_router, rec_router, summary_router
+from .security import verify_internal_api_key
 
 
 def _ensure_service(service: Any, factory_path: str):
@@ -77,10 +78,12 @@ def create_app(
         lifespan=lifespan
     )
     
-    app.include_router(rag_router)
-    app.include_router(qa_router)
-    app.include_router(rec_router)
-    app.include_router(summary_router)
+    # /health를 제외한 모든 API는 백엔드만 호출하도록 공유 키를 확인
+    internal_only = [Depends(verify_internal_api_key)]
+    app.include_router(rag_router, dependencies=internal_only)
+    app.include_router(qa_router, dependencies=internal_only)
+    app.include_router(rec_router, dependencies=internal_only)
+    app.include_router(summary_router, dependencies=internal_only)
 
     # 테스트나 수동 호출 시 lifespan이 실행되지 않아도 안전하도록 기본 상태를 설정
     app.state.app_settings = base_settings

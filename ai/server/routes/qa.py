@@ -15,6 +15,7 @@ from QA_module.qakit.models import QARequest, PreviousQA
 
 from ..config import AppSettings
 from ..dependencies import get_qa_service, get_rag_service, get_settings
+from ..security import internal_auth_headers
 from ..models import QnAType
 from ..utils import CamelModel, build_collection_id, to_qa_rag_context
 
@@ -151,7 +152,7 @@ async def post_qna_callback(request: QAGenerateRequest, qna_items: List[dict]):
     }
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            await client.post(str(request.callback_url), json=payload)
+            await client.post(str(request.callback_url), json=payload, headers=internal_auth_headers())
     except Exception as exc:  # pragma: no cover - 네트워크 예외
         logger.exception("QA 콜백 전송 실패: %s", exc)
 

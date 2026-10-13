@@ -52,6 +52,9 @@ app:
 
   callback-base-url: ${APP_CALLBACK_BASE_URL:http://localhost:8080}
 
+  # AI 서버와 공유하는 내부 키. 백엔드→AI 요청과 AI→백엔드 콜백의 X-Internal-Api-Key 헤더로 사용
+  internal-api-key: ${INTERNAL_API_KEY}
+
   ai:
     base-url: ${AI_SERVER_URL}
     history:

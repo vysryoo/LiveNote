@@ -115,6 +115,7 @@ WIKIKIT_USER_AGENT="WikiKit/1.0 (+https://example.com; contact: you@example.com)
 ANONYMIZED_TELEMETRY="False"
 CHROMA_TELEMETRY_ENABLED="False"
 RAG_PERSIST_DIR="server_storage/chroma_data_real" #chroma db 위치 지정
+INTERNAL_API_KEY="..." # 백엔드 env.properties와 같은 값. /health를 제외한 모든 API와 콜백이 X-Internal-Api-Key 헤더로 이 값을 확인하며, 비어 있으면 모든 요청을 거부
 ```
 
 ---

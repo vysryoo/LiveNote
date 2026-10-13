@@ -4,6 +4,7 @@ import com.capstone.livenote.application.ai.dto.AiRequestPayloads;
 import com.capstone.livenote.domain.summary.entity.Summary;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.capstone.livenote.global.security.InternalApiKey;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +32,7 @@ public class RagClient {
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
+    private final InternalApiKey internalApiKey;
 
     @Value("${ai.server.url:${app.ai.base-url}}")
     private String baseUrl;
@@ -70,6 +72,7 @@ public class RagClient {
         try {
             webClient.post()
                     .uri(url)
+                    .header(InternalApiKey.HEADER, internalApiKey.value())
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(body)
                     .retrieve()
@@ -121,6 +124,7 @@ public class RagClient {
         try {
             webClient.post()
                     .uri(url)
+                    .header(InternalApiKey.HEADER, internalApiKey.value())
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(body)
                     .retrieve()
@@ -179,6 +183,7 @@ public class RagClient {
         try {
             webClient.post()
                     .uri(url)
+                    .header(InternalApiKey.HEADER, internalApiKey.value())
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(body)
                     .retrieve()
@@ -224,6 +229,7 @@ public class RagClient {
         try {
             webClient.post()
                     .uri(url)
+                    .header(InternalApiKey.HEADER, internalApiKey.value())
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(body)
                     .retrieve()
@@ -263,6 +269,7 @@ public class RagClient {
             // [수정] 응답 본문을 받아서 collection_id 추출
             String responseBody = webClient.post()
                     .uri(url)
+                    .header(InternalApiKey.HEADER, internalApiKey.value())
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(BodyInserters.fromMultipartData(builder.build()))
                     .retrieve()
