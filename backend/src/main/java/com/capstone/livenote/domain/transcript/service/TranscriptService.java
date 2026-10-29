@@ -6,15 +6,16 @@ import com.capstone.livenote.domain.summary.service.SummaryService;
 import com.capstone.livenote.domain.transcript.dto.TranscriptResponseDto;
 import com.capstone.livenote.domain.transcript.entity.Transcript;
 import com.capstone.livenote.domain.transcript.repository.TranscriptRepository;
+import com.capstone.livenote.domain.transcript.service.RecordingStateStore.TimeOffset;
+import com.capstone.livenote.global.redis.RedisLock;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.context.annotation.Lazy;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 // STT 저장, 섹션/요약 트리거만
 @Service
@@ -25,32 +26,18 @@ public class TranscriptService {
     // private final SummaryService summaryService;      // 예전 30초 요약용 (사용 안 하면 삭제해도 됨)
     private final StreamGateway streamGateway; // 실시간 전송
     private final SectionAggregationService sectionAggregationService;
-
-    // 재시작 감지용: 강의별 raw startSec 오프셋
-    private final Map<Long, Integer> baseOffsets = new HashMap<>();
-    private final Map<Long, Integer> lastRawStarts = new HashMap<>();
-    
-    // 동적 섹션 관리: 강의별 현재 섹션 정보 (sectionIndex, sectionStartSec)
-    private final Map<Long, SectionInfo> currentSections = new HashMap<>();
-    
-    private static class SectionInfo {
-        int index;
-        int startSec;
-        int lastEndSec;
-        
-        SectionInfo(int index, int startSec, int lastEndSec) {
-            this.index = index;
-            this.startSec = startSec;
-            this.lastEndSec = lastEndSec;
-        }
-    }
+    private final RecordingStateStore stateStore;
+    private final RedisLock redisLock;
 
     // 순환 참조 고리 끊기
     public TranscriptService(TranscriptRepository transcriptRepository,
-                             @Lazy StreamGateway streamGateway, SectionAggregationService sectionAggregationService) {
+                             @Lazy StreamGateway streamGateway, SectionAggregationService sectionAggregationService,
+                             RecordingStateStore stateStore, RedisLock redisLock) {
         this.transcriptRepository = transcriptRepository;
         this.streamGateway = streamGateway;
         this.sectionAggregationService = sectionAggregationService;
+        this.stateStore = stateStore;
+        this.redisLock = redisLock;
     }
 
     @Transactional(readOnly = true)
@@ -73,35 +60,26 @@ public class TranscriptService {
      * 2. Transcript 저장
      * 3. (섹션/요약/AI 요청 로직) 트리거
      * 4. 저장된 내용을 DTO로 반환 → 호출한 쪽에서 WebSocket push
+     *
+     * 같은 강의의 전사는 서버 여러 대에 걸쳐 한 번에 하나씩 처리한다. 섹션 상태를 읽고 고쳐 쓰는 사이에
+     * 다른 전사가 끼어들면 섹션 번호가 어긋나기 때문이다.
      */
-    @Transactional
     public TranscriptResponseDto saveFromStt(Long lectureId, int startSec, int endSec, String text) {
+        return redisLock.call("livenote:lock:lecture:" + lectureId + ":transcript",
+                () -> saveLocked(lectureId, startSec, endSec, text));
+    }
+
+    private TranscriptResponseDto saveLocked(Long lectureId, int startSec, int endSec, String text) {
         // 1) 강의별 오프셋 계산 (이전 기록이 있는데 클라이언트 startSec이 리셋된 경우 이어붙이기)
         int offset = resolveOffset(lectureId, startSec);
         int adjustedStart = startSec + offset;
         int adjustedEnd = endSec + offset;
 
-        // 2) 동적 섹션 배정: 현재 전사의 startSec이 섹션 기준점(첫 전사의 startSec)으로부터 30초 이상이면 새 섹션
-        SectionInfo section = currentSections.get(lectureId);
-        if (section == null) {
-            // 첫 전사: Section 0으로 시작, startSec을 기준점으로 설정
-            section = new SectionInfo(0, adjustedStart, adjustedEnd);
-            currentSections.put(lectureId, section);
-        } else {
-            // 현재 전사의 startSec이 섹션 기준점(section.startSec)으로부터 30초 이상이면 새 섹션 시작
-            if (adjustedStart - section.startSec >= 30) {
-                // 새 섹션 시작: 현재 전사의 startSec이 새 섹션의 기준점이 됨
-                section = new SectionInfo(section.index + 1, adjustedStart, adjustedEnd);
-                currentSections.put(lectureId, section);
-            } else {
-                // 같은 섹션 내에서 lastEndSec만 갱신
-                section.lastEndSec = adjustedEnd;
-            }
-        }
-        int sectionIndex = section.index;
+        // 2) 섹션 배정: 섹션 시작으로부터 30초 이상 지난 전사는 새 섹션
+        int sectionIndex = sectionAggregationService.assignSection(lectureId, adjustedStart, adjustedEnd);
 
-        log.info("[TranscriptService] Saving transcript: lectureId={} startSec={} endSec={} sectionIndex={} (section baseline: {}s, range: {}~{}s)",
-                lectureId, adjustedStart, adjustedEnd, sectionIndex, section.startSec, section.startSec, section.lastEndSec);
+        log.info("[TranscriptService] Saving transcript: lectureId={} startSec={} endSec={} sectionIndex={}",
+                lectureId, adjustedStart, adjustedEnd, sectionIndex);
 
         // 3) Transcript 엔터티 저장
         Transcript t = transcriptRepository.save(
@@ -118,15 +96,9 @@ public class TranscriptService {
         TranscriptResponseDto dto = TranscriptResponseDto.from(t);
         streamGateway.sendTranscript(lectureId, dto, true);
 
-        //  5) 섹션 집계 서비스로 텍스트 전달 (15초/30초 트리거)
+        //  5) 섹션 길이 확인 후 요약 요청 (15초/30초 트리거)
         try {
-            sectionAggregationService.onNewTranscript(
-                    lectureId,
-                    sectionIndex,
-                    adjustedStart,
-                    adjustedEnd,
-                    text
-            );
+            sectionAggregationService.onTranscriptSaved(lectureId);
         } catch (Exception e) {
             log.error("Failed to aggregate section: {}", e.getMessage(), e);
         }
@@ -140,37 +112,32 @@ public class TranscriptService {
      * 단, 정상 진행 중(연속 청크)에는 offset=0을 유지한다.
      */
     private int resolveOffset(Long lectureId, int rawStartSec) {
-        Integer lastRaw = lastRawStarts.get(lectureId);
-        Integer base = baseOffsets.get(lectureId);
+        Optional<TimeOffset> saved = stateStore.findOffset(lectureId);
+        int base;
 
-        if (lastRaw == null) {
+        if (saved.isEmpty()) {
             // 첫 청크: 기존 DB 데이터가 있으면 이어붙이기 판단
             Integer maxEndSec = transcriptRepository.findMaxEndSecByLectureId(lectureId);
             if (maxEndSec != null && rawStartSec < maxEndSec) {
                 base = maxEndSec;
-                baseOffsets.put(lectureId, base);
                 log.info("🔄 [TranscriptService] Detected resume: lectureId={} baseOffset={}", lectureId, base);
             } else {
                 base = 0;
-                baseOffsets.put(lectureId, 0);
             }
         } else {
+            base = saved.get().base();
             // 연속 청크인지 확인: raw start가 이전보다 작아지면 재시작으로 판단
-            if (rawStartSec < lastRaw) {
+            if (rawStartSec < saved.get().lastRawStart()) {
                 Integer maxEndSec = transcriptRepository.findMaxEndSecByLectureId(lectureId);
                 if (maxEndSec != null) {
                     base = maxEndSec;
-                    baseOffsets.put(lectureId, base);
                     log.info("🔄 [TranscriptService] Detected restart mid-session: lectureId={} baseOffset={}", lectureId, base);
                 }
-            } else if (base == null) {
-                baseOffsets.put(lectureId, 0);
-                base = 0;
             }
         }
 
-        lastRawStarts.put(lectureId, rawStartSec);
-        return base != null ? base : 0;
+        stateStore.saveOffset(lectureId, new TimeOffset(base, rawStartSec));
+        return base;
     }
 
 

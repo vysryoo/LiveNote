@@ -2,123 +2,151 @@ package com.capstone.livenote.application.ai.service;
 
 import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.application.ws.StreamGateway;
-import com.capstone.livenote.domain.summary.service.SummaryService;
+import com.capstone.livenote.domain.transcript.entity.Transcript;
+import com.capstone.livenote.domain.transcript.repository.TranscriptRepository;
+import com.capstone.livenote.domain.transcript.service.RecordingStateStore;
+import com.capstone.livenote.domain.transcript.service.RecordingStateStore.SectionState;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.context.annotation.Lazy;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 섹션 단위 집계 -> AI 서버로 요약 요청 트리거
  * (결과는 비동기 콜백으로 수신되므로, 여기서는 요청만 보내고 끝냄)
+ *
+ * 섹션 상태는 {@link RecordingStateStore}(Redis)에 두어 서버 여러 대와 재시작 후에도 이어진다.
+ * 상태를 읽고 쓰는 두 메서드는 강의 단위 잠금 안에서 호출해야 한다.
  */
 @Service
 @Slf4j
 public class SectionAggregationService {
 
+    static final int PARTIAL_SEC = 15;
+    static final int SECTION_SEC = 30;
+
     private final RagClient ragClient;
-    private final SummaryService summaryService;
+    private final TranscriptRepository transcriptRepository;
+    private final RecordingStateStore stateStore;
     private final StreamGateway streamGateway;
 
-    public SectionAggregationService(RagClient ragClient, SummaryService summaryService, @Lazy StreamGateway streamGateway) {
+    public SectionAggregationService(RagClient ragClient, TranscriptRepository transcriptRepository,
+                                     RecordingStateStore stateStore, @Lazy StreamGateway streamGateway) {
         this.ragClient = ragClient;
-        this.summaryService = summaryService;
+        this.transcriptRepository = transcriptRepository;
+        this.stateStore = stateStore;
         this.streamGateway = streamGateway;
     }
 
-    private final Map<Long, SectionState> states = new ConcurrentHashMap<>();
+    /**
+     * 새 전사가 속할 섹션을 정하고 섹션 상태를 갱신한다.
+     *
+     * 최종 요약을 요청한 섹션이거나 섹션 시작으로부터 30초 이상 지난 전사는 다음 섹션으로 넘긴다.
+     * 최종 요약 없이 넘어가는 섹션은 이때 최종 요약을 요청한다.
+     *
+     * @param lectureId 강의 ID
+     * @param startSec 전사 시작 시각(초, 강의 전체 기준)
+     * @param endSec 전사 끝 시각(초, 강의 전체 기준)
+     * @return 전사가 속할 섹션 번호
+     */
+    public int assignSection(Long lectureId, int startSec, int endSec) {
+        SectionState current = stateStore.findSection(lectureId).orElseGet(() -> restoreSection(lectureId));
 
-    @Getter
-    @AllArgsConstructor
-    private static class SectionState {
-        int sectionIndex;
-        int startSec;      // 섹션 시작 시간
-        int lastEndSec;    // 섹션 내 마지막 전사의 endSec
-        boolean partialDone;
-        StringBuilder buffer;
+        SectionState next;
+        if (current == null) {
+            log.info("[SectionAgg] Init section state: lectureId={} section=0", lectureId);
+            next = SectionState.start(0, startSec, endSec);
+            streamGateway.sendSection(lectureId, next.index());
+        } else if (current.finalRequested() || startSec - current.startSec() >= SECTION_SEC) {
+            next = SectionState.start(current.index() + 1, startSec, endSec);
+            if (!current.finalRequested()) {
+                log.info("[SectionAgg] Section {} closed without FINAL: sending FINAL", current.index());
+                requestSummary(lectureId, current, "FINAL");
+                streamGateway.sendSection(lectureId, next.index());
+            }
+        } else {
+            next = current.withLastEndSec(Math.max(current.lastEndSec(), endSec));
+        }
+
+        stateStore.saveSection(lectureId, next);
+        return next.index();
     }
 
-    public void onNewTranscript(Long lectureId, int sectionIndex, int startSec, int endSec, String text) {
-        SectionState state = states.computeIfAbsent(lectureId, id -> {
-            log.info("[SectionAgg] ✅ Init section state: lectureId={} section={}", lectureId, sectionIndex);
-            streamGateway.sendSection(lectureId, sectionIndex);
-            return new SectionState(sectionIndex, startSec, endSec, false, new StringBuilder());
-        });
+    /**
+     * 전사 저장 후 섹션 길이가 15초, 30초에 도달했으면 부분·최종 요약을 요청한다.
+     *
+     * 최종 요약을 요청하면 다음 섹션 번호를 실시간으로 알린다. 다음 전사부터 그 섹션에 속한다.
+     *
+     * @param lectureId 강의 ID
+     */
+    public void onTranscriptSaved(Long lectureId) {
+        SectionState state = stateStore.findSection(lectureId).orElse(null);
+        if (state == null) {
+            return;
+        }
+        int elapsedSec = state.elapsedSec();
+        SectionState next = state;
 
-        // 섹션이 변경되었으면 이전 섹션의 FINAL 요약 보장 후 상태 초기화
-        if (state.sectionIndex != sectionIndex) {
-            log.info("[SectionAgg] 🔄 Section changed from {} to {}, ensuring FINAL summary", state.sectionIndex, sectionIndex);
-            
-            // 이전 섹션의 FINAL 요약이 아직 안 보내졌으면 지금 보내기
-            if (!state.buffer.toString().trim().isEmpty()) {
-                int elapsedSec = state.lastEndSec - state.startSec;
-                log.info("[SectionAgg] 📤 Sending pending FINAL summary for section {}: elapsed={}s ({}~{}s)", 
-                        state.sectionIndex, elapsedSec, state.startSec, state.lastEndSec);
-                triggerAiSummary(lectureId, state, "FINAL");
-            }
-            
-            // 새 섹션으로 초기화
-            state = new SectionState(sectionIndex, startSec, endSec, false, new StringBuilder());
-            states.put(lectureId, state);
-            streamGateway.sendSection(lectureId, sectionIndex);
-        } else {
-            // 같은 섹션 내에서 lastEndSec 갱신
-            state.lastEndSec = endSec;
+        if (!state.partialRequested() && elapsedSec >= PARTIAL_SEC && elapsedSec < SECTION_SEC) {
+            log.info("[SectionAgg] Section {} reached {}s: PARTIAL summary", state.index(), PARTIAL_SEC);
+            requestSummary(lectureId, state, "PARTIAL");
+            next = next.withPartialRequested();
         }
 
-        state.buffer.append(' ').append(text);
-        int elapsedSec = state.lastEndSec - state.startSec;
-
-        // 1) 15초 도달 (Partial 요약 요청) - 30초 미만일 때만
-        if (!state.partialDone && elapsedSec >= 15 && elapsedSec < 30) {
-            log.info("[SectionAgg] ⏱️ Section {} reached 15s: PARTIAL summary", state.sectionIndex);
-            triggerAiSummary(lectureId, state, "PARTIAL");
-            state.partialDone = true;
+        if (!state.finalRequested() && elapsedSec >= SECTION_SEC) {
+            log.info("[SectionAgg] Section {} reached {}s: FINAL summary", state.index(), SECTION_SEC);
+            requestSummary(lectureId, state, "FINAL");
+            next = next.withFinalRequested();
+            streamGateway.sendSection(lectureId, state.index() + 1);
         }
 
-        // 2) 30초 도달 (Final 요약 요청 및 다음 섹션 준비)
-        if (elapsedSec >= 30) {
-            if (!state.partialDone) {
-                log.info("[SectionAgg] ⏱️ Section {} reached 30s without PARTIAL: skipping to FINAL", state.sectionIndex);
-            } else {
-                log.info("[SectionAgg] ⏱️ Section {} reached 30s: FINAL summary", state.sectionIndex);
-            }
-            triggerAiSummary(lectureId, state, "FINAL");
-
-            // 다음 섹션 준비 (startSec은 현재 섹션의 lastEndSec으로)
-            SectionState next = new SectionState(state.sectionIndex + 1, state.lastEndSec, state.lastEndSec, false, new StringBuilder());
-            states.put(lectureId, next);
-            streamGateway.sendSection(lectureId, next.sectionIndex);
+        if (!next.equals(state)) {
+            stateStore.saveSection(lectureId, next);
         }
+    }
+
+    // Redis에 상태가 없으면(첫 전사, 서버 재시작 후 만료, Redis 초기화) DB의 마지막 섹션에서 이어 감
+    private SectionState restoreSection(Long lectureId) {
+        Integer lastIndex = transcriptRepository.findMaxSectionIndexByLectureId(lectureId);
+        if (lastIndex == null) {
+            return null;
+        }
+        List<Transcript> transcripts =
+                transcriptRepository.findByLectureIdAndSectionIndexOrderByStartSecAsc(lectureId, lastIndex);
+        int startSec = transcripts.get(0).getStartSec();
+        int lastEndSec = transcripts.stream().mapToInt(Transcript::getEndSec).max().orElse(startSec);
+        int elapsedSec = lastEndSec - startSec;
+        log.info("[SectionAgg] Restored section state from DB: lectureId={} section={} range={}~{}s",
+                lectureId, lastIndex, startSec, lastEndSec);
+        return new SectionState(lastIndex, startSec, lastEndSec,
+                elapsedSec >= PARTIAL_SEC, elapsedSec >= SECTION_SEC);
     }
 
     // 핵심 로직: 직접 처리하지 않고 RagClient를 통해 AI 서버로 넘김
-    private void triggerAiSummary(Long lectureId, SectionState state, String phase) {
-        String sourceText = state.buffer.toString().trim();
+    private void requestSummary(Long lectureId, SectionState state, String phase) {
+        String sourceText = transcriptRepository
+                .findByLectureIdAndSectionIndexOrderByStartSecAsc(lectureId, state.index())
+                .stream()
+                .map(Transcript::getText)
+                .collect(Collectors.joining(" "))
+                .trim();
         if (sourceText.isEmpty()) return;
 
-        // 동적 시간 범위 사용
-        int startSec = state.startSec;
-        int endSec = state.lastEndSec;
-
-        log.info("🚀 [AI Request] Summary Generation ({}): lectureId={} section={} time={}~{}s len={}",
-                phase, lectureId, state.sectionIndex, startSec, endSec, sourceText.length());
+        log.info("[AI Request] Summary Generation ({}): lectureId={} section={} time={}~{}s len={}",
+                phase, lectureId, state.index(), state.startSec(), state.lastEndSec(), sourceText.length());
 
         // 비동기 요청 전송 (결과는 나중에 CallbackService로 옴)
         ragClient.requestSummaryGeneration(
                 lectureId,
                 null, // 신규 생성이므로 ID 없음
-                state.sectionIndex,
-                startSec,
-                endSec,
+                state.index(),
+                state.startSec(),
+                state.lastEndSec(),
                 phase,
                 sourceText
         );
     }
-
 }
