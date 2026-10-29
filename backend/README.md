@@ -105,6 +105,10 @@ RABBITMQ_STOMP_PORT=61613
 RABBITMQ_USERNAME=livenote
 RABBITMQ_PASSWORD=password
 RABBITMQ_VHOST=livenote
+
+# Redis (녹음 상태와 잠금)
+REDIS_HOST=localhost
+REDIS_PORT=6379
 ```
 
 ---
@@ -126,6 +130,8 @@ RABBITMQ_VHOST=livenote
 | `RABBITMQ_USERNAME` | - | RabbitMQ 계정 |
 | `RABBITMQ_PASSWORD` | - | RabbitMQ 비밀번호 |
 | `RABBITMQ_VHOST` | livenote | RabbitMQ vhost |
+| `REDIS_HOST` | localhost | 녹음 상태(섹션, 시각 보정값)와 잠금을 저장할 Redis 주소 |
+| `REDIS_PORT` | 6379 | Redis 포트 |
 | `APP_OPENAI_STT_MODEL` | whisper-1 | OpenAI STT 모델 |
 | `APP_OPENAI_REALTIME_TRANSCRIPTION_MODEL` | gpt-4o-transcribe | 실시간 전사 세션의 전사 모델 |
 | `APP_TRANSCRIPTION_PADDING_SECONDS` | 2.0 | 전사 패딩 시간(초) |
@@ -316,6 +322,7 @@ backend/
 - **Java 17** + **Spring Boot 3**
 - **Spring WebSocket** + **STOMP** (RabbitMQ 중계)
 - **Spring Data JPA** + **PostgreSQL** + **Flyway**
+- **Spring Data Redis** (서버 간 공유 상태와 잠금)
 - **JWT** (인증)
 - **OpenAI Whisper** (STT)
 - **Gradle**
