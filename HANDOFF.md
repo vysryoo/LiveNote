@@ -15,7 +15,10 @@
 | 실시간 전사 (OpenAI Realtime 정식 API 전환) | 완료 |
 | 인증·소유자 확인 (REST, 녹음 WebSocket, STOMP, 백엔드↔AI 서버) | 완료 |
 | 통신 구조 개선 R1~R7 (2절) | 완료 |
-| 남은 문제 | 7절 |
+| 이후 문제 수정 (토큰 갱신, 녹음 정지 시 전사 유실, 전사 시각, 첫 섹션 카드, 강의 목록 페이지, 카드 순서, 강의 종료 제목) | 완료 |
+| 자료 추천 4종 실제 키로 동작 (논문, 위키, 영상, 블로그) | 완료. 블로그는 네이버 블로그 검색으로 교체 |
+| 쓰지 않는 코드·API 정리 (HTTP 녹음 업로드, 소유자 확인 없는 조회 API) | 완료 |
+| 남은 문제 | 8절 |
 
 이전 버전의 이 문서(커밋 `2d0c46f`)는 재작성 착수 전 설계를 담고 있다. 설계 결정의 근거가 필요하면 그 버전을 참고한다.
 
@@ -115,6 +118,10 @@ QnA 흐름: 백엔드가 SSE의 `start`를 받으면 Redis에 카드 번호를 �
 
 개발용 API(`TestController` 등)는 `dev` 프로필에서만 등록된다.
 
+강의 데이터(전사, 요약, QnA, 자료, 북마크) 조회는 `GET /api/lectures/{id}/detail` 하나로만 한다. 소유자를 확인하지 않던 개별 조회 API(`/api/transcripts`, `/api/summaries`, `/api/qna`, `/api/resources`)와 `POST /api/resources/callback`은 삭제했다. 없는 경로는 404로 응답한다. 전체 API 목록은 `backend/README.md` 참조.
+
+녹음은 WebSocket(`/ws/transcription`) 하나로만 받는다. 예전 HTTP 업로드(`/audio/chunk`)와 Whisper 전사 코드는 삭제했다.
+
 ---
 
 ## 6. 프론트엔드 구조와 규칙
@@ -132,7 +139,7 @@ QnA 흐름: 백엔드가 SSE의 `start`를 받으면 Redis에 카드 번호를 �
 | 폼 | react-hook-form + zod. 폼 제출 실패는 폼 안에, 성공과 폼 외 실패는 토스트로 표시 |
 | 다국어 | i18next, 4개 언어(`ko`, `en`, `ja`, `zh`). 키 타입 검사 적용 |
 | 린트 | React Compiler 규칙 18종 포함 에러 0·경고 0 상태. `src/shared/ui`(shadcn/ui)만 제외 |
-| 테스트 | Vitest 71개. reducer, 메시지 스키마, STOMP 처리 함수, 표시용 순수 함수, HTTP 클라이언트 |
+| 테스트 | Vitest 82개. reducer, 메시지 스키마, STOMP 처리 함수, 표시용 순수 함수, HTTP 클라이언트 |
 
 주의할 규칙.
 
@@ -149,7 +156,7 @@ QnA 흐름: 백엔드가 SSE의 `start`를 받으면 Redis에 카드 번호를 �
 
 ```bash
 cd frontend && npm run typecheck && npm run lint && npm test && npm run build
-cd backend && ./gradlew test        # 36개. 컨텍스트 로딩 테스트에 PostgreSQL 필요 (Redis·RabbitMQ 없이도 통과 확인)
+cd backend && ./gradlew test        # 53개. 컨텍스트 로딩 테스트에 PostgreSQL 필요 (Redis·RabbitMQ 없이도 통과 확인)
 cd ai && .venv/bin/python -m pytest -q tests
 ```
 
