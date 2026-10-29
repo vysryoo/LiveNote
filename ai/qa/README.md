@@ -749,7 +749,6 @@ qa/
 ├── test_qa.py                 # 종합 테스트 (5개 시나리오)
 ├── setup.sh                   # 환경 설정 스크립트
 ├── setup.py                   # 패키지 설정
-├── requirements.txt           # 의존성
 ├── .env                       # API 키 (gitignore)
 ├── .gitignore
 └── README.md

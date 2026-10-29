@@ -32,12 +32,12 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 COPY . .
 
 # 로컬 모듈을 editable mode로 설치하고 불필요한 파일 정리
-RUN pip install -e ./rag && \
-    pip install -e ./qa && \
-    pip install -e ./openalex && \
-    pip install -e ./wiki && \
-    pip install -e ./youtube && \
-    pip install -e ./blog && \
+RUN pip install --no-deps -e ./rag && \
+    pip install --no-deps -e ./qa && \
+    pip install --no-deps -e ./openalex && \
+    pip install --no-deps -e ./wiki && \
+    pip install --no-deps -e ./youtube && \
+    pip install --no-deps -e ./blog && \
     find /app -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true && \
     find /app -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
     find /app -name "*.pyc" -delete && \

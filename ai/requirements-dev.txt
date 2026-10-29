@@ -1,0 +1,8 @@
+# 테스트·수동 검증 스크립트용 의존성
+-r requirements.txt
+
+pytest==9.1.1
+# rag/create_large_test_pdf.py
+reportlab==4.2.0
+# youtube/test_api_components.py
+aiohttp==3.14.3

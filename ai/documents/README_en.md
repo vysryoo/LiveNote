@@ -133,7 +133,8 @@ FastAPI (server/)
 - `tests/` – Stub services and SSE unit tests.
 - `setup.sh` – Automated environment bootstrap script.
 - `test.sh` – Minimal smoke test script (health + text upsert + REC).
-- `requirements.server.txt` – Consolidated runtime dependencies.
+- `requirements.txt` – Pinned runtime dependencies (local and Docker).
+- `requirements-dev.txt` – Test and verification dependencies (includes `requirements.txt`).
 - `.env.example` – Template for environment variables.
 - `.env` – Actual runtime configuration (not committed; local).
 
@@ -226,14 +227,14 @@ Each module is scoped to a single responsibility but can be composed together th
 2. Script actions:
    - Ensures Python 3.11 (recreates `.venv` if version mismatch).
    - Activates `.venv` temporarily for installation context.
-   - Upgrades `pip`, installs packages from `requirements.server.txt`.
+   - Upgrades `pip`, installs packages from `requirements-dev.txt`, then installs local modules with `--no-deps`.
    - Copies `.env.example` to `.env` if missing.
    - Appends a snippet to `.venv/bin/activate` so `.env` is auto-sourced on activation.
 
 ### 6.3 Manual Setup (If Needed)
 - Create venv: `python3.11 -m venv .venv`
 - Activate: `source .venv/bin/activate`
-- Install: `pip install -r requirements.server.txt`
+- Install: `pip install -r requirements-dev.txt`, then `pip install --no-deps -e ./<module>` for each module
 - Copy `.env.example` → `.env` and edit values.
 - Manually source `.env` (if you skip the automated patch):  
   `set -a; source .env; set +a`

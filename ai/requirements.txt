@@ -1,52 +1,21 @@
-# =============================================================================
-# LiveNote AI Gateway - Consolidated Requirements for Docker
-# =============================================================================
+# LiveNote AI 서버 런타임 의존성 (로컬·Docker 공통)
+# 로컬 모듈(rag, qa, openalex, wiki, youtube, blog)은 이 파일 설치 후 --no-deps로 editable 설치
 
-# FastAPI & Server
+# 서버
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
-
-# HTTP Clients
-httpx[http2]==0.27.2
-requests>=2.31.0
-aiohttp>=3.9.0
-h2>=4.1.0
-
-# OpenAI
-openai==1.54.0
-
-# Vector Database
-chromadb>=1.0.20
-
-# LangChain (RAG 모듈용)
-langchain-core>=0.3,<0.4
-langchain-community>=0.3,<0.4
-langchain-openai>=0.2,<0.3
-langchain-text-splitters>=0.3,<0.4
-langchain-chroma>=0.2,<0.3
-
-# Data Validation & Utilities
+python-multipart==0.0.9
 pydantic==2.9.0
 python-dotenv==1.0.1
-pandas==2.2.2
 
-# PDF Processing
+# HTTP (OpenAlex 클라이언트가 HTTP/2 사용)
+httpx[http2]==0.27.2
+
+# OpenAI, 벡터 DB, PDF
+openai==3.41.0
+chromadb==1.5.9
 pypdf==4.2.0
-reportlab==4.2.0
 
-# File Upload
-python-multipart==0.0.9
-
-# Media Providers
+# 영상 추천
 youtube-transcript-api==0.6.1
 rapidfuzz==3.6.1
-
-# Date/Time Utilities
-python-dateutil>=2.8.0
-
-# Optional (for development/testing)
-# pytest>=8.0,<9
-# pytest-asyncio>=0.21.0
-# pytest-cov>=4.0,<5
-# streamlit==1.36.0
-trio==0.32.0

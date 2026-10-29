@@ -23,8 +23,8 @@ classifiers = [
 ]
 
 dependencies = [
-    "chromadb>=0.5.10,<0.6",
-    "openai>=1.30,<2",
+    "chromadb>=1.5,<2",
+    "openai>=3.41,<4",
     "python-dotenv>=1.0,<2",
     "pypdf>=4.2,<5",
 ]

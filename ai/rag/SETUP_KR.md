@@ -100,14 +100,9 @@ pip install -e .
 ### 수동 설치 (필요시)
 
 ```bash
-# requirements.txt 사용
-pip install -r requirements.txt
-
-# 개별 패키지 설치
-pip install chromadb>=0.5.10
-pip install openai>=1.30
-pip install python-dotenv>=1.0
-pip install pypdf>=4.2
+# 의존성은 ai/requirements.txt에서 관리
+pip install -r ../requirements-dev.txt
+pip install --no-deps -e .
 ```
 
 ### 설치 확인

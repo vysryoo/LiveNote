@@ -691,7 +691,6 @@ rag/
 │       └── text.py        # 텍스트 유틸
 ├── tests/                 # 단위 테스트
 ├── all_test.py            # 종합 테스트 (데모용)
-├── requirements.txt
 └── README_KR.md
 ```
 

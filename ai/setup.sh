@@ -5,7 +5,7 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="${PROJECT_ROOT}/.venv"
-REQUIREMENTS_FILE="${PROJECT_ROOT}/requirements.server.txt"
+REQUIREMENTS_FILE="${PROJECT_ROOT}/requirements-dev.txt"
 ENV_EXAMPLE="${PROJECT_ROOT}/.env.example"
 
 PYTHON_BIN_DEFAULT="python3"
@@ -84,12 +84,12 @@ echo "📦 서버 통합 의존성 설치..."
 pip install -r "${REQUIREMENTS_FILE}"
 
 echo "📦 로컬 모듈 설치 (editable mode)..."
-pip install -e "${PROJECT_ROOT}/rag"
-pip install -e "${PROJECT_ROOT}/qa"
-pip install -e "${PROJECT_ROOT}/openalex"
-pip install -e "${PROJECT_ROOT}/wiki"
-pip install -e "${PROJECT_ROOT}/youtube"
-pip install -e "${PROJECT_ROOT}/blog"
+pip install --no-deps -e "${PROJECT_ROOT}/rag"
+pip install --no-deps -e "${PROJECT_ROOT}/qa"
+pip install --no-deps -e "${PROJECT_ROOT}/openalex"
+pip install --no-deps -e "${PROJECT_ROOT}/wiki"
+pip install --no-deps -e "${PROJECT_ROOT}/youtube"
+pip install --no-deps -e "${PROJECT_ROOT}/blog"
 
 if [ ! -f "${PROJECT_ROOT}/.env" ]; then
   if [ -f "${ENV_EXAMPLE}" ]; then
