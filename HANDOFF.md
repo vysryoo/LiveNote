@@ -34,7 +34,7 @@
 
 ### 3-1. 설치된 도구
 
-모두 Homebrew로 설치했고 keg-only라 PATH에 자동 등록되지 않는다.
+모두 Homebrew로 설치했다. Node.js, Java, PostgreSQL, Python은 keg-only라 PATH에 자동 등록되지 않는다. RabbitMQ 관리 명령(`rabbitmqctl`, `rabbitmq-plugins`)은 `/opt/homebrew/sbin`에 있다.
 
 | 도구 | Homebrew 패키지 | 용도 |
 | --- | --- | --- |
@@ -42,6 +42,10 @@
 | Java 17 | `openjdk@17` | 백엔드 |
 | PostgreSQL 17 | `postgresql@17` (`brew services`로 상시 실행) | 백엔드 DB |
 | Python 3.11 | `python@3.11` | AI 서버 |
+| Redis 8 | `redis` (`brew services`로 상시 실행) | 백엔드 공유 상태 (적용 예정) |
+| RabbitMQ 4 | `rabbitmq` (`brew services`로 상시 실행, `rabbitmq_stomp` 플러그인) | STOMP 메시지 중계 (적용 예정) |
+
+RabbitMQ는 앱 전용 계정·vhost(`livenote`)를 만들었고, STOMP·관리 화면 포트를 `127.0.0.1`에만 열도록 `/opt/homebrew/etc/rabbitmq/rabbitmq.conf`를 설정했다. 설치 절차는 `backend/README.md` 참조.
 
 ```bash
 export PATH="/opt/homebrew/opt/node@22/bin:/opt/homebrew/opt/openjdk@17/bin:/opt/homebrew/opt/postgresql@17/bin:$PATH"
@@ -55,7 +59,7 @@ npm 10은 `vitest` 등 선택적 peer 의존성이 많은 패키지 설치 시 `
 
 | 파일 | 내용 |
 | --- | --- |
-| `backend/src/main/resources/env.properties` | PostgreSQL 접속 정보(앱 전용 계정 `livenote`, DB `livenote`), OpenAI 키, JWT 비밀값(Base64, 32바이트 이상), AI 서버 주소 |
+| `backend/src/main/resources/env.properties` | PostgreSQL 접속 정보(앱 전용 계정 `livenote`, DB `livenote`), OpenAI 키, JWT 비밀값(Base64, 32바이트 이상), AI 서버 주소, RabbitMQ 계정(`RABBITMQ_*`), Redis 주소(`REDIS_*`) |
 | `ai/.env` | OpenAI 키. YouTube·Google 키는 미확보라 `not-configured` 임시값 (6-3 참조) |
 | `frontend/.env` | 불필요. 개발 서버가 `/api`를 8080으로 프록시하고 실시간 연결은 `ws://localhost:8080` 기본값 사용 |
 

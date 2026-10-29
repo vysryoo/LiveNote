@@ -29,6 +29,31 @@ psql -d postgres -c "CREATE DATABASE livenote OWNER livenote;"
 > [!IMPORTANT]
 > 스키마 변경은 `db/migration`에 `V{번호}__{설명}.sql` 파일을 추가하는 방식으로만 합니다. `ddl-auto`가 `validate`라서 엔티티와 테이블이 다르면 앱이 시작되지 않습니다.
 
+### Redis·RabbitMQ 준비
+
+RabbitMQ는 STOMP 플러그인(`rabbitmq_stomp`, 포트 61613)을 켜서 사용합니다. 기본 `guest` 계정 대신 앱 전용 계정과 vhost를 만듭니다.
+
+```bash
+brew install redis rabbitmq
+rabbitmq-plugins enable --offline rabbitmq_stomp
+brew services start redis
+brew services start rabbitmq
+
+rabbitmqctl add_vhost livenote
+rabbitmqctl add_user livenote '비밀번호'
+rabbitmqctl set_permissions -p livenote livenote ".*" ".*" ".*"
+```
+
+Homebrew 설치 기본값은 STOMP(61613)와 관리 화면(15672) 포트를 모든 네트워크 주소에 엽니다. 로컬에서만 쓰려면 `/opt/homebrew/etc/rabbitmq/rabbitmq.conf`에 다음을 넣고 `brew services restart rabbitmq`로 재시작합니다.
+
+```
+stomp.listeners.tcp.1 = 127.0.0.1:61613
+management.tcp.ip = 127.0.0.1
+```
+
+> [!NOTE]
+> RabbitMQ STOMP는 `/topic/` 뒤의 주소에 `/`를 허용하지 않습니다. `/topic/lectures/4/summary`는 `Invalid destination` 오류로 거부되고 `/topic/lectures.4.summary`처럼 `.`으로 구분해야 합니다.
+
 ### Gradle 빌드 및 실행
 
 ```bash
