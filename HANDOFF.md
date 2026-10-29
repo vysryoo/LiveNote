@@ -185,13 +185,11 @@ headless Chrome에 오디오 파일을 가짜 마이크로 넣어 녹음부터 �
 | 강의 목록이 최근 20개만 반환됨. 화면의 "지금까지 N개" 숫자도 20에서 멈춤 | `LectureController.list()`의 `PageRequest.of(0, 20)` |
 | 강의 종료 API가 요청 본문(제목)을 읽지 않음. 프론트엔드가 제목 변경 API를 먼저 호출해 우회 중 | `LectureController.endLecture()` |
 | 발화 시간을 실제보다 길게 계산함 (여유 2초, 배율 1.2). 화면 경과 시간이 실제보다 빠름 | `app.transcription.padding-seconds`, `speed-multiplier` |
-| 첫 섹션 부분 요약 콜백이 500으로 응답함. 이어서 요청하는 자료 추천이 400으로 실패하고, 그 예외가 콜백 응답까지 전파됨 | `SummaryCallbackService`의 PARTIAL 분기. 원인은 8-2의 컬렉션 없음 |
 
 ### 8-2. AI 서버
 
 | 문제 | 근거 |
 | --- | --- |
-| PDF 없이 만든 강의의 첫 섹션에 QnA·자료 추천이 생성되지 않음 | 확인됨. RAG 검색이 `Collection lecture_N does not exist`로 실패해 400. 컬렉션은 첫 FINAL 요약을 업서트할 때 생김 |
 | 위키 추천이 동음이의어 문서(예: "Stack may refer to:")를 고르는 경우가 있음 | 위키 검증이 꺼져 있어 `reason`이 `Heuristic`. 동음이의어 문서를 거르는 처리는 확인하지 않음 |
 | 논문(OpenAlex) 추천의 성공·실패 로그가 남지 않은 사례가 있음 | 확인 시점에 처리 중이었는지 멈췄는지 미확인 |
 
