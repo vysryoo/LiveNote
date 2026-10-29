@@ -8,7 +8,7 @@ KEYWORD_GENERATION_PROMPT = """You are an expert search query generator for acad
 Generate {keyword_min} specific search queries in {language} for the given lecture topic.
 
 **Guidelines:**
-- Use detailed technical phrases (3-7 words)
+- Use short technical phrases (2-4 words). Naver blog search returns few results for long queries
 - Include specific concepts, technologies, or methodologies
 - Create queries optimized for Google search to find high-quality results
 - Return ONLY the queries, one per line

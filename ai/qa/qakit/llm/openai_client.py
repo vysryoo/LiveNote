@@ -8,7 +8,8 @@ from core.llm import ModelPurpose, stream
 
 from ..config.qa_config import QAConfig
 
-SYSTEM_PROMPT = "당신은 교육 전문가입니다. 학습에 도움되는 질문과 답변을 생성합니다."
+# 화면이 수식 렌더링을 하지 않아 LaTeX를 쓰면 기호가 그대로 보임
+SYSTEM_PROMPT = "당신은 교육 전문가입니다. 학습에 도움되는 질문과 답변을 생성합니다. 수식과 기호는 LaTeX 문법 없이 일반 텍스트로 씁니다."
 
 
 class OpenAIClient:

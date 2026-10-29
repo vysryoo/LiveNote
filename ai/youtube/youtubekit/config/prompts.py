@@ -24,6 +24,7 @@ Return JSON:
 }}
 
 Focus on lecture_summary. Keep queries concise with key technical terms.
+Each query must be 2-5 words, like what a student types into YouTube search. Do not list every concept from the summary.
 """.strip()
 
 
