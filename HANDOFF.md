@@ -102,9 +102,9 @@ AI 서버 가상환경은 `PYTHON_BIN=/opt/homebrew/opt/python@3.11/bin/python3.
 
 | 구간 | 방식 | 인증 |
 | --- | --- | --- |
-| 브라우저 → 백엔드 REST | HTTP `/api/**` | `Authorization: Bearer {JWT}`. 다른 사용자의 강의는 404 |
-| 브라우저 → 백엔드 녹음 | WebSocket `/ws/transcription?sessionId={강의}&token={JWT}` (PCM16 24kHz) | 브라우저 WebSocket은 헤더를 붙일 수 없어 쿼리로 토큰 전달. 강의 소유자 확인 |
-| 백엔드 → 브라우저 실시간 | STOMP `/ws`, 토픽 `/topic/lectures.{강의}.{이름}` (transcripts, summary, section, qna, resources, stream, error) | CONNECT 프레임의 `Authorization` 헤더. 본인 강의 토픽만 구독 가능. 클라이언트 SEND 거부 |
+| 브라우저 → 백엔드 REST | HTTP `/api/**` | `Authorization: Bearer {접근 토큰}`(30분). 다른 사용자의 강의는 404. 401을 받으면 프론트엔드가 `POST /api/auth/refresh`(갱신 토큰 `HttpOnly` 쿠키, 14일, Redis 저장, 사용 시 교체)로 새 토큰을 받아 한 번 재요청 |
+| 브라우저 → 백엔드 녹음 | WebSocket `/ws/transcription?sessionId={강의}&token={JWT}` (PCM16 24kHz) | 브라우저 WebSocket은 헤더를 붙일 수 없어 쿼리로 토큰 전달. 연결할 때만 확인하므로 프론트엔드가 만료 1분 전이면 먼저 갱신. 강의 소유자 확인 |
+| 백엔드 → 브라우저 실시간 | STOMP `/ws`, 토픽 `/topic/lectures.{강의}.{이름}` (transcripts, summary, section, qna, resources, stream, error) | CONNECT 프레임의 `Authorization` 헤더. 연결·재연결 직전에 만료가 임박했으면 먼저 갱신. 본인 강의 토픽만 구독 가능. 클라이언트 SEND 거부 |
 | 백엔드 내부 STOMP 중계 | RabbitMQ STOMP(61613)로 relay | 앱 전용 계정. 확인을 마친 JWT는 RabbitMQ로 넘기기 전 제거 |
 | 백엔드 → AI 서버 요청 | HTTP | `X-Internal-Api-Key` |
 | AI 서버 → 백엔드 (요약·자료 추천) | 콜백 `POST /api/ai/callback?type=summary\|resources` | `X-Internal-Api-Key`. 틀리면 401 |
@@ -182,12 +182,10 @@ headless Chrome에 오디오 파일을 가짜 마이크로 넣어 녹음부터 �
 
 | 문제 | 근거 |
 | --- | --- |
-| 로그인 토큰이 1시간 뒤 만료되고 갱신 수단이 없음. 1시간이 넘는 녹음 중 요청이 거부될 수 있음 | `application.yml`의 `app.jwt.expiration: 3600000` |
 | 강의 목록이 최근 20개만 반환됨. 화면의 "지금까지 N개" 숫자도 20에서 멈춤 | `LectureController.list()`의 `PageRequest.of(0, 20)` |
 | 강의 종료 API가 요청 본문(제목)을 읽지 않음. 프론트엔드가 제목 변경 API를 먼저 호출해 우회 중 | `LectureController.endLecture()` |
 | 발화 시간을 실제보다 길게 계산함 (여유 2초, 배율 1.2). 화면 경과 시간이 실제보다 빠름 | `app.transcription.padding-seconds`, `speed-multiplier` |
 | 첫 섹션 부분 요약 콜백이 500으로 응답함. 이어서 요청하는 자료 추천이 400으로 실패하고, 그 예외가 콜백 응답까지 전파됨 | `SummaryCallbackService`의 PARTIAL 분기. 원인은 8-2의 컬렉션 없음 |
-| 녹음을 멈춘 직후 도착한 전사를 닫힌 WebSocket으로 보내려다 경고가 반복됨 | `RealtimeTranscriptionWebSocketHandler.sendTranscript`의 `send transcript failed` 로그 |
 
 ### 8-2. AI 서버
 
