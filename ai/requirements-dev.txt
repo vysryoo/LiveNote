@@ -6,3 +6,5 @@ pytest==9.1.1
 reportlab==4.2.0
 # youtube/test_api_components.py
 aiohttp==3.14.3
+# eval/prepare_data.py (강의 자료 Markdown → PDF)
+markdown==3.11.2

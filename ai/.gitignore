@@ -50,6 +50,9 @@ chroma_data/
 # Storage (VectorDB, uploads)
 server_storage/
 
+# 평가 데이터 (강의 자료·녹음)
+eval/data/
+
 # Logs
 *.log
 
