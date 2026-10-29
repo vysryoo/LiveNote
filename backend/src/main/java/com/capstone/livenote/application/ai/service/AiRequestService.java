@@ -193,8 +193,9 @@ public class AiRequestService {
 
         List<String> types = null;
         if (limit != null && limit == 2) {
-            // 15초(Partial)일 때 요청할 2가지 타입 (예: 위키, 비디오)
-            types = List.of("WIKI", "VIDEO");
+            // 15초(Partial)일 때 자동으로 요청할 2가지 타입. 영상은 YouTube 할당량(하루 약 99회)이 작아
+            // 사용자가 분할 화면을 열 때의 추가 카드 요청에서만 받음
+            types = List.of("WIKI", "BLOG");
         }
         // limit가 null이면 types도 null -> AI가 알아서 전체(4개) 수행
 

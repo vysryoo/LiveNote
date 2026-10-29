@@ -107,4 +107,16 @@ class AiRequestServiceTest {
         assertThat(payload.getPreviousQa()).hasSize(2);
         assertThat(payload.getSectionSummary()).isEqualTo("current summary");
     }
+
+    @Test
+    void requestResourcesWithSummary_partialRequestsWikiAndBlogOnly() {
+        AiHistoryProperties props = new AiHistoryProperties();
+        AiRequestService service = new AiRequestService(
+                ragClient, summaryService, resourceService, qnaService, lectureService, props, streamGateway, qnaStreamService
+        );
+
+        service.requestResourcesWithSummary(7L, null, 0, "스택과 큐의 차이를 설명한다.", 2);
+
+        verify(ragClient).requestResourceRecommendation(any(AiRequestPayloads.ResourceRecommendPayload.class), eq(List.of("WIKI", "BLOG")));
+    }
 }
