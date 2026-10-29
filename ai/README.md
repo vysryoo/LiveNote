@@ -67,8 +67,8 @@ FastAPI (server/)
 | `server/` | FastAPI 서버 구성 |
 | `tests/` | 단위/통합 테스트 |
 | `setup.sh` | 환경 구축 자동 스크립트 |
-| `requirements.txt` | 런타임 의존성 목록 (버전 고정) |
-| `requirements-dev.txt` | 테스트·검증 스크립트용 의존성 (`requirements.txt` 포함) |
+| `pyproject.toml` | 의존성 목록 (런타임, `dev` 그룹: 테스트·평가) |
+| `uv.lock` | 간접 의존성까지 고정한 잠금 파일 |
 | `.env.example` / `.env` | 환경 변수 템플릿 및 실제 설정 |
 
 ---
@@ -76,29 +76,36 @@ FastAPI (server/)
 ## 4. 환경 구축
 
 ### 4.1 사전 준비물
-- Python 3.11
-- OpenAI API Key, YouTube API Key, Google API Key
+- [uv](https://docs.astral.sh/uv/) (`brew install uv`). Python 3.11이 없으면 uv가 내려받음
+- OpenAI API Key, YouTube API Key, Naver 검색 API Key
 
-### 4.2 자동 설치
+### 4.2 설치
 ```bash
 ./setup.sh
 ```
 
-### 4.3 수동 설치
+`setup.sh`는 `uv sync`로 `.venv`를 `uv.lock`과 같은 상태로 맞추고, `.env`가 없으면 `.env.example`을 복사한다.
+수동으로 할 때는 다음과 같다.
+
 ```bash
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements-dev.txt
-cp .env.example .env  # 내용 수정 필요
+uv sync
+cp .env.example .env  # 키 값 채우기
 ```
+
+### 4.3 의존성 변경
+```bash
+uv add <패키지>==<버전>           # 런타임 의존성
+uv add --group dev <패키지>==<버전> # 테스트·평가용
+```
+
+`pyproject.toml`과 `uv.lock`이 함께 바뀌므로 둘 다 커밋한다.
 
 ### 4.4 서버 실행
 
 > [!IMPORTANT]
 > **서버 실행 명령어:**
 > ```bash
-> source .venv/bin/activate
-> uvicorn server.main:app --reload --port 8003
+> uv run uvicorn server.main:app --reload --port 8003
 > ```
 > 기본 포트는 **8003**입니다. <- 백엔드와의 정합성을 위해서 8003 포트를 추천. 
 
@@ -459,7 +466,7 @@ POST /summary/generate
 외부 API를 호출하지 않는 단위·통합 테스트는 `tests/`에 있다.
 
 ```bash
-pytest
+uv run pytest
 ```
 
 실제 API를 쓰는 정확도·응답 시간 측정은 `eval/`의 스크립트로 한다.

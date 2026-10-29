@@ -88,7 +88,7 @@ PostgreSQL, Redis, RabbitMQ가 `brew services`로 실행 중이어야 한다. Re
 
 ```bash
 # AI 서버 (:8003)
-cd ai && source .venv/bin/activate && uvicorn server.main:app --port 8003
+cd ai && uv run uvicorn server.main:app --port 8003
 
 # 백엔드 (:8080) — 시작 시 Flyway가 마이그레이션 적용
 cd backend && ./gradlew bootRun
@@ -97,7 +97,7 @@ cd backend && ./gradlew bootRun
 cd frontend && npm run dev
 ```
 
-AI 서버 가상환경은 `PYTHON_BIN=/opt/homebrew/opt/python@3.11/bin/python3.11 ./setup.sh`로 만들었다.
+AI 서버 가상환경은 `ai/setup.sh`(`uv sync`)로 만든다. 의존성은 `ai/pyproject.toml`과 `ai/uv.lock`으로 관리한다.
 
 ---
 
