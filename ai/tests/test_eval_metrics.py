@@ -7,6 +7,7 @@ from eval.dataset import Section, draw_sample
 from eval.judge import JudgeItem, build_user_prompt, cache_key, parse_judgment
 from eval.report import precision_at_k, summarize
 from eval.run_cards import eval_lecture_number, parse_sse, resource_content
+from eval.run_latency import item_timings, percentile
 from eval.run_retrieval import collection_name
 
 
@@ -105,3 +106,23 @@ def test_resource_content_excludes_service_reason():
     content = resource_content({"type": "WIKI", "title": "큐", "description": "설명", "url": "u", "reason": "추천 이유"})
 
     assert "큐" in content and "추천 이유" not in content
+
+
+def test_item_timings_takes_first_arrival_per_item():
+    events = [
+        (10.0, "start", {"item": 0}),
+        (100.0, "question", {"item": 0, "text": "Q"}),
+        (150.0, "answer", {"item": 0, "text": "a"}),
+        (160.0, "answer", {"item": 0, "text": "b"}),
+        (120.0, "question", {"item": 1, "text": "Q2"}),
+        (400.0, "done", {"item": 0}),
+        (500.0, "done", {"item": 1}),
+    ]
+
+    timings = item_timings(events)
+
+    assert timings["질문 표시"] == [100.0, 120.0]
+    assert timings["첫 답변 조각"] == [150.0]
+    assert timings["항목 완료"] == [400.0, 500.0]
+    assert timings["전체 완료"] == [500.0]
+    assert percentile([1, 2, 3, 4], 0.5) == 2.5
