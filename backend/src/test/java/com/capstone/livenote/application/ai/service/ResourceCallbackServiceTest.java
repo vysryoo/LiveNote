@@ -5,17 +5,24 @@ import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.resource.entity.Resource;
 import com.capstone.livenote.domain.resource.repository.ResourceRepository;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.capstone.livenote.global.redis.RedisLock;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,6 +30,20 @@ class ResourceCallbackServiceTest {
 
     @Mock ResourceRepository resourceRepository;
     @Mock StreamGateway streamGateway;
+    @Mock RedisLock redisLock;
+    @Mock TransactionTemplate transactionTemplate;
+
+    @BeforeEach
+    void runLockAndTransactionInline() {
+        doAnswer(inv -> {
+            inv.<Runnable>getArgument(1).run();
+            return null;
+        }).when(redisLock).run(anyString(), any());
+        doAnswer(inv -> {
+            inv.<Consumer<TransactionStatus>>getArgument(0).accept(null);
+            return null;
+        }).when(transactionTemplate).executeWithoutResult(any());
+    }
 
     @Test
     void saveResourceWithReasonAndDetail() {
@@ -53,7 +74,8 @@ class ResourceCallbackServiceTest {
         dto.setResources(List.of(item));
 
         // when
-        var service = new ResourceCallbackService(resourceRepository, streamGateway, new com.fasterxml.jackson.databind.ObjectMapper());
+        var service = new ResourceCallbackService(resourceRepository, streamGateway, new com.fasterxml.jackson.databind.ObjectMapper(),
+                redisLock, transactionTemplate);
         service.handleResourceCallback(dto);
 
         // then
