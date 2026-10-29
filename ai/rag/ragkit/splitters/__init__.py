@@ -41,13 +41,13 @@ class Chunk:
 class ChunkSettings:
     """분할 방식과 방식별 기준값."""
 
-    strategy: str = "page"
+    strategy: str = "semantic"
     chunk_tokens: int = 300
     chunk_overlap_tokens: int = 50
     semantic_percentile: float = 95.0
     semantic_overlap_sentences: int = 1
     semantic_min_tokens: int = 40
-    semantic_max_tokens: int = 400
+    semantic_max_tokens: int = 200
 
     @classmethod
     def from_env(cls) -> "ChunkSettings":
