@@ -28,10 +28,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -154,7 +156,8 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         SessionContext ctx = contexts.remove(session.getId());
         if (ctx != null) {
-            ctx.close();
+            // 녹음을 멈춘 순간 말하던 문장과 전사 중인 문장을 잃지 않도록, 남은 결과를 받은 뒤 OpenAI 연결을 닫음
+            ctx.finishAfterClientClosed();
         }
         log.info("[RealtimeWS] closed sessionId={} code={}", session.getId(), status);
     }
@@ -194,7 +197,10 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
                             )
                     )
             );
-            ctx.clientSession.sendMessage(new TextMessage(json));
+            // 녹음을 멈춘 뒤 도착한 결과는 브라우저 연결이 닫혀 있으므로 전송 없이 저장만 함
+            if (ctx.clientSession.isOpen()) {
+                ctx.clientSession.sendMessage(new TextMessage(json));
+            }
             
             // 2. isFinal==true일 때 TranscriptService를 통해 저장 (요약 생성 트리거)
             if (isFinal && content != null && !content.trim().isEmpty()) {
@@ -318,7 +324,13 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
             if (type.equalsIgnoreCase("error") || root.has("error")) {
                 String errMsg = root.path("error").path("message").asText(type.isEmpty() ? "openai error" : type);
                 log.error("[RealtimeWS] OpenAI error: {} lectureId={}", errMsg, ctx.lectureId);
-                sendError(ctx.clientSession, errMsg);
+                if (ctx.clientSession.isOpen()) {
+                    sendError(ctx.clientSession, errMsg);
+                } else {
+                    // 녹음 종료 후 보낸 commit이 실패하면(버퍼가 비어 있는 등) 더 기다릴 결과가 없음
+                    ctx.speechActive = false;
+                    ctx.closeIfDrained();
+                }
                 return;
             }
             
@@ -327,6 +339,19 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
                 log.info("[RealtimeWS] Speech started lectureId={}", ctx.lectureId);
                 ctx.transcriptBuffer.setLength(0); // 버퍼 초기화
                 ctx.speechStartMillis = System.currentTimeMillis();
+                ctx.speechActive = true;
+                return;
+            }
+
+            if (type.equals("input_audio_buffer.speech_stopped")) {
+                ctx.speechActive = false;
+                return;
+            }
+
+            // 말한 구간이 확정되어 전사가 시작됨. completed 또는 failed가 올 때까지 대기 목록에 둠
+            if (type.equals("input_audio_buffer.committed")) {
+                ctx.speechActive = false;
+                ctx.pendingItems.add(root.path("item_id").asText(""));
                 return;
             }
             
@@ -338,6 +363,8 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
                     sendTranscript(ctx, transcript, true);
                     ctx.transcriptBuffer.setLength(0);
                 }
+                ctx.pendingItems.remove(root.path("item_id").asText(""));
+                ctx.closeIfDrained();
                 return;
             }
             
@@ -345,6 +372,8 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
             if (type.equals("conversation.item.input_audio_transcription.failed")) {
                 JsonNode error = root.path("error");
                 log.warn("[RealtimeWS] Transcription failed: {} lectureId={}", error, ctx.lectureId);
+                ctx.pendingItems.remove(root.path("item_id").asText(""));
+                ctx.closeIfDrained();
                 return;
             }
 
@@ -390,6 +419,9 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
     }
 
     private static class SessionContext {
+        // 녹음 종료 후 남은 전사 결과를 기다리는 최대 시간
+        private static final long DRAIN_TIMEOUT_SECONDS = 10;
+
         private final WebSocketSession clientSession;
         private final Long lectureId;
         private final String language;
@@ -401,6 +433,10 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
         private final int baseSeconds; // 재개 시 기준 시간(초)
         private int lastTranscriptEndSec;
         private long speechStartMillis = -1;
+        private volatile boolean speechActive;
+        private final Set<String> pendingItems = ConcurrentHashMap.newKeySet();
+        private final AtomicBoolean clientClosed = new AtomicBoolean(false);
+        private final AtomicBoolean openAiClosed = new AtomicBoolean(false);
         private int spokenSeconds; // 말한 시간 누적
         private final double paddingSeconds;
         private final double speedMultiplier;
@@ -428,6 +464,10 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
         void setOpenAiWebSocket(WebSocket ws) {
             this.openAiWebSocket = ws;
             openAiReady.set(true);
+            // OpenAI에 연결되기 전에 녹음이 끝났으면 열린 연결이 남지 않도록 바로 닫음
+            if (openAiClosed.get()) {
+                try { ws.sendClose(WebSocket.NORMAL_CLOSURE, "client closed"); } catch (Exception ignored) {}
+            }
         }
 
         void enqueueAudio(byte[] bytes) {
@@ -464,9 +504,33 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
         }
 
         void close() {
+            if (!openAiClosed.compareAndSet(false, true)) return;
             if (openAiWebSocket != null) {
                 try { openAiWebSocket.sendClose(WebSocket.NORMAL_CLOSURE, "client closed"); } catch (Exception ignored) {}
             }
+        }
+
+        void finishAfterClientClosed() {
+            clientClosed.set(true);
+            if (speechActive && openAiWebSocket != null) {
+                // 말하던 중이면 지금까지의 음성으로 전사를 확정하도록 요청
+                try { sendToOpenAi("{\"type\":\"input_audio_buffer.commit\"}"); } catch (Exception e) { speechActive = false; }
+            }
+            if (isDrained()) {
+                close();
+                return;
+            }
+            CompletableFuture.delayedExecutor(DRAIN_TIMEOUT_SECONDS, TimeUnit.SECONDS).execute(this::close);
+        }
+
+        void closeIfDrained() {
+            if (clientClosed.get() && isDrained()) {
+                close();
+            }
+        }
+
+        private boolean isDrained() {
+            return !speechActive && pendingItems.isEmpty();
         }
 
         int endActiveSegment() {
