@@ -155,10 +155,9 @@ backend/
 ├── src/main/java/com/capstone/livenote/
 │   ├── LivenoteApplication.java    # 메인 엔트리 포인트
 │   ├── application/                 # 애플리케이션 계층
-│   │   ├── ai/                      # AI 서버 연동 (콜백, 요청)
-│   │   ├── audio/                   # 오디오 처리
-│   │   ├── openai/                  # OpenAI STT 연동
-│   │   └── ws/                      # WebSocket 핸들러
+│   │   ├── ai/                      # AI 서버 연동 (요청, 콜백, QnA SSE 중계, 섹션 집계)
+│   │   ├── test/                    # 개발용 API (dev 프로필 전용)
+│   │   └── ws/                      # 녹음 WebSocket, STOMP 전송
 │   ├── domain/                      # 도메인 계층
 │   │   ├── lecture/                 # 강의 엔티티/레포지토리
 │   │   ├── transcript/              # 전사 관리
@@ -167,7 +166,7 @@ backend/
 │   │   ├── resource/                # 추천 자료 관리
 │   │   ├── bookmark/                # 북마크 관리
 │   │   └── user/                    # 사용자/인증
-│   └── global/                      # 전역 설정/예외처리
+│   └── global/                      # 전역 설정, 예외 처리, 보안(JWT·STOMP 인증·내부 키), Redis 잠금
 ├── src/main/resources/
 │   ├── application.yml              # 애플리케이션 설정
 │   ├── db/migration/                # Flyway 스키마 마이그레이션
@@ -183,17 +182,19 @@ backend/
 ### 인증 및 사용자 관리
 
 - **JWT 기반 인증**: 로그인 시 접근 토큰(JWT, 30분)과 갱신 토큰(14일)을 발급. 갱신 토큰은 `HttpOnly` 쿠키(`livenote_refresh`, 경로 `/api/auth`)로만 주고받고 Redis에 해시로 저장. 갱신할 때마다 새 갱신 토큰으로 교체
-- **사용자 관리**: 회원가입, 로그인, 프로필 조회
+- **사용자 관리**: 회원가입, 로그인, 내 정보 조회, UI 언어·비밀번호 변경
+- **소유자 확인**: 강의와 강의에 속한 데이터는 본인 강의만 조회·변경 가능. 다른 사용자의 강의는 404
 
 ### 강의 관리
 
-- **강의 CRUD**: 사용자별 강의 목록 생성/조회/삭제
-- **강의 상세**: 강의에 속한 전사, 요약, QA, 추천 자료 조회
+- **강의 CRUD**: 사용자별 강의 생성(PDF 첨부 가능)·목록·제목 변경·종료·삭제
+- **강의 상세**: 강의에 속한 전사, 요약, QnA, 추천 자료, 북마크를 한 번에 조회 (`/detail`). 화면은 이 API만 사용
 
 ### 실시간 전사 (WebSocket)
 
-- **오디오 스트리밍**: WebSocket으로 실시간 오디오 청크 수신 (PCM16)
-- **OpenAI Whisper STT**: 오디오를 텍스트로 변환
+- **오디오 스트리밍**: WebSocket으로 실시간 오디오 수신 (PCM16, 24kHz)
+- **OpenAI Realtime 전사**: 받은 음성을 OpenAI Realtime API(`gpt-4o-transcribe`)로 중계해 전사. 전사 시각은 OpenAI가 알려 주는 녹음 음성 안의 위치로 계산
+- **녹음 종료 처리**: 녹음을 멈춘 순간 말하던 문장도 전사가 끝날 때까지(최대 10초) 기다려 저장
 - **전사 저장**: 섹션별 전사 내용 DB 저장
 - **실시간 전송**: STOMP를 통해 프론트엔드로 전사 결과 푸시. 메시지는 RabbitMQ가 중계해 백엔드 인스턴스가 여러 개여도 모든 구독자에게 전달됨
 
@@ -227,89 +228,79 @@ backend/
 
 ## API 엔드포인트
 
+`/api/auth/**`와 AI 콜백을 제외한 모든 API는 `Authorization: Bearer {접근 토큰}`이 필요합니다.
+
 ### 인증
 
 | 경로 | 메서드 | 설명 |
 |------|--------|------|
-| `/api/auth/register` | POST | 회원가입 `{loginId, password}` |
+| `/api/auth/signup` | POST | 회원가입 `{loginId, password, email, name}` → `{ok, data:{token, user}}` + 갱신 토큰 쿠키 |
 | `/api/auth/login` | POST | 로그인 `{loginId, password}` → `{ok, data:{token, user}}` + 갱신 토큰 쿠키 |
 | `/api/auth/refresh` | POST | 갱신 토큰 쿠키로 새 접근 토큰 발급 → `{ok, data:{token}}` + 새 갱신 토큰 쿠키. 쿠키가 없거나 만료·폐기됐으면 401 |
 | `/api/auth/logout` | POST | 갱신 토큰 폐기와 쿠키 삭제 |
+
+### 사용자
+
+| 경로 | 메서드 | 설명 |
+|------|--------|------|
+| `/api/users/me` | GET | 내 정보 조회 |
+| `/api/users/me/language` | PATCH | UI 언어 변경 `{language}` |
+| `/api/users/me/password` | PATCH | 비밀번호 변경 `{currentPassword, newPassword}` |
 
 ### 강의
 
 | 경로 | 메서드 | 설명 |
 |------|--------|------|
 | `/api/lectures` | GET | 강의 목록 최신순 조회 `?page=0&size=20` (size 최대 100) → `{items, total, hasNext}` |
-| `/api/lectures` | POST | 강의 생성 `{title, subject, sttLanguage}` |
-| `/api/lectures/{id}` | GET | 강의 상세 조회 |
-| `/api/lectures/{id}` | DELETE | 강의 삭제 |
+| `/api/lectures` | POST | 강의 생성. JSON `{title, subject, sttLanguage}` 또는 multipart(`title`, `subject`, `sttLanguage`, `files`: PDF) |
+| `/api/lectures/{id}` | GET | 강의 조회 |
+| `/api/lectures/{id}/detail` | GET | 강의 상세 (전사, 요약, QnA, 자료, 북마크) |
+| `/api/lectures/{id}/title` | PATCH | 제목 변경 `{title}` |
+| `/api/lectures/{id}/pdf` | POST | 강의 자료 PDF 업로드 (multipart `file`, RAG 업서트) |
 | `/api/lectures/{id}/end` | POST | 강의 종료 `{title}` (선택. 비어 있으면 기존 제목 유지) |
-
-### 전사
-
-| 경로 | 메서드 | 설명 |
-|------|--------|------|
-| `/api/transcripts` | GET | 전사 목록 조회 `?lectureId` |
-| `/api/transcripts/{id}` | GET | 전사 상세 조회 |
-
-### 요약
-
-| 경로 | 메서드 | 설명 |
-|------|--------|------|
-| `/api/summaries` | GET | 요약 목록 조회 `?lectureId` |
-| `/api/summaries/{id}` | GET | 요약 상세 조회 |
-
-### QnA
-
-| 경로 | 메서드 | 설명 |
-|------|--------|------|
-| `/api/qna` | GET | QA 목록 조회 `?lectureId` |
-| `/api/qna/{id}` | GET | QA 상세 조회 |
-
-### 추천 자료
-
-| 경로 | 메서드 | 설명 |
-|------|--------|------|
-| `/api/resources` | GET | 자료 목록 조회 `?lectureId` |
-| `/api/resources/{id}` | GET | 자료 상세 조회 |
+| `/api/lectures/{id}` | DELETE | 강의 삭제 |
 
 ### 북마크
 
 | 경로 | 메서드 | 설명 |
 |------|--------|------|
-| `/api/bookmarks` | GET | 북마크 목록 조회 |
-| `/api/bookmarks` | POST | 북마크 추가 `{resourceId}` |
+| `/api/bookmarks` | GET | 북마크 목록 `?lectureId&sectionIndex` (sectionIndex 선택) |
+| `/api/bookmarks` | POST | 북마크 추가 `{lectureId, sectionIndex, targetType, targetId}` (targetType: `resource` 또는 `qna`) |
 | `/api/bookmarks/{id}` | DELETE | 북마크 삭제 |
 
-### AI 트리거 (수동 생성)
+### AI 생성 요청
 
 | 경로 | 메서드 | 설명 |
 |------|--------|------|
-| `/api/ai/generate-summary` | POST | 요약 수동 생성 `?lectureId&sectionIndex` |
+| `/api/ai/generate-summary` | POST | 요약 수동 생성 `?lectureId&sectionIndex&phase` (phase 기본 FINAL) |
 | `/api/ai/generate-resources` | POST | 자료 추천 수동 생성 `?lectureId&sectionIndex` |
-| `/api/ai/generate-qna` | POST | QA 수동 생성 `?lectureId&sectionIndex` |
+| `/api/ai/generate-qna` | POST | QnA 수동 생성 `?lectureId&sectionIndex` |
+| `/api/start-qna-stream` | POST | 분할 화면 추가 카드: QnA 한 유형 생성 `?lectureId&sectionIndex&cardIndex&qnaType` |
+| `/api/start-resources-stream` | POST | 분할 화면 추가 카드: 자료 한 유형 추천 `?lectureId&sectionIndex&cardIndex&resourceType` |
+| `/api/cards-status` | GET | 섹션의 카드 생성 상태 `?lectureId&sectionIndex` |
 
 ### AI 콜백
 
-| 경로 | 메서드 | 설명 |
-|------|--------|------|
-| `/api/ai/callback?type=summary` | POST | AI 서버 요약 콜백 수신 |
-| `/api/ai/callback?type=resources` | POST | AI 서버 자료 콜백 수신 |
-
-### 카드 스트리밍
+AI 서버 전용입니다. 로그인 토큰 대신 `X-Internal-Api-Key` 헤더로 확인합니다.
 
 | 경로 | 메서드 | 설명 |
 |------|--------|------|
-| `/api/start-qna-stream` | POST | QnA 카드 스트리밍 시작 |
-| `/api/start-resources-stream` | POST | 자료 카드 스트리밍 시작 |
-| `/api/cards-status` | GET | 카드 상태 조회 `?lectureId&sectionIndex` |
+| `/api/ai/callback?type=summary` | POST | 요약 결과 수신 |
+| `/api/ai/callback?type=resources` | POST | 자료 추천 결과 수신 |
+
+### 개발용 (`dev` 프로필에서만 등록)
+
+| 경로 | 메서드 | 설명 |
+|------|--------|------|
+| `/api/dev/ws/lectures/{id}/transcript` | POST | STOMP 전사 메시지 시험 전송 |
+| `/api/dev/ws/lectures/{id}/summary` | POST | STOMP 요약 메시지 시험 전송 |
+| `/test/{id}/simulate` | POST | 30초 분량 전사 저장 시뮬레이션 |
 
 ### WebSocket/STOMP
 
 | 경로 | 프로토콜 | 설명 |
 |------|----------|------|
-| `/ws/transcription?sessionId={lectureId}` | WebSocket | 실시간 STT (Binary PCM16 ↔ JSON transcript) |
+| `/ws/transcription?sessionId={lectureId}&token={접근 토큰}` | WebSocket | 실시간 녹음 전사 (Binary PCM16 ↔ JSON transcript). 브라우저 WebSocket은 헤더를 붙일 수 없어 토큰을 쿼리로 전달 |
 | `/ws` | STOMP | 브로커 연결. CONNECT 헤더에 `Authorization: Bearer {토큰}` 필요. 구독은 본인 강의 토픽만 허용, 클라이언트 SEND는 거부 |
 | `/topic/lectures.{id}.transcripts` | STOMP 구독 | 전사 이벤트 수신 |
 | `/topic/lectures.{id}.summary` | STOMP 구독 | 요약 이벤트 수신 |
@@ -317,7 +308,7 @@ backend/
 | `/topic/lectures.{id}.qna` | STOMP 구독 | QA 이벤트 수신 |
 | `/topic/lectures.{id}.section` | STOMP 구독 | 섹션 전환 이벤트 수신 |
 | `/topic/lectures.{id}.error` | STOMP 구독 | 오류 이벤트 수신 |
-| `/topic/lectures.{id}.stream` | STOMP 구독 | 카드 스트리밍 토큰 수신 |
+| `/topic/lectures.{id}.stream` | STOMP 구독 | 생성 중 카드 수신 (QnA는 질문과 답변 조각, 완료 시 완성본) |
 
 ---
 
@@ -328,7 +319,8 @@ backend/
 - **Spring Data JPA** + **PostgreSQL** + **Flyway**
 - **Spring Data Redis** (서버 간 공유 상태와 잠금)
 - **JWT** (인증)
-- **OpenAI Whisper** (STT)
+- **OpenAI Realtime API** (실시간 전사)
+- **WebFlux WebClient** (AI 서버 요청, QnA SSE 수신)
 - **Gradle**
 
 ---
