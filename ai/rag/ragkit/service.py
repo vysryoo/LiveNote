@@ -57,6 +57,17 @@ def clean_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _passes_filters(chunk: RetrievedChunk, filters: RetrieveFilters) -> bool:
+    # Chroma where 절은 문자열·숫자가 섞인 timestamp 비교를 지원하지 않아 검색 후 걸러냄
+    timestamp = chunk.metadata.get("timestamp")
+    if timestamp is not None:
+        if filters.min_timestamp is not None and timestamp < filters.min_timestamp:
+            return False
+        if filters.max_timestamp is not None and timestamp > filters.max_timestamp:
+            return False
+    return filters.confidence is None or chunk.score >= filters.confidence
+
+
 class RAGService:
     """강의별 컬렉션에 강의 자료와 섹션 요약을 저장하고 검색한다."""
 
@@ -206,7 +217,7 @@ class RAGService:
             collection_id: 컬렉션 이름. 영문·숫자·하이픈·밑줄만 허용
             query: 질의 텍스트
             top_k: 돌려줄 개수
-            filters: 메타데이터 조건과 최소 점수
+            filters: 메타데이터 조건, timestamp 범위, 최소 점수
         Returns:
             점수 내림차순 조각 목록. 컬렉션이 없으면 빈 목록
         Raises:
@@ -233,8 +244,8 @@ class RAGService:
         if len(where) > 1:
             where = {"$and": [{key: value} for key, value in where.items()]}
         chunks = self._search(collection_id, query, top_k, where or None)
-        if filters and filters.confidence is not None:
-            chunks = [c for c in chunks if c.score >= filters.confidence]
+        if filters:
+            chunks = [c for c in chunks if _passes_filters(c, filters)]
         return sorted(chunks, key=lambda c: c.score, reverse=True)
 
     def retrieve_context(

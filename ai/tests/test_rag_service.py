@@ -5,6 +5,7 @@ from pathlib import Path
 from langchain_core.embeddings import DeterministicFakeEmbedding
 
 from rag.ragkit.config import RAGConfig
+from rag.ragkit.models import RetrieveFilters
 from rag.ragkit.service import RAGService
 from rag.ragkit.splitters import ChunkSettings
 
@@ -64,3 +65,48 @@ def test_retrieve_context_excludes_recent_summaries(tmp_path):
     assert len(pdf) == 2
     assert sorted(c.metadata["section_index"] for c in summaries) == [0, 1, 2]
     assert chunks[: len(pdf)] == pdf
+
+
+def _upsert(service: RAGService, collection_id: str, metadatas: list[dict]) -> None:
+    service.upsert_text(
+        collection_id, [{"text": f"문서 {i}", "id": f"d{i}", "metadata": m} for i, m in enumerate(metadatas)]
+    )
+
+
+def test_retrieve_respects_top_k_and_sorts_by_score(tmp_path):
+    service = _service(tmp_path)
+    _upsert(service, "lecture_3", [{"index": i} for i in range(5)])
+
+    chunks = service.retrieve("lecture_3", "문서", top_k=3)
+
+    assert len(chunks) == 3
+    assert [c.score for c in chunks] == sorted((c.score for c in chunks), reverse=True)
+
+
+def test_retrieve_filters_by_subject_and_timestamp(tmp_path):
+    service = _service(tmp_path)
+    _upsert(
+        service,
+        "lecture_4",
+        [
+            {"subject": "CS", "timestamp": 100},
+            {"subject": "CS", "timestamp": 200},
+            {"subject": "Bio", "timestamp": 300},
+        ],
+    )
+
+    by_subject = service.retrieve("lecture_4", "문서", top_k=10, filters=RetrieveFilters(subject="CS"))
+    by_time = service.retrieve("lecture_4", "문서", top_k=10, filters=RetrieveFilters(min_timestamp=150, max_timestamp=250))
+
+    assert {c.metadata["subject"] for c in by_subject} == {"CS"} and len(by_subject) == 2
+    assert [c.metadata["timestamp"] for c in by_time] == [200]
+
+
+def test_upsert_text_with_same_ids_overwrites_and_collections_are_isolated(tmp_path):
+    service = _service(tmp_path)
+    _upsert(service, "lecture_5", [{"index": 0}, {"index": 1}])
+    _upsert(service, "lecture_5", [{"index": 0}, {"index": 1}])
+    _upsert(service, "lecture_6", [{"index": 0}])
+
+    assert service.client.get_collection("lecture_5").count() == 2
+    assert service.client.get_collection("lecture_6").count() == 1
