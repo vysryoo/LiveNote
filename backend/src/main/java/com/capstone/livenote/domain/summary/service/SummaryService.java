@@ -21,13 +21,6 @@ public class SummaryService {
 
     private final SummaryRepository summaryRepository;
 
-    // 강의 요약 리스트 조회
-    @Transactional(readOnly = true)
-    public List<Summary> findSince(Long lectureId, Integer sinceSection) {
-        if (sinceSection == null) return summaryRepository.findByLectureIdOrderBySectionIndexAsc(lectureId);
-        return summaryRepository.findByLectureIdAndSectionIndexGreaterThanOrderBySectionIndexAsc(lectureId, sinceSection);
-    }
-
     @Transactional
     public Summary createSectionSummary(Long lectureId,
                                         Integer sectionIndex,

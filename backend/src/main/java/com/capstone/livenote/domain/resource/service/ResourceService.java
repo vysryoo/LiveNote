@@ -15,16 +15,6 @@ import java.util.List;
 public class ResourceService {
     private final ResourceRepository repo;
     @Transactional(readOnly = true)
-    public List<Resource> bySummary(Long summaryId, String type){
-        var list = repo.findBySummaryIdOrderByScoreDesc(summaryId);
-        if (type == null) return list;
-
-        return list.stream()
-                .filter(r -> r.getType().name().equalsIgnoreCase(type))
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
     public List<Resource> findBySectionRange(Long lectureId, int startSection, int endSection) {
         if (endSection < startSection) {
             return List.of();

@@ -40,19 +40,6 @@ public class TranscriptService {
         this.redisLock = redisLock;
     }
 
-    @Transactional(readOnly = true)
-    public List<Transcript> findSince(Long lectureId, Integer sinceSec) {
-        log.info("📂 [DB READ] Fetching transcripts: lectureId={} sinceSec={}", lectureId, sinceSec);
-        List<Transcript> result;
-        if (sinceSec == null) {
-            result = transcriptRepository.findByLectureIdOrderByStartSecAsc(lectureId);
-        } else {
-            result = transcriptRepository.findByLectureIdAndStartSecGreaterThanOrderByStartSecAsc(lectureId, sinceSec);
-        }
-        log.info("✅ [DB READ] Loaded {} transcripts for lectureId={}", result.size(), lectureId);
-        return result;
-    }
-
     /**
      * STT 결과 저장 및 후속 처리
      * 플로우:

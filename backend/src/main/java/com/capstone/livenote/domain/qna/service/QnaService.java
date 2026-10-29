@@ -13,10 +13,6 @@ public class QnaService {
 
     private final QnaRepository repo;
 
-    public List<Qna> byLecture(Long lectureId) {
-        return repo.findByLectureIdOrderByIdAsc(lectureId);
-    }
-
     public List<Qna> byLectureAndSection(Long lectureId, Integer sectionIndex) {
         return repo.findByLectureIdAndSectionIndexOrderByIdAsc(lectureId, sectionIndex);
     }
