@@ -6,7 +6,7 @@ import logging
 from typing import List
 
 from .models import GoogleRequest, GoogleResponse, GoogleSearchResult
-from .api.google_client import GoogleSearchClient
+from .api.naver_client import NaverBlogSearchClient
 from .llm.openai_client import GoogleLLMClient
 from .utils import (
     deduplicate_results,
@@ -28,7 +28,7 @@ class GoogleService:
         """초기화"""
         GoogleConfig.validate()
         
-        self.api_client = GoogleSearchClient()
+        self.api_client = NaverBlogSearchClient()
         self.llm_client = GoogleLLMClient()
         self.config = GoogleConfig
     
@@ -87,7 +87,7 @@ class GoogleService:
         logger.info(f"✅ 키워드 생성 완료: {keywords}")
         
         # 2. 팬아웃 병렬 검색
-        logger.info(f"🌐 Google API 팬아웃 검색 시작 (keywords={len(keywords)}개)")
+        logger.info(f"🌐 네이버 블로그 팬아웃 검색 시작 (keywords={len(keywords)}개)")
         
         search_tasks = [
             self.api_client.search(

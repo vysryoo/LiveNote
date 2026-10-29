@@ -1,6 +1,6 @@
 """
 API 패키지 초기화
 """
-from .google_client import GoogleSearchClient
+from .naver_client import NaverBlogSearchClient
 
-__all__ = ["GoogleSearchClient"]
+__all__ = ["NaverBlogSearchClient"]

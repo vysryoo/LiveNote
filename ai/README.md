@@ -50,7 +50,7 @@ FastAPI (server/)
 - **server/**: FastAPI 앱, 라우터, 설정, 유틸리티
 - **\*_module**: 각각의 기능을 담당하는 독립 모듈
 - **ChromaDB**: `RAG_PERSIST_DIR` 경로에 벡터 데이터 저장
-- **외부 API**: OpenAI, OpenAlex, Wikipedia, YouTube Data API, Google Custom Search
+- **외부 API**: OpenAI, OpenAlex, Wikipedia, YouTube Data API, 네이버 블로그 검색
 
 ---
 
@@ -63,7 +63,7 @@ FastAPI (server/)
 | `openalex_module/` | 논문 추천 모듈 |
 | `wiki_module/` | 위키 추천 모듈 |
 | `youtube_module/` | 유튜브 추천 모듈 |
-| `google_module/` | 구글 추천 모듈 |
+| `google_module/` | 블로그 추천 모듈 (네이버 블로그 검색 사용) |
 | `server/` | FastAPI 서버 구성 |
 | `tests/` | 단위/통합 테스트 |
 | `setup.sh` | 환경 구축 자동 스크립트 |
@@ -108,9 +108,9 @@ cp .env.example .env  # 내용 수정 필요
 
 ```bash
 OPENAI_API_KEY="sk-proj-xxxx". #현재 openai키를 비워둬서 직접 설정하셔야합니다.
-YOUTUBE_API_KEY="AIzaSy...." #마찬가지로 youtube, google search engine키도 비워뒀는데, 구글 콘솔에서 발급 받으실 수 있습니다.
-GOOGLE_SEARCH_API_KEY="AIzaSyXXXXXXXXXXXXXXXX"
-GOOGLE_SEARCH_ENGINE_ID="a1b2c3d4e5f6g7h8i"
+YOUTUBE_API_KEY="AIzaSy...." # Google Cloud Console에서 YouTube Data API v3 사용 설정 후 API 키 발급
+NAVER_CLIENT_ID="..." # 네이버 클라우드 콘솔의 NAVER API HUB에서 블로그 검색 Application 등록 후 인증 정보 확인
+NAVER_CLIENT_SECRET="..."
 WIKIKIT_USER_AGENT="WikiKit/1.0 (+https://example.com; contact: you@example.com)"
 ANONYMIZED_TELEMETRY="False"
 CHROMA_TELEMETRY_ENABLED="False"

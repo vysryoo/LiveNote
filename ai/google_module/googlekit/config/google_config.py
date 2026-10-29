@@ -8,9 +8,9 @@ from typing import Optional
 class GoogleConfig:
     """Google 모듈 설정"""
     
-    # API 키
-    GOOGLE_SEARCH_API_KEY: str = os.getenv("GOOGLE_SEARCH_API_KEY", "")
-    GOOGLE_SEARCH_ENGINE_ID: str = os.getenv("GOOGLE_SEARCH_ENGINE_ID", "")
+    # API 키. 블로그 검색은 네이버 블로그 검색 API 사용
+    NAVER_CLIENT_ID: str = os.getenv("NAVER_CLIENT_ID", "")
+    NAVER_CLIENT_SECRET: str = os.getenv("NAVER_CLIENT_SECRET", "")
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     
     # 검색 설정
@@ -37,9 +37,9 @@ class GoogleConfig:
     @classmethod
     def validate(cls):
         """환경 변수 검증"""
-        if not cls.GOOGLE_SEARCH_API_KEY:
-            raise ValueError("GOOGLE_SEARCH_API_KEY가 설정되지 않았습니다.")
-        if not cls.GOOGLE_SEARCH_ENGINE_ID:
-            raise ValueError("GOOGLE_SEARCH_ENGINE_ID가 설정되지 않았습니다.")
+        if not cls.NAVER_CLIENT_ID:
+            raise ValueError("NAVER_CLIENT_ID가 설정되지 않았습니다.")
+        if not cls.NAVER_CLIENT_SECRET:
+            raise ValueError("NAVER_CLIENT_SECRET가 설정되지 않았습니다.")
         if not cls.OPENAI_API_KEY:
             raise ValueError("OPENAI_API_KEY가 설정되지 않았습니다.")

@@ -78,7 +78,8 @@ class GoogleSettings(BaseModel):
     top_k: int = Field(default=1, ge=1, le=10, description="Google 추천 개수")
     verify: bool = Field(default=True, description="LLM 검증 여부")
     #verify: bool = Field(default=False, description="LLM 검증 여부")
-    search_lang: str = Field(default="en", description="Google 검색 언어")
+    # 블로그 검색이 네이버라 검색 키워드를 한국어로 생성
+    search_lang: str = Field(default="ko", description="블로그 검색 키워드 언어")
     language: str = Field(default="ko", description="응답 언어")
     min_score: float = Field(default=3.0, ge=0.0, le=10.0, description="최소 점수")
 

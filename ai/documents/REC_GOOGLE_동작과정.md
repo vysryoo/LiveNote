@@ -4,6 +4,8 @@
 
 **Google Custom Search 추천 시스템**의 전체 동작 과정을 설명합니다.
 
+> 이 문서는 작성 시점(2025-11-14)의 설계다. 이후 검색 API는 Google Custom Search JSON API(신규 가입 중단, 2027-01-01 종료 예정)에서 네이버 블로그 검색 API(`googlekit/api/naver_client.py`)로 교체됐다. 키워드 생성과 검증 흐름은 같다.
+
 **핵심 특징:**
 - LLM 기반 검색 쿼리 생성 (QUERY_MAX=3개 제한)
 - Google Custom Search API를 통한 웹 검색

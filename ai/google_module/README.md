@@ -1,6 +1,8 @@
-# GoogleKit - Google Custom Search 기반 검색 추천 모듈
+# GoogleKit - 블로그 검색 추천 모듈
 
-강의 요약을 기반으로 Google Custom Search API를 사용하여 관련 웹 자료를 검색하고 추천하는 모듈입니다.
+강의 요약을 기반으로 네이버 블로그 검색 API(NAVER API HUB)를 사용하여 관련 블로그 글을 검색하고 추천하는 모듈입니다.
+
+Google Custom Search JSON API가 신규 가입을 받지 않고 2027-01-01 종료 예정이라 검색 API를 네이버로 교체했습니다. 모듈·클래스 이름(`googlekit`, `GoogleService`)은 서버 코드와의 연결을 유지하기 위해 그대로 둡니다.
 
 ## 📋 주요 기능
 
@@ -17,9 +19,9 @@
 `.env` 파일에 다음 환경 변수를 추가하세요:
 
 ```bash
-# Google Custom Search API
-GOOGLE_SEARCH_API_KEY="YOUR_API_KEY"
-GOOGLE_SEARCH_ENGINE_ID="YOUR_SEARCH_ENGINE_ID"
+# 네이버 블로그 검색 API (네이버 클라우드 콘솔의 NAVER API HUB에서 Application 등록 후 인증 정보)
+NAVER_CLIENT_ID="YOUR_CLIENT_ID"
+NAVER_CLIENT_SECRET="YOUR_CLIENT_SECRET"
 
 # OpenAI API (키워드 생성 및 검증용)
 OPENAI_API_KEY="YOUR_OPENAI_API_KEY"
@@ -111,8 +113,8 @@ python test_google.py
 ```python
 class GoogleConfig:
     # API 키
-    GOOGLE_SEARCH_API_KEY: str  # Google Search API 키
-    GOOGLE_SEARCH_ENGINE_ID: str  # Search Engine ID
+    NAVER_CLIENT_ID: str  # 네이버 Client ID
+    NAVER_CLIENT_SECRET: str  # 네이버 Client Secret
     OPENAI_API_KEY: str  # OpenAI API 키
     
     # 검색 설정
@@ -156,15 +158,15 @@ TRUSTED_DOMAINS = [
 
 ## 📊 API 할당량
 
-Google Custom Search API는 **하루 100회 무료 요청**을 제공합니다.
+NAVER API HUB의 NAVER 검색 분류는 월 최대 775,000건(분류 전체 공유), API 키당 초당 50건까지 호출할 수 있습니다. 현재 한시적 무료이며 유료 전환 시 사전 공지됩니다.
 
-- FANOUT=3인 경우, 한 번의 추천 요청은 최대 3회의 API 호출을 사용합니다.
-- 초과 사용 시 추가 요금이 발생할 수 있으니 주의하세요.
+- 한 번의 추천 요청은 FANOUT 수만큼 API를 호출합니다.
+- 네이버 블로그 검색은 언어 지정을 지원하지 않아 한국어 블로그 위주로 검색됩니다.
 
 ## 🔗 관련 링크
 
-- [Google Custom Search API 문서](https://developers.google.com/custom-search/v1/overview)
-- [Programmable Search Engine 생성](https://programmablesearchengine.google.com/)
+- [NAVER API HUB 블로그 검색 API 문서](https://api.ncloud-docs.com/docs/naver-api-hub-search-blog)
+- [NAVER API HUB Application 등록](https://guide.ncloud-docs.com/docs/apihub-application)
 
 ## 📝 라이센스
 

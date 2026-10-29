@@ -30,8 +30,8 @@ vi .env  # 또는 nano .env
 ```env
 OPENAI_API_KEY=sk-your-actual-key-here
 YOUTUBE_API_KEY=your-youtube-api-key
-GOOGLE_SEARCH_API_KEY=your-google-api-key
-GOOGLE_SEARCH_ENGINE_ID=your-search-engine-id
+NAVER_CLIENT_ID=your-naver-client-id
+NAVER_CLIENT_SECRET=your-naver-client-secret
 ```
 
 ---
