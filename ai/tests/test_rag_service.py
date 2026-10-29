@@ -9,7 +9,7 @@ from rag.ragkit.models import RetrieveFilters
 from rag.ragkit.service import RAGService
 from rag.ragkit.splitters import ChunkSettings
 
-PDF_PATH = Path(__file__).resolve().parent.parent / "rag" / "test_data" / "simple_test.pdf"
+PDF_PATH = Path(__file__).resolve().parent / "data" / "simple_test.pdf"
 
 
 def _service(tmp_path, strategy: str = "page", **settings) -> RAGService:
