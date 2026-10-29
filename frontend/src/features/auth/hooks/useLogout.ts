@@ -3,12 +3,13 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { clearAuthToken } from "@/shared/lib/authToken";
-import { authKeys } from "../api/authApi";
+import { authKeys, logout } from "../api/authApi";
 
 /**
  * 로그아웃 함수를 반환한다.
  *
- * 토큰과 서버 데이터 캐시를 모두 지우고 랜딩으로 이동한다. 백엔드에 로그아웃 API가 없어 서버 요청은 하지 않는다.
+ * 백엔드에 갱신 토큰 폐기를 요청하고, 토큰과 서버 데이터 캐시를 모두 지운 뒤 랜딩으로 이동한다.
+ * 폐기 요청이 실패해도 이 브라우저에서는 로그아웃한다.
  *
  * @returns 로그아웃 함수
  */
@@ -18,6 +19,7 @@ export function useLogout() {
   const { t } = useTranslation();
 
   return () => {
+    void logout().catch(() => undefined);
     clearAuthToken();
     queryClient.clear();
     queryClient.setQueryData(authKeys.me, null);

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { getFreshAuthToken } from "@/shared/lib/http";
 import { buildTranscriptionSocketUrl } from "../realtime/endpoints";
 import { audioSocketMessageSchema } from "../realtime/messages";
 import { resampleLinear, toPcm16 } from "./pcm";
@@ -121,12 +122,15 @@ export function useAudioRecording({
   const start = async () => {
     if (resourcesRef.current) return;
     if (!navigator.mediaDevices?.getUserMedia) throw new RecordingError("unsupported");
+    const token = await getFreshAuthToken();
+    // 토큰을 기다리는 사이 다른 호출이 녹음을 시작한 경우
+    if (resourcesRef.current) return;
 
     const context = new AudioContext({ sampleRate: TARGET_SAMPLE_RATE });
     const resources: RecordingResources = {
       context,
       processor: context.createScriptProcessor(BUFFER_SIZE, 1, 1),
-      socket: new WebSocket(buildTranscriptionSocketUrl(lectureId)),
+      socket: new WebSocket(buildTranscriptionSocketUrl(lectureId, token)),
       stream: null,
       source: null,
     };

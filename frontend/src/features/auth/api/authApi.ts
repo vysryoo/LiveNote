@@ -46,6 +46,15 @@ export async function signup(account: {
 }
 
 /**
+ * 갱신 토큰을 폐기하고 쿠키를 지우도록 백엔드에 요청한다.
+ *
+ * @throws HttpError 서버 오류
+ */
+export async function logout(): Promise<void> {
+  await request("/auth/logout", { method: "POST" });
+}
+
+/**
  * 저장된 토큰으로 현재 사용자를 조회한다.
  *
  * @returns 사용자 정보. 토큰이 없거나 만료돼 인증되지 않으면 `null`

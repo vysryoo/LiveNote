@@ -2,7 +2,7 @@ import { Client, type IMessage } from "@stomp/stompjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useEffectEvent } from "react";
 import type { z } from "zod";
-import { getAuthToken } from "@/shared/lib/authToken";
+import { getFreshAuthToken } from "@/shared/lib/http";
 import { sessionKeys } from "../api/sessionApi";
 import type { SessionAction } from "../state/sessionReducer";
 import { STOMP_BROKER_URL } from "./endpoints";
@@ -73,9 +73,9 @@ export function useSessionStream({ lectureId, dispatch, onStreamError }: UseSess
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
     });
-    // 재연결 때도 그 시점의 토큰을 쓰도록 연결 직전에 헤더를 채움
-    client.beforeConnect = () => {
-      const token = getAuthToken();
+    // 재연결 때도 그 시점의 토큰을 쓰도록 연결 직전에 헤더를 채움. 만료가 임박했으면 먼저 갱신
+    client.beforeConnect = async () => {
+      const token = await getFreshAuthToken();
       client.connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
     };
 
