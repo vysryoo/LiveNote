@@ -183,7 +183,6 @@ headless Chrome에 오디오 파일을 가짜 마이크로 넣어 녹음부터 �
 | 문제 | 근거 |
 | --- | --- |
 | 강의 종료 API가 요청 본문(제목)을 읽지 않음. 프론트엔드가 제목 변경 API를 먼저 호출해 우회 중 | `LectureController.endLecture()` |
-| 발화 시간을 실제보다 길게 계산함 (여유 2초, 배율 1.2). 화면 경과 시간이 실제보다 빠름 | `app.transcription.padding-seconds`, `speed-multiplier` |
 
 ### 8-2. AI 서버
 
