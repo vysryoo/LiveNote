@@ -149,6 +149,7 @@
     "uncategorized": "Other",
     "loadFailed": "Could not load your lectures",
     "retry": "Try again",
+    "loadMore": "Load more",
     "endFailed": "Could not end the lecture",
     "delete": {
       "title": "Delete this lecture session?",

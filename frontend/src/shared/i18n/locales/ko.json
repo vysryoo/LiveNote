@@ -148,6 +148,7 @@
     "uncategorized": "기타",
     "loadFailed": "강의 목록을 불러오지 못했습니다",
     "retry": "다시 시도",
+    "loadMore": "더 보기",
     "endFailed": "강의 종료 처리에 실패했습니다",
     "delete": {
       "title": "강의 세션을 삭제하시겠어요?",

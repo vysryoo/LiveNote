@@ -3,6 +3,7 @@ package com.capstone.livenote.domain.lecture.controller;
 import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.application.audio.service.AudioIngestService;
 import com.capstone.livenote.domain.lecture.dto.CreateLectureRequestDto;
+import com.capstone.livenote.domain.lecture.dto.LecturePageDto;
 import com.capstone.livenote.domain.lecture.dto.LectureResponseDto;
 import com.capstone.livenote.domain.lecture.dto.SessionDetailResponse;
 import com.capstone.livenote.domain.lecture.dto.UpdateLectureTitleRequest;
@@ -33,6 +34,8 @@ import java.util.List;
 @RequestMapping("/api/lectures")
 @RequiredArgsConstructor
 public class LectureController {
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final LectureService lectureService;
     private final AudioIngestService audio;
     private final RagClient ragClient;
@@ -52,14 +55,17 @@ public class LectureController {
     }
 
     // 강의 조회
-    @Operation(summary = "현재 사용자의 최근 강의 목록을 조회")
+    @Operation(summary = "현재 사용자의 강의 목록을 최신순으로 페이지 단위 조회")
     @GetMapping
-    public ApiResponse<List<LectureResponseDto>> list() {
-        var list = lectureService.list(currentUserId(), PageRequest.of(0, 20))
-                .stream()
-                .map(LectureResponseDto::from)
-                .toList();
-        return ApiResponse.ok(list);
+    public ApiResponse<LecturePageDto> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        // 한 번에 너무 많이 요청하지 못하도록 페이지 크기를 제한
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        var result = lectureService.list(currentUserId(), PageRequest.of(Math.max(page, 0), safeSize));
+        var items = result.stream().map(LectureResponseDto::from).toList();
+        return ApiResponse.ok(new LecturePageDto(items, result.getTotalElements(), result.hasNext()));
     }
 
     // 강의 상세 조회

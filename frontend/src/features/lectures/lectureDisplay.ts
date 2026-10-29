@@ -1,4 +1,4 @@
-import type { Lecture } from "./api/schemas";
+import type { Lecture, LecturePage } from "./api/schemas";
 
 export const LECTURE_CATEGORIES = [
   "Computer Science",
@@ -41,4 +41,23 @@ export function getLectureDurationMinutes(
   const elapsedMs = new Date(lecture.endAt).getTime() - new Date(lecture.createdAt).getTime();
   if (Number.isNaN(elapsedMs) || elapsedMs < 0) return null;
   return Math.floor(elapsedMs / 60_000);
+}
+
+/**
+ * 여러 페이지로 받은 강의 목록을 하나로 합친다.
+ *
+ * 페이지를 받는 사이 강의가 추가·삭제되면 같은 강의가 두 페이지에 걸쳐 올 수 있어, 먼저 나온 것만 남긴다.
+ *
+ * @param pages 받은 순서대로의 페이지 목록
+ * @returns 중복 없는 강의 목록
+ */
+export function mergeLecturePages(pages: LecturePage[]): Lecture[] {
+  const seen = new Set<number>();
+  return pages
+    .flatMap((page) => page.items)
+    .filter((lecture) => {
+      if (seen.has(lecture.id)) return false;
+      seen.add(lecture.id);
+      return true;
+    });
 }

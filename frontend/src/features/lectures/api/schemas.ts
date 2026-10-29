@@ -14,3 +14,11 @@ export const lectureSchema = z.object({
 });
 
 export type Lecture = z.infer<typeof lectureSchema>;
+
+export const lecturePageSchema = z.object({
+  items: z.array(lectureSchema),
+  total: z.number(),
+  hasNext: z.boolean(),
+});
+
+export type LecturePage = z.infer<typeof lecturePageSchema>;

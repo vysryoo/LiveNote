@@ -148,6 +148,7 @@
     "uncategorized": "其他",
     "loadFailed": "无法加载课程列表",
     "retry": "重试",
+    "loadMore": "加载更多",
     "endFailed": "无法结束课程",
     "delete": {
       "title": "要删除此课程吗？",

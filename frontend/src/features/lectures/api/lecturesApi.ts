@@ -1,20 +1,23 @@
-import { z } from "zod";
 import { request } from "@/shared/lib/http";
 import type { LanguageCode } from "@/shared/i18n";
-import { lectureSchema, type Lecture } from "./schemas";
+import { lecturePageSchema, lectureSchema, type Lecture, type LecturePage } from "./schemas";
 
 export const lectureKeys = {
   list: ["lectures", "list"] as const,
   detail: (lectureId: number) => ["lectures", "detail", lectureId] as const,
 };
 
+export const LECTURE_PAGE_SIZE = 20;
+
 /**
- * 로그인한 사용자의 강의 목록을 조회한다.
+ * 로그인한 사용자의 강의 목록 한 페이지를 조회한다.
  *
- * @returns 최신순으로 정렬된 강의 목록. 백엔드가 최근 20개까지만 반환함
+ * @param page 0부터 시작하는 페이지 번호
+ * @returns 최신순 강의 목록, 전체 강의 수, 다음 페이지 여부
  */
-export async function fetchLectures(): Promise<Lecture[]> {
-  return z.array(lectureSchema).parse(await request("/lectures"));
+export async function fetchLecturePage(page: number): Promise<LecturePage> {
+  const params = new URLSearchParams({ page: String(page), size: String(LECTURE_PAGE_SIZE) });
+  return lecturePageSchema.parse(await request(`/lectures?${params.toString()}`));
 }
 
 /**

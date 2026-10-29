@@ -242,7 +242,7 @@ backend/
 
 | 경로 | 메서드 | 설명 |
 |------|--------|------|
-| `/api/lectures` | GET | 강의 목록 조회 |
+| `/api/lectures` | GET | 강의 목록 최신순 조회 `?page=0&size=20` (size 최대 100) → `{items, total, hasNext}` |
 | `/api/lectures` | POST | 강의 생성 `{title, subject, sttLanguage}` |
 | `/api/lectures/{id}` | GET | 강의 상세 조회 |
 | `/api/lectures/{id}` | DELETE | 강의 삭제 |

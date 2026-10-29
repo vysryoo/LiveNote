@@ -15,6 +15,7 @@ import {
 import type { Lecture } from "../api/schemas";
 import { useLectureList } from "../hooks/useLectureList";
 import { useDeleteLecture } from "../hooks/useLectureMutations";
+import { mergeLecturePages } from "../lectureDisplay";
 import { DeleteLectureDialog } from "./DeleteLectureDialog";
 import { LectureCard } from "./LectureCard";
 import { NewLectureDialog } from "./NewLectureDialog";
@@ -28,7 +29,9 @@ export function LectureListPage() {
   const [newLectureOpen, setNewLectureOpen] = useState(false);
   const [lectureToDelete, setLectureToDelete] = useState<Lecture | null>(null);
 
-  const lectures = lectureList.data ?? [];
+  const lectures = mergeLecturePages(lectureList.data?.pages ?? []);
+  // 전체 강의 수는 가장 최근에 받은 페이지 기준
+  const totalCount = lectureList.data?.pages.at(-1)?.total ?? lectures.length;
   const openNewLecture = () => setNewLectureOpen(true);
 
   const confirmDelete = () => {
@@ -88,7 +91,7 @@ export function LectureListPage() {
             <h1 className="text-3xl mb-2">{t("main.myLectures")}</h1>
             {lectureList.isSuccess && (
               <p className="text-muted-foreground">
-                {t("main.lectureCount", { count: lectures.length })}
+                {t("main.lectureCount", { count: totalCount })}
               </p>
             )}
           </div>
@@ -125,6 +128,18 @@ export function LectureListPage() {
                 onDelete={setLectureToDelete}
               />
             ))}
+          </div>
+        )}
+        {lectureList.hasNextPage && (
+          <div className="flex justify-center mt-8">
+            <Button
+              variant="outline"
+              disabled={lectureList.isFetchingNextPage}
+              onClick={() => void lectureList.fetchNextPage()}
+            >
+              {lectureList.isFetchingNextPage && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {t("lectures.loadMore")}
+            </Button>
           </div>
         )}
       </main>

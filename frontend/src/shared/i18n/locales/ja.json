@@ -148,6 +148,7 @@
     "uncategorized": "その他",
     "loadFailed": "講義一覧を読み込めませんでした",
     "retry": "再試行",
+    "loadMore": "もっと見る",
     "endFailed": "講義を終了できませんでした",
     "delete": {
       "title": "この講義セッションを削除しますか？",
