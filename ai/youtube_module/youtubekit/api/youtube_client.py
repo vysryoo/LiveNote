@@ -72,14 +72,13 @@ class YouTubeAPIClient:
             "q": q,
             "relevanceLanguage": lang,
             "maxResults": max_results,
-            "key": self.api_key,
         }
 
         from importlib import import_module
         httpx = import_module("httpx")
         
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.get(f"{self.BASE}/search", params=params)
+            resp = await client.get(f"{self.BASE}/search", params=params, headers=self._auth_headers())
             resp.raise_for_status()
             data = resp.json()
 
@@ -99,6 +98,10 @@ class YouTubeAPIClient:
                 )
             )
         return items
+
+    def _auth_headers(self) -> dict:
+        # 키를 URL 쿼리에 넣으면 요청 실패 시 오류 메시지와 로그에 URL째 남으므로 헤더로 보냄
+        return {"X-Goog-Api-Key": self.api_key}
 
     async def get_videos(self, ids: List[str]) -> List[YouTubeVideoDetail]:
         """YouTube 동영상 상세 정보 조회"""
@@ -124,14 +127,13 @@ class YouTubeAPIClient:
         params = {
             "part": "snippet,contentDetails,statistics",
             "id": ",".join(ids),
-            "key": self.api_key,
         }
         
         from importlib import import_module
         httpx = import_module("httpx")
         
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.get(f"{self.BASE}/videos", params=params)
+            resp = await client.get(f"{self.BASE}/videos", params=params, headers=self._auth_headers())
             resp.raise_for_status()
             data = resp.json()
 
