@@ -155,8 +155,8 @@ INTERNAL_API_KEY="..." # 백엔드 env.properties와 같은 값. /health를 제�
 ### 6.3 QA 생성
 
 - **Content-Type**: `application/json`
-- **Response**: `202 Accepted` + JSON
-- 실제 QA 결과는 `callback_url`로 비동기 전송
+- **Response**: `200 OK` + `text/event-stream` (SSE)
+- 질문 유형별로 동시에 생성하며, 생성 과정을 같은 응답으로 이어서 전송
 
 #### HTTP 메서드
 
@@ -171,8 +171,7 @@ POST /qa/generate
 {
   "lecture_id": 1,
   "section_index": 0,
-  "section_summary": "스택과 큐의 차이점을 설명하고, 각각의 사용 사례를 다룹니다.",
-  "callback_url": "https://example.com/qa"
+  "section_summary": "스택과 큐의 차이점을 설명하고, 각각의 사용 사례를 다룹니다."
 }
 ```
 
@@ -183,7 +182,6 @@ POST /qa/generate
   "section_index": 3,
   "section_summary": "이진 탐색 트리의 삽입, 삭제, 검색 연산을 구현합니다.",
   "subject": "자료구조",
-  "callback_url": "https://example.com/qa",
   "question_types": ["CONCEPT", "COMPARISON"],
   "previous_qa": [
     {
@@ -202,32 +200,42 @@ POST /qa/generate
 | lecture_id | int | 예 | RAG 컬렉션과 매핑되는 강의 ID |
 | section_index | int | 예 | 섹션 인덱스(0-base) |
 | section_summary | string | 예 | 섹션 요약 내용 (최소 10자 권장) |
-| callback_url | string(URL) | 예 | 생성 결과를 받을 콜백 URL |
 | subject | string | 아니오 | 과목 정보 |
 | question_types | array[enum] | 아니오 | 생성할 질문 유형. Enum: `CONCEPT`, `APPLICATION`, `ADVANCED`, `COMPARISON` |
 | previous_qa | array | 아니오 | 중복 방지를 위한 이전 QA 목록 |
 
-#### 콜백 이벤트 형식
+#### 응답 이벤트 형식
+
+`item`은 질문 유형 순서(0부터)이며, 여러 유형의 이벤트가 섞여서 도착합니다.
 
 ```
-event: qa_context
-data: {"event":"context_ready","collection_id":"lecture_001","chunk_count":2}
+event: start
+data: {"item":0,"type":"CONCEPT"}
 
-event: qa_partial
-data: {"type":"CONCEPT","qa":{"type":"CONCEPT","question":"하이퍼 스레딩이란 무엇인가요?","answer":"하이퍼 스레딩은..."},"index":1}
+event: question
+data: {"item":0,"text":"스택이란 무엇인가요?"}
 
-event: qa_partial
-data: {"type":"APPLICATION","qa":{"type":"APPLICATION","question":"...","answer":"..."},"index":2}
+event: answer
+data: {"item":0,"text":"스택은 마지막에 들어온 "}
 
-event: qa_complete
-data: {"total":3,"duration_ms":4521}
+event: answer
+data: {"item":0,"text":"데이터가 먼저 나가는 구조입니다."}
+
+event: done
+data: {"item":0,"type":"CONCEPT","question":"스택이란 무엇인가요?","answer":"스택은 마지막에 들어온 데이터가 먼저 나가는 구조입니다."}
+
+event: error
+data: {"item":1,"message":"..."}
 ```
+
+- `question`은 질문이 완성되면 한 번, `answer`는 답변 조각이 생성될 때마다 전송
+- `error`가 온 항목은 `done`이 오지 않음
 
 #### 주의 사항
 
-- `lecture_id`에 해당하는 컬렉션이 없으면 HTTP 404
+- RAG 검색에 실패하면(강의 컬렉션이 없는 경우 포함) 스트림을 시작하지 않고 HTTP 400
 - `question_types`에 잘못된 Enum 값이 들어오면 HTTP 422
-- 콜백은 각 QA가 생성되는 순서대로 여러 번 전송됩니다
+- 모델 출력 형식은 "첫 줄 질문, 이후 답변"이며, 모델이 붙이는 `질문:`, `답변:` 같은 머리말은 서버가 제거
 
 ---
 

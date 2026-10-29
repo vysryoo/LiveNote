@@ -8,7 +8,9 @@ import com.capstone.livenote.global.security.InternalApiKey;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -16,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +32,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class RagClient {
+
+    private static final ParameterizedTypeReference<ServerSentEvent<String>> SSE_OF_STRING =
+            new ParameterizedTypeReference<>() {};
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
@@ -45,44 +51,40 @@ public class RagClient {
     }
 
     // 1. QnA 생성 요청 (snake_case 적용)
-    public void requestQnaGeneration(AiRequestPayloads.QnaGeneratePayload payload, List<String> targetTypes) {
+    /**
+     * AI 서버에 QnA 생성을 요청하고 생성 과정을 SSE 이벤트로 받는다.
+     *
+     * 반환한 Flux를 구독할 때 요청을 보낸다. 이벤트 종류는 start, question, answer, done, error이며
+     * data는 JSON 문자열이다. AI 서버가 오류 상태 코드로 응답하면 Flux가 {@link WebClientResponseException}으로 끝난다.
+     *
+     * @param payload QnA 생성 요청 본문
+     * @param targetTypes 생성할 질문 유형. null이거나 비어 있으면 AI 서버 설정값 사용
+     * @return AI 서버가 보내는 SSE 이벤트
+     */
+    public Flux<ServerSentEvent<String>> streamQnaGeneration(AiRequestPayloads.QnaGeneratePayload payload, List<String> targetTypes) {
         Map<String, Object> body = new HashMap<>();
 
-        // 명세서 "예시 1" 및 "입력 필드 설명" 기준 매핑
-        body.put("lecture_id", payload.getLectureId());       // lectureId -> lecture_id
-        //body.put("lecture_id", String.valueOf(payload.getLectureId()));
-
-        body.put("summary_id", payload.getSummaryId());       // summaryId -> summary_id
-        body.put("section_index", payload.getSectionIndex()); // sectionIndex -> section_index
-        body.put("section_summary", payload.getSectionSummary()); // sectionSummary -> section_summary
-
+        body.put("lecture_id", payload.getLectureId());
+        body.put("summary_id", payload.getSummaryId());
+        body.put("section_index", payload.getSectionIndex());
+        body.put("section_summary", payload.getSectionSummary());
         body.put("subject", payload.getSubject());
-        body.put("previous_qa", payload.getPreviousQa());     // previousQa -> previous_qa
-        body.put("callback_url", callback("qna"));            // callbackUrl -> callback_url
-
-        String url = baseUrl + "/qa/generate";
-
-        log.info("🤖 [AI QnA] Request: lecture_id={} section_index={} callback={}",
-                payload.getLectureId(), payload.getSectionIndex(), callback("qna"));
-
+        body.put("previous_qa", payload.getPreviousQa());
         if (targetTypes != null && !targetTypes.isEmpty()) {
             body.put("question_types", targetTypes);
         }
 
-        try {
-            webClient.post()
-                    .uri(url)
-                    .header(InternalApiKey.HEADER, internalApiKey.value())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(body)
-                    .retrieve()
-                    .toBodilessEntity()
-                    .block();
-            log.info("✅ [AI QnA] Request sent successfully");
-        } catch (Exception e) {
-            log.error("❌ [AI QnA] Request failed: {}", e.getMessage(), e);
-            throw e;
-        }
+        log.info("🤖 [AI QnA] Stream request: lecture_id={} section_index={} types={}",
+                payload.getLectureId(), payload.getSectionIndex(), targetTypes);
+
+        return webClient.post()
+                .uri(baseUrl + "/qa/generate")
+                .header(InternalApiKey.HEADER, internalApiKey.value())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.TEXT_EVENT_STREAM)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToFlux(SSE_OF_STRING);
     }
 
     // 2. Resource 추천 요청 (snake_case + 실제 필드 둘 다 보내기)

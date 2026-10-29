@@ -8,6 +8,7 @@ from typing import AsyncGenerator, List, Optional, Tuple
 from .models import QARequest, QAResponse
 from .config.prompts import PromptTemplates
 from .llm.openai_client import OpenAIClient
+from .stream_parser import QAStreamParser
 
 
 class QAService:
@@ -28,7 +29,7 @@ class QAService:
         request: QARequest
     ) -> List[QAResponse]:
         """
-        병렬로 질문 생성하고 완료된 것들을 리스트로 반환
+        병렬로 질문 생성하고 완료된 것들을 리스트로 반환 (실패한 유형은 제외)
         
         Args:
             request: QA 요청
@@ -39,7 +40,11 @@ class QAService:
         qa_list: List[QAResponse] = []
         async for event_type, q_type, payload in self.stream_questions(request):
             if event_type == "qa":
-                qa_list.append(QAResponse(**payload))
+                qa_list.append(QAResponse(
+                    type=payload["type"],
+                    question=payload["question"],
+                    answer=payload["answer"],
+                ))
         return qa_list
     
     async def stream_questions(
@@ -47,11 +52,18 @@ class QAService:
         request: QARequest
     ) -> AsyncGenerator[Tuple[str, str, dict], None]:
         """
-        질문을 완료되는 순서대로 스트리밍
-        
+        질문 유형별로 동시에 생성하며 생성 과정을 이벤트로 스트리밍
+
+        이벤트 종류 (payload의 item은 질문 유형 순서, 0부터):
+        - start: 생성 시작 {"item"}
+        - question: 질문 완성 {"item", "text"}
+        - answer: 답변 조각 {"item", "text"}
+        - qa: 생성 완료 {"item", "type", "question", "answer"}
+        - error: 생성 실패 {"item", "error"}. 이 항목의 qa 이벤트는 오지 않음
+
         Args:
             request: QA 요청
-        
+
         Yields:
             Tuple[str, str, dict]: (이벤트 타입, 질문 유형, 페이로드)
         """
@@ -60,80 +72,56 @@ class QAService:
         context_qp = self.prompts.build_context_qp(request.previous_qa)
         subject_context = self.prompts.build_subject_context(request.subject)
         language_instruction = self.prompts.build_language_instruction(request.language)
-        
-        # 각 질문 유형별 태스크 생성
-        task_map: dict[asyncio.Task, str] = {}
-        for q_type in request.question_types[:request.qa_count]:
-            coroutine = self._generate_one_question(
-                section_summary=request.section_summary,
-                question_type=q_type,
-                rag_context=rag_context,
-                context_qp=context_qp,
-                subject_context=subject_context,
-                language_instruction=language_instruction
-            )
-            task = asyncio.create_task(coroutine)
-            task_map[task] = q_type
-        
-        if not task_map:
+
+        question_types = request.question_types[:request.qa_count]
+        if not question_types:
             return
 
-        pending = set(task_map.keys())
-        while pending:
-            done, pending = await asyncio.wait(
-                pending,
-                return_when=asyncio.FIRST_COMPLETED,
-            )
-            for finished in done:
-                q_type = task_map.get(finished, "unknown")
-                try:
-                    result = finished.result()
-                except Exception as exc:
-                    print(f"⚠️  QA 생성 중 오류: {exc}")
-                    yield ("error", q_type, {"error": str(exc)})
-                    continue
+        # 여러 유형의 생성 조각을 도착 순서대로 내보내기 위해 큐 하나로 모음
+        queue: asyncio.Queue = asyncio.Queue()
+        finished = object()
 
-                if result:
-                    yield ("qa", q_type, result)
-    
-    async def _generate_one_question(
-        self,
-        section_summary: str,
-        question_type: str,
-        rag_context: str,
-        context_qp: str,
-        subject_context: str = "",
-        language_instruction: str = ""
-    ) -> dict:
-        """
-        단일 질문 생성
-        
-        Args:
-            section_summary: 섹션 요약
-            question_type: 질문 유형
-            rag_context: RAG 컨텍스트 (참고용)
-            context_qp: 이전 QA (중복 방지용)
-            subject_context: 과목 정보
-            language_instruction: 언어 지시문
-        
-        Returns:
-            {"type": "개념", "question": "...", "answer": "..."}
-        """
-        # 프롬프트 구성
-        prompt_template = self.prompts.get_prompt(question_type)
-        prompt = prompt_template.format(
-            section_summary=section_summary,
-            rag_context=rag_context,
-            context_qp=context_qp,
-            subject_context=subject_context,
-            language_instruction=language_instruction
-        )
-        
-        # OpenAI API 호출
-        qa_data = await self.client.generate_qa(prompt, question_type)
-        
-        return qa_data or {
-            "type": question_type,
-            "question": f"[생성 실패] {question_type} 질문",
-            "answer": "API 오류로 생성에 실패했습니다."
-        }
+        async def produce(item: int, q_type: str) -> None:
+            try:
+                prompt = self.prompts.get_prompt(q_type).format(
+                    section_summary=request.section_summary,
+                    rag_context=rag_context,
+                    context_qp=context_qp,
+                    subject_context=subject_context,
+                    language_instruction=language_instruction
+                )
+                await queue.put(("start", q_type, {"item": item}))
+                parser = QAStreamParser()
+                async for delta in self.client.stream_text(prompt):
+                    for kind, text in parser.feed(delta):
+                        await queue.put((kind, q_type, {"item": item, "text": text}))
+                for kind, text in parser.finish():
+                    await queue.put((kind, q_type, {"item": item, "text": text}))
+
+                if not parser.question or not parser.answer:
+                    await queue.put(("error", q_type, {"item": item, "error": "질문 또는 답변이 비어 있음"}))
+                else:
+                    await queue.put(("qa", q_type, {
+                        "item": item,
+                        "type": q_type,
+                        "question": parser.question,
+                        "answer": parser.answer,
+                    }))
+            except Exception as exc:
+                await queue.put(("error", q_type, {"item": item, "error": str(exc)}))
+            finally:
+                await queue.put(finished)
+
+        tasks = [asyncio.create_task(produce(item, q_type)) for item, q_type in enumerate(question_types)]
+        remaining = len(tasks)
+        try:
+            while remaining:
+                event = await queue.get()
+                if event is finished:
+                    remaining -= 1
+                    continue
+                yield event
+        finally:
+            # 받는 쪽이 중간에 끊으면 남은 생성을 멈춤
+            for task in tasks:
+                task.cancel()

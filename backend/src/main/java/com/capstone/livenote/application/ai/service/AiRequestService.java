@@ -39,6 +39,7 @@ public class AiRequestService {
     private final LectureService lectureService;
     private final AiHistoryProperties historyProperties;
     private final StreamGateway streamGateway;
+    private final QnaStreamService qnaStreamService;
 
     public CardStatusDto getCardsStatus(Long lectureId, Integer sectionIndex) {
         int qCursor = CardIdHelper.CARD_INDEX_OFFSET;
@@ -138,7 +139,7 @@ public class AiRequestService {
         );
         log.info("🔄 [AI Request] QnA generation (Manual): lectureId={} section={}", lectureId, sectionIndex);
 
-        ragClient.requestQnaGeneration(payload, null);
+        qnaStreamService.generate(payload, null);
     }
 
     // 프론트 start-qna-stream → 특정 타입 한 건 요청
@@ -161,7 +162,7 @@ public class AiRequestService {
 
         List<String> types = qnaType != null ? List.of(qnaType.toUpperCase()) : null;
         log.info("🔄 [AI Request] QnA generation (Single type): lectureId={} section={} type={}", lectureId, sectionIndex, types);
-        ragClient.requestQnaGeneration(payload, types);
+        qnaStreamService.generate(payload, types);
     }
 
     // 프론트 start-resources-stream → 특정 타입 한 건 요청
@@ -211,7 +212,7 @@ public class AiRequestService {
             types = List.of("CONCEPT", "APPLICATION");
         }
 
-        ragClient.requestQnaGeneration(payload, types);
+        qnaStreamService.generate(payload, types);
     }
 
     private ResourceRecommendPayload buildResourcePayload(Long lectureId,

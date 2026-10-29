@@ -1,9 +1,7 @@
 package com.capstone.livenote.application.ai.controller;
 
-import com.capstone.livenote.application.ai.dto.QnaCallbackDto;
 import com.capstone.livenote.application.ai.dto.ResourceCallbackDto;
 import com.capstone.livenote.application.ai.dto.SummaryCallbackDto;
-import com.capstone.livenote.application.ai.service.QnaCallbackService;
 import com.capstone.livenote.application.ai.service.ResourceCallbackService;
 import com.capstone.livenote.application.ai.service.SummaryCallbackService;
 import com.capstone.livenote.global.ApiResponse;
@@ -26,12 +24,11 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/api/ai/callback")
 @Tag(
         name = "AI 콜백 API",
-        description = "AI 서버가 백엔드로 QnA / 자료추천 결과를 전달"
+        description = "AI 서버가 백엔드로 요약 / 자료추천 결과를 전달"
 )
 @Slf4j
 public class AiCallbackController {
 
-    private final QnaCallbackService qnaCallbackService;
     private final ResourceCallbackService resourceCallbackService;
     private final SummaryCallbackService summaryCallbackService;
     private final ObjectMapper objectMapper;
@@ -52,11 +49,6 @@ public class AiCallbackController {
         }
         log.info("AI callback received type={}, keys={}", type, payload.keySet());
         switch (type) {
-
-            case "qna" -> {
-                QnaCallbackDto dto = new ObjectMapper().convertValue(payload, QnaCallbackDto.class);
-                qnaCallbackService.handleQnaCallback(dto);
-            }
 
             case "resources" -> {
                 ResourceCallbackDto dto = new ObjectMapper().convertValue(payload, ResourceCallbackDto.class);

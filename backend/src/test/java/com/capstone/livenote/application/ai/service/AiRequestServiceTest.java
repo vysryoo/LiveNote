@@ -35,6 +35,7 @@ class AiRequestServiceTest {
     @Mock QnaService qnaService;
     @Mock LectureService lectureService;
     @Mock StreamGateway streamGateway;
+    @Mock QnaStreamService qnaStreamService;
 
     @Test
     void requestResources_buildsPreviousAndExcludes() {
@@ -59,7 +60,7 @@ class AiRequestServiceTest {
         ));
 
         AiRequestService service = new AiRequestService(
-                ragClient, summaryService, resourceService, qnaService, lectureService, props, streamGateway
+                ragClient, summaryService, resourceService, qnaService, lectureService, props, streamGateway, qnaStreamService
         );
 
         service.requestResources(1L, 3);
@@ -92,14 +93,14 @@ class AiRequestServiceTest {
         ));
 
         AiRequestService service = new AiRequestService(
-                ragClient, summaryService, resourceService, qnaService, lectureService, props, streamGateway
+                ragClient, summaryService, resourceService, qnaService, lectureService, props, streamGateway, qnaStreamService
         );
 
         service.requestQna(7L, 4);
 
         ArgumentCaptor<AiRequestPayloads.QnaGeneratePayload> captor =
                 ArgumentCaptor.forClass(AiRequestPayloads.QnaGeneratePayload.class);
-        verify(ragClient).requestQnaGeneration(captor.capture(), isNull());
+        verify(qnaStreamService).generate(captor.capture(), isNull());
         var payload = captor.getValue();
 
         assertThat(payload.getSubject()).isEqualTo("math");

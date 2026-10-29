@@ -324,7 +324,6 @@ def callback_recorder(monkeypatch):
             captured.append({"url": url, "json": json, "headers": headers})
             return type("Resp", (), {"status_code": 200})
 
-    monkeypatch.setattr("server.routes.qa.httpx.AsyncClient", _RecorderClient)
     monkeypatch.setattr("server.routes.rec.httpx.AsyncClient", _RecorderClient)
     return captured
 

@@ -1,21 +1,21 @@
 """
-QA 생성 API (Callback)
+QA 생성 API (SSE 스트리밍)
 """
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
-from typing import Optional, List
+from typing import AsyncIterator, Optional, List
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import Field, HttpUrl, validator
+from fastapi.responses import StreamingResponse
+from pydantic import Field, validator
 
 from QA_module.qakit.models import QARequest, PreviousQA
 
 from ..config import AppSettings
 from ..dependencies import get_qa_service, get_rag_service, get_settings
-from ..security import internal_auth_headers
 from ..models import QnAType
 from ..utils import CamelModel, build_collection_id, to_qa_rag_context
 
@@ -46,7 +46,6 @@ class QAGenerateRequest(CamelModel):
     section_index: int = Field(..., ge=0, description="섹션 인덱스(0-base)")
     section_summary: str = Field(..., min_length=10, description="섹션 요약")
     subject: Optional[str] = Field(default=None, description="선택 과목 정보")
-    callback_url: HttpUrl = Field(..., description="콜백 URL")
     question_types: Optional[List[QnAType]] = Field(
         default=None,
         description="생성할 질문 유형 (미지정 시 설정값 사용)"
@@ -63,14 +62,23 @@ class QAGenerateRequest(CamelModel):
         return value
 
 
-@router.post("/generate", status_code=status.HTTP_202_ACCEPTED)
+@router.post("/generate")
 async def generate_qa(
     request: QAGenerateRequest,
     rag_service=Depends(get_rag_service),
     qa_service=Depends(get_qa_service),
     settings: AppSettings = Depends(get_settings),
 ):
-    """QA 생성 콜백 엔드포인트"""
+    """질문 유형별 QA를 생성하며 생성 과정을 SSE로 응답한다.
+
+    요청 검증과 RAG 검색은 응답 시작 전에 수행하므로, 실패하면 일반 HTTP 오류로 응답한다.
+    응답 이벤트 (data는 JSON, item은 질문 유형 순서):
+    - start: {"item", "type"}
+    - question: {"item", "text"} 질문 완성
+    - answer: {"item", "text"} 답변 조각
+    - done: {"item", "type", "question", "answer"}
+    - error: {"item", "message"} 해당 항목 생성 실패
+    """
     lecture_id_str = str(request.lecture_id)
     collection_id = build_collection_id(settings.rag.collection_prefix, lecture_id_str)
     section_id_for_provider = request.section_index + 1  # QA 모듈은 1-base
@@ -120,41 +128,32 @@ async def generate_qa(
         ]
     )
 
-    async def run_and_callback():
-        try:
-            async for event_type, q_type, payload in qa_service.stream_questions(qa_request):
-                if event_type == "qa":
-                    enum_type = _to_qna_enum(payload.get("type") or q_type)
-                    if enum_type is None:
-                        logger.warning("알 수 없는 QA 유형 무시: %s", q_type)
-                        continue
-                    item = {
-                        "type": enum_type.value,
-                        "question": payload.get("question"),
-                        "answer": payload.get("answer"),
-                    }
-                    # 먼저 도착한 QA부터 즉시 콜백 전송
-                    await post_qna_callback(request, [item])
-        except Exception as exc:  # pragma: no cover - 외부 모듈 예외
-            logger.exception("QA 생성 실패: %s", exc)
+    async def events() -> AsyncIterator[str]:
+        async for event_type, q_type, payload in qa_service.stream_questions(qa_request):
+            enum_type = _to_qna_enum(payload.get("type") or q_type)
+            type_value = enum_type.value if enum_type else q_type
+            item = payload.get("item")
+            if event_type == "start":
+                yield _sse("start", {"item": item, "type": type_value})
+            elif event_type in ("question", "answer"):
+                yield _sse(event_type, {"item": item, "text": payload.get("text", "")})
+            elif event_type == "qa":
+                yield _sse("done", {
+                    "item": item,
+                    "type": type_value,
+                    "question": payload.get("question"),
+                    "answer": payload.get("answer"),
+                })
+            elif event_type == "error":
+                logger.warning("QA 생성 실패: type=%s error=%s", q_type, payload.get("error"))
+                yield _sse("error", {"item": item, "message": payload.get("error")})
 
-    asyncio.create_task(run_and_callback())
-    return {"status": "accepted", "collection_id": collection_id}
+    return StreamingResponse(events(), media_type="text/event-stream")
 
 
-async def post_qna_callback(request: QAGenerateRequest, qna_items: List[dict]):
-    """콜백 URL로 QA 결과 전송"""
-    payload = {
-        "lectureId": request.lecture_id,
-        "summaryId": request.summary_id,
-        "sectionIndex": request.section_index,
-        "qnaList": qna_items,
-    }
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            await client.post(str(request.callback_url), json=payload, headers=internal_auth_headers())
-    except Exception as exc:  # pragma: no cover - 네트워크 예외
-        logger.exception("QA 콜백 전송 실패: %s", exc)
+def _sse(event: str, data: dict) -> str:
+    """SSE 이벤트 한 개를 문자열로 만든다."""
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
 def _to_internal_qna_type(q_type: QnAType | str) -> str:

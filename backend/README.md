@@ -206,16 +206,15 @@ backend/
 ### AI 서버 연동
 
 - **요약 요청**: 전사 완료 시 AI 서버에 요약 생성 요청
-- **QA 생성 요청**: 섹션 요약 기반 질문/답변 생성 요청 (이전 QA 포함하여 중복 방지)
+- **QA 생성 요청**: 섹션 요약 기반 질문/답변 생성 요청 (이전 QA 포함하여 중복 방지). AI 서버의 SSE 응답을 받아 질문과 답변 조각을 STOMP `/topic/lectures.{id}.stream`으로 중계하고, 완성되면 저장 후 `/topic/lectures.{id}.qna`로 섹션 전체 목록 푸시
 - **자료 추천 요청**: 섹션 요약 기반 관련 자료 추천 요청 (exclude 목록 전달)
-- **콜백 수신**: AI 서버로부터 비동기 결과 수신 및 DB 저장/STOMP 푸시
+- **콜백 수신**: AI 서버로부터 요약·자료 추천 결과를 비동기로 수신해 DB 저장/STOMP 푸시
 
 ### 콜백 처리 (`/api/ai/callback`)
 
 | 타입 | 설명 |
 |------|------|
 | `summary` | 요약 결과 수신 → DB 저장 → STOMP `/topic/lectures.{id}.summary` 푸시 |
-| `qna` | QA 결과 수신 → DB 저장 → STOMP `/topic/lectures.{id}.qna` 푸시 |
 | `resources` | 추천 자료 수신 → DB 저장 → STOMP `/topic/lectures.{id}.resources` 푸시 |
 
 ### 추천 자료 관리
@@ -293,7 +292,6 @@ backend/
 |------|--------|------|
 | `/api/ai/callback?type=summary` | POST | AI 서버 요약 콜백 수신 |
 | `/api/ai/callback?type=resources` | POST | AI 서버 자료 콜백 수신 |
-| `/api/ai/callback?type=qna` | POST | AI 서버 QA 콜백 수신 |
 
 ### 카드 스트리밍
 
