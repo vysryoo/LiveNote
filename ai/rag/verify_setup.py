@@ -68,13 +68,11 @@ def check_ragkit_modules():
     try:
         from ragkit import RAGService, RAGConfig
         from ragkit.models import UpsertItem, RetrieveFilters
-        from ragkit.embeddings import OpenAIEmbeddingService
-        from ragkit.vectordb import ChromaVectorStore
+        from ragkit.splitters import ChunkSettings
         print_success("RAGService")
         print_success("RAGConfig")
         print_success("UpsertItem, RetrieveFilters")
-        print_success("OpenAIEmbeddingService")
-        print_success("ChromaVectorStore")
+        print_success("ChunkSettings")
         return True
     except ImportError as e:
         print_error(f"RAGKit 모듈 import 실패: {e}")
