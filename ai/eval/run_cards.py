@@ -21,6 +21,7 @@ import json
 import os
 import re
 from pathlib import Path
+from urllib.parse import quote
 from typing import Dict, List
 
 from eval.dataset import Section, fixed_sample, lecture_dir, load_sections
@@ -161,7 +162,8 @@ async def _run_resources(session, headers: dict, experiment: str, section: Secti
         "lectureId": eval_lecture_number(experiment, section.lecture_id),
         "sectionIndex": section.section_index,
         "sectionSummary": section.summary,
-        "callbackUrl": f"http://127.0.0.1:{CALLBACK_PORT}/callback?key={key}",
+        # 섹션 키의 '#'이 URL 조각 구분자로 해석되지 않도록 인코딩
+        "callbackUrl": f"http://127.0.0.1:{CALLBACK_PORT}/callback?key={quote(key, safe='')}",
         "previousSummaries": previous_summaries(section),
         "resourceTypes": RESOURCE_TYPES,
     }
