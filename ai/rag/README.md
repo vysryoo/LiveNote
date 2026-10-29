@@ -297,7 +297,7 @@ POST /rag/retrieve
 
 ```bash
 # 1. 디렉토리 이동
-cd RAG_module
+cd rag
 
 # 2. 가상환경 생성
 python -m venv .venv
@@ -676,7 +676,7 @@ collection_id = "cs_notes_2025"
 ## 📁 프로젝트 구조
 
 ```
-RAG_module/
+rag/
 ├── ragkit/                 # 핵심 라이브러리
 │   ├── __init__.py
 │   ├── config.py          # RAGConfig

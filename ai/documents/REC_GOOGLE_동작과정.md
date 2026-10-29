@@ -4,7 +4,7 @@
 
 **Google Custom Search 추천 시스템**의 전체 동작 과정을 설명합니다.
 
-> 이 문서는 작성 시점(2025-11-14)의 설계다. 이후 검색 API는 Google Custom Search JSON API(신규 가입 중단, 2027-01-01 종료 예정)에서 네이버 블로그 검색 API(`googlekit/api/naver_client.py`)로 교체됐다. 키워드 생성과 검증 흐름은 같다.
+> 이 문서는 작성 시점(2025-11-14)의 설계다. 이후 검색 API는 Google Custom Search JSON API(신규 가입 중단, 2027-01-01 종료 예정)에서 네이버 블로그 검색 API(`blogkit/api/naver_client.py`)로 교체됐다. 키워드 생성과 검증 흐름은 같다.
 
 **핵심 특징:**
 - LLM 기반 검색 쿼리 생성 (QUERY_MAX=3개 제한)
@@ -81,7 +81,7 @@ class GoogleSettings(BaseModel):
     min_score: float = Field(default=0.0)   # 최소 점수
 ```
 
-### **google_module/googlekit/config/google_config.py**
+### **blog/blogkit/config/google_config.py**
 ```python
 class GoogleConfig:
     LLM_MODEL: str = "gpt-4o"
@@ -94,7 +94,7 @@ class GoogleConfig:
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
 ```
 
-### **google_module/googlekit/config/flags.py**
+### **blog/blogkit/config/flags.py**
 ```python
 NO_SCORING = False           # True: 검증 스킵
 QUERY_MAX = 3                # 최대 쿼리 수
@@ -141,6 +141,6 @@ MAX_SEARCH_RESULTS = 10      # 쿼리당 최대 검색 결과
 **작성일:** 2025년 11월 14일  
 **버전:** 1.0  
 **관련 파일:**
-- `google_module/googlekit/service.py`
-- `google_module/googlekit/llm/google_llm.py`
-- `google_module/googlekit/api/google_client.py`
+- `blog/blogkit/service.py`
+- `blog/blogkit/llm/google_llm.py`
+- `blog/blogkit/api/google_client.py`

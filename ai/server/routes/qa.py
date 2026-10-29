@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import Field, validator
 
-from QA_module.qakit.models import QARequest, PreviousQA
+from qa.qakit.models import QARequest, PreviousQA
 
 from ..config import AppSettings
 from ..dependencies import get_qa_service, get_rag_service, get_settings

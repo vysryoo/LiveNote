@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from wiki_module.wikikit.service import WikiService
+from wiki.wikikit.service import WikiService
 
 pytestmark = pytest.mark.anyio("asyncio")
 

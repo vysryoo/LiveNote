@@ -41,9 +41,9 @@ LiveNote AI 게이트웨이는 다음과 같은 기능을 제공합니다.
            │
            ▼
 FastAPI (server/)
- ├─ RAG 라우터 → RAG_module (OpenAI Embedding + ChromaDB)
- ├─ QA 라우터  → QA_module (OpenAI Chat Completion)
- ├─ REC 라우터 → openalex_module / wiki_module / youtube_module / google_module
+ ├─ RAG 라우터 → rag (OpenAI Embedding + ChromaDB)
+ ├─ QA 라우터  → qa (OpenAI Chat Completion)
+ ├─ REC 라우터 → openalex / wiki / youtube / blog
  └─ Summary 라우터 → OpenAI Chat Completion
 ```
 
@@ -58,12 +58,12 @@ FastAPI (server/)
 
 | 경로 | 설명 |
 |------|------|
-| `QA_module/` | QA 생성 모듈 |
-| `RAG_module/` | RAG 저장/검색 모듈 (Chroma + Embedding) |
-| `openalex_module/` | 논문 추천 모듈 |
-| `wiki_module/` | 위키 추천 모듈 |
-| `youtube_module/` | 유튜브 추천 모듈 |
-| `google_module/` | 블로그 추천 모듈 (네이버 블로그 검색 사용) |
+| `qa/` | QA 생성 모듈 |
+| `rag/` | RAG 저장/검색 모듈 (Chroma + Embedding) |
+| `openalex/` | 논문 추천 모듈 |
+| `wiki/` | 위키 추천 모듈 |
+| `youtube/` | 유튜브 추천 모듈 |
+| `blog/` | 블로그 추천 모듈 (네이버 블로그 검색 사용) |
 | `server/` | FastAPI 서버 구성 |
 | `tests/` | 단위/통합 테스트 |
 | `setup.sh` | 환경 구축 자동 스크립트 |

@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 # 환경 변수 로드
 load_dotenv()
 
-from googlekit.service import GoogleService
-from googlekit.models import GoogleRequest
+from blogkit.service import GoogleService
+from blogkit.models import GoogleRequest
 
 
 async def test_basic_search():
@@ -55,7 +55,7 @@ async def test_no_scoring_mode():
     print("=" * 60)
     
     # NO_SCORING 플래그 활성화
-    from googlekit.config import flags
+    from blogkit.config import flags
     original_flag = flags.NO_SCORING
     flags.NO_SCORING = True
     

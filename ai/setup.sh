@@ -84,12 +84,12 @@ echo "📦 서버 통합 의존성 설치..."
 pip install -r "${REQUIREMENTS_FILE}"
 
 echo "📦 로컬 모듈 설치 (editable mode)..."
-pip install -e "${PROJECT_ROOT}/RAG_module"
-pip install -e "${PROJECT_ROOT}/QA_module"
-pip install -e "${PROJECT_ROOT}/openalex_module"
-pip install -e "${PROJECT_ROOT}/wiki_module"
-pip install -e "${PROJECT_ROOT}/youtube_module"
-pip install -e "${PROJECT_ROOT}/google_module"
+pip install -e "${PROJECT_ROOT}/rag"
+pip install -e "${PROJECT_ROOT}/qa"
+pip install -e "${PROJECT_ROOT}/openalex"
+pip install -e "${PROJECT_ROOT}/wiki"
+pip install -e "${PROJECT_ROOT}/youtube"
+pip install -e "${PROJECT_ROOT}/blog"
 
 if [ ! -f "${PROJECT_ROOT}/.env" ]; then
   if [ -f "${ENV_EXAMPLE}" ]; then

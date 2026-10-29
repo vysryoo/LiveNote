@@ -3,7 +3,7 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from youtube_module.youtubekit.api.youtube_client import YouTubeAPIClient
+from youtube.youtubekit.api.youtube_client import YouTubeAPIClient
 
 pytestmark = pytest.mark.anyio("asyncio")
 

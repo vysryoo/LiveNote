@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from RAG_module.ragkit.vectordb.chroma import ChromaVectorStore
+from rag.ragkit.vectordb.chroma import ChromaVectorStore
 
 
 def test_query_on_missing_collection_returns_no_results(tmp_path):

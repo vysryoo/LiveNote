@@ -3,7 +3,7 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from google_module.googlekit.api.naver_client import NaverBlogSearchClient
+from blog.blogkit.api.naver_client import NaverBlogSearchClient
 
 pytestmark = pytest.mark.anyio("asyncio")
 
@@ -58,6 +58,6 @@ async def test_search_returns_empty_list_on_network_error():
 
 
 def test_missing_credentials_are_rejected(monkeypatch):
-    monkeypatch.setattr("google_module.googlekit.config.google_config.GoogleConfig.NAVER_CLIENT_ID", "")
+    monkeypatch.setattr("blog.blogkit.config.google_config.GoogleConfig.NAVER_CLIENT_ID", "")
     with pytest.raises(ValueError):
         NaverBlogSearchClient(client_id=None, client_secret="secret")

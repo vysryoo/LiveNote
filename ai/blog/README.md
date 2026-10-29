@@ -2,7 +2,7 @@
 
 강의 요약을 기반으로 네이버 블로그 검색 API(NAVER API HUB)를 사용하여 관련 블로그 글을 검색하고 추천하는 모듈입니다.
 
-Google Custom Search JSON API가 신규 가입을 받지 않고 2027-01-01 종료 예정이라 검색 API를 네이버로 교체했습니다. 모듈·클래스 이름(`googlekit`, `GoogleService`)은 서버 코드와의 연결을 유지하기 위해 그대로 둡니다.
+Google Custom Search JSON API가 신규 가입을 받지 않고 2027-01-01 종료 예정이라 검색 API를 네이버로 교체했습니다. 모듈·클래스 이름(`blogkit`, `GoogleService`)은 서버 코드와의 연결을 유지하기 위해 그대로 둡니다.
 
 ## 📋 주요 기능
 
@@ -30,7 +30,7 @@ OPENAI_API_KEY="YOUR_OPENAI_API_KEY"
 ### 2. 의존성 설치
 
 ```bash
-cd google_module
+cd blog
 pip install -e .
 ```
 
@@ -46,8 +46,8 @@ pip install -e .
 
 ```python
 import asyncio
-from googlekit.service import GoogleService
-from googlekit.models import GoogleRequest
+from blogkit.service import GoogleService
+from blogkit.models import GoogleRequest
 
 async def main():
     service = GoogleService()
@@ -76,7 +76,7 @@ asyncio.run(main())
 ### NO_SCORING 모드 (빠른 검색)
 
 ```python
-from googlekit.config import flags
+from blogkit.config import flags
 
 # NO_SCORING 모드 활성화
 flags.NO_SCORING = True
@@ -102,13 +102,13 @@ results = await service.recommend_results(request)
 ## 🧪 테스트
 
 ```bash
-cd google_module
+cd blog
 python test_google.py
 ```
 
 ## ⚙️ 설정
 
-### GoogleConfig (googlekit/config/google_config.py)
+### GoogleConfig (blogkit/config/google_config.py)
 
 ```python
 class GoogleConfig:
@@ -136,7 +136,7 @@ class GoogleConfig:
     VERIFY_CONCURRENCY: int = 15  # 검증 동시 실행 수
 ```
 
-### Flags (googlekit/config/flags.py)
+### Flags (blogkit/config/flags.py)
 
 ```python
 # 검증 스위치

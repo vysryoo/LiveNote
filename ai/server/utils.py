@@ -6,11 +6,11 @@ from __future__ import annotations
 import json
 from typing import Any, Iterable, List
 
-from QA_module.qakit.models import RAGChunk as QARAGChunk, RAGContext as QARAGContext
-from openalex_module.openalexkit.models import RAGChunk as OpenAlexRAGChunk
-from wiki_module.wikikit.models import RAGChunk as WikiRAGChunk
-from youtube_module.youtubekit.models import RAGChunk as YouTubeRAGChunk
-from google_module.googlekit.models import RAGChunk as GoogleRAGChunk
+from qa.qakit.models import RAGChunk as QARAGChunk, RAGContext as QARAGContext
+from openalex.openalexkit.models import RAGChunk as OpenAlexRAGChunk
+from wiki.wikikit.models import RAGChunk as WikiRAGChunk
+from youtube.youtubekit.models import RAGChunk as YouTubeRAGChunk
+from blog.blogkit.models import RAGChunk as GoogleRAGChunk
 from pydantic import BaseModel, ConfigDict
 
 

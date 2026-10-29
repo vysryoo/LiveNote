@@ -47,7 +47,7 @@
 
 ```bash
 # 1. 프로젝트 디렉토리로 이동
-cd RAG_module
+cd rag
 
 # 2. 가상 환경 생성
 python -m venv .venv
@@ -61,7 +61,7 @@ source .venv/bin/activate
 
 # 4. 확인 (프롬프트에 (.venv) 표시됨)
 which python
-# 출력: /path/to/RAG_module/.venv/bin/python
+# 출력: /path/to/rag/.venv/bin/python
 ```
 
 ### 방법 2: conda 사용

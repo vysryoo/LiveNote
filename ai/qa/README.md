@@ -204,7 +204,7 @@ QARequest(
 
 ```bash
 # 1. 디렉토리 이동
-cd cap2_QA_module
+cd qa
 
 # 2. 자동 환경 설정
 ./setup.sh
@@ -734,7 +734,7 @@ QA_MAX_TOKENS = 500
 ## 📁 프로젝트 구조
 
 ```
-cap2_QA_module/
+qa/
 ├── qakit/                      # 핵심 라이브러리
 │   ├── __init__.py            # 패키지 초기화
 │   ├── service.py             # QAService (병렬 생성)

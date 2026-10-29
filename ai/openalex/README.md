@@ -288,7 +288,7 @@ if paper.reason == "Heuristic":
 
 ```bash
 # 1. 디렉토리 이동
-cd cap3_openalex_module
+cd openalex
 
 # 2. 자동 설치 스크립트 실행
 chmod +x setup.sh
@@ -308,7 +308,7 @@ python test_openalex.py
 
 ```bash
 # 1. 디렉토리 이동
-cd cap3_openalex_module
+cd openalex
 
 # 2. 가상환경 생성
 python -m venv .venv
@@ -515,7 +515,7 @@ python test_openalex.py
 ## 📁 프로젝트 구조
 
 ```
-cap3_openalex_module/
+openalex/
 ├── .env                          # 환경 변수 (OPENAI_API_KEY)
 ├── README.md                     # 이 문서
 ├── setup.sh                      # 환경 설정 스크립트
