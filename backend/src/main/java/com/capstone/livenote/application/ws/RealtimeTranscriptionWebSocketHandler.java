@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 프론트 → 백엔드 바이너리 PCM(24kHz, mono) 전송을 받아
@@ -68,12 +69,6 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
 
     @Value("${app.callback-base-url:http://localhost:8080}")
     private String callbackBaseUrl;
-
-    @Value("${app.transcription.padding-seconds:1.5}")
-    private double transcriptPaddingSeconds;
-
-    @Value("${app.transcription.speed-multiplier:1.0}")
-    private double transcriptSpeedMultiplier;
 
     private final Map<String, SessionContext> contexts = new ConcurrentHashMap<>();
 
@@ -120,9 +115,7 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
                 session,
                 lectureId,
                 language,
-                startFromSec,
-                transcriptPaddingSeconds,
-                transcriptSpeedMultiplier
+                startFromSec
         );
         contexts.put(session.getId(), ctx);
 
@@ -186,6 +179,10 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
     }
 
     private void sendTranscript(SessionContext ctx, String content, boolean isFinal) {
+        sendTranscript(ctx, content, isFinal, null);
+    }
+
+    private void sendTranscript(SessionContext ctx, String content, boolean isFinal, String itemId) {
         try {
             // 1. 클라이언트로 전송
             String json = objectMapper.writeValueAsString(
@@ -204,18 +201,15 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
             
             // 2. isFinal==true일 때 TranscriptService를 통해 저장 (요약 생성 트리거)
             if (isFinal && content != null && !content.trim().isEmpty()) {
-                // 발화 구간 길이(초): speech_started ~ 현재까지
-                int segmentSec = ctx.endActiveSegment();
-                if (segmentSec <= 0) segmentSec = Math.max(1, content.trim().length() / 10); // 최소 1초 보정
-
-                int startSec = ctx.lastTranscriptEndSec;
-                int endSec = startSec + segmentSec;
+                // 발화 구간: OpenAI가 알려 준 녹음 음성 안의 위치(ms)를 강의 전체 시각으로 바꿈
+                long[] range = ctx.takeSpeechRange(itemId);
+                int startSec = Math.max(ctx.baseSeconds + (int) (range[0] / 1000), ctx.lastTranscriptEndSec);
+                int endSec = Math.max(ctx.baseSeconds + (int) Math.ceil(range[1] / 1000.0), startSec + 1);
 
                 // TranscriptService를 통해 저장 -> SectionAggregationService.onNewTranscript() 자동 호출
                 transcriptService.saveFromStt(ctx.lectureId, startSec, endSec, content.trim());
 
                 ctx.lastTranscriptEndSec = endSec;
-                ctx.spokenSeconds = endSec; // spoken 시간 누적
 
                 log.info("[RealtimeWS] ✅ Transcript saved to DB via TranscriptService: lectureId={} startSec={} endSec={} text={}",
                         ctx.lectureId, startSec, endSec, 
@@ -336,15 +330,17 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
             
             // input_audio_buffer.speech_started 이벤트
             if (type.equals("input_audio_buffer.speech_started")) {
-                log.info("[RealtimeWS] Speech started lectureId={}", ctx.lectureId);
+                log.info("[RealtimeWS] Speech started lectureId={} audioStartMs={}", ctx.lectureId, root.path("audio_start_ms").asText("-"));
                 ctx.transcriptBuffer.setLength(0); // 버퍼 초기화
-                ctx.speechStartMillis = System.currentTimeMillis();
                 ctx.speechActive = true;
+                ctx.markSpeechStart(root.path("item_id").asText(""), root.path("audio_start_ms").asLong(-1));
                 return;
             }
 
             if (type.equals("input_audio_buffer.speech_stopped")) {
                 ctx.speechActive = false;
+                log.info("[RealtimeWS] Speech stopped lectureId={} audioEndMs={}", ctx.lectureId, root.path("audio_end_ms").asText("-"));
+                ctx.markSpeechEnd(root.path("item_id").asText(""), root.path("audio_end_ms").asLong(-1));
                 return;
             }
 
@@ -360,7 +356,7 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
                 String transcript = root.path("transcript").asText("");
                 if (!transcript.isEmpty()) {
                     log.info("[RealtimeWS] Transcription completed: {} lectureId={}", transcript, ctx.lectureId);
-                    sendTranscript(ctx, transcript, true);
+                    sendTranscript(ctx, transcript, true, root.path("item_id").asText(""));
                     ctx.transcriptBuffer.setLength(0);
                 }
                 ctx.pendingItems.remove(root.path("item_id").asText(""));
@@ -429,37 +425,27 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
         private final AtomicBoolean openAiReady = new AtomicBoolean(false);
         private final StringBuilder transcriptBuffer = new StringBuilder();
         private volatile WebSocket openAiWebSocket;
-        private final long startTimeMillis = System.currentTimeMillis();
+        // OpenAI로 보내는 음성 형식(PCM16, 24kHz, 모노)의 1초당 바이트 수
+        private static final long AUDIO_BYTES_PER_SECOND = 24000L * 2;
+
         private final int baseSeconds; // 재개 시 기준 시간(초)
         private int lastTranscriptEndSec;
-        private long speechStartMillis = -1;
+        // 발화 항목별 녹음 음성 안의 시작·끝 위치(ms). 끝을 모르면 -1
+        private final Map<String, long[]> speechRanges = new ConcurrentHashMap<>();
+        private final AtomicLong audioBytesSent = new AtomicLong();
         private volatile boolean speechActive;
         private final Set<String> pendingItems = ConcurrentHashMap.newKeySet();
         private final AtomicBoolean clientClosed = new AtomicBoolean(false);
         private final AtomicBoolean openAiClosed = new AtomicBoolean(false);
-        private int spokenSeconds; // 말한 시간 누적
-        private final double paddingSeconds;
-        private final double speedMultiplier;
 
-        SessionContext(WebSocketSession clientSession, Long lectureId, String language, int startFromSec,
-                       double paddingSeconds, double speedMultiplier) {
+        SessionContext(WebSocketSession clientSession, Long lectureId, String language, int startFromSec) {
             this.clientSession = clientSession;
             this.lectureId = lectureId;
             this.language = language;
             this.baseSeconds = startFromSec;
             this.lastTranscriptEndSec = startFromSec;
-            this.spokenSeconds = startFromSec;
-            this.paddingSeconds = paddingSeconds;
-            this.speedMultiplier = speedMultiplier;
         }
         
-        int getElapsedSeconds() {
-            int active = 0;
-            if (speechStartMillis > 0) {
-                active = (int) ((System.currentTimeMillis() - speechStartMillis) / 1000);
-            }
-            return spokenSeconds + active;
-        }
 
         void setOpenAiWebSocket(WebSocket ws) {
             this.openAiWebSocket = ws;
@@ -489,6 +475,7 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
         void sendAudio(byte[] bytes) {
             if (openAiWebSocket == null) return;
             try {
+                audioBytesSent.addAndGet(bytes.length);
                 String b64 = Base64.getEncoder().encodeToString(bytes);
                 String payload = "{\"type\":\"input_audio_buffer.append\",\"audio\":\"" + b64 + "\"}";
                 openAiWebSocket.sendText(payload, true);
@@ -533,15 +520,29 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
             return !speechActive && pendingItems.isEmpty();
         }
 
-        int endActiveSegment() {
-            if (speechStartMillis <= 0) return 0;
-            long now = System.currentTimeMillis();
-            double deltaSeconds = ((now - speechStartMillis) / 1000.0) * speedMultiplier;
-            // 약간의 완충(+paddingSeconds) 후 올림하여 반올림 효과
-            int delta = (int) Math.ceil(deltaSeconds + paddingSeconds);
-            spokenSeconds += delta;
-            speechStartMillis = -1;
-            return delta;
+        void markSpeechStart(String itemId, long audioStartMs) {
+            speechRanges.put(itemId, new long[]{audioStartMs >= 0 ? audioStartMs : sentAudioMs(), -1});
+        }
+
+        void markSpeechEnd(String itemId, long audioEndMs) {
+            long[] range = speechRanges.get(itemId);
+            if (range != null && audioEndMs >= 0) {
+                range[1] = audioEndMs;
+            }
+        }
+
+        // 발화의 녹음 음성 안 위치(ms)를 꺼낸다. 말 끝 이벤트 없이 확정된 발화(녹음 정지 시 강제 확정 등)는
+        // 지금까지 보낸 음성 길이를 끝으로 보고, 위치를 모르는 발화는 직전 발화 끝부터로 봄
+        long[] takeSpeechRange(String itemId) {
+            long[] range = itemId == null ? null : speechRanges.remove(itemId);
+            long fallbackStart = (long) (lastTranscriptEndSec - baseSeconds) * 1000;
+            long start = range != null ? range[0] : fallbackStart;
+            long end = range != null && range[1] >= 0 ? range[1] : sentAudioMs();
+            return new long[]{start, Math.max(end, start)};
+        }
+
+        private long sentAudioMs() {
+            return audioBytesSent.get() * 1000 / AUDIO_BYTES_PER_SECOND;
         }
     }
 }
