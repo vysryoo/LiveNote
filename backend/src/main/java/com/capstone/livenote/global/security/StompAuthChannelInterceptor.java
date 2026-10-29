@@ -24,12 +24,14 @@ import java.util.regex.Pattern;
  *
  * 브라우저 WebSocket 핸드셰이크에는 Authorization 헤더를 붙일 수 없어 HTTP 필터 단계에서는 인증하지 않고,
  * STOMP CONNECT 프레임의 헤더로 사용자를 확인한다. 구독은 본인 강의의 토픽만 허용한다.
+ * 토픽 메시지는 서버만 보내므로 클라이언트의 SEND는 거부한다.
  */
 @Component
 @RequiredArgsConstructor
 public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
-    private static final Pattern LECTURE_TOPIC = Pattern.compile("^/topic/lectures\\.(\\d+)(\\..*)?$");
+    // 단어를 영문·숫자로 제한해 RabbitMQ 와일드카드(*, #)로 다른 강의 토픽을 구독하지 못하게 함
+    private static final Pattern LECTURE_TOPIC = Pattern.compile("^/topic/lectures\\.(\\d+)(\\.[A-Za-z0-9]+)*$");
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
@@ -44,8 +46,12 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
         }
         if (accessor.getCommand() == StompCommand.CONNECT) {
             accessor.setUser(authenticate(accessor.getFirstNativeHeader(AUTHORIZATION_HEADER)));
+            // CONNECT 프레임은 RabbitMQ로 그대로 전달되므로 확인을 마친 토큰은 제거
+            accessor.removeNativeHeader(AUTHORIZATION_HEADER);
         } else if (accessor.getCommand() == StompCommand.SUBSCRIBE) {
             authorizeSubscription(accessor.getUser(), accessor.getDestination());
+        } else if (accessor.getCommand() == StompCommand.SEND) {
+            throw new AccessDeniedException("client send not allowed");
         }
         return message;
     }

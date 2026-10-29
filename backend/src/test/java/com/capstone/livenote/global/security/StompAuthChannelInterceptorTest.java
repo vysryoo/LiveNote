@@ -121,4 +121,34 @@ class StompAuthChannelInterceptorTest {
         assertThat(StompAuthChannelInterceptor.lectureIdOf("/topic/lectures/12/summary")).isEqualTo(Optional.empty());
         assertThat(StompAuthChannelInterceptor.lectureIdOf(null)).isEqualTo(Optional.empty());
     }
+
+    @Test
+    void lectureIdOf_rejectsBrokerWildcards() {
+        assertThat(StompAuthChannelInterceptor.lectureIdOf("/topic/lectures.*.summary")).isEqualTo(Optional.empty());
+        assertThat(StompAuthChannelInterceptor.lectureIdOf("/topic/lectures.#")).isEqualTo(Optional.empty());
+        assertThat(StompAuthChannelInterceptor.lectureIdOf("/topic/lectures.4.#")).isEqualTo(Optional.empty());
+    }
+
+    @Test
+    void connect_removesTokenBeforeRelayingToBroker() {
+        when(jwtTokenProvider.validateToken("good")).thenReturn(true);
+        when(jwtTokenProvider.getUserIdFromToken("good")).thenReturn(1L);
+
+        Message<?> result = interceptor.preSend(connect("Bearer good"), channel);
+
+        StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(result, StompHeaderAccessor.class);
+        assertThat(accessor.getFirstNativeHeader("Authorization")).isNull();
+    }
+
+    @Test
+    void send_fromClient_isRejected() {
+        StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SEND);
+        accessor.setUser(user(1L));
+        accessor.setDestination("/topic/lectures.4.summary");
+        accessor.setLeaveMutable(true);
+        Message<byte[]> message = MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
+
+        assertThatThrownBy(() -> interceptor.preSend(message, channel))
+                .isInstanceOf(AccessDeniedException.class);
+    }
 }
