@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import Field, validator
 
+from core.timing import RequestTimer
 from qa.qakit.models import QARequest, PreviousQA
 
 from ..config import AppSettings
@@ -79,6 +80,8 @@ async def generate_qa(
     - done: {"item", "type", "question", "answer"}
     - error: {"item", "message"} 해당 항목 생성 실패
     """
+    timer = RequestTimer("qa", lecture_id=request.lecture_id, section_index=request.section_index)
+    timer.mark("received")
     lecture_id_str = str(request.lecture_id)
     collection_id = build_collection_id(settings.rag.collection_prefix, lecture_id_str)
     section_id_for_provider = request.section_index + 1  # QA 모듈은 1-base
@@ -97,6 +100,7 @@ async def generate_qa(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"RAG 검색 실패: {exc}"
         ) from exc
+    timer.mark("retrieved", chunks=len(rag_chunks))
 
     requested_types = list(request.question_types) if request.question_types is not None else list(settings.qa.question_types)
     qa_question_types_enum: List[QnAType] = requested_types[: settings.qa.qa_top_k]
@@ -134,10 +138,16 @@ async def generate_qa(
             type_value = enum_type.value if enum_type else q_type
             item = payload.get("item")
             if event_type == "start":
+                timer.mark("item_start", item=item, type=type_value)
                 yield _sse("start", {"item": item, "type": type_value})
             elif event_type in ("question", "answer"):
+                if event_type == "question":
+                    timer.mark("item_question", item=item)
+                else:
+                    timer.mark_once("item_first_answer", key=item, item=item)
                 yield _sse(event_type, {"item": item, "text": payload.get("text", "")})
             elif event_type == "qa":
+                timer.mark("item_done", item=item, answer_chars=len(payload.get("answer") or ""))
                 yield _sse("done", {
                     "item": item,
                     "type": type_value,
@@ -145,8 +155,10 @@ async def generate_qa(
                     "answer": payload.get("answer"),
                 })
             elif event_type == "error":
+                timer.mark("item_error", item=item)
                 logger.warning("QA 생성 실패: type=%s error=%s", q_type, payload.get("error"))
                 yield _sse("error", {"item": item, "message": payload.get("error")})
+        timer.mark("completed")
 
     return StreamingResponse(events(), media_type="text/event-stream")
 

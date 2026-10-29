@@ -11,6 +11,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import Field, HttpUrl, validator
 
+from core.timing import RequestTimer
 from openalex.openalexkit.models import (
     OpenAlexRequest,
     OpenAlexResponse,
@@ -100,6 +101,8 @@ async def recommend_resources(
     settings: AppSettings = Depends(get_settings),
 ):
     """논문/위키/유튜브/구글 추천 콜백 엔드포인트"""
+    timer = RequestTimer("rec", lecture_id=request.lecture_id, section_index=request.section_index)
+    timer.mark("received")
     lecture_id_str = str(request.lecture_id)
     collection_id = build_collection_id(settings.rag.collection_prefix, lecture_id_str)
     section_id_for_provider = request.section_index + 1  # 외부 모듈은 1-base
@@ -118,6 +121,7 @@ async def recommend_resources(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"RAG 검색 실패: {exc}",
         ) from exc
+    timer.mark("retrieved", chunks=len(rag_chunks))
 
     selected_resource_types = _select_resource_types(request.resource_types)
     if not selected_resource_types:
@@ -229,8 +233,11 @@ async def recommend_resources(
                 len(mapped),
                 ", ".join(titles[:5]) if titles else "none",
             )
+            timer.mark("provider_done", resource_type=res_type.value, count=len(mapped))
             await post_resources_callback(request, mapped)
+            timer.mark("provider_callback_sent", resource_type=res_type.value)
         except Exception as exc:  # pragma: no cover - 외부 서비스 예외
+            timer.mark("provider_failed", resource_type=res_type.value)
             logger.exception("REC provider %s 실패: %s", res_type.value, exc)
             await post_resources_callback(request, [])
 

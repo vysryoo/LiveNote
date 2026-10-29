@@ -14,6 +14,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from openai import AsyncOpenAI
 from pydantic import Field, HttpUrl, validator
 
+from core.timing import RequestTimer
+
 from ..config import AppSettings
 from ..dependencies import get_settings
 from ..security import internal_auth_headers
@@ -60,6 +62,10 @@ async def generate_summary(
     settings: AppSettings = Depends(get_settings),
 ):
     """요약 생성 콜백 엔드포인트"""
+    timer = RequestTimer(
+        "summary", lecture_id=request.lecture_id, section_index=request.section_index, phase=request.phase
+    )
+    timer.mark("received")
     transcript_text = _to_transcript_text(request.transcript)
     if not transcript_text:
         raise HTTPException(
@@ -85,6 +91,7 @@ async def generate_summary(
 
         async def send_skip():
             await _post_summary_callback(callback_url, payload)
+            timer.mark("skipped_callback_sent")
 
         asyncio.create_task(send_skip())
         return {"status": "skipped", "reason": "too_short"}
@@ -93,9 +100,12 @@ async def generate_summary(
         try:
             client = AsyncOpenAI(api_key=api_key, timeout=30.0)
             summary_text = await _generate_summary_text(client, transcript_text, settings)
+            timer.mark("generated", summary_chars=len(summary_text))
             payload = _build_callback_payload(request, summary_text, status="COMPLETED")
             await _post_summary_callback(callback_url, payload)
+            timer.mark("callback_sent")
         except Exception as exc:  # pragma: no cover - 네트워크/외부 API 예외
+            timer.mark("failed")
             logger.exception("요약 생성 실패: %s", exc)
 
     asyncio.create_task(run_and_callback())
