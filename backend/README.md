@@ -137,6 +137,7 @@ REDIS_PORT=6379
 | `REDIS_PORT` | 6379 | Redis 포트 |
 | `APP_OPENAI_STT_MODEL` | whisper-1 | OpenAI STT 모델 |
 | `APP_OPENAI_REALTIME_TRANSCRIPTION_MODEL` | gpt-4o-transcribe | 실시간 전사 세션의 전사 모델 |
+| `APP_AI_AUTO_CARDS_ENABLED` | true | 부분 요약 시 QnA 2개·자료 2종 자동 생성. 전사·요약만 필요한 평가 데이터 수집 때 false |
 
 #### 히스토리/중복 방지 설정
 

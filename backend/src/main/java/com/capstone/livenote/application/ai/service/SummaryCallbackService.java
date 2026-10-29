@@ -3,6 +3,7 @@
 package com.capstone.livenote.application.ai.service;
 
 import com.capstone.livenote.application.ai.client.RagClient;
+import com.capstone.livenote.application.ai.config.AiAutoCardProperties;
 import com.capstone.livenote.application.ai.dto.SummaryCallbackDto;
 import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.summary.entity.Summary;
@@ -24,6 +25,7 @@ public class SummaryCallbackService {
     private final StreamGateway streamGateway;
     private final AiRequestService aiRequestService;
     private final RagClient ragClient;
+    private final AiAutoCardProperties autoCardProperties;
 
     @Transactional
     public void handleSummaryCallback(SummaryCallbackDto dto) {
@@ -72,6 +74,11 @@ public class SummaryCallbackService {
 
         } else {
             // PARTIAL 단계
+            if (!autoCardProperties.isEnabled()) {
+                log.info("[Partial Logic] Auto cards disabled: lectureId={} section={}",
+                        dto.getLectureId(), dto.getSectionIndex());
+                return;
+            }
             log.info("🚀 [Partial Logic] Requesting initial 2 QnA & 2 Resources");
 
             // limit=2 로 요청. 한쪽 요청이 실패해도 다른 쪽과 요약 저장 결과에는 영향을 주지 않음

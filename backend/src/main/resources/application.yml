@@ -74,4 +74,7 @@ app:
       previous-summary-count: 3
       previous-resource-sections: 3
       previous-qa-sections: 3
+    # 부분 요약 시 QnA 2개·자료 2종 자동 생성. 전사·요약만 필요한 평가 데이터 수집 때 false
+    auto-cards:
+      enabled: ${APP_AI_AUTO_CARDS_ENABLED:true}
 
