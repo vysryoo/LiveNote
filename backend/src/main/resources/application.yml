@@ -52,6 +52,14 @@ app:
 
   callback-base-url: ${APP_CALLBACK_BASE_URL:http://localhost:8080}
 
+  # STOMP 메시지를 중계하는 RabbitMQ (rabbitmq_stomp 플러그인)
+  stomp-relay:
+    host: ${RABBITMQ_STOMP_HOST:localhost}
+    port: ${RABBITMQ_STOMP_PORT:61613}
+    login: ${RABBITMQ_USERNAME}
+    passcode: ${RABBITMQ_PASSWORD}
+    virtual-host: ${RABBITMQ_VHOST:livenote}
+
   # AI 서버와 공유하는 내부 키. 백엔드→AI 요청과 AI→백엔드 콜백의 X-Internal-Api-Key 헤더로 사용
   internal-api-key: ${INTERNAL_API_KEY}
 

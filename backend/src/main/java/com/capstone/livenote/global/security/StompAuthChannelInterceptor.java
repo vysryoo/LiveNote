@@ -29,7 +29,8 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
-    private static final Pattern LECTURE_TOPIC = Pattern.compile("^/topic/lectures/(\\d+)(/.*)?$");
+    private static final Pattern LECTURE_TOPIC = Pattern.compile("^/topic/lectures\\.(\\d+)(\\..*)?$");
+    private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -42,7 +43,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
             return message;
         }
         if (accessor.getCommand() == StompCommand.CONNECT) {
-            accessor.setUser(authenticate(accessor.getFirstNativeHeader("Authorization")));
+            accessor.setUser(authenticate(accessor.getFirstNativeHeader(AUTHORIZATION_HEADER)));
         } else if (accessor.getCommand() == StompCommand.SUBSCRIBE) {
             authorizeSubscription(accessor.getUser(), accessor.getDestination());
         }
@@ -77,7 +78,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     /**
      * 강의 토픽 주소에서 강의 ID를 꺼낸다.
      *
-     * @param destination 구독 주소. 예: {@code /topic/lectures/4/summary}
+     * @param destination 구독 주소. 예: {@code /topic/lectures.4.summary}
      * @return 강의 ID. 강의 토픽 형식이 아니면 비어 있음
      */
     static Optional<Long> lectureIdOf(String destination) {

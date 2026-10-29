@@ -65,7 +65,8 @@ export function useSessionStream({ lectureId, dispatch, onStreamError }: UseSess
   const notifyStreamError = useEffectEvent(onStreamError);
 
   useEffect(() => {
-    const topic = (name: string) => `/topic/lectures/${lectureId}/${name}`;
+    // RabbitMQ STOMP는 /topic/ 뒤에 '/'를 허용하지 않아 '.'으로 구분함
+    const topic = (name: string) => `/topic/lectures.${lectureId}.${name}`;
     const client = new Client({
       brokerURL: STOMP_BROKER_URL,
       reconnectDelay: 5000,

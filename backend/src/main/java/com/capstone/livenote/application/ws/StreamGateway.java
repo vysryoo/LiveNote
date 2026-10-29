@@ -18,9 +18,14 @@ import java.util.Map;
 public class StreamGateway {
     private final SimpMessagingTemplate tmpl;
 
+    // RabbitMQ STOMP는 /topic/ 뒤에 '/'를 허용하지 않아 '.'으로 구분함
+    private static String lectureTopic(Long lectureId, String name) {
+        return "/topic/lectures." + lectureId + "." + name;
+    }
+
     // 실시간 전사 전송
     public void sendTranscript(Long lectureId, TranscriptResponseDto dto, boolean isFinal) {
-        tmpl.convertAndSend("/topic/lectures/" + lectureId + "/transcripts",
+        tmpl.convertAndSend(lectureTopic(lectureId, "transcripts"),
                 Map.of(
                         "type", "transcript",
                         "lectureId", lectureId,
@@ -44,7 +49,7 @@ public class StreamGateway {
 
     // 파라미터로 받는 메서드 (SectionAggregationService용)
     public void sendSummary(Long lectureId, Integer sectionIndex, String text, String phase) {
-        String destination = "/topic/lectures/" + lectureId + "/summary/" + sectionIndex;
+        String destination = lectureTopic(lectureId, "summary." + sectionIndex);
 
         Map<String, Object> payload = Map.of(
                 "type", "summary",
@@ -56,15 +61,15 @@ public class StreamGateway {
 
         tmpl.convertAndSend(destination, payload);
         // Also send to the non-section-specific summary topic so clients
-        // that subscribe to `/topic/lectures/{lectureId}/summary` receive updates.
-        tmpl.convertAndSend("/topic/lectures/" + lectureId + "/summary", payload);
+        // that subscribe to `/topic/lectures.{lectureId}.summary` receive updates.
+        tmpl.convertAndSend(lectureTopic(lectureId, "summary"), payload);
     }
 
 
     // resource 실시간 전송
     public void sendResources(Long lectureId, Integer sectionIndex, List<ResourceResponseDto> items) {
         tmpl.convertAndSend(
-                "/topic/lectures/" + lectureId + "/resources",
+                lectureTopic(lectureId, "resources"),
                 Map.of(
                         "type", "resources",
                         "lectureId", lectureId,
@@ -78,7 +83,7 @@ public class StreamGateway {
     // qna 실시간 전송
     public void sendQna(Long lectureId, Integer sectionIndex, List<QnaResponseDto> items) {
         tmpl.convertAndSend(
-                "/topic/lectures/" + lectureId + "/qna",
+                lectureTopic(lectureId, "qna"),
                 Map.of(
                         "type", "qna",
                         "lectureId", lectureId,
@@ -90,14 +95,14 @@ public class StreamGateway {
 
     // error 전송
     public void sendError(Long lectureId, String error) {
-        tmpl.convertAndSend("/topic/lectures/" + lectureId + "/error",
+        tmpl.convertAndSend(lectureTopic(lectureId, "error"),
                 Map.of("type", "error", "message", error));
     }
 
     // 섹션 상태 전송
     public void sendSection(Long lectureId, int sectionIndex) {
         tmpl.convertAndSend(
-                "/topic/lectures/" + lectureId + "/section",
+                lectureTopic(lectureId, "section"),
                 Map.of(
                         "type", "section",
                         "lectureId", lectureId,
@@ -129,6 +134,6 @@ public class StreamGateway {
         }
 
         // 스트리밍 전용 토픽 경로로 전송
-        tmpl.convertAndSend("/topic/lectures/" + lectureId + "/stream", payload);
+        tmpl.convertAndSend(lectureTopic(lectureId, "stream"), payload);
     }
 }

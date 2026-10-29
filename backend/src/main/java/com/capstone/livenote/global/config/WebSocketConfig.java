@@ -3,10 +3,8 @@ package com.capstone.livenote.global.config;
 import com.capstone.livenote.application.ws.RealtimeTranscriptionWebSocketHandler;
 import com.capstone.livenote.global.security.StompAuthChannelInterceptor;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
@@ -25,17 +23,37 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSoc
     private final RealtimeTranscriptionWebSocketHandler realtimeTranscriptionWebSocketHandler;
     private final StompAuthChannelInterceptor stompAuthChannelInterceptor;
 
+    @Value("${app.stomp-relay.host}")
+    private String relayHost;
+
+    @Value("${app.stomp-relay.port}")
+    private int relayPort;
+
+    @Value("${app.stomp-relay.login}")
+    private String relayLogin;
+
+    @Value("${app.stomp-relay.passcode}")
+    private String relayPasscode;
+
+    @Value("${app.stomp-relay.virtual-host}")
+    private String relayVirtualHost;
+
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(stompAuthChannelInterceptor);
     }
 
-    // === STOMP 설정 (기존: 결과 전송용) ===
+    // 백엔드 인스턴스가 여러 개여도 모든 구독자에게 전달되도록 구독 관리를 RabbitMQ에 맡김
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/topic")
-                .setHeartbeatValue(new long[]{4000, 4000})
-                .setTaskScheduler(heartbeatScheduler());
+        registry.enableStompBrokerRelay("/topic")
+                .setRelayHost(relayHost)
+                .setRelayPort(relayPort)
+                .setClientLogin(relayLogin)
+                .setClientPasscode(relayPasscode)
+                .setSystemLogin(relayLogin)
+                .setSystemPasscode(relayPasscode)
+                .setVirtualHost(relayVirtualHost);
         registry.setApplicationDestinationPrefixes("/app");
     }
 
@@ -44,15 +62,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSoc
         // 프론트 STOMP용 기본 엔드포인트 (/ws)
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*");
-    }
-
-    @Bean
-    public TaskScheduler heartbeatScheduler() {
-        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-        scheduler.setPoolSize(1);
-        scheduler.setThreadNamePrefix("ws-heartbeat-");
-        scheduler.initialize();
-        return scheduler;
     }
 
     // === WebSocket 설정 (새로 추가: 오디오 업로드용) ===

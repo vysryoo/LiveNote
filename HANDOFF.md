@@ -43,7 +43,7 @@
 | PostgreSQL 17 | `postgresql@17` (`brew services`로 상시 실행) | 백엔드 DB |
 | Python 3.11 | `python@3.11` | AI 서버 |
 | Redis 8 | `redis` (`brew services`로 상시 실행) | 백엔드 공유 상태 (적용 예정) |
-| RabbitMQ 4 | `rabbitmq` (`brew services`로 상시 실행, `rabbitmq_stomp` 플러그인) | STOMP 메시지 중계 (적용 예정) |
+| RabbitMQ 4 | `rabbitmq` (`brew services`로 상시 실행, `rabbitmq_stomp` 플러그인) | STOMP 메시지 중계 |
 
 RabbitMQ는 앱 전용 계정·vhost(`livenote`)를 만들었고, STOMP·관리 화면 포트를 `127.0.0.1`에만 열도록 `/opt/homebrew/etc/rabbitmq/rabbitmq.conf`를 설정했다. 설치 절차는 `backend/README.md` 참조.
 

@@ -88,7 +88,7 @@ class StompAuthChannelInterceptorTest {
     void subscribe_toOwnLecture_isAllowed() {
         when(lectureService.getOwned(4L, 1L)).thenReturn(Lecture.builder().id(4L).userId(1L).build());
 
-        Message<byte[]> message = subscribe(user(1L), "/topic/lectures/4/summary");
+        Message<byte[]> message = subscribe(user(1L), "/topic/lectures.4.summary");
 
         assertThat(interceptor.preSend(message, channel)).isSameAs(message);
     }
@@ -97,13 +97,13 @@ class StompAuthChannelInterceptorTest {
     void subscribe_toOtherUsersLecture_isRejected() {
         when(lectureService.getOwned(4L, 2L)).thenThrow(new EntityNotFoundException("lecture"));
 
-        assertThatThrownBy(() -> interceptor.preSend(subscribe(user(2L), "/topic/lectures/4/stream"), channel))
+        assertThatThrownBy(() -> interceptor.preSend(subscribe(user(2L), "/topic/lectures.4.stream"), channel))
                 .isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
     void subscribe_withoutConnectedUser_isRejected() {
-        assertThatThrownBy(() -> interceptor.preSend(subscribe(null, "/topic/lectures/4/summary"), channel))
+        assertThatThrownBy(() -> interceptor.preSend(subscribe(null, "/topic/lectures.4.summary"), channel))
                 .isInstanceOf(AccessDeniedException.class);
     }
 
@@ -115,9 +115,10 @@ class StompAuthChannelInterceptorTest {
 
     @Test
     void lectureIdOf_parsesLectureTopics() {
-        assertThat(StompAuthChannelInterceptor.lectureIdOf("/topic/lectures/12/summary/3")).contains(12L);
-        assertThat(StompAuthChannelInterceptor.lectureIdOf("/topic/lectures/12")).contains(12L);
-        assertThat(StompAuthChannelInterceptor.lectureIdOf("/topic/lectures/abc/summary")).isEqualTo(Optional.empty());
+        assertThat(StompAuthChannelInterceptor.lectureIdOf("/topic/lectures.12.summary.3")).contains(12L);
+        assertThat(StompAuthChannelInterceptor.lectureIdOf("/topic/lectures.12")).contains(12L);
+        assertThat(StompAuthChannelInterceptor.lectureIdOf("/topic/lectures.abc.summary")).isEqualTo(Optional.empty());
+        assertThat(StompAuthChannelInterceptor.lectureIdOf("/topic/lectures/12/summary")).isEqualTo(Optional.empty());
         assertThat(StompAuthChannelInterceptor.lectureIdOf(null)).isEqualTo(Optional.empty());
     }
 }

@@ -98,6 +98,13 @@ APP_CALLBACK_BASE_URL=http://localhost:8080
 
 # AI 서버와 공유하는 내부 키 (ai/.env의 INTERNAL_API_KEY와 같은 값)
 INTERNAL_API_KEY=openssl-rand-hex-32로-생성한-값
+
+# RabbitMQ (STOMP 중계, 앱 전용 계정과 vhost)
+RABBITMQ_STOMP_HOST=localhost
+RABBITMQ_STOMP_PORT=61613
+RABBITMQ_USERNAME=livenote
+RABBITMQ_PASSWORD=password
+RABBITMQ_VHOST=livenote
 ```
 
 ---
@@ -114,6 +121,11 @@ INTERNAL_API_KEY=openssl-rand-hex-32로-생성한-값
 | `APP_JWT_SECRET` | - | JWT 토큰 서명키 |
 | `APP_CALLBACK_BASE_URL` | localhost:8080 | AI 서버 콜백을 받을 백엔드 URL |
 | `INTERNAL_API_KEY` | - | AI 서버와 공유하는 내부 키. 백엔드→AI 요청과 AI→백엔드 콜백의 `X-Internal-Api-Key` 헤더로 사용 |
+| `RABBITMQ_STOMP_HOST` | localhost | STOMP 메시지를 중계할 RabbitMQ 주소 |
+| `RABBITMQ_STOMP_PORT` | 61613 | RabbitMQ STOMP 플러그인 포트 |
+| `RABBITMQ_USERNAME` | - | RabbitMQ 계정 |
+| `RABBITMQ_PASSWORD` | - | RabbitMQ 비밀번호 |
+| `RABBITMQ_VHOST` | livenote | RabbitMQ vhost |
 | `APP_OPENAI_STT_MODEL` | whisper-1 | OpenAI STT 모델 |
 | `APP_OPENAI_REALTIME_TRANSCRIPTION_MODEL` | gpt-4o-transcribe | 실시간 전사 세션의 전사 모델 |
 | `APP_TRANSCRIPTION_PADDING_SECONDS` | 2.0 | 전사 패딩 시간(초) |
@@ -176,7 +188,7 @@ backend/
 - **오디오 스트리밍**: WebSocket으로 실시간 오디오 청크 수신 (PCM16)
 - **OpenAI Whisper STT**: 오디오를 텍스트로 변환
 - **전사 저장**: 섹션별 전사 내용 DB 저장
-- **실시간 전송**: STOMP를 통해 프론트엔드로 전사 결과 푸시
+- **실시간 전송**: STOMP를 통해 프론트엔드로 전사 결과 푸시. 메시지는 RabbitMQ가 중계해 백엔드 인스턴스가 여러 개여도 모든 구독자에게 전달됨
 
 ### 섹션 집계
 
@@ -194,9 +206,9 @@ backend/
 
 | 타입 | 설명 |
 |------|------|
-| `summary` | 요약 결과 수신 → DB 저장 → STOMP `/topic/lectures/{id}/summary` 푸시 |
-| `qna` | QA 결과 수신 → DB 저장 → STOMP `/topic/lectures/{id}/qna` 푸시 |
-| `resources` | 추천 자료 수신 → DB 저장 → STOMP `/topic/lectures/{id}/resources` 푸시 |
+| `summary` | 요약 결과 수신 → DB 저장 → STOMP `/topic/lectures.{id}.summary` 푸시 |
+| `qna` | QA 결과 수신 → DB 저장 → STOMP `/topic/lectures.{id}.qna` 푸시 |
+| `resources` | 추천 자료 수신 → DB 저장 → STOMP `/topic/lectures.{id}.resources` 푸시 |
 
 ### 추천 자료 관리
 
@@ -288,21 +300,21 @@ backend/
 | 경로 | 프로토콜 | 설명 |
 |------|----------|------|
 | `/ws/transcription?sessionId={lectureId}` | WebSocket | 실시간 STT (Binary PCM16 ↔ JSON transcript) |
-| `/ws` | STOMP | 브로커 연결 |
-| `/topic/lectures/{id}/transcripts` | STOMP 구독 | 전사 이벤트 수신 |
-| `/topic/lectures/{id}/summary` | STOMP 구독 | 요약 이벤트 수신 |
-| `/topic/lectures/{id}/resources` | STOMP 구독 | 자료 이벤트 수신 |
-| `/topic/lectures/{id}/qna` | STOMP 구독 | QA 이벤트 수신 |
-| `/topic/lectures/{id}/section` | STOMP 구독 | 섹션 전환 이벤트 수신 |
-| `/topic/lectures/{id}/error` | STOMP 구독 | 오류 이벤트 수신 |
-| `/topic/lectures/{id}/stream` | STOMP 구독 | 카드 스트리밍 토큰 수신 |
+| `/ws` | STOMP | 브로커 연결. CONNECT 헤더에 `Authorization: Bearer {토큰}` 필요. 구독은 본인 강의 토픽만 허용, 클라이언트 SEND는 거부 |
+| `/topic/lectures.{id}.transcripts` | STOMP 구독 | 전사 이벤트 수신 |
+| `/topic/lectures.{id}.summary` | STOMP 구독 | 요약 이벤트 수신 |
+| `/topic/lectures.{id}.resources` | STOMP 구독 | 자료 이벤트 수신 |
+| `/topic/lectures.{id}.qna` | STOMP 구독 | QA 이벤트 수신 |
+| `/topic/lectures.{id}.section` | STOMP 구독 | 섹션 전환 이벤트 수신 |
+| `/topic/lectures.{id}.error` | STOMP 구독 | 오류 이벤트 수신 |
+| `/topic/lectures.{id}.stream` | STOMP 구독 | 카드 스트리밍 토큰 수신 |
 
 ---
 
 ## 기술 스택
 
 - **Java 17** + **Spring Boot 3**
-- **Spring WebSocket** + **STOMP**
+- **Spring WebSocket** + **STOMP** (RabbitMQ 중계)
 - **Spring Data JPA** + **PostgreSQL** + **Flyway**
 - **JWT** (인증)
 - **OpenAI Whisper** (STT)
