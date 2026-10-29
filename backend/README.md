@@ -123,6 +123,9 @@ REDIS_PORT=6379
 | `AI_SERVER_URL` | - | AI 서버 URL (QA/REC/요약 생성) |
 | `OPENAI_API_KEY` | - | OpenAI API 키 (STT용) |
 | `APP_JWT_SECRET` | - | JWT 토큰 서명키 |
+| `APP_JWT_EXPIRATION_MS` | 1800000 | 접근 토큰 유효 시간(ms) |
+| `APP_JWT_REFRESH_EXPIRATION_DAYS` | 14 | 갱신 토큰 유효 기간(일) |
+| `APP_JWT_REFRESH_COOKIE_SECURE` | true | 갱신 토큰 쿠키의 Secure 속성. HTTPS가 아닌 주소에서 쿠키가 저장되지 않으면 false |
 | `APP_CALLBACK_BASE_URL` | localhost:8080 | AI 서버 콜백을 받을 백엔드 URL |
 | `INTERNAL_API_KEY` | - | AI 서버와 공유하는 내부 키. 백엔드→AI 요청과 AI→백엔드 콜백의 `X-Internal-Api-Key` 헤더로 사용 |
 | `RABBITMQ_STOMP_HOST` | localhost | STOMP 메시지를 중계할 RabbitMQ 주소 |
@@ -181,7 +184,7 @@ backend/
 
 ### 인증 및 사용자 관리
 
-- **JWT 기반 인증**: 로그인 시 JWT 토큰 발급, API 요청 시 토큰 검증
+- **JWT 기반 인증**: 로그인 시 접근 토큰(JWT, 30분)과 갱신 토큰(14일)을 발급. 갱신 토큰은 `HttpOnly` 쿠키(`livenote_refresh`, 경로 `/api/auth`)로만 주고받고 Redis에 해시로 저장. 갱신할 때마다 새 갱신 토큰으로 교체
 - **사용자 관리**: 회원가입, 로그인, 프로필 조회
 
 ### 강의 관리
@@ -231,7 +234,9 @@ backend/
 | 경로 | 메서드 | 설명 |
 |------|--------|------|
 | `/api/auth/register` | POST | 회원가입 `{loginId, password}` |
-| `/api/auth/login` | POST | 로그인 `{loginId, password}` → `{ok, data:{token, user}}` |
+| `/api/auth/login` | POST | 로그인 `{loginId, password}` → `{ok, data:{token, user}}` + 갱신 토큰 쿠키 |
+| `/api/auth/refresh` | POST | 갱신 토큰 쿠키로 새 접근 토큰 발급 → `{ok, data:{token}}` + 새 갱신 토큰 쿠키. 쿠키가 없거나 만료·폐기됐으면 401 |
+| `/api/auth/logout` | POST | 갱신 토큰 폐기와 쿠키 삭제 |
 
 ### 강의
 
