@@ -143,6 +143,8 @@ async def _run_qna(session, headers: dict, experiment: str, section: Section) ->
         "lectureId": eval_lecture_number(experiment, section.lecture_id),
         "sectionIndex": section.section_index,
         "sectionSummary": section.summary,
+        # 실제 백엔드처럼 강의 과목을 함께 보냄
+        "subject": section.subject or None,
         "questionTypes": QNA_TYPES,
     }
     async with session.post(f"{AI_URL}/qa/generate", json=payload, headers=headers) as res:
@@ -260,6 +262,7 @@ def main() -> None:
         name = f"{args.experiment}_{layer}_{args.split}"
         raw_path = save_raw(name, layer_rows)
         sections = qna_sections if layer == "qna" else resource_sections
+        per_field = args.qna_per_field if layer == "qna" else args.resource_per_field
         # 생성에 모두 실패해 행이 없는 섹션도 분모에 들어가도록 무관 판정 1건으로 채움 (Precision 0)
         produced = {r["section_key"] for r in layer_rows}
         missing = [s.key for s in sections if s.key not in produced]
@@ -271,8 +274,9 @@ def main() -> None:
             "실험": args.experiment,
             "분할 방식": args.strategy,
             "생성 모델": args.model,
-            "데이터": f"{args.split}, 분야별 {len(sections) // 3}섹션",
+            "데이터": f"{args.split}, {len(sections)}섹션 (분야당 최대 {per_field})",
             "생성 실패 섹션": len(missing),
+            "QnA 과목 정보 전달": "예" if layer == "qna" else "-",
             **judge_settings(),
         }
         title = "QnA" if layer == "qna" else "추천 자료"
