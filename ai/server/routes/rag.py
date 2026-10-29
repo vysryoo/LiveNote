@@ -118,10 +118,12 @@ async def upsert_text(
     upsert_items = []
     for item in request.items:
         metadata = dict(item.metadata or {})
+        # 이 경로로 들어오는 텍스트는 백엔드가 보내는 섹션 확정 요약. 검색 시 강의 자료와 구분하고 섹션 번호로 거르기 위해 표시
+        metadata["source_type"] = "summary"
         if item.section_id:
             metadata.setdefault("section_id", item.section_id)
-        if not metadata:
-            metadata["source"] = "text"
+            if item.section_id.isdigit():
+                metadata["section_index"] = int(item.section_id)
         upsert_items.append(
             {
                 "text": item.text,

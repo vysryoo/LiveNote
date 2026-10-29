@@ -45,7 +45,18 @@ async def test_text_upsert_preserves_metadata(async_client, test_context):
     await async_client.post("/rag/text-upsert", json=payload)
     call = test_context.rag.text_calls[-1]
     item = call["items"][0]
-    assert item["metadata"] == {"tag": "core"}
+    assert item["metadata"] == {"tag": "core", "source_type": "summary"}
+
+
+@pytest.mark.anyio
+async def test_text_upsert_marks_summary_with_section_index(async_client, test_context):
+    payload = {"lecture_id": "lec-sec", "items": [{"text": "요약", "section_id": "7"}]}
+
+    await async_client.post("/rag/text-upsert", json=payload)
+
+    metadata = test_context.rag.text_calls[-1]["items"][0]["metadata"]
+    assert metadata["source_type"] == "summary"
+    assert metadata["section_index"] == 7
 
 
 @pytest.mark.anyio

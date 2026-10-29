@@ -128,7 +128,7 @@ async def test_qa_generate_handles_rag_failure(async_client, test_context, monke
     def raise_error(*args, **kwargs):
         raise RuntimeError("no collection")
 
-    monkeypatch.setattr(test_context.rag, "retrieve", raise_error)
+    monkeypatch.setattr(test_context.rag, "retrieve_context", raise_error)
     payload = {
         "lecture_id": 4,
         "summary_id": 4,

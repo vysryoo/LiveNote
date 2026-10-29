@@ -220,7 +220,7 @@ async def test_rec_recommend_requires_rag(async_client, test_context, monkeypatc
     def raise_error(*args, **kwargs):
         raise RuntimeError("rag failure")
 
-    monkeypatch.setattr(test_context.rag, "retrieve", raise_error)
+    monkeypatch.setattr(test_context.rag, "retrieve_context", raise_error)
     payload = {
         "lecture_id": 5,
         "summary_id": 14,

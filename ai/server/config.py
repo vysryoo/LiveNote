@@ -19,6 +19,10 @@ class RAGSettings(BaseModel):
     qa_retrieve_top_k: int = Field(default=2, ge=1, description="QA 컨텍스트로 사용할 청크 개수")
     # REC용 RAG 검색 개수
     rec_retrieve_top_k: int = Field(default=2, ge=1, description="REC 컨텍스트로 사용할 청크 개수")
+    # 이전 섹션 요약 검색 개수. 강의 자료 조각과 따로 검색해 뒤에 붙임
+    summary_retrieve_top_k: int = Field(default=1, ge=0, description="함께 넣을 이전 섹션 요약 개수")
+    # 백엔드가 previousSummaries로 직접 보내는 직전 섹션 수. 검색에서는 이 범위를 뺌
+    recent_summary_window: int = Field(default=3, ge=0, description="요약 검색에서 제외할 직전 섹션 수")
 
 
 class QASettings(BaseModel):

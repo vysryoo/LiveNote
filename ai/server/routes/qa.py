@@ -87,10 +87,13 @@ async def generate_qa(
     section_id_for_provider = request.section_index + 1  # QA 모듈은 1-base
 
     def _retrieve():
-        return rag_service.retrieve(
+        return rag_service.retrieve_context(
             collection_id=collection_id,
             query=request.section_summary,
-            top_k=settings.rag.qa_retrieve_top_k
+            section_index=request.section_index,
+            pdf_top_k=settings.rag.qa_retrieve_top_k,
+            summary_top_k=settings.rag.summary_retrieve_top_k,
+            recent_window=settings.rag.recent_summary_window,
         )
 
     try:

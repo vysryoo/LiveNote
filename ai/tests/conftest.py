@@ -150,6 +150,19 @@ class StubRAGService:
         )
         return list(self.retrieve_result)
 
+    def retrieve_context(self, collection_id: str, query: str, section_index: int, pdf_top_k: int, summary_top_k: int, recent_window: int):
+        self.retrieve_calls.append(
+            {
+                "collection_id": collection_id,
+                "query": query,
+                "section_index": section_index,
+                "top_k": pdf_top_k,
+                "summary_top_k": summary_top_k,
+                "recent_window": recent_window,
+            }
+        )
+        return list(self.retrieve_result)
+
 
 class StubQAService:
     """QA 서비스 스텁"""
