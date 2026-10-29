@@ -233,7 +233,8 @@ data: {"item":1,"message":"..."}
 
 #### 주의 사항
 
-- RAG 검색에 실패하면(강의 컬렉션이 없는 경우 포함) 스트림을 시작하지 않고 HTTP 400
+- 강의 컬렉션이 아직 없으면(첫 확정 요약 업서트 전) 참고 자료 없이 섹션 요약만으로 생성
+- 그 밖의 RAG 검색 실패는 스트림을 시작하지 않고 HTTP 400
 - `question_types`에 잘못된 Enum 값이 들어오면 HTTP 422
 - 모델 출력 형식은 "첫 줄 질문, 이후 답변"이며, 모델이 붙이는 `질문:`, `답변:` 같은 머리말은 서버가 제거
 
@@ -493,12 +494,12 @@ CALLBACK_QA=https://webhook.site/xxx CALLBACK_REC=https://webhook.site/xxx ./tes
 
 | 메시지 | 원인 | 해결 |
 |--------|------|------|
-| `Collection ... does not exist` | 업서트된 `lecture_id`와 다름 | 동일한 `lecture_id` 사용 |
 | `metadata must be non-empty` | 메타데이터 없음 | 최신 코드 사용 (자동 보강) |
 | HTTP 422 | 잘못된 Enum 값 | 올바른 Enum 값 확인 |
-| HTTP 404 | 컬렉션 없음 | 먼저 RAG 업서트 실행 |
 
 ### Chroma 컬렉션 문제
+
+- QA·REC 검색 대상 컬렉션이 없으면 오류 대신 빈 검색 결과로 처리하고 섹션 요약만으로 생성함. 컬렉션은 첫 확정 요약을 업서트할 때 생김
 
 - `.env` 적용이 되지 않은 상태에서 서버 기동 → 기본 경로 사용
 - 해결: `source .venv/bin/activate`로 `.env` 적용 후 서버 실행

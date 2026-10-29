@@ -6,6 +6,7 @@ from typing import Any, List, Dict
 
 import chromadb
 from chromadb.config import Settings
+from chromadb.errors import InvalidCollectionException, NotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -140,11 +141,16 @@ class ChromaVectorStore:
             where: Optional filter conditions
             
         Returns:
-            List of results with id, text, score, and metadata
+            List of results with id, text, score, and metadata. Empty if the collection does not exist
         """
         start_time = time.time()
         
-        collection = self.client.get_collection(name=collection_id)
+        try:
+            collection = self.client.get_collection(name=collection_id)
+        except (InvalidCollectionException, NotFoundError):
+            # 강의 컬렉션은 첫 확정 요약을 저장할 때 생기므로, 그 전의 검색은 참고 자료 없음으로 처리
+            logger.info(f"Collection '{collection_id}' does not exist yet; returning no results")
+            return []
         
         try:
             results = collection.query(
