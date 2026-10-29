@@ -49,4 +49,25 @@ class LectureServiceTest {
         assertThatThrownBy(() -> service.getOwned(7L, 2L))
                 .isInstanceOf(EntityNotFoundException.class);
     }
+
+    @Test
+    void endLecture_savesTitleAndCompletes() {
+        Lecture lecture = Lecture.builder().id(4L).userId(1L).title("old").status(Lecture.Status.RECORDING).build();
+        when(lectureRepo.findById(4L)).thenReturn(Optional.of(lecture));
+
+        Lecture ended = service.endLecture(4L, "  자료구조 3주차 ");
+
+        assertThat(ended.getTitle()).isEqualTo("자료구조 3주차");
+        assertThat(ended.getStatus()).isEqualTo(Lecture.Status.COMPLETED);
+        assertThat(ended.getEndAt()).isNotNull();
+    }
+
+    @Test
+    void endLecture_withoutTitleKeepsExistingTitle() {
+        Lecture lecture = Lecture.builder().id(4L).userId(1L).title("old").status(Lecture.Status.RECORDING).build();
+        when(lectureRepo.findById(4L)).thenReturn(Optional.of(lecture));
+
+        assertThat(service.endLecture(4L, null).getTitle()).isEqualTo("old");
+        assertThat(service.endLecture(4L, "   ").getTitle()).isEqualTo("old");
+    }
 }

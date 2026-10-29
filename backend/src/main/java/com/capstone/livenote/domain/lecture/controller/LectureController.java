@@ -3,6 +3,7 @@ package com.capstone.livenote.domain.lecture.controller;
 import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.application.audio.service.AudioIngestService;
 import com.capstone.livenote.domain.lecture.dto.CreateLectureRequestDto;
+import com.capstone.livenote.domain.lecture.dto.EndLectureRequest;
 import com.capstone.livenote.domain.lecture.dto.LecturePageDto;
 import com.capstone.livenote.domain.lecture.dto.LectureResponseDto;
 import com.capstone.livenote.domain.lecture.dto.SessionDetailResponse;
@@ -145,9 +146,12 @@ public class LectureController {
     // 강의 종료
     @Operation(summary = "녹음을 종료하고 강의 상태를 완료로 변경")
     @PostMapping("/{lectureId}/end")
-    public ApiResponse<LectureResponseDto> endLecture(@PathVariable Long lectureId) {
+    public ApiResponse<LectureResponseDto> endLecture(
+            @PathVariable Long lectureId,
+            @RequestBody(required = false) EndLectureRequest request
+    ) {
         lectureService.getOwned(lectureId, currentUserId());
-        var lecture = lectureService.endLecture(lectureId);
+        var lecture = lectureService.endLecture(lectureId, request == null ? null : request.title());
         audio.markComplete(lectureId);
         return ApiResponse.ok(LectureResponseDto.from(lecture));
     }

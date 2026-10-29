@@ -117,12 +117,22 @@ public class LectureService {
         log.info("✅ [DB WRITE] Recording started: lectureId={}", id);
     }
 
-    // 강의 종료 (녹음 끝 + 상태 COMPLETED)
+    /**
+     * 강의를 종료 상태로 바꾸고, 제목이 주어지면 함께 저장한다.
+     *
+     * @param id 강의 ID
+     * @param title 저장할 제목. null이거나 공백뿐이면 기존 제목 유지
+     * @return 종료된 강의
+     * @throws EntityNotFoundException 강의가 없는 경우
+     */
     @Transactional
-    public Lecture endLecture(Long id) {
+    public Lecture endLecture(Long id, String title) {
         log.info("💾 [DB WRITE] Ending lecture: lectureId={}", id);
         Lecture lecture = lectureRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("lecture"));
+        if (title != null && !title.isBlank()) {
+            lecture.setTitle(title.trim());
+        }
         lecture.setStatus(Lecture.Status.COMPLETED);
         lecture.setEndAt(java.time.LocalDateTime.now());
         lectureRepo.save(lecture);

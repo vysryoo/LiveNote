@@ -244,6 +244,7 @@ backend/
 | `/api/lectures` | POST | 강의 생성 `{title, subject, sttLanguage}` |
 | `/api/lectures/{id}` | GET | 강의 상세 조회 |
 | `/api/lectures/{id}` | DELETE | 강의 삭제 |
+| `/api/lectures/{id}/end` | POST | 강의 종료 `{title}` (선택. 비어 있으면 기존 제목 유지) |
 
 ### 전사
 
