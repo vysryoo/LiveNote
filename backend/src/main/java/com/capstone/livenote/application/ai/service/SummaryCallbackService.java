@@ -74,13 +74,23 @@ public class SummaryCallbackService {
             // PARTIAL 단계
             log.info("🚀 [Partial Logic] Requesting initial 2 QnA & 2 Resources");
 
-            // limit=2 로 요청
-            aiRequestService.requestResourcesWithSummary(
-                    dto.getLectureId(), null, dto.getSectionIndex(), dto.getText(), 2
-            );
-            aiRequestService.requestQnaWithSummary(
-                    dto.getLectureId(), null, dto.getSectionIndex(), dto.getText(), 2
-            );
+            // limit=2 로 요청. 한쪽 요청이 실패해도 다른 쪽과 요약 저장 결과에는 영향을 주지 않음
+            try {
+                aiRequestService.requestResourcesWithSummary(
+                        dto.getLectureId(), null, dto.getSectionIndex(), dto.getText(), 2
+                );
+            } catch (Exception e) {
+                log.error("❌ Resource request after PARTIAL summary failed: lectureId={} section={} error={}",
+                        dto.getLectureId(), dto.getSectionIndex(), e.getMessage());
+            }
+            try {
+                aiRequestService.requestQnaWithSummary(
+                        dto.getLectureId(), null, dto.getSectionIndex(), dto.getText(), 2
+                );
+            } catch (Exception e) {
+                log.error("❌ QnA request after PARTIAL summary failed: lectureId={} section={} error={}",
+                        dto.getLectureId(), dto.getSectionIndex(), e.getMessage());
+            }
         }
     }
 }
