@@ -2,15 +2,10 @@
 QA 요청/응답 데이터 모델
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-
-class RAGChunk(BaseModel):
-    """RAG 검색 결과 청크"""
-    text: str = Field(..., description="검색된 텍스트 청크")
-    score: float = Field(..., ge=0.0, le=1.0, description="유사도 점수")
-    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="메타데이터")
+from core.schemas import RAGChunk
 
 
 class RAGContext(BaseModel):

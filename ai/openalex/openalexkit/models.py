@@ -1,22 +1,10 @@
 """
 OpenAlexKit 데이터 모델 정의
 """
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
-
-class RAGChunk(BaseModel):
-    """RAG 검색 결과 청크"""
-    text: str = Field(..., description="청크 텍스트 내용")
-    score: float = Field(..., description="유사도 점수")
-    metadata: Optional[Dict[str, Any]] = Field(default=None, description="메타데이터")
-
-
-class PreviousSectionSummary(BaseModel):
-    """이전 섹션 요약"""
-    section_id: int = Field(..., description="섹션 번호")
-    summary: str = Field(..., description="섹션 요약 텍스트")
-    timestamp: Optional[int] = Field(default=None, description="타임스탬프 (ms)")
+from core.schemas import PreviousSummary, RAGChunk
 
 
 class OpenAlexRequest(BaseModel):
@@ -36,7 +24,7 @@ class OpenAlexRequest(BaseModel):
     )
     
     # ━━━ 컨텍스트 필드 ━━━
-    previous_summaries: List[PreviousSectionSummary] = Field(
+    previous_summaries: List[PreviousSummary] = Field(
         default_factory=list,
         description="이전 N개 섹션 요약 (컨텍스트 확장용)"
     )

@@ -23,7 +23,7 @@ class OpenAIClient:
         Args:
             request_data: {
                 "section_summary": str,
-                "previous_summaries": List[PreviousSectionSummary],
+                "previous_summaries": List[PreviousSummary],
                 "rag_context": List[RAGChunk]
             }
             

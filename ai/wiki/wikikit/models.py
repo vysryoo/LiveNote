@@ -4,19 +4,7 @@ Pydantic models for WikiKit module
 from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
 
-
-class RAGChunk(BaseModel):
-    """RAG 검색 결과 청크"""
-    text: str
-    score: float
-    metadata: Optional[dict] = None
-
-
-class PreviousSummary(BaseModel):
-    """이전 섹션 요약"""
-    section_id: int
-    summary: str
-    timestamp: Optional[int] = None
+from core.schemas import PreviousSummary, RAGChunk
 
 
 class WikiPageInfo(BaseModel):

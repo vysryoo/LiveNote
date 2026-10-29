@@ -10,7 +10,7 @@ from .models import (
     OpenAlexResponse,
     PaperInfo,
     RAGChunk,
-    PreviousSectionSummary,
+    PreviousSummary,
 )
 
 __version__ = "0.1.0"
@@ -21,5 +21,5 @@ __all__ = [
     "OpenAlexResponse",
     "PaperInfo",
     "RAGChunk",
-    "PreviousSectionSummary",
+    "PreviousSummary",
 ]

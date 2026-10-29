@@ -2,27 +2,15 @@
 Google 검색 추천을 위한 데이터 모델
 """
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional, Dict, Any
+from typing import List
 from datetime import datetime
 
 from .config import flags
 
+from core.schemas import PreviousSummary, RAGChunk
+
 
 # ━━━ 공통 모델 ━━━
-class RAGChunk(BaseModel):
-    """RAG 검색 결과 청크"""
-    text: str = Field(..., description="청크 텍스트")
-    score: float = Field(..., ge=0.0, description="관련도 점수")
-    metadata: Optional[Dict[str, Any]] = Field(default=None, description="메타데이터")
-
-
-class PreviousSummary(BaseModel):
-    """이전 섹션 요약"""
-    section_id: int = Field(..., ge=1, description="섹션 번호")
-    summary: str = Field(..., min_length=1, description="섹션 요약")
-    timestamp: Optional[str] = Field(default=None, description="타임스탬프")
-
-
 # ━━━ Google 특화 모델 ━━━
 class GoogleSearchResult(BaseModel):
     """Google 검색 결과 상세 정보"""

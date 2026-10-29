@@ -1,34 +1,12 @@
 """
 YouTubeKit 데이터 모델 정의
 """
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
 
 from .config import flags
 
-
-class RAGChunk(BaseModel):
-    """RAG 검색 결과 청크"""
-    text: Optional[str] = Field(default=None, description="청크 텍스트 내용")
-    content: Optional[str] = Field(default=None, description="청크 텍스트 내용 (text의 별칭)")
-    score: float = Field(default=0.0, description="유사도 점수")
-    source: Optional[str] = Field(default=None, description="출처 (파일명 등)")
-    metadata: Optional[Dict[str, Any]] = Field(default=None, description="메타데이터")
-    
-    @field_validator('text', mode='before')
-    @classmethod
-    def use_content_if_text_missing(cls, v, info):
-        """text가 없으면 content 사용"""
-        if v is None and 'content' in info.data:
-            return info.data['content']
-        return v
-
-
-class PreviousSummary(BaseModel):
-    """이전 섹션 요약"""
-    section_id: int = Field(..., description="섹션 번호")
-    summary: str = Field(..., description="섹션 요약 텍스트")
-    timestamp: Optional[int] = Field(default=None, description="타임스탬프 (ms)")
+from core.schemas import PreviousSummary, RAGChunk
 
 
 class YouTubeVideoInfo(BaseModel):

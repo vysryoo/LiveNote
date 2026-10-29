@@ -11,27 +11,12 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import Field, HttpUrl, validator
 
+from core.schemas import PreviousSummary as ProviderPreviousSummary
 from core.timing import RequestTimer
-from openalex.openalexkit.models import (
-    OpenAlexRequest,
-    OpenAlexResponse,
-    PreviousSectionSummary as OpenAlexPreviousSummary,
-)
-from wiki.wikikit.models import (
-    PreviousSummary as WikiPreviousSummary,
-    WikiRequest,
-    WikiResponse,
-)
-from youtube.youtubekit.models import (
-    PreviousSummary as YouTubePreviousSummary,
-    YouTubeRequest,
-    YouTubeResponse,
-)
-from blog.blogkit.models import (
-    PreviousSummary as GooglePreviousSummary,
-    GoogleRequest,
-    GoogleResponse,
-)
+from openalex.openalexkit.models import OpenAlexRequest, OpenAlexResponse
+from wiki.wikikit.models import WikiRequest, WikiResponse
+from youtube.youtubekit.models import YouTubeRequest, YouTubeResponse
+from blog.blogkit.models import GoogleRequest, GoogleResponse
 
 from ..config import AppSettings
 from ..dependencies import (
@@ -47,10 +32,7 @@ from ..security import internal_auth_headers
 from ..utils import (
     CamelModel,
     build_collection_id,
-    to_openalex_rag_chunks,
-    to_wiki_rag_chunks,
-    to_youtube_rag_chunks,
-    to_google_rag_chunks,
+    to_rag_chunks,
 )
 
 router = APIRouter(prefix="/rec", tags=["REC"])
@@ -130,38 +112,11 @@ async def recommend_resources(
             detail="요청된 리소스 유형이 없습니다."
         )
 
-    openalex_prev = [
-        OpenAlexPreviousSummary(
-            section_id=ps.section_index + 1,
-            summary=ps.summary,
-            timestamp=ps.timestamp,
-        )
+    previous = [
+        ProviderPreviousSummary(section_id=ps.section_index + 1, summary=ps.summary, timestamp=ps.timestamp)
         for ps in request.previous_summaries
     ]
-    wiki_prev = [
-        WikiPreviousSummary(
-            section_id=ps.section_index + 1,
-            summary=ps.summary,
-            timestamp=ps.timestamp,
-        )
-        for ps in request.previous_summaries
-    ]
-    youtube_prev = [
-        YouTubePreviousSummary(
-            section_id=ps.section_index + 1,
-            summary=ps.summary,
-            timestamp=ps.timestamp,
-        )
-        for ps in request.previous_summaries
-    ]
-    google_prev = [
-        GooglePreviousSummary(
-            section_id=ps.section_index + 1,
-            summary=ps.summary,
-            timestamp=str(ps.timestamp) if ps.timestamp is not None else None,
-        )
-        for ps in request.previous_summaries
-    ]
+    provider_rag_chunks = to_rag_chunks(rag_chunks)
 
     openalex_request = OpenAlexRequest(
         lecture_id=lecture_id_str,
@@ -170,8 +125,8 @@ async def recommend_resources(
         language=settings.rec.openalex.language,
         top_k=settings.rec.openalex.top_k,
         verify_openalex=settings.rec.openalex.verify,
-        previous_summaries=openalex_prev,
-        rag_context=to_openalex_rag_chunks(rag_chunks),
+        previous_summaries=previous,
+        rag_context=provider_rag_chunks,
         year_from=settings.rec.openalex.year_from,
         exclude_ids=request.paper_exclude,
         sort_by=settings.rec.openalex.sort_by,
@@ -185,8 +140,8 @@ async def recommend_resources(
         language=settings.rec.wiki.language,
         top_k=settings.rec.wiki.top_k,
         verify_wiki=settings.rec.wiki.verify,
-        previous_summaries=wiki_prev,
-        rag_context=to_wiki_rag_chunks(rag_chunks),
+        previous_summaries=previous,
+        rag_context=provider_rag_chunks,
         wiki_lang=settings.rec.wiki.wiki_lang,
         fallback_to_ko=settings.rec.wiki.fallback_to_ko,
         exclude_titles=request.wiki_exclude,
@@ -200,8 +155,8 @@ async def recommend_resources(
         language=settings.rec.youtube.language,
         top_k=settings.rec.youtube.top_k,
         verify_yt=settings.rec.youtube.verify,
-        previous_summaries=youtube_prev,
-        rag_context=to_youtube_rag_chunks(rag_chunks),
+        previous_summaries=previous,
+        rag_context=provider_rag_chunks,
         yt_lang=settings.rec.youtube.yt_lang,
         exclude_titles=request.yt_exclude,
         min_score=settings.rec.youtube.min_score,
@@ -214,8 +169,8 @@ async def recommend_resources(
         language=settings.rec.google.language,
         top_k=settings.rec.google.top_k,
         verify_google=settings.rec.google.verify,
-        previous_summaries=google_prev,
-        rag_context=to_google_rag_chunks(rag_chunks),
+        previous_summaries=previous,
+        rag_context=provider_rag_chunks,
         search_lang=settings.rec.google.search_lang,
         exclude_urls=request.google_exclude,
         min_score=settings.rec.google.min_score,

@@ -73,7 +73,7 @@ Top 5 논문 추천
 
 **1. Spring이 OpenAlex 모듈에 요청**
 ```python
-from openalexkit import OpenAlexService, OpenAlexRequest, PreviousSectionSummary, RAGChunk
+from openalexkit import OpenAlexService, OpenAlexRequest, PreviousSummary, RAGChunk
 
 service = OpenAlexService()
 
@@ -85,11 +85,11 @@ request = OpenAlexRequest(
     top_k=5,
     verify_openalex=True,  # LLM 검증 활성화
     previous_summaries=[
-        PreviousSectionSummary(
+        PreviousSummary(
             section_id=1,
             summary="스택은 LIFO 구조입니다..."
         ),
-        PreviousSectionSummary(
+        PreviousSummary(
             section_id=2,
             summary="큐는 FIFO 구조입니다..."
         )
@@ -412,7 +412,7 @@ asyncio.run(simple_recommend())
 from openalexkit import (
     OpenAlexService,
     OpenAlexRequest,
-    PreviousSectionSummary,
+    PreviousSummary,
     RAGChunk
 )
 
@@ -427,11 +427,11 @@ async def full_context_recommend():
         top_k=3,
         verify_openalex=True,  # LLM 검증 (정확)
         previous_summaries=[
-            PreviousSectionSummary(
+            PreviousSummary(
                 section_id=3,
                 summary="파동-입자 이중성은 빛과 물질의 특성입니다."
             ),
-            PreviousSectionSummary(
+            PreviousSummary(
                 section_id=4,
                 summary="슈뢰딩거 방정식은 양자 상태의 시간 변화를 기술합니다."
             )

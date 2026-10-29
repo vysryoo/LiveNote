@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from openalexkit import (
     OpenAlexService,
     OpenAlexRequest,
-    PreviousSectionSummary,
+    PreviousSummary,
     RAGChunk
 )
 
@@ -219,11 +219,11 @@ TEST_SCENARIOS = [
             top_k=5,
             verify_openalex=True,  # LLM 검증
             previous_summaries=[
-                PreviousSectionSummary(
+                PreviousSummary(
                     section_id=1,
                     summary="강화학습의 기본 개념: 에이전트, 환경, 상태, 행동, 보상"
                 ),
-                PreviousSectionSummary(
+                PreviousSummary(
                     section_id=2,
                     summary="Markov Decision Process와 Bellman 방정식"
                 )
@@ -253,15 +253,15 @@ TEST_SCENARIOS = [
             top_k=5,
             verify_openalex=True,  # LLM 검증
             previous_summaries=[
-                PreviousSectionSummary(
+                PreviousSummary(
                     section_id=1,
                     summary="자연어처리의 발전: RNN → LSTM → Attention Mechanism"
                 ),
-                PreviousSectionSummary(
+                PreviousSummary(
                     section_id=2,
                     summary="Transformer 아키텍처: Self-Attention과 Positional Encoding"
                 ),
-                PreviousSectionSummary(
+                PreviousSummary(
                     section_id=3,
                     summary="전이학습(Transfer Learning)과 사전학습(Pre-training)의 중요성"
                 )
