@@ -2,9 +2,7 @@
 -r requirements.txt
 
 pytest==9.1.1
-# rag/create_large_test_pdf.py
-reportlab==4.2.0
-# youtube/test_api_components.py, eval/collect_sections.py (녹음 WebSocket 전송)
+# eval/collect_sections.py (녹음 WebSocket 전송), eval/run_cards.py
 aiohttp==3.14.3
 # eval/prepare_data.py (강의 자료 Markdown → PDF)
 markdown==3.11.2

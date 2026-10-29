@@ -67,7 +67,6 @@ FastAPI (server/)
 | `server/` | FastAPI 서버 구성 |
 | `tests/` | 단위/통합 테스트 |
 | `setup.sh` | 환경 구축 자동 스크립트 |
-| `test_multi.sh` | 통합 테스트 스크립트 |
 | `requirements.txt` | 런타임 의존성 목록 (로컬·Docker 공통, 버전 고정) |
 | `requirements-dev.txt` | 테스트·검증 스크립트용 의존성 (`requirements.txt` 포함) |
 | `.env.example` / `.env` | 환경 변수 템플릿 및 실제 설정 |
@@ -457,48 +456,13 @@ POST /summary/generate
 
 ## 7. 테스트 방법
 
-### test_multi.sh 사용법
-
-> [!TIP]
-> `test_multi.sh`를 사용하여 다양한 API 케이스를 한 번에 테스트할 수 있습니다.
+외부 API를 호출하지 않는 단위·통합 테스트는 `tests/`에 있다.
 
 ```bash
-./test_multi.sh
+pytest
 ```
 
-**실행하면 케이스 목록이 표시됩니다:**
-
-```
-[케이스 목록]
-  1) Health check
-  2) RAG text upsert
-  3) QA 기본 question_types
-  4) QA 커스텀 question_types
-  5) REC 모든 provider
-  6) REC WIKI+VIDEO만
-  7) QA 이전 질문 제공 (개념 타입 중복 방지)
-  8) REC 논문 제외 목록 추가 (PAPER only)
-  9) REC 위키 제외 목록 추가 (WIKI only)
- 10) SUMMARY 생성 요청
-```
-
-**특정 케이스만 실행:**
-```bash
-./test_multi.sh 1 3 5
-```
-
-**환경 변수로 설정 변경:**
-```bash
-HOST=localhost PORT=8003 LECTURE_ID=123 ./test_multi.sh
-```
-
-**콜백 URL 지정:**
-```bash
-CALLBACK_QA=https://webhook.site/xxx CALLBACK_REC=https://webhook.site/xxx ./test_multi.sh
-```
-
-> [!NOTE]
-> [webhook.site](https://webhook.site)를 사용하면 브라우저에서 콜백 payload를 바로 확인할 수 있습니다.
+실제 API를 쓰는 정확도·응답 시간 측정은 `eval/`의 스크립트로 한다.
 
 ---
 
