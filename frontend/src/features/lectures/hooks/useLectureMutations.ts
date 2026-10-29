@@ -59,11 +59,8 @@ export function useDeleteLecture() {
 export function useEndLecture() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ lectureId, title }: { lectureId: number; title: string }) => {
-      // 백엔드 종료 API가 요청 본문을 읽지 않아 입력한 이름은 제목 변경 API로 따로 저장
-      await updateLectureTitle(lectureId, title);
-      return endLecture(lectureId);
-    },
+    mutationFn: ({ lectureId, title }: { lectureId: number; title: string }) =>
+      endLecture(lectureId, title),
     onSuccess: (_lecture, { lectureId }) =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: lectureKeys.list }),

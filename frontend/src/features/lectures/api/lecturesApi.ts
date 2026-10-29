@@ -74,11 +74,16 @@ export async function deleteLecture(lectureId: number): Promise<void> {
 }
 
 /**
- * 강의를 종료 상태로 바꾼다.
+ * 강의를 종료 상태로 바꾸고 제목을 함께 저장한다.
  *
  * @param lectureId 강의 ID
+ * @param title 저장할 제목. 비어 있으면 백엔드가 기존 제목을 유지함
  * @returns 종료된 강의
  */
-export async function endLecture(lectureId: number): Promise<Lecture> {
-  return lectureSchema.parse(await request(`/lectures/${lectureId}/end`, { method: "POST" }));
+export async function endLecture(lectureId: number, title: string): Promise<Lecture> {
+  const body = await request(`/lectures/${lectureId}/end`, {
+    method: "POST",
+    body: JSON.stringify({ title }),
+  });
+  return lectureSchema.parse(body);
 }
