@@ -45,7 +45,7 @@ async def test_text_upsert_preserves_metadata(async_client, test_context):
     await async_client.post("/rag/text-upsert", json=payload)
     call = test_context.rag.text_calls[-1]
     item = call["items"][0]
-    assert item.metadata == {"tag": "core"}
+    assert item["metadata"] == {"tag": "core"}
 
 
 @pytest.mark.anyio
