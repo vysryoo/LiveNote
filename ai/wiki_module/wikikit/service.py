@@ -258,6 +258,10 @@ class WikiService:
                     page_id = result.get("pageid")
                     page_detail = await self.api_client.get_page_extract(page_id, lang)
                     
+                    if page_detail and page_detail.get("disambiguation"):
+                        # 동음이의어 문서는 다른 문서 목록일 뿐이라 추천에서 제외
+                        logger.info(f"⏭️ 동음이의어 문서 제외: {page_detail.get('title')}")
+                        return None
                     if page_detail:
                         # 검색 결과의 snippet도 보존
                         page_detail["snippet"] = result.get("snippet", "")

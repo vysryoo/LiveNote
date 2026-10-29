@@ -77,7 +77,7 @@ class WikiAPIClient:
             lang: 언어 (en/ko)
             
         Returns:
-            {"title": "...", "extract": "...", "url": "...", "pageid": 123} or None
+            {"title": "...", "extract": "...", "url": "...", "pageid": 123, "disambiguation": False} or None
         """
         try:
             url = self.BASE_URL.format(lang=lang)
@@ -85,7 +85,9 @@ class WikiAPIClient:
             params = {
                 "action": "query",
                 "format": "json",
-                "prop": "extracts|info",
+                "prop": "extracts|info|pageprops",
+                # 동음이의어 문서 여부. 언어판과 관계없이 같은 속성으로 표시됨
+                "ppprop": "disambiguation",
                 "pageids": page_id,
                 "exintro": True,  # 도입부만
                 "explaintext": True,  # 일반 텍스트
@@ -113,7 +115,8 @@ class WikiAPIClient:
                     "title": page.get("title", ""),
                     "extract": page.get("extract", ""),
                     "url": page.get("fullurl", f"https://{lang}.wikipedia.org/?curid={page_id}"),
-                    "pageid": page_id
+                    "pageid": page_id,
+                    "disambiguation": "disambiguation" in page.get("pageprops", {}),
                 }
                 
         except Exception as e:
