@@ -80,3 +80,4 @@ def test_parse_plan_reads_rows_by_lecture_id():
 
     assert lectures["eng-3"]["자료 형태"] == "노트형"
     assert lectures["eng-1"]["분야"] == "공학"
+
