@@ -14,7 +14,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 from pathlib import Path
-from typing import Callable, Dict, List
+from typing import Dict, List
 
 from eval.dataset import Section, lecture_dir, split_sections
 from eval.judge import judge_rows, judge_settings
@@ -23,14 +23,6 @@ from eval.report import save_raw, summarize, write_report
 
 CHROMA_DIR = DATA_DIR / ".chroma"
 DEFAULT_K = 4
-
-
-def _index_page(rag, collection_id: str, pdf_path: Path) -> None:
-    rag.upsert_pdf(collection_id, str(pdf_path))
-
-
-# 분할 방식별 PDF 저장 함수. P6에서 recursive, semantic 추가
-INDEXERS: Dict[str, Callable] = {"page": _index_page}
 
 
 def collection_name(experiment: str, lecture_id: str) -> str:
@@ -45,21 +37,20 @@ def collection_name(experiment: str, lecture_id: str) -> str:
     return f"eval_{experiment.lower()}_{lecture_id}"
 
 
-def _ensure_index(rag, experiment: str, strategy: str, lecture_id: str) -> str:
+def _ensure_index(rag, experiment: str, lecture_id: str) -> str:
+    # 같은 실험 이름의 컬렉션이 이미 있으면 재사용. 분할 기준값을 바꿀 때는 실험 이름도 바꿈
     collection_id = collection_name(experiment, lecture_id)
-    store = rag.vector_store
-    existing = {c if isinstance(c, str) else c.name for c in store.client.list_collections()}
-    if collection_id not in existing or store.client.get_collection(collection_id).count() == 0:
-        INDEXERS[strategy](rag, collection_id, lecture_dir(lecture_id) / "material.pdf")
+    if not rag._exists(collection_id) or rag.client.get_collection(collection_id).count() == 0:
+        rag.upsert_pdf(collection_id, str(lecture_dir(lecture_id) / "material.pdf"))
     return collection_id
 
 
-def retrieve_rows(experiment: str, strategy: str, sections: List[Section], k: int) -> List[dict]:
+def retrieve_rows(experiment: str, chunk_settings, sections: List[Section], k: int) -> List[dict]:
     """섹션마다 상위 k개 조각을 검색해 채점 전 원자료 행을 만든다.
 
     Args:
-        experiment: 실험 이름
-        strategy: 분할 방식 (INDEXERS 키)
+        experiment: 실험 이름. 평가 전용 컬렉션 이름에 쓰임
+        chunk_settings: 분할 설정 (rag.ragkit.splitters.ChunkSettings)
         sections: 평가할 섹션 목록
         k: 검색 개수
     Returns:
@@ -71,8 +62,8 @@ def retrieve_rows(experiment: str, strategy: str, sections: List[Section], k: in
     from rag.ragkit.service import RAGService
 
     load_dotenv(Path(__file__).resolve().parent.parent / ".env")
-    rag = RAGService(RAGConfig(persist_dir=str(CHROMA_DIR)))
-    collections = {lid: _ensure_index(rag, experiment, strategy, lid) for lid in {s.lecture_id for s in sections}}
+    rag = RAGService(RAGConfig(persist_dir=str(CHROMA_DIR)), chunk_settings)
+    collections = {lid: _ensure_index(rag, experiment, lid) for lid in {s.lecture_id for s in sections}}
     rows = []
     for section in sections:
         chunks = rag.retrieve(collections[section.lecture_id], section.summary, top_k=k)
@@ -82,6 +73,7 @@ def retrieve_rows(experiment: str, strategy: str, sections: List[Section], k: in
                 "layer": "retrieval",
                 "lecture_id": section.lecture_id,
                 "field": section.field,
+                "style": section.style,
                 "section_key": section.key,
                 "rank": rank,
                 "chunk_id": chunk.id,
@@ -96,7 +88,13 @@ def retrieve_rows(experiment: str, strategy: str, sections: List[Section], k: in
 def main() -> None:
     parser = argparse.ArgumentParser(description="검색 단계 Precision@k 측정")
     parser.add_argument("--experiment", required=True, help="실험 이름 (예: E0)")
-    parser.add_argument("--strategy", required=True, choices=sorted(INDEXERS))
+    parser.add_argument("--strategy", required=True, choices=["page", "recursive", "semantic"])
+    parser.add_argument("--chunk-tokens", type=int, help="recursive 조각 크기(토큰)")
+    parser.add_argument("--chunk-overlap", type=int, help="recursive 겹침(토큰)")
+    parser.add_argument("--percentile", type=float, help="semantic 경계 백분위수")
+    parser.add_argument("--overlap-sentences", type=int, help="semantic 겹침 문장 수")
+    parser.add_argument("--min-tokens", type=int, help="semantic 최소 토큰")
+    parser.add_argument("--max-tokens", type=int, help="semantic 최대 토큰")
     parser.add_argument("--split", default="test", choices=["dev", "test"])
     parser.add_argument("--k", type=int, default=DEFAULT_K)
     parser.add_argument("--lectures", nargs="*", help="일부 강의만 측정 (확인용)")
@@ -115,22 +113,39 @@ def main() -> None:
                 filtered.append(s)
         sections = filtered
 
-    rows = asyncio.run(judge_rows(retrieve_rows(args.experiment, args.strategy, sections, args.k)))
+    from rag.ragkit.splitters import ChunkSettings, count_tokens
+
+    overrides = {
+        "chunk_tokens": args.chunk_tokens,
+        "chunk_overlap_tokens": args.chunk_overlap,
+        "semantic_percentile": args.percentile,
+        "semantic_overlap_sentences": args.overlap_sentences,
+        "semantic_min_tokens": args.min_tokens,
+        "semantic_max_tokens": args.max_tokens,
+    }
+    chunk_settings = ChunkSettings(strategy=args.strategy, **{k: v for k, v in overrides.items() if v is not None})
+    rows = asyncio.run(judge_rows(retrieve_rows(args.experiment, chunk_settings, sections, args.k)))
     name = f"{args.experiment}_retrieval_{args.split}"
     if args.lectures or args.max_sections:
         name += "_partial"
     raw_path = save_raw(name, rows)
     summary = summarize(rows, args.k)
+    by_style = summarize(rows, args.k, group_key="style")
+    tokens = [count_tokens(r["content"]) for r in rows]
     settings = {
         "실험": args.experiment,
         "분할 방식": args.strategy,
+        "분할 기준값": {k: v for k, v in vars(chunk_settings).items() if k != "strategy"} if args.strategy != "page" else "-",
+        "검색 조각 평균 토큰": round(sum(tokens) / len(tokens), 1) if tokens else 0,
         "데이터": f"{args.split} ({', '.join(sorted({s.lecture_id for s in sections}))})",
         "검색 질의": "섹션 확정 요약",
         "검색 대상": "강의 자료 PDF 조각만 (섹션 요약 제외)",
         **judge_settings(),
     }
-    report_path = write_report(name, f"{args.experiment} 검색 단계 Precision@{args.k}", settings, summary, args.k)
-    for group, values in summary.items():
+    report_path = write_report(
+        name, f"{args.experiment} 검색 단계 Precision@{args.k}", settings, summary, args.k, extra={"자료 형태별": by_style}
+    )
+    for group, values in {**summary, **{f"[{k}]": v for k, v in by_style.items() if k != "전체"}}.items():
         print(f"{group}: {values['precision'] * 100:.1f}% ±{(values['ci95'] or 0) * 100:.1f}%p ({values['sections']}섹션)")
     print("원자료:", raw_path)
     print("보고서:", report_path)

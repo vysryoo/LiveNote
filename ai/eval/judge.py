@@ -13,10 +13,12 @@ import asyncio
 import hashlib
 import json
 import os
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
+from core.timing import logger as timing_logger
 from eval.prepare_data import DATA_DIR
 
 JUDGE_MODEL = os.getenv("EVAL_JUDGE_MODEL", "gpt-6.1-terra")
@@ -137,6 +139,7 @@ async def _judge_one(client, item: JudgeItem, semaphore: asyncio.Semaphore) -> J
     if path.exists():
         return parse_judgment(path.read_text(encoding="utf-8"))
     async with semaphore:
+        started = time.perf_counter()
         response = await client.chat.completions.create(
             model=JUDGE_MODEL,
             reasoning_effort=JUDGE_REASONING_EFFORT,
@@ -146,11 +149,27 @@ async def _judge_one(client, item: JudgeItem, semaphore: asyncio.Semaphore) -> J
                 {"role": "user", "content": build_user_prompt(item)},
             ],
         )
+    _log_usage(response, (time.perf_counter() - started) * 1000)
     content = response.choices[0].message.content or ""
     judgment = parse_judgment(content)
     JUDGE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
     return judgment
+
+
+def _log_usage(response, elapsed_ms: float) -> None:
+    usage = getattr(response, "usage", None)
+    details = getattr(usage, "completion_tokens_details", None)
+    record = {
+        "event": "llm",
+        "purpose": "judge",
+        "model": JUDGE_MODEL,
+        "elapsed_ms": round(elapsed_ms, 1),
+        "input_tokens": getattr(usage, "prompt_tokens", 0) or 0,
+        "output_tokens": getattr(usage, "completion_tokens", 0) or 0,
+        "reasoning_tokens": getattr(details, "reasoning_tokens", 0) or 0,
+    }
+    timing_logger.info(json.dumps(record, ensure_ascii=False))
 
 
 async def judge_items(items: List[JudgeItem]) -> List[Judgment]:

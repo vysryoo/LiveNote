@@ -31,12 +31,13 @@ def precision_at_k(labels: List[bool], k: int) -> float:
     return sum(labels[:k]) / k
 
 
-def summarize(rows: List[dict], k: int) -> Dict[str, dict]:
-    """섹션별 Precision@k를 분야별·전체로 평균낸다.
+def summarize(rows: List[dict], k: int, group_key: str = "field") -> Dict[str, dict]:
+    """섹션별 Precision@k를 그룹별·전체로 평균낸다.
 
     Args:
-        rows: 판정 원자료. 각 행에 field, section_key, rank, relevant
+        rows: 판정 원자료. 각 행에 group_key 값, section_key, rank, relevant
         k: 기준 개수
+        group_key: 그룹 기준 열 (기본 분야)
     Returns:
         {분야 또는 '전체': {"precision", "sections", "items", "ci95"}}
     """
@@ -48,7 +49,7 @@ def summarize(rows: List[dict], k: int) -> Dict[str, dict]:
     for section_rows in by_section.values():
         section_rows.sort(key=lambda r: r["rank"])
         value = precision_at_k([r["relevant"] for r in section_rows], k)
-        for group in (section_rows[0]["field"], "전체"):
+        for group in (section_rows[0][group_key], "전체"):
             groups[group].append(value)
             items[group] += min(len(section_rows), k)
     summary = {}
@@ -80,27 +81,32 @@ def save_raw(name: str, rows: List[dict]) -> Path:
     return path
 
 
-def write_report(name: str, title: str, settings: dict, summary: Dict[str, dict], k: int) -> Path:
+def write_report(
+    name: str, title: str, settings: dict, summary: Dict[str, dict], k: int, extra: Dict[str, Dict[str, dict]] | None = None
+) -> Path:
     """집계 보고서(Markdown)를 저장한다.
 
     Args:
         name: 파일 이름 (확장자 제외)
         title: 보고서 제목
         settings: 실험 조건 (분할 방식, 모델, 채점 설정 등)
-        summary: summarize() 결과
+        summary: summarize() 결과 (분야별)
         k: 기준 개수
+        extra: 추가로 넣을 집계 {표 제목: summarize() 결과}
     Returns:
         저장한 경로
     """
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     lines = [f"# {title}", "", f"측정일: {date.today().isoformat()}", "", "## 조건", ""]
     lines += [f"- {key}: `{value}`" for key, value in settings.items()]
-    lines += ["", f"## Precision@{k}", "", "| 분야 | Precision | 95% 신뢰구간 | 섹션 | 판정 |", "| --- | --- | --- | --- | --- |"]
-    for group, values in summary.items():
-        ci = f"±{values['ci95'] * 100:.1f}%p" if values["ci95"] is not None else "-"
-        lines.append(
-            f"| {group} | {values['precision'] * 100:.1f}% | {ci} | {values['sections']} | {values['items']} |"
-        )
+    tables = {"분야별": summary, **(extra or {})}
+    for table_title, table in tables.items():
+        lines += ["", f"## Precision@{k} ({table_title})", "", "| 구분 | Precision | 95% 신뢰구간 | 섹션 | 판정 |", "| --- | --- | --- | --- | --- |"]
+        for group, values in table.items():
+            ci = f"±{values['ci95'] * 100:.1f}%p" if values["ci95"] is not None else "-"
+            lines.append(
+                f"| {group} | {values['precision'] * 100:.1f}% | {ci} | {values['sections']} | {values['items']} |"
+            )
     path = REPORT_DIR / f"{name}.md"
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path

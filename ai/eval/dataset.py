@@ -27,6 +27,7 @@ class Section:
     section_index: int
     transcript: str
     summary: str
+    style: str = ""
 
     @property
     def key(self) -> str:
@@ -70,6 +71,7 @@ def load_sections(lecture_id: str) -> List[Section]:
         Section(
             lecture_id=lecture_id,
             field=meta["field"],
+            style=meta.get("material_style", ""),
             section_index=s["section_index"],
             transcript=s["transcript"],
             summary=s["summary"],
