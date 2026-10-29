@@ -29,6 +29,7 @@ export const summarySchema = z.object({
 
 export const qnaSchema = z.object({
   id: z.number(),
+  cardId: z.string().nullish(),
   sectionIndex: z.number(),
   summaryId: z.number().nullish(),
   type: lowercaseSchema,
@@ -38,6 +39,7 @@ export const qnaSchema = z.object({
 
 export const resourceSchema = z.object({
   id: z.number(),
+  cardId: z.string().nullish(),
   sectionIndex: z.number(),
   summaryId: z.number().nullish(),
   type: lowercaseSchema,

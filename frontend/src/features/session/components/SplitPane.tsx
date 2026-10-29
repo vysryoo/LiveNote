@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import type { Bookmark, QnA, Resource } from "../api/schemas";
 import type { StreamingCard } from "../state/sessionReducer";
+import { orderCards } from "../cardOrder";
 import { AnimatedLoaderIcon } from "./AnimatedLoaderIcon";
 import { QnaCard, ResourceCard, StreamingCardView } from "./SessionCards";
 
@@ -119,24 +120,27 @@ export function SplitPane({
             <h3 className="mb-2 text-[16px]">&nbsp;{t("session.resources")}</h3>
             <ScrollArea className="flex-1 h-0">
               <div ref={resourceListRef} className="flex flex-col gap-3 p-[0px]">
-                {visibleResources.map((resource) => (
-                  <ResourceCard
-                    key={resource.id}
-                    resource={resource}
-                    bookmarked={isBookmarked("resource", resource.id)}
-                    animate={!initialResourceIds.has(resource.id)}
-                    onToggleBookmark={() =>
-                      onToggleBookmark({
-                        targetType: "resource",
-                        targetId: resource.id,
-                        sectionIndex: resource.sectionIndex,
-                      })
-                    }
-                  />
-                ))}
-                {streamingResources.map((card) => (
-                  <StreamingCardView key={card.cardId} card={card} />
-                ))}
+                {orderCards(visibleResources, streamingResources).map((entry) => {
+                  if (entry.kind === "streaming") {
+                    return <StreamingCardView key={entry.key} card={entry.card} />;
+                  }
+                  const resource = entry.item;
+                  return (
+                    <ResourceCard
+                      key={entry.key}
+                      resource={resource}
+                      bookmarked={isBookmarked("resource", resource.id)}
+                      animate={!initialResourceIds.has(resource.id)}
+                      onToggleBookmark={() =>
+                        onToggleBookmark({
+                          targetType: "resource",
+                          targetId: resource.id,
+                          sectionIndex: resource.sectionIndex,
+                        })
+                      }
+                    />
+                  );
+                })}
                 {showResourceHint && (
                   <LoadingHint id="grad-resources" text={t("session.findingResources")} />
                 )}
@@ -148,23 +152,26 @@ export function SplitPane({
             <h3 className="mb-2 text-[16px]">&nbsp;{t("session.ai")}</h3>
             <ScrollArea className="flex-1 h-0">
               <div ref={qnaListRef} className="flex flex-col gap-3 p-[0px]">
-                {visibleQna.map((item) => (
-                  <QnaCard
-                    key={item.id}
-                    qna={item}
-                    bookmarked={isBookmarked("qna", item.id)}
-                    onToggleBookmark={() =>
-                      onToggleBookmark({
-                        targetType: "qna",
-                        targetId: item.id,
-                        sectionIndex: item.sectionIndex,
-                      })
-                    }
-                  />
-                ))}
-                {streamingQna.map((card) => (
-                  <StreamingCardView key={card.cardId} card={card} />
-                ))}
+                {orderCards(visibleQna, streamingQna).map((entry) => {
+                  if (entry.kind === "streaming") {
+                    return <StreamingCardView key={entry.key} card={entry.card} />;
+                  }
+                  const item = entry.item;
+                  return (
+                    <QnaCard
+                      key={entry.key}
+                      qna={item}
+                      bookmarked={isBookmarked("qna", item.id)}
+                      onToggleBookmark={() =>
+                        onToggleBookmark({
+                          targetType: "qna",
+                          targetId: item.id,
+                          sectionIndex: item.sectionIndex,
+                        })
+                      }
+                    />
+                  );
+                })}
                 {showQnaHint && (
                   <LoadingHint id="grad-ai" text={t("session.generatingQuestions")} />
                 )}
