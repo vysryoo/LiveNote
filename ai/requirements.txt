@@ -1,5 +1,4 @@
 # LiveNote AI 서버 런타임 의존성 (로컬·Docker 공통)
-# 로컬 모듈(rag, qa, openalex, wiki, youtube, blog)은 이 파일 설치 후 --no-deps로 editable 설치
 
 # 서버
 fastapi==0.115.0

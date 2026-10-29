@@ -6,7 +6,7 @@ This package provides a clean, production-ready interface for:
 - Managing collections with persistent storage
 
 Example:
-    >>> from ragkit import RAGService, RAGConfig
+    >>> from rag.ragkit import RAGService, RAGConfig
     >>> config = RAGConfig()
     >>> service = RAGService(config)
     >>> result = service.upsert_text("my_collection", [

@@ -90,7 +90,6 @@ FastAPI (server/)
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt
-for m in rag qa openalex wiki youtube blog; do pip install --no-deps -e ./$m; done
 cp .env.example .env  # 내용 수정 필요
 ```
 
