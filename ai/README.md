@@ -120,6 +120,19 @@ RAG_PERSIST_DIR="server_storage/chroma_data_real" #chroma db 위치 지정
 INTERNAL_API_KEY="..." # 백엔드 env.properties와 같은 값. /health를 제외한 모든 API와 콜백이 X-Internal-Api-Key 헤더로 이 값을 확인하며, 비어 있으면 모든 요청을 거부
 ```
 
+선택 설정 (없으면 기본값 사용):
+
+| 변수 | 기본값 | 설명 |
+| --- | --- | --- |
+| `LLM_MODEL` | `gpt-6-luna` | 모든 LLM 호출의 모델 |
+| `LLM_<용도>_MODEL` | - | 용도별 모델. 용도: `SUMMARY`, `QA`, `QUERY`(검색어 생성), `VERIFY`(후보 검증) |
+| `LLM_<용도>_REASONING_EFFORT` | `none` | 용도별 추론 강도. 추론 모델(gpt-5·gpt-6 계열)에만 전달 |
+| `RAG_CHUNK_STRATEGY` | `page` | 강의 자료 분할 방식: `page`(쪽 단위), `recursive`(토큰 수 기준), `semantic`(의미 단위) |
+| `RAG_CHUNK_TOKENS` / `RAG_CHUNK_OVERLAP_TOKENS` | 300 / 50 | `recursive` 조각 크기와 겹침(토큰) |
+| `RAG_SEMANTIC_PERCENTILE` | 95 | `semantic` 경계 기준 백분위수. 높을수록 경계가 적음 |
+| `RAG_SEMANTIC_OVERLAP_SENTENCES` | 1 | `semantic` 조각 앞에 붙이는 이전 조각 문장 수 |
+| `RAG_SEMANTIC_MIN_TOKENS` / `RAG_SEMANTIC_MAX_TOKENS` | 40 / 400 | `semantic` 조각 최소·최대 토큰 |
+
 ---
 
 ## 6. API 명세
