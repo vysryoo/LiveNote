@@ -90,11 +90,7 @@ class GoogleService:
         logger.info(f"🌐 네이버 블로그 팬아웃 검색 시작 (keywords={len(keywords)}개)")
         
         search_tasks = [
-            self.api_client.search(
-                query=keyword,
-                lang=request.search_lang,
-                num=self.config.SEARCH_LIMIT
-            )
+            self._search_shortening(keyword, request.search_lang)
             for keyword in keywords[:self.config.FANOUT]
         ]
         
@@ -193,6 +189,26 @@ class GoogleService:
         
         return final_results
     
+    async def _search_shortening(self, keyword: str, lang: str) -> List[dict]:
+        """결과가 없으면 마지막 단어를 하나씩 빼며 다시 검색한다.
+
+        네이버 블로그 검색은 모든 단어가 들어간 글만 찾아, 전문 용어가 많은 키워드는 결과가 없을 수 있음.
+
+        Args:
+            keyword: LLM이 만든 검색 키워드
+            lang: 검색 언어
+        Returns:
+            검색 결과 목록. 한 단어까지 줄여도 없으면 빈 목록
+        """
+        words = keyword.split()
+        while words:
+            results = await self.api_client.search(query=" ".join(words), lang=lang, num=self.config.SEARCH_LIMIT)
+            if results or len(words) == 1:
+                return results
+            logger.info(f"🔁 검색 결과 없음, 키워드 축소: {' '.join(words)!r} → {' '.join(words[:-1])!r}")
+            words = words[:-1]
+        return []
+
     async def _verify_with_llm(
         self,
         results: List[dict],

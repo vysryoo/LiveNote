@@ -4,6 +4,7 @@ import httpx
 import pytest
 
 from blog.blogkit.api.naver_client import NaverBlogSearchClient
+from blog.blogkit.service import GoogleService
 
 pytestmark = pytest.mark.anyio("asyncio")
 
@@ -61,3 +62,22 @@ def test_missing_credentials_are_rejected(monkeypatch):
     monkeypatch.setattr("blog.blogkit.config.google_config.GoogleConfig.NAVER_CLIENT_ID", "")
     with pytest.raises(ValueError):
         NaverBlogSearchClient(client_id=None, client_secret="secret")
+
+
+async def test_search_shortening_drops_last_word_until_results():
+    class StubClient:
+        def __init__(self):
+            self.queries = []
+
+        async def search(self, query, lang, num):
+            self.queries.append(query)
+            return [{"title": "결과"}] if query == "벅 컨버터" else []
+
+    service = GoogleService.__new__(GoogleService)
+    service.api_client = StubClient()
+    service.config = type("Config", (), {"SEARCH_LIMIT": 10})()
+
+    results = await service._search_shortening("벅 컨버터 전압초평형 듀티비", "ko")
+
+    assert results == [{"title": "결과"}]
+    assert service.api_client.queries == ["벅 컨버터 전압초평형 듀티비", "벅 컨버터 전압초평형", "벅 컨버터"]
