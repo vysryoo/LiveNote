@@ -22,8 +22,10 @@ import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * AI 서버의 QnA 생성 스트림(SSE)을 받아 브라우저로 중계하고, 완성된 카드를 저장한다.
@@ -93,6 +95,9 @@ public class QnaStreamService {
     private final class Generation {
         private final QnaGeneratePayload payload;
         private final Map<Integer, Card> cards = new HashMap<>();
+        private final long startedAt = System.nanoTime();
+        private boolean firstEventMarked;
+        private final Set<Integer> firstAnswerMarked = new HashSet<>();
 
         Generation(QnaGeneratePayload payload) {
             this.payload = payload;
@@ -101,6 +106,10 @@ public class QnaStreamService {
         void handle(ServerSentEvent<String> event) {
             JsonNode data = parse(event.data());
             int item = data.path("item").asInt();
+            if (!firstEventMarked) {
+                firstEventMarked = true;
+                mark("first_event", null);
+            }
             switch (String.valueOf(event.event())) {
                 case "start" -> {
                     int cardIndex = reserveCardIndex(payload.getLectureId(), payload.getSectionIndex());
@@ -111,8 +120,14 @@ public class QnaStreamService {
                     Card card = cards.get(item);
                     card.question = data.path("text").asText();
                     sendToken(card, "");
+                    mark("item_question_sent", item);
                 }
-                case "answer" -> sendToken(cards.get(item), data.path("text").asText());
+                case "answer" -> {
+                    sendToken(cards.get(item), data.path("text").asText());
+                    if (firstAnswerMarked.add(item)) {
+                        mark("item_first_answer_sent", item);
+                    }
+                }
                 case "done" -> {
                     Card card = cards.get(item);
                     Qna saved = saveCard(card, data.path("question").asText(), data.path("answer").asText());
@@ -120,6 +135,7 @@ public class QnaStreamService {
                             null, true, QnaResponseDto.from(saved), null, null);
                     card.finished = true;
                     streamGateway.sendQna(payload.getLectureId(), payload.getSectionIndex(), findSectionQna());
+                    mark("item_done_sent", item);
                 }
                 case "error" -> {
                     log.warn("QnA generation failed: lectureId={} section={} item={} message={}",
@@ -135,6 +151,7 @@ public class QnaStreamService {
         }
 
         void complete() {
+            mark("completed", null);
             // 완료 이벤트 없이 끝난 카드는 화면에 생성 중으로 남지 않도록 실패로 알림
             if (cards.values().stream().anyMatch(card -> !card.finished)) {
                 log.warn("QnA stream ended with unfinished cards: lectureId={} section={}",
@@ -150,6 +167,13 @@ public class QnaStreamService {
             if (cards.values().stream().anyMatch(card -> !card.finished)) {
                 notifyFailure();
             }
+        }
+
+        // AI 서버 요청 시점부터 브라우저로 중계한 시점까지의 경과 시간. 스트리밍 효과 측정용
+        private void mark(String stage, Integer item) {
+            log.info("[timing] kind=qna_relay lectureId={} section={} stage={} item={} elapsedMs={}",
+                    payload.getLectureId(), payload.getSectionIndex(), stage, item,
+                    (System.nanoTime() - startedAt) / 1_000_000);
         }
 
         private void sendToken(Card card, String token) {
