@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Badge } from "@/shared/ui/badge";
 import type { QnA, Resource } from "../api/schemas";
 import { useTypewriter } from "../hooks/useTypewriter";
+import { toDisplayReason } from "../resourceReason";
 import type { StreamingCard } from "../state/sessionReducer";
 
 const CARD_CLASS =
@@ -74,6 +75,7 @@ export function ResourceCard({
   const { t } = useTranslation();
   const category = toResourceCategory(resource.type);
   const description = useTypewriter(resource.text, animate);
+  const reason = toDisplayReason(resource.reason);
   return (
     <div className={CARD_CLASS}>
       <div className="flex items-start justify-between mb-3 flex-shrink-0">
@@ -98,6 +100,14 @@ export function ResourceCard({
           {resource.text ? description : t("session.noDescription")}
         </p>
       </div>
+      {reason && (
+        <div className="pt-3 flex-shrink-0 text-xs text-muted-foreground">
+          <span className="font-medium">{t("session.recommendationReason")}</span>
+          <p className="mt-1 line-clamp-2" title={reason}>
+            {reason}
+          </p>
+        </div>
+      )}
       {resource.url && (
         <div className="pt-3 text-right text-xs text-muted-foreground">
           <a href={resource.url} target="_blank" rel="noreferrer" className="underline">

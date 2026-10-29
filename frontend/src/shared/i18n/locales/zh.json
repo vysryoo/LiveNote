@@ -89,6 +89,7 @@
     },
     "viewDetails": "查看详情",
     "noDescription": "暂无说明。",
+    "recommendationReason": "推荐理由",
     "findingResources": "正在查找资料...",
     "generatingQuestions": "AI 正在生成问题...",
     "generating": "生成中...",

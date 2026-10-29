@@ -90,6 +90,7 @@
     },
     "viewDetails": "View details",
     "noDescription": "No description.",
+    "recommendationReason": "Why recommended",
     "findingResources": "Finding resources...",
     "generatingQuestions": "AI is generating questions...",
     "generating": "Generating...",

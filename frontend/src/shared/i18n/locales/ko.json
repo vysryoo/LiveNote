@@ -89,6 +89,7 @@
     },
     "viewDetails": "자세히 보기",
     "noDescription": "설명이 없습니다.",
+    "recommendationReason": "추천 이유",
     "findingResources": "자료를 찾고 있습니다...",
     "generatingQuestions": "AI가 질문을 생성하고 있습니다...",
     "generating": "생성 중...",
