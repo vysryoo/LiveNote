@@ -33,8 +33,8 @@ from eval.prepare_data import INBOX_DIR
 
 BACKEND_URL = os.getenv("EVAL_BACKEND_URL", "http://localhost:8080")
 SAMPLE_RATE = 24000
-# 브라우저 녹음과 비슷한 크기(약 200ms)로 나눠 보냄
-CHUNK_SAMPLES = 4800
+# 프런트엔드 녹음과 같은 크기(4096샘플, 약 170ms). 백엔드 WebSocket 메시지 한도가 8192바이트라 이보다 크면 연결이 끊김
+CHUNK_SAMPLES = 4096
 # 마지막 말 구간이 끝났다고 인식되도록 녹음 끝에 붙이는 침묵
 TRAILING_SILENCE_SEC = 2.0
 # 연결을 닫은 뒤 서버가 남은 전사를 마무리하는 시간(최대 10초)보다 길게 기다림
