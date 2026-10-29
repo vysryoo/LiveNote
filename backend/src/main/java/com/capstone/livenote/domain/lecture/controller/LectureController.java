@@ -1,7 +1,6 @@
 package com.capstone.livenote.domain.lecture.controller;
 
 import com.capstone.livenote.application.ai.client.RagClient;
-import com.capstone.livenote.application.audio.service.AudioIngestService;
 import com.capstone.livenote.domain.lecture.dto.CreateLectureRequestDto;
 import com.capstone.livenote.domain.lecture.dto.EndLectureRequest;
 import com.capstone.livenote.domain.lecture.dto.LecturePageDto;
@@ -24,7 +23,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.IOException;
 import java.util.List;
 
 @Tag(
@@ -38,7 +36,6 @@ public class LectureController {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final LectureService lectureService;
-    private final AudioIngestService audio;
     private final RagClient ragClient;
 
     private Long currentUserId(){
@@ -127,22 +124,6 @@ public class LectureController {
     }
 
 
-    // 오디오 청크 업로드 ( AI 서버용 )
-    @Operation(summary = "AI 서버로 전송할 오디오 청크를 업로드")
-    @PostMapping(value="/{lectureId}/audio/chunk",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiResponse<Void> uploadChunk(
-            @PathVariable Long lectureId,
-            @RequestPart("file") MultipartFile file,
-            @RequestParam int chunkSeq,
-            @RequestParam int startSec,
-            @RequestParam int endSec
-    ) throws IOException {
-        lectureService.getOwned(lectureId, currentUserId());
-        audio.uploadChunk(lectureId, chunkSeq, startSec, endSec, file);
-        return ApiResponse.ok();
-    }
-
     // 강의 종료
     @Operation(summary = "녹음을 종료하고 강의 상태를 완료로 변경")
     @PostMapping("/{lectureId}/end")
@@ -152,7 +133,6 @@ public class LectureController {
     ) {
         lectureService.getOwned(lectureId, currentUserId());
         var lecture = lectureService.endLecture(lectureId, request == null ? null : request.title());
-        audio.markComplete(lectureId);
         return ApiResponse.ok(LectureResponseDto.from(lecture));
     }
 
