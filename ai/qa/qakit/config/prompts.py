@@ -3,13 +3,21 @@ QA 생성용 프롬프트 템플릿
 
 프롬프트 구성 요소:
 - section_summary: 현재 강의 내용 (질문 생성 대상)
-- rag_context: 이전 강의 노트 (참고만, 직접 출제 금지)
+- rag_context: 강의 자료 조각·이전 구간 요약 (용어 확인용, 직접 출제 금지)
+- scope_rule: 출제 범위 제한 (현재 강의에서 말한 내용만 근거)
 - context_qp: 기존 질문 (중복 방지용)
 """
 
 
 class PromptTemplates:
     """유형별 프롬프트 템플릿"""
+
+    # 강의 자료에는 아직 설명하지 않은 뒷부분 내용도 들어 있어, 그 내용으로 출제하지 않도록 제한함
+    SCOPE_RULE = """━━━ 출제 범위 ━━━
+- 질문과 답변은 '현재 강의'에 나온 내용만 근거로 함
+- 참고 자료에만 있는 개념·세부 내용은 질문과 답변에 넣지 않음
+- 응용·비교·심화 질문도 현재 강의에서 언급한 개념 안에서 만듦
+- 현재 강의가 주제나 학습 목표 소개뿐이면, 소개된 범위(무엇을 왜 배우는지) 안에서만 질문함"""
     
     # 개념 질문 프롬프트
     QA_CONCEPT = """━━━ 현재 강의 (여기서만 질문 생성) ━━━
@@ -18,6 +26,8 @@ class PromptTemplates:
 {rag_context}
 
 {context_qp}
+
+{scope_rule}
 
 {subject_context}위 기존 질문과 중복되지 않게, 현재 강의에서 핵심 개념/정의 질문 1개만 생성. 답변 5-6문장. 다른 유형(비교/응용/심화 등)을 섞지 말 것.
 
@@ -35,6 +45,8 @@ class PromptTemplates:
 
 {context_qp}
 
+{scope_rule}
+
 {subject_context}위 기존 질문과 중복되지 않게, 현재 강의의 실제 적용/예시 질문 1개만 생성. 답변 5-6문장.
 
 {language_instruction}
@@ -50,6 +62,8 @@ class PromptTemplates:
 {rag_context}
 
 {context_qp}
+
+{scope_rule}
 
 {subject_context}위 기존 질문과 중복되지 않게, 현재 강의의 개념들 비교/대조 질문 1개만 생성. 답변 5-6문장. 다른 유형(개념/바교/심화 등)을 섞지 말 것.
 
@@ -67,6 +81,8 @@ class PromptTemplates:
 
 {context_qp}
 
+{scope_rule}
+
 {subject_context}위 기존 질문과 중복되지 않게, 현재 강의의 원리/이유 심화 질문 1개만 생성. 답변 5-6문장. 다른 유형(개념/응용/심화 등)을 섞지 말 것.
 
 {language_instruction}
@@ -82,6 +98,8 @@ class PromptTemplates:
 {rag_context}
 
 {context_qp}
+
+{scope_rule}
 
 {subject_context}위 기존 질문과 중복되지 않게, 현재 강의의 실습 문제 1개만 생성. 구체적 수치/상황 제시. 답변 5-6문장. 다른 유형(비교/응용/개념 등)을 섞지 말 것.
 
@@ -109,7 +127,7 @@ class PromptTemplates:
         if not rag_context or not rag_context.chunks:
             return ""
         
-        parts = ["━━━ 참고 자료 (이전 강의, 참고만) ━━━"]
+        parts = ["━━━ 참고 자료 (강의 자료·이전 구간. 아직 다루지 않은 내용 포함, 용어 확인용) ━━━"]
         for i, chunk in enumerate(rag_context.chunks[:3], 1):  # 최대 3개
             parts.append(f"{i}. {chunk.text}")
         

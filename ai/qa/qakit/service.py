@@ -82,6 +82,7 @@ class QAService:
                     section_summary=request.section_summary,
                     rag_context=rag_context,
                     context_qp=context_qp,
+                    scope_rule=self.prompts.SCOPE_RULE,
                     subject_context=subject_context,
                     language_instruction=language_instruction
                 )
