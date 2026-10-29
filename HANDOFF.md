@@ -76,7 +76,7 @@ npm 10은 `vitest` 등 선택적 peer 의존성이 많은 패키지 설치 시 `
 | 파일 | 내용 |
 | --- | --- |
 | `backend/src/main/resources/env.properties` | PostgreSQL 접속 정보(앱 전용 계정 `livenote`, DB `livenote`), OpenAI 키, JWT 비밀값(Base64, 32바이트 이상), AI 서버 주소, AI 서버와 공유하는 내부 키(`INTERNAL_API_KEY`), RabbitMQ 계정(`RABBITMQ_*`), Redis 주소(`REDIS_*`) |
-| `ai/.env` | OpenAI 키, 내부 키(`INTERNAL_API_KEY`, 백엔드와 같은 값). YouTube·Google 키는 미확보라 `not-configured` 임시값 (7-3 참조) |
+| `ai/.env` | OpenAI 키, 내부 키(`INTERNAL_API_KEY`, 백엔드와 같은 값), YouTube 키(`YOUTUBE_API_KEY`), 네이버 블로그 검색 키(`NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`) |
 | `frontend/.env` | 불필요. 개발 서버가 `/api`를 8080으로 프록시하고 실시간 연결은 `ws://localhost:8080` 기본값 사용 |
 
 ### 4-3. 실행 순서
@@ -191,14 +191,16 @@ headless Chrome에 오디오 파일을 가짜 마이크로 넣어 녹음부터 �
 
 ### 8-3. 설정
 
-- YouTube·Google 키가 없으면 AI 서버가 시작되지 않음(`google_config.py`의 시작 시 검사). 임시값으로 시작하게 했으며, 이 경우 영상·블로그 추천만 빈 결과가 됨
+- YouTube·네이버 키가 비어 있으면 AI 서버가 시작되지 않음(`youtube_config.py`, `google_config.py`의 시작 시 검사). 임시값을 넣으면 시작은 되고 영상·블로그 추천만 빈 결과가 됨
+- 블로그 추천은 Google Custom Search JSON API 대신 네이버 블로그 검색 API(네이버 클라우드 NAVER API HUB, 네이버 개발자센터는 검색 API 신규 발급 종료)를 사용함. 현재 한시적 무료, NAVER 검색 분류 월 775,000건 공유 한도. Google API가 신규 가입을 받지 않고 2027-01-01 종료 예정이기 때문. 모듈 이름(`google_module`)은 그대로 둠
+- YouTube Data API 기본 할당량은 하루 10,000 단위이고 영상 추천 1회에 약 101 단위(검색 100 + 상세 1)를 씀. 섹션마다 1~2회 요청하므로 하루 녹음 약 25~50분 분량에서 할당량이 소진될 수 있음
 
 ---
 
 ## 9. 미결 사항
 
 1. 영어·일본어·중국어 번역 검토. 재작성 중 추가한 문구 약 100개와 "추천 이유" 문구는 에이전트가 작성함
-2. YouTube·Google 키 확보
+2. YouTube·네이버 키 발급 후 영상·블로그 추천 실제 동작 확인
 3. 8절 문제의 처리 순서
 
 ---
