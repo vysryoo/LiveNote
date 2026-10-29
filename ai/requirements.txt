@@ -1,4 +1,4 @@
-# LiveNote AI 서버 런타임 의존성 (로컬·Docker 공통)
+# LiveNote AI 서버 런타임 의존성
 
 # 서버
 fastapi==0.115.0

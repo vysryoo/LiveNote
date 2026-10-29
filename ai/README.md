@@ -67,7 +67,7 @@ FastAPI (server/)
 | `server/` | FastAPI 서버 구성 |
 | `tests/` | 단위/통합 테스트 |
 | `setup.sh` | 환경 구축 자동 스크립트 |
-| `requirements.txt` | 런타임 의존성 목록 (로컬·Docker 공통, 버전 고정) |
+| `requirements.txt` | 런타임 의존성 목록 (버전 고정) |
 | `requirements-dev.txt` | 테스트·검증 스크립트용 의존성 (`requirements.txt` 포함) |
 | `.env.example` / `.env` | 환경 변수 템플릿 및 실제 설정 |
 
