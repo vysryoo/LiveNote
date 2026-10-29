@@ -67,9 +67,9 @@ export function SplitPane({
   const { t } = useTranslation();
   const resourceListRef = useScrollToBottomOnGrow(streamingResources.length);
   const qnaListRef = useScrollToBottomOnGrow(streamingQna.length);
-  // 화면을 열 때 이미 있던 카드는 바로 보여 주고, 그 뒤 도착한 카드에만 글자 연출을 적용
+  // 화면을 열 때 이미 있던 자료 카드는 바로 보여 주고, 그 뒤 도착한 카드에만 글자 연출을 적용.
+  // QnA는 생성 중 카드로 실제 글자가 흘러 들어오므로 완성 후 다시 연출하지 않음
   const [initialResourceIds] = useState(() => new Set(resources.map((r) => r.id)));
-  const [initialQnaIds] = useState(() => new Set(qna.map((q) => q.id)));
 
   const visibleResources = showBookmarkedOnly
     ? resources.filter((r) => isBookmarked("resource", r.id))
@@ -153,7 +153,6 @@ export function SplitPane({
                     key={item.id}
                     qna={item}
                     bookmarked={isBookmarked("qna", item.id)}
-                    animate={!initialQnaIds.has(item.id)}
                     onToggleBookmark={() =>
                       onToggleBookmark({
                         targetType: "qna",

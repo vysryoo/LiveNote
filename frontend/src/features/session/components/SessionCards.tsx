@@ -112,16 +112,13 @@ export function ResourceCard({
 export function QnaCard({
   qna,
   bookmarked,
-  animate,
   onToggleBookmark,
 }: {
   qna: QnA;
   bookmarked: boolean;
-  animate: boolean;
   onToggleBookmark: () => void;
 }) {
   const { t } = useTranslation();
-  const answer = useTypewriter(qna.answer, animate);
   const typeKey = QNA_TYPE_KEYS[qna.type as keyof typeof QNA_TYPE_KEYS] ?? QNA_TYPE_KEYS.comparison;
   return (
     <div className={CARD_CLASS}>
@@ -142,7 +139,7 @@ export function QnaCard({
         <p className="font-medium">{qna.question}</p>
       </div>
       <div className="flex-1 overflow-y-auto">
-        <p className="text-sm text-muted-foreground whitespace-pre-line">{answer}</p>
+        <p className="text-sm text-muted-foreground whitespace-pre-line">{qna.answer}</p>
       </div>
     </div>
   );
