@@ -264,7 +264,7 @@ youtubekit/
 ### 환경 요구사항
 
 - Python 3.10+
-- OpenAI API 키 (gpt-4o-mini 권장)
+- OpenAI API 키 (모델은 core.llm 설정, 기본 gpt-6-luna)
 - YouTube Data API v3 키 (일일 쿼터 10,000)
 
 ## 📝 라이선스

@@ -129,8 +129,7 @@ class GoogleConfig:
     FANOUT: int = 3  # 동시 검색 키워드 개수
     
     # LLM 설정
-    LLM_MODEL: str = "gpt-4o-mini"
-    LLM_TEMPERATURE: float = 0.2
+    # 모델·추론 강도는 core.llm 용도별 설정을 따름 (환경변수 LLM_MODEL, LLM_<용도>_MODEL)
     
     # 병렬 처리
     VERIFY_CONCURRENCY: int = 15  # 검증 동시 실행 수

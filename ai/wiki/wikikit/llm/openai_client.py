@@ -6,7 +6,8 @@ import logging
 import re
 from textwrap import shorten
 from typing import List, Dict, Sequence, Optional
-from openai import AsyncOpenAI
+
+from core.llm import ModelPurpose, complete
 
 from ..config import WikiConfig, prompts
 
@@ -19,7 +20,6 @@ class OpenAIClient:
     def __init__(self):
         self.config = WikiConfig()
         self.config.validate()
-        self.client = AsyncOpenAI(api_key=self.config.OPENAI_API_KEY)
     
     async def generate_keywords(
         self, 
@@ -75,15 +75,10 @@ class OpenAIClient:
                 rag_context=build_rag_text(rag_context)
             )
             
-            response = await self.client.chat.completions.create(
-                model=self.config.LLM_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=self.config.MAX_TOKENS_QUERY,
-                temperature=self.config.LLM_TEMPERATURE,
-                response_format={"type": "json_object"}
+            content = await complete(
+                ModelPurpose.QUERY, [("user", prompt)], max_tokens=self.config.MAX_TOKENS_QUERY, json_mode=True
             )
-            
-            result = json.loads(response.choices[0].message.content)
+            result = json.loads(content)
             keywords = result.get("keywords", [])
             
             logger.info(f"📚 키워드 생성 (search={search_language}, output={language}): {keywords}")
@@ -124,18 +119,12 @@ class OpenAIClient:
                 language=language
             )
             
-            response = await self.client.chat.completions.create(
-                model=self.config.LLM_MODEL,
-                messages=[
-                    {"role": "system", "content": "Return only valid JSON."},
-                    {"role": "user", "content": prompt}
-                ],
+            raw_response = await complete(
+                ModelPurpose.VERIFY,
+                [("system", "Return only valid JSON."), ("user", prompt)],
                 max_tokens=self.config.MAX_TOKENS_SCORE,
-                temperature=0.0,
-                response_format={"type": "json_object"}
+                json_mode=True,
             )
-            
-            raw_response = response.choices[0].message.content
             result = self._safe_parse_json(raw_response)
             
             return {

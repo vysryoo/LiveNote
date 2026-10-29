@@ -50,10 +50,7 @@ class WikiConfig:
     # 값이 작면: 간결한 요약 BUT 정보 부족할 수 있음
     EXTRACT_SENTENCES: int = 3
     
-    # ━━━ LLM 설정 ━━━
-    LLM_MODEL: str = "gpt-4o"
-    #LLM_MODEL: str = "gpt-4o"
-    LLM_TEMPERATURE: float = 0.2
+    # ━━━ LLM 설정 ━━━ (모델과 추론 강도는 core.llm의 QUERY·VERIFY 용도 설정을 따름)
     MAX_TOKENS_QUERY: int = 100  # 키워드 생성용 (간소화)
     MAX_TOKENS_SCORE: int = 80   # 스코어링용 (간소화)
     

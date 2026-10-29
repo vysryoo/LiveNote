@@ -10,13 +10,9 @@ class QAConfig:
     
     # OpenAI API
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    OPENAI_TIMEOUT: int = 30  # seconds
-    
-    # 모델 설정
-    QA_MODEL: str = "gpt-4o"
-    #QA_MODEL: str = "gpt-4o-mini"
+
+    # 최대 출력 토큰. 모델과 추론 강도는 core.llm의 QA 용도 설정을 따름
     QA_MAX_TOKENS: int = 500
-    QA_TEMPERATURE: float = 0.5
     
     # 기본값
     DEFAULT_LANGUAGE: str = "ko"

@@ -4,8 +4,8 @@ OpenAI API 클라이언트 (LLM)
 import json
 import logging
 from typing import Dict, Any
-import httpx
-from openai import AsyncOpenAI
+
+from core.llm import ModelPurpose, complete
 
 from ..config.openalex_config import OpenAlexConfig
 from ..config import prompts
@@ -15,19 +15,6 @@ logger = logging.getLogger(__name__)
 
 class OpenAIClient:
     """OpenAI API 클라이언트 (쿼리 생성 + 논문 검증)"""
-    
-    def __init__(self):
-        # HTTP 클라이언트 설정
-        http_client = httpx.AsyncClient(
-            http2=True,
-            timeout=15.0,
-            limits=httpx.Limits(max_connections=20, max_keepalive_connections=10)
-        )
-        
-        self.client = AsyncOpenAI(
-            api_key=OpenAlexConfig.OPENAI_API_KEY,
-            http_client=http_client
-        )
     
     async def generate_query(self, request_data: Dict) -> Dict[str, Any]:
         """
@@ -80,18 +67,9 @@ class OpenAIClient:
             
             logger.info("🤖 LLM 쿼리 생성 시작...")
             
-            # OpenAI API 호출
-            response = await self.client.chat.completions.create(
-                model=OpenAlexConfig.LLM_MODEL,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=OpenAlexConfig.LLM_TEMPERATURE,
-                max_tokens=OpenAlexConfig.MAX_TOKENS_QUERY
+            content = await complete(
+                ModelPurpose.QUERY, [("user", prompt)], max_tokens=OpenAlexConfig.MAX_TOKENS_QUERY
             )
-            
-            # 응답 파싱
-            content = response.choices[0].message.content.strip()
             
             # JSON 파싱 (코드 블록 제거)
             if "```" in content:
@@ -151,18 +129,9 @@ class OpenAIClient:
                 language=language
             )
             
-            # OpenAI API 호출
-            response = await self.client.chat.completions.create(
-                model=OpenAlexConfig.LLM_MODEL,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=OpenAlexConfig.LLM_TEMPERATURE,
-                max_tokens=OpenAlexConfig.MAX_TOKENS_SCORE
+            content = await complete(
+                ModelPurpose.VERIFY, [("user", prompt)], max_tokens=OpenAlexConfig.MAX_TOKENS_SCORE
             )
-            
-            # 응답 파싱
-            content = response.choices[0].message.content.strip()
             
             # JSON 파싱 (코드 블록 제거)
             if "```" in content:

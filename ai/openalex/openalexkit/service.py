@@ -5,6 +5,8 @@ import asyncio
 import logging
 from typing import List
 
+from core.llm import ModelPurpose, model_settings
+
 from .models import OpenAlexRequest, OpenAlexResponse, PaperInfo
 from .config.openalex_config import OpenAlexConfig
 from .config import flags
@@ -146,7 +148,7 @@ class OpenAlexService:
                 logger.info(f"✨ LLM 병렬 검증 시작:")
                 logger.info(f"   ├─ 대상: {len(papers)}개")
                 logger.info(f"   ├─ 동시성: {OpenAlexConfig.VERIFY_CONCURRENCY}")
-                logger.info(f"   └─ 모델: {OpenAlexConfig.LLM_MODEL}")
+                logger.info(f"   └─ 모델: {model_settings(ModelPurpose.VERIFY).model}")
                 results = await self._verify_papers_parallel(papers, request, query)
             else:
                 # Heuristic 스코어링

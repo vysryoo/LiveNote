@@ -584,8 +584,8 @@ openalex/
 OPENAI_API_KEY=sk-your-key-here
 
 # 선택 (기본값 사용 가능)
-# OPENAI_MODEL=gpt-4o-mini
-# OPENAI_TEMPERATURE=0.3
+# LLM_MODEL=gpt-6-luna
+# LLM_VERIFY_REASONING_EFFORT=none
 ```
 
 ### 코드 레벨 설정
@@ -595,8 +595,7 @@ OPENAI_API_KEY=sk-your-key-here
 ```python
 class OpenAlexConfig:
     # LLM 설정
-    LLM_MODEL = "gpt-4o-mini"  # 또는 "gpt-4o"
-    LLM_TEMPERATURE = 0.3
+    # 모델·추론 강도는 core.llm 용도별 설정을 따름 (환경변수 LLM_MODEL, LLM_<용도>_MODEL)
     MAX_TOKENS_QUERY = 100
     MAX_TOKENS_SCORE = 80
     

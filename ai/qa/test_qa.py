@@ -7,7 +7,7 @@ import asyncio
 import time
 from dotenv import load_dotenv
 
-from qakit.config.qa_config import QAConfig
+from core.llm import DEFAULT_MODEL
 from qakit.models import QARequest, QAResponse, RAGContext, RAGChunk, PreviousQA
 from qakit.service import QAService
 
@@ -16,11 +16,9 @@ from qakit.service import QAService
 load_dotenv()
 
 MODEL_CHOICES = {
-    "1": "gpt-4o-mini",
-    "2": "gpt-3.5-turbo",
-    "3": "gpt-4o",
+    "1": "gpt-6-luna",
+    "2": "gpt-6.1-terra",
 }
-DEFAULT_MODEL = QAConfig.QA_MODEL
 
 
 def select_model() -> str:
@@ -121,6 +119,8 @@ TEST_SCENARIOS = [
 
 async def test_qa_generation(model: str | None = None):
     """QA 생성 테스트"""
+    if model:
+        os.environ["LLM_QA_MODEL"] = model
     print("\n" + "="*60)
     print("🚀 QAKit 모듈 테스트")
     print("="*60)
@@ -135,7 +135,7 @@ async def test_qa_generation(model: str | None = None):
     print(f"✅ API 키 로드 완료: {api_key[:20]}...")
     
     # QAService 초기화
-    qa_service = QAService(api_key=api_key, model=model)
+    qa_service = QAService()
     print("✅ QAService 초기화 완료\n")
     
     total_questions = 0
@@ -193,6 +193,8 @@ async def test_qa_generation(model: str | None = None):
 
 async def test_single_qa(model: str | None = None):
     """단일 QA 생성 테스트 (빠른 확인용)"""
+    if model:
+        os.environ["LLM_QA_MODEL"] = model
     print("\n" + "="*60)
     print("� 단일 QA 생성 테스트")
     print("="*60)
@@ -202,7 +204,7 @@ async def test_single_qa(model: str | None = None):
         print("❌ OPENAI_API_KEY가 설정되지 않았습니다!")
         return
     
-    qa_service = QAService(api_key=api_key, model=model)
+    qa_service = QAService()
     
     request = QARequest(
         lecture_id="quick_test",

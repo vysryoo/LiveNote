@@ -11,9 +11,9 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
-from openai import AsyncOpenAI
 from pydantic import Field, HttpUrl, validator
 
+from core.llm import ModelPurpose, complete
 from core.timing import RequestTimer
 
 from ..config import AppSettings
@@ -73,7 +73,7 @@ async def generate_summary(
             detail="전사 내용이 비어 있습니다.",
         )
 
-    api_key = _resolve_api_key()
+    _check_api_key()
     callback_url = _resolve_callback_url(request.callback_url, settings)
 
     if _is_too_short(transcript_text, settings.summary.min_transcript_length):
@@ -98,8 +98,7 @@ async def generate_summary(
 
     async def run_and_callback():
         try:
-            client = AsyncOpenAI(api_key=api_key, timeout=30.0)
-            summary_text = await _generate_summary_text(client, transcript_text, settings)
+            summary_text = await _generate_summary_text(transcript_text, settings)
             timer.mark("generated", summary_chars=len(summary_text))
             payload = _build_callback_payload(request, summary_text, status="COMPLETED")
             await _post_summary_callback(callback_url, payload)
@@ -112,19 +111,13 @@ async def generate_summary(
     return {"status": "accepted"}
 
 
-async def _generate_summary_text(client: AsyncOpenAI, transcript_text: str, settings: AppSettings) -> str:
-    """OpenAI를 사용해 요약 생성"""
-    response = await client.chat.completions.create(
-        model=settings.summary.model,
-        messages=[
-            {"role": "system", "content": settings.summary.system_prompt},
-            {"role": "user", "content": transcript_text},
-        ],
-        temperature=settings.summary.temperature,
+async def _generate_summary_text(transcript_text: str, settings: AppSettings) -> str:
+    """공통 LLM 계층으로 요약 생성"""
+    return await complete(
+        ModelPurpose.SUMMARY,
+        [("system", settings.summary.system_prompt), ("user", transcript_text)],
         max_tokens=settings.summary.max_tokens,
     )
-    content = response.choices[0].message.content or ""
-    return content.strip()
 
 
 async def _post_summary_callback(callback_url: str, payload: dict):
@@ -176,8 +169,8 @@ def _ensure_summary_type(url: str) -> str:
     return urlunparse(parsed._replace(query=new_query))
 
 
-def _resolve_api_key() -> str:
-    """OpenAI API 키 확보"""
+def _check_api_key() -> None:
+    """요약 작업을 띄우기 전에 OpenAI API 키가 설정되어 있는지 확인"""
     api_key = (os.getenv("OPENAI_API_KEY") or "").strip()
     if not api_key:
         logger.error("OPENAI_API_KEY가 설정되지 않았습니다 (.env 로드 실패 가능).")
@@ -191,7 +184,6 @@ def _resolve_api_key() -> str:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="OPENAI_API_KEY가 올바르지 않습니다. (.env 확인 후 서버를 재시작하세요.)",
         )
-    return api_key
 
 
 def _to_transcript_text(transcript: List[str] | str) -> str:

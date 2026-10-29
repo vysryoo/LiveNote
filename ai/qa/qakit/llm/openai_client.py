@@ -1,35 +1,19 @@
 """
-OpenAI API 클라이언트
+QnA 생성 LLM 클라이언트
 """
 
-import os
-from typing import AsyncIterator, Optional
+from typing import AsyncIterator
 
-from openai import AsyncOpenAI
+from core.llm import ModelPurpose, stream
 
 from ..config.qa_config import QAConfig
 
+SYSTEM_PROMPT = "당신은 교육 전문가입니다. 학습에 도움되는 질문과 답변을 생성합니다."
+
 
 class OpenAIClient:
-    """OpenAI API 비동기 클라이언트"""
-    
-    def __init__(self, api_key: str = None, model: Optional[str] = None):
-        """
-        초기화
-        
-        Args:
-            api_key: OpenAI API 키 (None이면 환경변수에서 로드)
-        """
-        # API 키 우선순위: 파라미터 > 환경변수 > config
-        final_api_key = api_key or os.getenv("OPENAI_API_KEY") or QAConfig.OPENAI_API_KEY
-        self.client = AsyncOpenAI(
-            api_key=final_api_key,
-            timeout=QAConfig.OPENAI_TIMEOUT
-        )
-        self.model = model or QAConfig.QA_MODEL
-        self.max_tokens = QAConfig.QA_MAX_TOKENS
-        self.temperature = QAConfig.QA_TEMPERATURE
-    
+    """QnA 생성 프롬프트를 공통 LLM 계층으로 스트리밍 호출한다."""
+
     async def stream_text(self, prompt: str) -> AsyncIterator[str]:
         """
         응답을 생성되는 대로 조각 단위로 반환
@@ -43,19 +27,9 @@ class OpenAIClient:
         Raises:
             APIError, APITimeoutError: OpenAI 호출 실패. 이미 반환한 조각은 취소되지 않음
         """
-        stream = await self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": "당신은 교육 전문가입니다. 학습에 도움되는 질문과 답변을 생성합니다."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=self.max_tokens,
-            temperature=self.temperature,
-            stream=True,
-        )
-        async for chunk in stream:
-            if not chunk.choices:
-                continue
-            delta = chunk.choices[0].delta.content
-            if delta:
-                yield delta
+        async for delta in stream(
+            ModelPurpose.QA,
+            [("system", SYSTEM_PROMPT), ("user", prompt)],
+            max_tokens=QAConfig.QA_MAX_TOKENS,
+        ):
+            yield delta

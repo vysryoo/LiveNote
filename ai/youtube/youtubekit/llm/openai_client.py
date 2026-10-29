@@ -6,6 +6,8 @@ from __future__ import annotations
 import json
 from typing import Any, Dict
 
+from core.llm import ModelPurpose, complete
+
 from ..config.youtube_config import YouTubeConfig
 from ..config import flags
 from ..config import (
@@ -21,33 +23,18 @@ class YouTubeLLMClient:
     
     def __init__(self, api_key: str | None = None):
         self.api_key = api_key or YouTubeConfig.OPENAI_API_KEY
-        self.client = None
-        
-        if not YouTubeConfig.OFFLINE_MODE and self.api_key:
-            try:
-                from openai import AsyncOpenAI
-                self.client = AsyncOpenAI(api_key=self.api_key)
-            except Exception:
-                # OpenAI SDK 없으면 stub 모드
-                self.client = None
+        self.enabled = not YouTubeConfig.OFFLINE_MODE and bool(self.api_key)
 
-    async def _chat_json(self, prompt: str, max_tokens: int) -> Dict[str, Any]:
+    async def _chat_json(self, prompt: str, max_tokens: int, purpose: ModelPurpose) -> Dict[str, Any]:
         """LLM JSON 응답 요청"""
-        if YouTubeConfig.OFFLINE_MODE or not self.client:
+        if not self.enabled:
             # Offline/테스트 모드: 기본 stub 반환
             try:
                 return json.loads(prompt)
             except Exception:
                 return {"stub": True}
 
-        resp = await self.client.chat.completions.create(
-            model=YouTubeConfig.LLM_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=YouTubeConfig.LLM_TEMPERATURE,
-            max_tokens=max_tokens,
-            response_format={"type": "json_object"},
-        )
-        content = resp.choices[0].message.content
+        content = await complete(purpose, [("user", prompt)], max_tokens=max_tokens, json_mode=True)
         return json.loads(content)
 
     async def generate_queries(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -71,7 +58,7 @@ class YouTubeLLMClient:
             previous_summaries=request_data.get("previous_summaries", []),
             rag_context=request_data.get("rag_context", []),
         )
-        return await self._chat_json(prompt, YouTubeConfig.MAX_TOKENS_QUERY)
+        return await self._chat_json(prompt, YouTubeConfig.MAX_TOKENS_QUERY, ModelPurpose.QUERY)
 
     async def summarize_content(
         self, *, title: str, content: str, language: str
@@ -94,7 +81,7 @@ class YouTubeLLMClient:
         prompt = SUMMARY_PROMPT.format(
             title=title, content=truncated_content, language=language
         )
-        return await self._chat_json(prompt, YouTubeConfig.MAX_TOKENS_SUMMARY)
+        return await self._chat_json(prompt, YouTubeConfig.MAX_TOKENS_SUMMARY, ModelPurpose.VERIFY)
 
     async def summarize_content_no_transcript(
         self, *, title: str, description: str, channel: str, language: str
@@ -117,7 +104,7 @@ class YouTubeLLMClient:
             channel=channel,
             language=language
         )
-        return await self._chat_json(prompt, YouTubeConfig.MAX_TOKENS_SUMMARY)
+        return await self._chat_json(prompt, YouTubeConfig.MAX_TOKENS_SUMMARY, ModelPurpose.VERIFY)
 
     async def score_video(
         self, *, lecture_summary: str, title: str, extract: str, language: str
@@ -135,4 +122,4 @@ class YouTubeLLMClient:
             extract=extract,
             language=language,
         )
-        return await self._chat_json(prompt, YouTubeConfig.MAX_TOKENS_SCORE)
+        return await self._chat_json(prompt, YouTubeConfig.MAX_TOKENS_SCORE, ModelPurpose.VERIFY)

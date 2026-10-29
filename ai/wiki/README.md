@@ -296,8 +296,7 @@ class WikiConfig:
     FANOUT: int = 3            # 병렬 검색 키워드 개수
     
     # ━━━ LLM 설정 ━━━
-    LLM_MODEL: str = "gpt-4o-mini"
-    LLM_TEMPERATURE: float = 0.2
+    # 모델·추론 강도는 core.llm 용도별 설정을 따름 (환경변수 LLM_MODEL, LLM_<용도>_MODEL)
     MAX_TOKENS_QUERY: int = 100  # 키워드 생성용
     MAX_TOKENS_SCORE: int = 80   # 스코어링용
     

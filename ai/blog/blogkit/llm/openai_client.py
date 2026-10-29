@@ -6,7 +6,7 @@ import json
 import logging
 from typing import List, Dict, Any
 
-from openai import AsyncOpenAI
+from core.llm import ModelPurpose, complete
 
 from ..config.google_config import GoogleConfig
 from ..config import prompts
@@ -28,10 +28,6 @@ class GoogleLLMClient:
         api_key = api_key or GoogleConfig.OPENAI_API_KEY
         if not api_key:
             raise ValueError("OPENAI_API_KEY가 설정되지 않았습니다.")
-        
-        self.client = AsyncOpenAI(api_key=api_key)
-        self.model = GoogleConfig.LLM_MODEL
-        self.temperature = GoogleConfig.LLM_TEMPERATURE
     
     async def generate_keywords(
         self,
@@ -84,14 +80,9 @@ class GoogleLLMClient:
         )
         
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=self.temperature,
-                max_tokens=GoogleConfig.MAX_TOKENS_QUERY,
+            content = await complete(
+                ModelPurpose.QUERY, [("user", prompt)], max_tokens=GoogleConfig.MAX_TOKENS_QUERY
             )
-            
-            content = response.choices[0].message.content.strip()
             
             # 키워드 파싱 (줄바꿈 기준)
             keywords = [
@@ -141,15 +132,9 @@ class GoogleLLMClient:
         )
         
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=self.temperature,
-                max_tokens=GoogleConfig.MAX_TOKENS_SCORE,
-                response_format={"type": "json_object"}
+            content = await complete(
+                ModelPurpose.VERIFY, [("user", prompt)], max_tokens=GoogleConfig.MAX_TOKENS_SCORE, json_mode=True
             )
-            
-            content = response.choices[0].message.content.strip()
             
             # JSON 파싱 시도
             try:
