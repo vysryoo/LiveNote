@@ -92,7 +92,7 @@ class LectureServiceTest {
 
         SessionDetailResponse detail = service.getSessionDetail(4L, 1L);
 
-        assertThat(detail.getBookmarks()).extracting(BookmarkResponseDto::getTargetId).containsExactly(9L);
+        assertThat(detail.bookmarks()).extracting(BookmarkResponseDto::targetId).containsExactly(9L);
         verify(qnaRepository, never()).findById(any());
         verify(resourceRepository, never()).findById(any());
     }

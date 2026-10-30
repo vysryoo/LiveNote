@@ -28,16 +28,16 @@ public class SummaryCallbackService {
     @Transactional
     public void handleSummaryCallback(SummaryCallbackDto dto) {
         log.info("[Callback] Summary received: lectureId={} section={} type={}",
-                dto.getLectureId(), dto.getSectionIndex(), dto.getPhase());
+                dto.lectureId(), dto.sectionIndex(), dto.phase());
 
         // 너무 짧은 전사 처리
-        if (STATUS_TOO_SHORT.equalsIgnoreCase(dto.getStatus())) {
-            String message = dto.getText() != null ? dto.getText() : "요약을 생성하기에 강의가 너무 짧습니다.";
-            streamGateway.sendError(dto.getLectureId(), message);
+        if (STATUS_TOO_SHORT.equalsIgnoreCase(dto.status())) {
+            String message = dto.text() != null ? dto.text() : "요약을 생성하기에 강의가 너무 짧습니다.";
+            streamGateway.sendError(dto.lectureId(), message);
             return;
         }
 
-        SummaryPhase phase = SummaryPhase.from(dto.getPhase());
+        SummaryPhase phase = SummaryPhase.from(dto.phase());
         Summary summary;
 
         // 2. Phase에 따른 저장 로직 분기 (핵심 수정!)
@@ -45,9 +45,9 @@ public class SummaryCallbackService {
             // PARTIAL: DB 저장 안 함 (임시 객체 생성)
             // ID는 null로 설정됨
             summary = Summary.builder()
-                    .lectureId(dto.getLectureId())
-                    .sectionIndex(dto.getSectionIndex())
-                    .text(dto.getText())
+                    .lectureId(dto.lectureId())
+                    .sectionIndex(dto.sectionIndex())
+                    .text(dto.text())
                     .phase(phase)
                     .build();
             log.info("[Callback] PARTIAL summary: Skipping DB save.");
@@ -74,10 +74,10 @@ public class SummaryCallbackService {
             // PARTIAL 단계
             if (!autoCardProperties.isEnabled()) {
                 log.info("[Partial Logic] Auto cards disabled: lectureId={} section={}",
-                        dto.getLectureId(), dto.getSectionIndex());
+                        dto.lectureId(), dto.sectionIndex());
                 return;
             }
-            cardRequestService.startAutoCards(dto.getLectureId(), dto.getSectionIndex(), dto.getText());
+            cardRequestService.startAutoCards(dto.lectureId(), dto.sectionIndex(), dto.text());
         }
     }
 }

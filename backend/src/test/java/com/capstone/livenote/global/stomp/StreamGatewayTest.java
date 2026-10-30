@@ -58,8 +58,9 @@ class StreamGatewayTest {
 
     @Test
     void resourcesAndQnaLists() {
-        List<ResourceResponseDto> resources = List.of(new ResourceResponseDto());
-        List<QnaResponseDto> qna = List.of(new QnaResponseDto());
+        List<ResourceResponseDto> resources = List.of(resource());
+        List<QnaResponseDto> qna = List.of(
+                new QnaResponseDto(4L, 1L, null, 2, "qna_1_2_2", "concept", "질문", "답변"));
 
         gateway.sendResources(1L, 2, resources);
         gateway.sendQna(1L, 2, qna);
@@ -96,12 +97,17 @@ class StreamGatewayTest {
 
     @Test
     void streamToken_complete() {
-        Object data = new ResourceResponseDto();
+        Object data = resource();
 
         gateway.sendStreamComplete(1L, "resource_stream", "resource_1_2_2", data);
 
         assertThat(captureSent("/topic/lectures.1.stream")).isEqualTo(Map.of(
                 "type", "resource_stream", "cardId", "resource_1_2_2", "isComplete", true, "data", data));
+    }
+
+    private static ResourceResponseDto resource() {
+        return new ResourceResponseDto(3L, 1L, null, 2, "resource_1_2_2", "wiki", "스택", "https://w",
+                null, 0.9, "설명", "이유", null);
     }
 
     @SuppressWarnings("unchecked")

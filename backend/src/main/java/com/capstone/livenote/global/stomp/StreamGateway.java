@@ -28,10 +28,10 @@ public class StreamGateway {
                 Map.of(
                         "type", "transcript",
                         "lectureId", lectureId,
-                        "sectionIndex", dto.getSectionIndex(),
-                        "startSec", dto.getStartSec(),
-                        "endSec", dto.getEndSec(),
-                        "text", dto.getText(),
+                        "sectionIndex", dto.sectionIndex(),
+                        "startSec", dto.startSec(),
+                        "endSec", dto.endSec(),
+                        "text", dto.text(),
                         "isFinal", isFinal
                 ));
     }

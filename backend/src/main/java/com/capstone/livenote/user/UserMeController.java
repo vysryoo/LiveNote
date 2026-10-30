@@ -29,12 +29,12 @@ public class UserMeController {
     @PatchMapping("/me/language")
     public ApiResponse<UserViewDto> setLanguage(@AuthenticationPrincipal Long userId,
                                                 @RequestBody SetLanguageRequest req) {
-        return ApiResponse.ok(userService.setLanguage(userId, req.getLanguage()));
+        return ApiResponse.ok(userService.setLanguage(userId, req.language()));
     }
 
     @PatchMapping("/me/password")
     public ApiResponse<UserViewDto> setPassword(@AuthenticationPrincipal Long userId,
                                                 @RequestBody SetPasswordRequest req) {
-        return ApiResponse.ok(userService.changePassword(userId, req.getCurrentPassword(), req.getNewPassword()));
+        return ApiResponse.ok(userService.changePassword(userId, req.currentPassword(), req.newPassword()));
     }
 }

@@ -49,7 +49,7 @@ public class AiCallbackController {
         switch (type) {
 
             case "resources" -> {
-                ResourceCallbackDto dto = new ObjectMapper().convertValue(payload, ResourceCallbackDto.class);
+                ResourceCallbackDto dto = objectMapper.convertValue(payload, ResourceCallbackDto.class);
                 resourceCallbackService.handleResourceCallback(dto);
             }
 

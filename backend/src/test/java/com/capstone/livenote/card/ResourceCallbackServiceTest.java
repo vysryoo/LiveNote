@@ -56,20 +56,22 @@ class ResourceCallbackServiceTest {
             return r;
         });
 
-        var item = new ResourceCallbackDto.ResourceItem();
-        item.setType("video");
-        item.setTitle("Retry patterns");
-        item.setUrl("https://example.com");
-        item.setDescription("desc");
-        item.setScore(88.1);
-        item.setReason("because");
-        item.setDetail(Map.of("provider", "youtube", "lang", "en"));
+        var item = ResourceCallbackDto.ResourceItem.builder()
+                .type("video")
+                .title("Retry patterns")
+                .url("https://example.com")
+                .description("desc")
+                .score(88.1)
+                .reason("because")
+                .detail(Map.of("provider", "youtube", "lang", "en"))
+                .build();
 
-        var dto = new ResourceCallbackDto();
-        dto.setLectureId(1L);
-        dto.setSummaryId(10L);
-        dto.setSectionIndex(3);
-        dto.setResources(List.of(item));
+        var dto = ResourceCallbackDto.builder()
+                .lectureId(1L)
+                .summaryId(10L)
+                .sectionIndex(3)
+                .resources(List.of(item))
+                .build();
 
         // when
         var service = new ResourceCallbackService(resourceRepository, streamGateway, new com.fasterxml.jackson.databind.ObjectMapper(),

@@ -115,7 +115,7 @@ public class LectureController {
             @PathVariable Long lectureId,
             @RequestBody UpdateLectureTitleRequest req
     ) {
-        var updated = lectureService.updateLectureTitle(lectureId, userId, req.getTitle());
+        var updated = lectureService.updateLectureTitle(lectureId, userId, req.title());
         return ApiResponse.ok(LectureResponseDto.from(updated));
     }
 

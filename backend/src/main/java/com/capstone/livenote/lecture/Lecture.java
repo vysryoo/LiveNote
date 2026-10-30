@@ -26,6 +26,7 @@ public class Lecture {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private Status status = Status.RECORDING;
 
     private LocalDateTime createdAt;

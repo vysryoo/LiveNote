@@ -37,9 +37,9 @@ public class LectureService {
     public Lecture create(Long userId, CreateLectureRequestDto req){
         Lecture lec = Lecture.builder()
                 .userId(userId)
-                .title(req.getTitle())
-                .subject(req.getSubject())
-                .sttLanguage(req.getSttLanguage())
+                .title(req.title())
+                .subject(req.subject())
+                .sttLanguage(req.sttLanguage())
                 .status(Lecture.Status.RECORDING)
                 .build();
 

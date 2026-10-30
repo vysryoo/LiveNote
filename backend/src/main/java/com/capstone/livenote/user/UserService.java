@@ -21,20 +21,20 @@ public class UserService {
 
     @Transactional
     public AuthResponseDto signup(SignupRequestDto req) {
-        if (userRepository.existsByLoginId(req.getLoginId())) {
-            log.warn("Signup failed: duplicated loginId={}", req.getLoginId());
+        if (userRepository.existsByLoginId(req.loginId())) {
+            log.warn("Signup failed: duplicated loginId={}", req.loginId());
             throw new IllegalArgumentException("duplicated loginId");
         }
-        if (req.getEmail() != null && userRepository.existsByEmail(req.getEmail())) {
-            log.warn("Signup failed: duplicated email={}", req.getEmail());
+        if (req.email() != null && userRepository.existsByEmail(req.email())) {
+            log.warn("Signup failed: duplicated email={}", req.email());
             throw new IllegalArgumentException("duplicated email");
         }
 
         User user = User.builder()
-                .loginId(req.getLoginId())
-                .password(encoder.encode(req.getPassword()))
-                .name(req.getName())
-                .email(req.getEmail())
+                .loginId(req.loginId())
+                .password(encoder.encode(req.password()))
+                .name(req.name())
+                .email(req.email())
                 .uiLanguage("ko")
                 .build();
 
@@ -48,14 +48,14 @@ public class UserService {
 
     @Transactional
     public AuthResponseDto login(LoginRequestDto req) {
-        User user = userRepository.findByLoginId(req.getLoginId())
+        User user = userRepository.findByLoginId(req.loginId())
                 .orElseThrow(() -> {
-                    log.warn("Login failed: user not found loginId={}", req.getLoginId());
+                    log.warn("Login failed: user not found loginId={}", req.loginId());
                     return new EntityNotFoundException("no user");
                 });
 
-        if (!encoder.matches(req.getPassword(), user.getPassword())) {
-            log.warn("Login failed: invalid password for loginId={}", req.getLoginId());
+        if (!encoder.matches(req.password(), user.getPassword())) {
+            log.warn("Login failed: invalid password for loginId={}", req.loginId());
             throw new IllegalArgumentException("bad credential");
         }
 

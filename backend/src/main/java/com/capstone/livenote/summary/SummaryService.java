@@ -48,17 +48,17 @@ public class SummaryService {
     // 해당 섹션의 요약이 DB에 존재하는지 확인
     @Transactional(noRollbackFor = DataIntegrityViolationException.class)
     public Summary upsertFromCallback(SummaryCallbackDto dto) {
-        int startSec = dto.getStartSec() != null ? dto.getStartSec() : dto.getSectionIndex() * SECTION_SEC;
-        int endSec = dto.getEndSec() != null ? dto.getEndSec() : startSec + SECTION_SEC;
-        SummaryPhase phase = SummaryPhase.from(dto.getPhase());
+        int startSec = dto.startSec() != null ? dto.startSec() : dto.sectionIndex() * SECTION_SEC;
+        int endSec = dto.endSec() != null ? dto.endSec() : startSec + SECTION_SEC;
+        SummaryPhase phase = SummaryPhase.from(dto.phase());
 
         // 1. 조회 시도
         Optional<Summary> existingOpt = summaryRepository.findByLectureIdAndSectionIndex(
-                dto.getLectureId(), dto.getSectionIndex());
+                dto.lectureId(), dto.sectionIndex());
 
         if (existingOpt.isPresent()) {
             Summary existing = existingOpt.get();
-            existing.setText(dto.getText());
+            existing.setText(dto.text());
             existing.setStartSec(startSec);
             existing.setEndSec(endSec);
             existing.setPhase(phase);
@@ -69,20 +69,20 @@ public class SummaryService {
         try {
             return summaryRepository.save(
                     Summary.builder()
-                            .lectureId(dto.getLectureId())
-                            .sectionIndex(dto.getSectionIndex())
+                            .lectureId(dto.lectureId())
+                            .sectionIndex(dto.sectionIndex())
                             .startSec(startSec)
                             .endSec(endSec)
-                            .text(dto.getText())
+                            .text(dto.text())
                             .phase(phase)
                             .build()
             );
         } catch (DataIntegrityViolationException e) {
             Summary existing = summaryRepository.findByLectureIdAndSectionIndex(
-                            dto.getLectureId(), dto.getSectionIndex())
+                            dto.lectureId(), dto.sectionIndex())
                     .orElseThrow(() -> new IllegalStateException("Summary duplicate error but not found", e));
 
-            existing.setText(dto.getText());
+            existing.setText(dto.text());
             existing.setStartSec(startSec);
             existing.setEndSec(endSec);
             existing.setPhase(phase);

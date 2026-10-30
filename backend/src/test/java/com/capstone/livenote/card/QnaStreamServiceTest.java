@@ -153,7 +153,7 @@ class QnaStreamServiceTest {
         assertThat(stored).hasSize(1);
         ArgumentCaptor<QnaResponseDto> data = ArgumentCaptor.forClass(QnaResponseDto.class);
         verify(streamGateway).sendStreamComplete(eq(LECTURE), eq("qna_stream"), eq("qna_1_5_3"), data.capture());
-        assertThat(data.getValue().getCardId()).isEqualTo("qna_1_5_2");
+        assertThat(data.getValue().cardId()).isEqualTo("qna_1_5_2");
     }
 
     @Test

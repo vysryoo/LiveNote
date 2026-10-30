@@ -1,17 +1,3 @@
 package com.capstone.livenote.user;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class SignupRequestDto {
-    private String loginId;
-    private String password;
-    private String email;
-    private String name;
-}
+public record SignupRequestDto(String loginId, String password, String email, String name) {}

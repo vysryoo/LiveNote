@@ -20,30 +20,30 @@ public class BookmarkService {
     @Transactional
     public Bookmark createBookmark(CreateBookmarkRequestDto req, Long userId) {
         // 1. Enum 변환
-        Bookmark.TargetType type = req.getTargetType();
+        Bookmark.TargetType type = req.targetType();
 
         if (type == null) {
             throw new IllegalArgumentException("Invalid target type (must be RESOURCE or QNA)");
         }
 
         // 다른 사용자의 강의나 다른 강의의 카드를 가리키는 북마크가 저장되지 않도록 확인
-        lectureService.getOwned(req.getLectureId(), userId);
-        if (!isTargetInLecture(type, req.getTargetId(), req.getLectureId())) {
+        lectureService.getOwned(req.lectureId(), userId);
+        if (!isTargetInLecture(type, req.targetId(), req.lectureId())) {
             throw new EntityNotFoundException("bookmark target");
         }
 
         // 2. 중복 체크
-        if (bookmarkRepository.existsByUserIdAndTargetTypeAndTargetId(userId, type, req.getTargetId())) {
+        if (bookmarkRepository.existsByUserIdAndTargetTypeAndTargetId(userId, type, req.targetId())) {
             throw new IllegalArgumentException("이미 북마크된 아이템입니다.");
         }
 
         // 3. 저장
         Bookmark bookmark = Bookmark.builder()
                 .userId(userId)
-                .lectureId(req.getLectureId())
-                .sectionIndex(req.getSectionIndex())
+                .lectureId(req.lectureId())
+                .sectionIndex(req.sectionIndex())
                 .targetType(type)
-                .targetId(req.getTargetId())
+                .targetId(req.targetId())
                 .build();
 
         return bookmarkRepository.save(bookmark);

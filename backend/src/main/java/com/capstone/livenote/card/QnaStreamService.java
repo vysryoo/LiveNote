@@ -110,8 +110,8 @@ public class QnaStreamService {
             }
             switch (String.valueOf(event.event())) {
                 case "start" -> {
-                    int cardIndex = reserveCardIndex(payload.getLectureId(), payload.getSectionIndex());
-                    String cardId = CardIds.build("qna", payload.getLectureId(), payload.getSectionIndex(), cardIndex);
+                    int cardIndex = reserveCardIndex(payload.lectureId(), payload.sectionIndex());
+                    String cardId = CardIds.build("qna", payload.lectureId(), payload.sectionIndex(), cardIndex);
                     cards.put(item, new Card(cardId, data.path("type").asText()));
                 }
                 case "question" -> {
@@ -129,15 +129,15 @@ public class QnaStreamService {
                 case "done" -> {
                     Card card = cards.get(item);
                     Qna saved = saveCard(card, data.path("question").asText(), data.path("answer").asText());
-                    streamGateway.sendStreamComplete(payload.getLectureId(), "qna_stream", card.cardId,
+                    streamGateway.sendStreamComplete(payload.lectureId(), "qna_stream", card.cardId,
                             QnaResponseDto.from(saved));
                     card.finished = true;
-                    streamGateway.sendQna(payload.getLectureId(), payload.getSectionIndex(), findSectionQna());
+                    streamGateway.sendQna(payload.lectureId(), payload.sectionIndex(), findSectionQna());
                     mark("item_done_sent", item);
                 }
                 case "error" -> {
                     log.warn("QnA generation failed: lectureId={} section={} item={} message={}",
-                            payload.getLectureId(), payload.getSectionIndex(), item, data.path("message").asText());
+                            payload.lectureId(), payload.sectionIndex(), item, data.path("message").asText());
                     Card card = cards.get(item);
                     if (card != null) {
                         card.finished = true;
@@ -153,14 +153,14 @@ public class QnaStreamService {
             // 완료 이벤트 없이 끝난 카드는 화면에 생성 중으로 남지 않도록 실패로 알림
             if (cards.values().stream().anyMatch(card -> !card.finished)) {
                 log.warn("QnA stream ended with unfinished cards: lectureId={} section={}",
-                        payload.getLectureId(), payload.getSectionIndex());
+                        payload.lectureId(), payload.sectionIndex());
                 notifyFailure();
             }
         }
 
         void fail(Throwable error) {
             log.error("QnA stream failed: lectureId={} section={} error={}",
-                    payload.getLectureId(), payload.getSectionIndex(), error.getMessage());
+                    payload.lectureId(), payload.sectionIndex(), error.getMessage());
             // 생성을 시작하기 전에 실패한 경우(RAG 검색 실패 등)는 화면에 보인 카드가 없어 알리지 않음
             if (cards.values().stream().anyMatch(card -> !card.finished)) {
                 notifyFailure();
@@ -170,35 +170,35 @@ public class QnaStreamService {
         // AI 서버 요청 시점부터 브라우저로 중계한 시점까지의 경과 시간. 스트리밍 효과 측정용
         private void mark(String stage, Integer item) {
             log.info("[timing] kind=qna_relay lectureId={} section={} stage={} item={} elapsedMs={}",
-                    payload.getLectureId(), payload.getSectionIndex(), stage, item,
+                    payload.lectureId(), payload.sectionIndex(), stage, item,
                     (System.nanoTime() - startedAt) / 1_000_000);
         }
 
         private void sendToken(Card card, String token) {
-            streamGateway.sendStreamToken(payload.getLectureId(), "qna_stream", card.cardId, token, card.question);
+            streamGateway.sendStreamToken(payload.lectureId(), "qna_stream", card.cardId, token, card.question);
         }
 
         private void notifyFailure() {
-            streamGateway.sendError(payload.getLectureId(), "qna generation failed");
+            streamGateway.sendError(payload.lectureId(), "qna generation failed");
         }
 
         private Qna saveCard(Card card, String question, String answer) {
-            return redisLock.call(RedisKeys.qnaLock(payload.getLectureId(), payload.getSectionIndex()),
+            return redisLock.call(RedisKeys.qnaLock(payload.lectureId(), payload.sectionIndex()),
                     () -> transactionTemplate.execute(status -> {
                         // 같은 질문·답변이 이미 있으면 새로 저장하지 않고 기존 카드를 완료 데이터로 사용
                         List<Qna> existing = qnaRepository.findByLectureIdAndSectionIndexOrderByIdAsc(
-                                payload.getLectureId(), payload.getSectionIndex());
+                                payload.lectureId(), payload.sectionIndex());
                         String signature = CardIds.signature(question, answer);
                         for (Qna qna : existing) {
                             if (CardIds.signature(qna.getQuestion(), qna.getAnswer()).equals(signature)) {
                                 return qna;
                             }
                         }
-                        Long summaryId = payload.getSummaryId();
+                        Long summaryId = payload.summaryId();
                         return qnaRepository.save(Qna.builder()
-                                .lectureId(payload.getLectureId())
+                                .lectureId(payload.lectureId())
                                 .summaryId(summaryId == null || summaryId == 0L ? null : summaryId)
-                                .sectionIndex(payload.getSectionIndex())
+                                .sectionIndex(payload.sectionIndex())
                                 .cardId(card.cardId)
                                 .type(Qna.Type.from(card.type))
                                 .question(question)
@@ -209,7 +209,7 @@ public class QnaStreamService {
 
         private List<QnaResponseDto> findSectionQna() {
             return qnaRepository.findByLectureIdAndSectionIndexOrderByIdAsc(
-                            payload.getLectureId(), payload.getSectionIndex())
+                            payload.lectureId(), payload.sectionIndex())
                     .stream()
                     .map(QnaResponseDto::from)
                     .toList();

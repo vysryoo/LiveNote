@@ -32,14 +32,14 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<AuthResponseDto>> signup(@RequestBody SignupRequestDto req) {
         AuthResponseDto auth = userService.signup(req);
-        return withRefreshCookie(refreshTokenService.issue(auth.getUser().getId()))
+        return withRefreshCookie(refreshTokenService.issue(auth.user().id()))
                 .body(ApiResponse.ok(auth));
     }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponseDto>> login(@RequestBody LoginRequestDto req) {
         AuthResponseDto auth = userService.login(req);
-        return withRefreshCookie(refreshTokenService.issue(auth.getUser().getId()))
+        return withRefreshCookie(refreshTokenService.issue(auth.user().id()))
                 .body(ApiResponse.ok(auth));
     }
 

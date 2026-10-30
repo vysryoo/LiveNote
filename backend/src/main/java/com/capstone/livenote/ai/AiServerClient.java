@@ -64,18 +64,18 @@ public class AiServerClient {
     public Flux<ServerSentEvent<String>> streamQnaGeneration(AiRequestPayloads.QnaGeneratePayload payload, List<String> targetTypes) {
         Map<String, Object> body = new HashMap<>();
 
-        body.put("lecture_id", payload.getLectureId());
-        body.put("summary_id", payload.getSummaryId());
-        body.put("section_index", payload.getSectionIndex());
-        body.put("section_summary", payload.getSectionSummary());
-        body.put("subject", payload.getSubject());
-        body.put("previous_qa", payload.getPreviousQa());
+        body.put("lecture_id", payload.lectureId());
+        body.put("summary_id", payload.summaryId());
+        body.put("section_index", payload.sectionIndex());
+        body.put("section_summary", payload.sectionSummary());
+        body.put("subject", payload.subject());
+        body.put("previous_qa", payload.previousQa());
         if (targetTypes != null && !targetTypes.isEmpty()) {
             body.put("question_types", targetTypes);
         }
 
         log.info("[AI QnA] Stream request: lecture_id={} section_index={} types={}",
-                payload.getLectureId(), payload.getSectionIndex(), targetTypes);
+                payload.lectureId(), payload.sectionIndex(), targetTypes);
 
         return webClient.post()
                 .uri(baseUrl + "/qa/generate")
@@ -91,32 +91,32 @@ public class AiServerClient {
     public void requestResourceRecommendation(AiRequestPayloads.ResourceRecommendPayload payload, List<String> targetTypes) {
         Map<String, Object> body = new HashMap<>();
 
-        body.put("lecture_id", String.valueOf(payload.getLectureId()));
-        body.put("section_id", payload.getSectionIndex() + 1);
-        body.put("section_index", payload.getSectionIndex());
-        body.put("section_summary", payload.getSectionSummary());
+        body.put("lecture_id", String.valueOf(payload.lectureId()));
+        body.put("section_id", payload.sectionIndex() + 1);
+        body.put("section_index", payload.sectionIndex());
+        body.put("section_summary", payload.sectionSummary());
 
         // previous_summaries 변환
-        List<Map<String, Object>> prev = payload.getPreviousSummaries().stream()
+        List<Map<String, Object>> prev = payload.previousSummaries().stream()
                 .map(s -> {
                     Map<String, Object> m = new HashMap<>();
-                    m.put("section_index", s.getSectionIndex());
-                    m.put("section_id", s.getSectionIndex() + 1);
-                    m.put("summary", s.getSummary());
+                    m.put("section_index", s.sectionIndex());
+                    m.put("section_id", s.sectionIndex() + 1);
+                    m.put("summary", s.summary());
                     return m;
                 })
                 .collect(Collectors.toList());
         body.put("previous_summaries", prev);
 
-        body.put("yt_exclude", payload.getYtExclude());
-        body.put("wiki_exclude", payload.getWikiExclude());
-        body.put("paper_exclude", payload.getPaperExclude());
-        body.put("google_exclude", payload.getGoogleExclude());
+        body.put("yt_exclude", payload.ytExclude());
+        body.put("wiki_exclude", payload.wikiExclude());
+        body.put("paper_exclude", payload.paperExclude());
+        body.put("google_exclude", payload.googleExclude());
 
         body.put("callback_url", callback("resources"));
 
         log.info("[AI Resource] Request: lectureId={} section={} types={}",
-                payload.getLectureId(), payload.getSectionIndex(), targetTypes);
+                payload.lectureId(), payload.sectionIndex(), targetTypes);
 
         if (targetTypes != null && !targetTypes.isEmpty()) {
             body.put("resource_types", targetTypes);

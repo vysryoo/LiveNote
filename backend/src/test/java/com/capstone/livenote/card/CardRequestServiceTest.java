@@ -70,13 +70,13 @@ class CardRequestServiceTest {
         verify(aiServerClient).requestResourceRecommendation(captor.capture(), eq(List.of("PAPER")));
         var payload = captor.getValue();
 
-        assertThat(payload.getPreviousSummaries()).hasSize(2);
-        assertThat(payload.getYtExclude()).containsExactly("old video");
-        assertThat(payload.getWikiExclude()).containsExactly("old wiki");
-        assertThat(payload.getPaperExclude()).containsExactly("doi/123");
-        assertThat(payload.getGoogleExclude()).containsExactly("http://example.com");
-        assertThat(payload.getSectionSummary()).isEqualTo("current summary");
-        assertThat(payload.getSummaryId()).isEqualTo(10L);
+        assertThat(payload.previousSummaries()).hasSize(2);
+        assertThat(payload.ytExclude()).containsExactly("old video");
+        assertThat(payload.wikiExclude()).containsExactly("old wiki");
+        assertThat(payload.paperExclude()).containsExactly("doi/123");
+        assertThat(payload.googleExclude()).containsExactly("http://example.com");
+        assertThat(payload.sectionSummary()).isEqualTo("current summary");
+        assertThat(payload.summaryId()).isEqualTo(10L);
     }
 
     @Test
@@ -99,10 +99,10 @@ class CardRequestServiceTest {
         verify(qnaStreamService).generate(captor.capture(), eq(List.of("CONCEPT")));
         var payload = captor.getValue();
 
-        assertThat(payload.getSubject()).isEqualTo("math");
-        assertThat(payload.getPreviousQa()).extracting(AiRequestPayloads.PreviousQaPayload::getType)
+        assertThat(payload.subject()).isEqualTo("math");
+        assertThat(payload.previousQa()).extracting(AiRequestPayloads.PreviousQaPayload::type)
                 .containsExactly("concept", "comparison");
-        assertThat(payload.getSectionSummary()).isEqualTo("current summary");
+        assertThat(payload.sectionSummary()).isEqualTo("current summary");
     }
 
     @Test
@@ -123,7 +123,7 @@ class CardRequestServiceTest {
         service.startAutoCards(7L, 0, "스택과 큐의 차이를 설명한다.");
 
         verify(aiServerClient).requestResourceRecommendation(
-                argThat(payload -> payload.getSummaryId() == null), eq(List.of("WIKI", "BLOG")));
+                argThat(payload -> payload.summaryId() == null), eq(List.of("WIKI", "BLOG")));
         verify(qnaStreamService).generate(any(), eq(List.of("CONCEPT", "APPLICATION")));
     }
 

@@ -28,13 +28,13 @@ class SummaryCallbackServiceTest {
     SummaryCallbackService service;
 
     private SummaryCallbackDto partial() {
-        SummaryCallbackDto dto = new SummaryCallbackDto();
-        dto.setLectureId(1L);
-        dto.setSectionIndex(0);
-        dto.setText("스택은 후입선출 구조이다.");
-        dto.setPhase("PARTIAL");
-        dto.setStatus("COMPLETED");
-        return dto;
+        return SummaryCallbackDto.builder()
+                .lectureId(1L)
+                .sectionIndex(0)
+                .text("스택은 후입선출 구조이다.")
+                .phase("PARTIAL")
+                .status("COMPLETED")
+                .build();
     }
 
     @Test

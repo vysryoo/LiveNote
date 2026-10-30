@@ -36,21 +36,21 @@ public class ResourceCallbackService {
      * @throws IllegalStateException 잠금을 얻지 못한 경우
      */
     public void handleResourceCallback(ResourceCallbackDto dto) {
-        redisLock.run(RedisKeys.resourceLock(dto.getLectureId(), dto.getSectionIndex()), () -> transactionTemplate.executeWithoutResult(status -> saveCards(dto)));
+        redisLock.run(RedisKeys.resourceLock(dto.lectureId(), dto.sectionIndex()), () -> transactionTemplate.executeWithoutResult(status -> saveCards(dto)));
     }
 
     private void saveCards(ResourceCallbackDto dto) {
         log.info("Resource callback: lectureId={} section={} summaryId={} size={}",
-                dto.getLectureId(), dto.getSectionIndex(), dto.getSummaryId(),
-                dto.getResources() == null ? 0 : dto.getResources().size());
+                dto.lectureId(), dto.sectionIndex(), dto.summaryId(),
+                dto.resources() == null ? 0 : dto.resources().size());
 
-        if (dto.getResources() == null || dto.getResources().isEmpty()) {
+        if (dto.resources() == null || dto.resources().isEmpty()) {
             log.info("Resource callback skipped: empty payload");
             return;
         }
 
         List<Resource> existing = resourceRepository.findByLectureIdAndSectionIndexOrderByIdAsc(
-                dto.getLectureId(), dto.getSectionIndex()
+                dto.lectureId(), dto.sectionIndex()
         );
 
         Set<String> signature = new HashSet<>();
@@ -58,41 +58,41 @@ public class ResourceCallbackService {
 
         int cursor = CardIds.nextIndex(existing.stream().map(Resource::getCardId).toList());
 
-        for (var item : dto.getResources()) {
-            String sig = CardIds.signature(item.getTitle(), item.getUrl());
+        for (var item : dto.resources()) {
+            String sig = CardIds.signature(item.title(), item.url());
             if (signature.contains(sig)) {
-                log.debug("Skipping duplicate resource for lecture {} section {}: {}", dto.getLectureId(), dto.getSectionIndex(), item.getTitle());
+                log.debug("Skipping duplicate resource for lecture {} section {}: {}", dto.lectureId(), dto.sectionIndex(), item.title());
                 continue;
             }
-            String cardId = CardIds.build("resource", dto.getLectureId(), dto.getSectionIndex(), cursor++);
-            if (resourceRepository.existsByLectureIdAndSectionIndexAndCardId(dto.getLectureId(), dto.getSectionIndex(), cardId)) {
+            String cardId = CardIds.build("resource", dto.lectureId(), dto.sectionIndex(), cursor++);
+            if (resourceRepository.existsByLectureIdAndSectionIndexAndCardId(dto.lectureId(), dto.sectionIndex(), cardId)) {
                 continue;
             }
 
             Resource saved = resourceRepository.save(
                     Resource.builder()
-                            .lectureId(dto.getLectureId())
-                            .summaryId((dto.getSummaryId() == null || dto.getSummaryId() == 0L) ? null : dto.getSummaryId())
-                            .sectionIndex(dto.getSectionIndex())
+                            .lectureId(dto.lectureId())
+                            .summaryId((dto.summaryId() == null || dto.summaryId() == 0L) ? null : dto.summaryId())
+                            .sectionIndex(dto.sectionIndex())
                             .cardId(cardId)
-                            .type(Resource.Type.fromString(item.getType()))
-                            .title(item.getTitle())
-                            .url(item.getUrl())
-                            .text(item.getDescription())
-                            .score(item.getScore())
-                            .reason(item.getReason())
-                            .detail(toJsonNode(item.getDetail()))
+                            .type(Resource.Type.fromString(item.type()))
+                            .title(item.title())
+                            .url(item.url())
+                            .text(item.description())
+                            .score(item.score())
+                            .reason(item.reason())
+                            .detail(toJsonNode(item.detail()))
                             .build()
             );
             signature.add(sig);
 
             // 완성된 카드를 즉시 전송. 글자가 써지는 연출은 프론트엔드가 담당
-            streamGateway.sendStreamComplete(dto.getLectureId(), "resource_stream", cardId, ResourceResponseDto.from(saved));
+            streamGateway.sendStreamComplete(dto.lectureId(), "resource_stream", cardId, ResourceResponseDto.from(saved));
         }
 
         // 2. 전체 조회
         List<Resource> allResources = resourceRepository.findByLectureIdAndSectionIndexOrderByIdAsc(
-                dto.getLectureId(), dto.getSectionIndex()
+                dto.lectureId(), dto.sectionIndex()
         );
 
         // 3. DTO 변환 및 전송
@@ -100,7 +100,7 @@ public class ResourceCallbackService {
                 .map(ResourceResponseDto::from)
                 .toList();
 
-        streamGateway.sendResources(dto.getLectureId(), dto.getSectionIndex(), items);
+        streamGateway.sendResources(dto.lectureId(), dto.sectionIndex(), items);
     }
 
     private JsonNode toJsonNode(Object value) {

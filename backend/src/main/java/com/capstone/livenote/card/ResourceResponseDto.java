@@ -1,27 +1,22 @@
 package com.capstone.livenote.card;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-public class ResourceResponseDto {
-    private Long id;
-    private Long lectureId;
-    private Long summaryId;
-    private Integer sectionIndex;
-    private String cardId;
-    private String type;
-    private String title;
-    private String url;
-    private String thumbnail;
-    private Double score;
-    private String text;
-    private String reason;
-    private JsonNode detail;
+public record ResourceResponseDto(
+        Long id,
+        Long lectureId,
+        Long summaryId,
+        Integer sectionIndex,
+        String cardId,
+        String type,
+        String title,
+        String url,
+        String thumbnail,
+        Double score,
+        String text,
+        String reason,
+        JsonNode detail
+) {
 
     public static ResourceResponseDto from(Resource r) {
         return new ResourceResponseDto(

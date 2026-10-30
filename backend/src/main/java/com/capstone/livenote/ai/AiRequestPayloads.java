@@ -1,68 +1,54 @@
 package com.capstone.livenote.ai;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class AiRequestPayloads {
+/**
+ * AI 서버에 보내는 카드 생성 요청 내용. {@link AiServerClient}가 AI 서버 형식(snake_case)의 본문으로 바꿔 보낸다.
+ */
+public final class AiRequestPayloads {
 
-    @Getter
+    private AiRequestPayloads() {}
+
     @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class PreviousSummaryPayload {
-        @JsonProperty("section_id")
-        private Integer sectionIndex;
-        private String summary;
+    public record PreviousSummaryPayload(Integer sectionIndex, String summary) {}
+
+    @Builder
+    public record PreviousQaPayload(String type, String question, String answer) {}
+
+    @Builder
+    public record ResourceRecommendPayload(
+            Long lectureId,
+            Long summaryId,
+            Integer sectionIndex,
+            String sectionSummary,
+            List<PreviousSummaryPayload> previousSummaries,
+            List<String> ytExclude,
+            List<String> wikiExclude,
+            List<String> paperExclude,
+            List<String> googleExclude
+    ) {
+        public ResourceRecommendPayload {
+            previousSummaries = previousSummaries == null ? List.of() : previousSummaries;
+            ytExclude = ytExclude == null ? List.of() : ytExclude;
+            wikiExclude = wikiExclude == null ? List.of() : wikiExclude;
+            paperExclude = paperExclude == null ? List.of() : paperExclude;
+            googleExclude = googleExclude == null ? List.of() : googleExclude;
+        }
     }
 
-    @Getter
     @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class PreviousQaPayload {
-        private String type;
-        private String question;
-        private String answer;
-    }
-
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ResourceRecommendPayload {
-        private Long lectureId;
-        private Long summaryId;
-        private Integer sectionIndex;
-        private String sectionSummary;
-        @Builder.Default
-        private List<PreviousSummaryPayload> previousSummaries = new ArrayList<>();
-        @Builder.Default
-        private List<String> ytExclude = new ArrayList<>();
-        @Builder.Default
-        private List<String> wikiExclude = new ArrayList<>();
-        @Builder.Default
-        private List<String> paperExclude = new ArrayList<>();
-        @Builder.Default
-        private List<String> googleExclude = new ArrayList<>();
-    }
-
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class QnaGeneratePayload {
-        private Long lectureId;
-        private Long summaryId;
-        private Integer sectionIndex;
-        private String sectionSummary;
-        private String subject;
-        @Builder.Default
-        private List<PreviousQaPayload> previousQa = new ArrayList<>();
+    public record QnaGeneratePayload(
+            Long lectureId,
+            Long summaryId,
+            Integer sectionIndex,
+            String sectionSummary,
+            String subject,
+            List<PreviousQaPayload> previousQa
+    ) {
+        public QnaGeneratePayload {
+            previousQa = previousQa == null ? List.of() : previousQa;
+        }
     }
 }

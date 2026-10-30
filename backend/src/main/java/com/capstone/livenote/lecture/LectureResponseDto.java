@@ -1,25 +1,17 @@
 package com.capstone.livenote.lecture;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class LectureResponseDto {
-    private Long id;
-    private Long userId;
-    private String title;
-    private String subject;
-    private String sttLanguage;
-    private String status;
-    private LocalDateTime createdAt;
-    private LocalDateTime endAt;
+public record LectureResponseDto(
+        Long id,
+        Long userId,
+        String title,
+        String subject,
+        String sttLanguage,
+        String status,
+        LocalDateTime createdAt,
+        LocalDateTime endAt
+) {
 
     public static LectureResponseDto from(Lecture l) {
         return new LectureResponseDto(
@@ -33,5 +25,4 @@ public class LectureResponseDto {
                 l.getEndAt()
         );
     }
-
 }

@@ -1,8 +1,6 @@
 package com.capstone.livenote.ai;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Builder;
 
 import java.util.List;
 import java.util.Map;
@@ -10,29 +8,22 @@ import java.util.Map;
 /**
  * AI 서버가 보낸 추천 자료 콜백 DTO
  */
-@Getter @Setter
-public class ResourceCallbackDto {
+@Builder
+public record ResourceCallbackDto(
+        Long lectureId,
+        Long summaryId,
+        Integer sectionIndex,
+        List<ResourceItem> resources
+) {
 
-    @JsonProperty("lectureId")
-    private Long lectureId;
-
-    @JsonProperty("summaryId")
-    private Long summaryId;
-
-    @JsonProperty("sectionIndex")
-    private Integer sectionIndex;
-
-    @JsonProperty("resources")
-    private List<ResourceItem> resources;
-
-    @Getter @Setter
-    public static class ResourceItem {
-        private String type;        // "blog", "video", "wiki", "paper"
-        private String title;
-        private String url;
-        private String description;
-        private Double score;
-        private String reason;
-        private Map<String, Object> detail;
-    }
+    @Builder
+    public record ResourceItem(
+            String type,        // "blog", "video", "wiki", "paper"
+            String title,
+            String url,
+            String description,
+            Double score,
+            String reason,
+            Map<String, Object> detail
+    ) {}
 }
