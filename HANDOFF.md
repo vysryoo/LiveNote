@@ -159,7 +159,7 @@ QnA 흐름: 백엔드가 SSE의 `start`를 받으면 Redis에 카드 번호를 �
 ```bash
 cd frontend && npm run typecheck && npm run lint && npm test && npm run build
 cd backend && ./gradlew test        # 53개. 컨텍스트 로딩 테스트에 PostgreSQL 필요 (Redis·RabbitMQ 없이도 통과 확인)
-cd ai && uv run pytest              # 98개, 외부 API 호출 없음
+cd ai && uv run pytest              # 109개, 외부 API 호출 없음
 ```
 
 ### 7-2. 실제 환경 확인 (마이크 없이)
@@ -193,13 +193,14 @@ headless Chrome에 오디오 파일을 가짜 마이크로 넣어 녹음부터 �
 
 | 문제 | 근거 |
 | --- | --- |
-| 위키 추천에 주제와 무관한 문서가 섞일 수 있음 (예: "Stack" 검색 시 인물 문서 "Robert Stack") | 위키 LLM 검증이 꺼져 있어 제목·본문의 키워드 일치로만 점수를 매김(`_heuristic_score_single`). 동음이의어 문서는 `pageprops`로 제외함 |
+| 위키 추천에 주제와 무관한 문서가 섞일 수 있음 (예: "Stack" 검색 시 인물 문서 "Robert Stack") | 위키 LLM 검증이 꺼져 있어 제목·본문의 키워드 일치로만 점수를 매김(`recommend/providers/wiki.py`의 `heuristic_score`). 동음이의어 문서는 `pageprops`로 제외함 |
 | 논문(OpenAlex) 추천의 성공·실패 로그가 남지 않은 사례가 있음 | 확인 시점에 처리 중이었는지 멈췄는지 미확인 |
 
 ### 8-3. 설정
 
-- YouTube·네이버 키가 비어 있으면 AI 서버가 시작되지 않음(`youtube_config.py`, `google_config.py`의 시작 시 검사). 임시값을 넣으면 시작은 되고 영상·블로그 추천만 빈 결과가 됨
-- 블로그 추천은 Google Custom Search JSON API 대신 네이버 블로그 검색 API(네이버 클라우드 NAVER API HUB, 네이버 개발자센터는 검색 API 신규 발급 종료)를 사용함. 현재 한시적 무료, NAVER 검색 분류 월 775,000건 공유 한도. Google API가 신규 가입을 받지 않고 2027-01-01 종료 예정이기 때문. 모듈 이름은 `blog`(내부 패키지 `blogkit`)로 변경함. 클래스명(`GoogleService`, `GoogleConfig` 등)은 그대로 둠
+- OpenAI·내부·YouTube·네이버 키 중 하나라도 비어 있으면 AI 서버가 시작되지 않음(`ai/core/config.py`의 `Settings.check_required`). 임시값을 넣으면 시작은 되고 영상·블로그 추천만 빈 결과가 됨
+- AI 서버 설정은 셸 환경변수와 `ai/.env`를 시작 시 한 번 읽고, 같은 키는 셸 환경변수가 우선함
+- 블로그 추천은 Google Custom Search JSON API 대신 네이버 블로그 검색 API(네이버 클라우드 NAVER API HUB, 네이버 개발자센터는 검색 API 신규 발급 종료)를 사용함. 현재 한시적 무료, NAVER 검색 분류 월 775,000건 공유 한도. Google API가 신규 가입을 받지 않고 2027-01-01 종료 예정이기 때문. 공급자는 `ai/recommend/providers/blog.py`. 요청 필드 `google_exclude`는 백엔드 호환을 위해 이름을 유지함
 - YouTube Data API 기본 할당량은 하루 10,000 단위이고 영상 추천 1회에 약 101 단위(검색 100 + 상세 1)를 씀. 영상은 15초 부분 요약의 자동 요청(위키·블로그)에서 빼고, 분할 화면을 열 때의 추가 카드 요청에서만 섹션당 최대 1회 요청함. 오토 모드는 섹션마다 분할 화면을 자동으로 열므로 섹션마다 요청되어 하루 녹음 약 50분 분량에서 할당량이 소진될 수 있음
 
 ---
@@ -210,10 +211,11 @@ headless Chrome에 오디오 파일을 가짜 마이크로 넣어 녹음부터 �
 
 | 항목 | 내용 |
 | --- | --- |
-| LLM 호출 | `ai/core/llm.py`(LangChain `ChatOpenAI`)로 통일. 기본 모델 `gpt-6-luna`(추론 강도 none), 용도별(`SUMMARY`, `QA`, `QUERY`, `VERIFY`) 환경변수로 변경 가능. 호출마다 토큰 사용량 JSON 로그 |
-| QnA | LangGraph 그래프(`qa/qakit/graph.py`)로 질문 유형별 동시 생성·SSE. 현재 섹션에서 말한 내용만 근거로 출제하도록 제한 |
-| 추천 | LangGraph 그래프(`server/rec_graph.py`)로 4종 동시 실행, 종류별 콜백. 위키백과 429 응답 시 대기 후 재시도 |
-| 요약 | LangChain 체인 (프롬프트 → 모델 → 문자열) |
+| 설정 | `ai/core/config.py`의 `Settings` 하나(pydantic-settings). 키·모델·저장 경로는 환경변수, 요청 처리 기준(검색 개수, 추천 `top_k`·`min_score` 등)은 코드 기본값 |
+| LLM 호출 | `ai/core/llm.py`(LangChain `ChatOpenAI`)로 통일. 기본 모델 `gpt-6-luna`(추론 강도 none), 용도별(`SUMMARY`, `QA`, `QUERY`, `VERIFY`) 환경변수로 변경 가능. JSON 응답은 구조화 출력(`complete_json`). 호출마다 토큰 사용량 JSON 로그 |
+| QnA | LangGraph 그래프(`ai/qa/graph.py`)로 질문 유형별 동시 생성·SSE. 공통 템플릿 하나에 유형별 지시문. 현재 섹션에서 말한 내용만 근거로 출제하도록 제한 |
+| 추천 | LangGraph 그래프(`ai/recommend/graph.py`)로 4종 동시 실행, 종류별 콜백. 공통 흐름(`recommend/pipeline.py`)과 종류별 공급자(`recommend/providers/`). LLM 검증이 실패한 후보는 결과에서 뺌. 검색 API 429·503 응답은 대기 후 최대 3번 재시도(`core/http.py`) |
+| 요약 | LangChain 체인 (프롬프트 → 모델 → 문자열), `ai/summary/service.py` |
 | 강의 자료 분할 | 기본 `semantic`(p95, 겹침 1문장, 최소 40·최대 200토큰). 강의 자료 조각과 이전 섹션 요약을 따로 검색해 합침 |
 | 백그라운드 작업 | `core/tasks.py`가 참조 보관, 서버 종료 시 최대 30초 대기 |
 | 전사 | 백엔드 실시간 전사 기본 모델 `gpt-transcribe` |
@@ -233,6 +235,12 @@ headless Chrome에 오디오 파일을 가짜 마이크로 넣어 녹음부터 �
 | 전사 글자 오류율 (dev) | gpt-4o-transcribe → gpt-transcribe | 2.56% → 2.92% (영문·숫자 표기 차이 제외 1.37% → 1.72%) |
 
 `E0_resource_test.md`의 추천 자료 결과(80.0%)는 위키백과 429 오류로 위키 추천이 빠진 상태에서 측정한 값이라 비교에 쓰지 않는다.
+
+위 측정 뒤에 다음을 바꿨고, 바꾼 뒤 재측정은 하지 않았다.
+
+- QnA 유형별 지시문의 다른 유형 금지 목록 오류 수정 (비교의 "바교", 심화의 자기 유형 포함, 응용의 금지 문장 누락)
+- 추천 검색어 프롬프트의 이전 요약·강의 자료 문맥을 네 공급자 같은 형식으로 통일
+- 추천 LLM 검증이 실패한 후보를 대체 점수(5.0 등)로 남기던 처리를 결과에서 빼는 것으로 변경
 
 ### 9-3. 미룬 실험
 
