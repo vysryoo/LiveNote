@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/shared/ui/badge";
+import { cn } from "@/shared/ui/utils";
 import type { QnA, Resource } from "../api/schemas";
 import { useTypewriter } from "../hooks/useTypewriter";
 import { toDisplayReason } from "../resourceReason";
@@ -182,7 +183,10 @@ function CardFrame({
     <div className={CARD_CLASS}>
       <div className="flex items-start justify-between mb-3 flex-shrink-0">
         <Badge
-          className={`text-xs text-[rgb(255,255,255)] flex-shrink-0${centerBadge ? " self-center" : ""}`}
+          className={cn(
+            "text-xs text-[rgb(255,255,255)] flex-shrink-0",
+            centerBadge && "self-center",
+          )}
           style={{ background: badgeBackground }}
         >
           {badge}
@@ -193,9 +197,7 @@ function CardFrame({
         <p className="font-medium">{title}</p>
       </div>
       <div className="flex-1 overflow-y-auto">
-        <p
-          className={`text-sm text-muted-foreground${keepLineBreaks ? " whitespace-pre-line" : ""}`}
-        >
+        <p className={cn("text-sm text-muted-foreground", keepLineBreaks && "whitespace-pre-line")}>
           {body}
         </p>
       </div>

@@ -2,6 +2,7 @@ import type { ParseKeys } from "i18next";
 import { BookOpen, Check, Chrome, GraduationCap, Youtube, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { Trans, useTranslation } from "react-i18next";
+import { cn } from "@/shared/ui/utils";
 
 const RESOURCE_TILES: {
   icon: LucideIcon;
@@ -216,9 +217,7 @@ function MockSessionWindow({
   children: ReactNode;
 }) {
   return (
-    <div
-      className={`bg-[rgb(246,246,246)] rounded-2xl p-8 shadow-2xl${fullHeight ? " h-full" : ""}`}
-    >
+    <div className={cn("bg-[rgb(246,246,246)] rounded-2xl p-8 shadow-2xl", fullHeight && "h-full")}>
       <div
         className={
           spaciousHeader ? "flex items-center gap-2 mb-6" : "flex items-center justify-between mb-4"
