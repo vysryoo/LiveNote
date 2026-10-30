@@ -19,7 +19,6 @@ public class CardController {
     private final CardRequestService cardRequestService;
     private final LectureService lectureService;
 
-    // QnA 스트리밍
     @Operation(summary = "QnA 확장 카드 스트리밍 시작")
     @PostMapping("/start-qna-stream")
     public ApiResponse<Void> startQnaStream(
@@ -34,7 +33,6 @@ public class CardController {
         return ApiResponse.ok();
     }
 
-    // Resource 스트리밍
     @Operation(summary = "Resource 확장 카드 스트리밍 시작")
     @PostMapping("/start-resources-stream")
     public ApiResponse<Void> startResourceStream(

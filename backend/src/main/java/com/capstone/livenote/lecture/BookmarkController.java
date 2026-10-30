@@ -16,7 +16,6 @@ public class BookmarkController {
 
     private final BookmarkService bookmarkService;
 
-    // 북마크 생성
     @Operation(summary = "현재 강의 구간에 북마크를 추가")
     @PostMapping
     public ApiResponse<BookmarkResponseDto> createBookmark(
@@ -27,7 +26,6 @@ public class BookmarkController {
         return ApiResponse.ok(BookmarkResponseDto.from(bookmark));
     }
 
-    // 북마크 삭제
     @Operation(summary = "지정한 북마크를 삭제")
     @DeleteMapping("/{bookmarkId}")
     public ApiResponse<Void> deleteBookmark(@AuthenticationPrincipal Long userId, @PathVariable Long bookmarkId) {

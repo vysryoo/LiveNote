@@ -15,8 +15,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
-
-// AI 쪽에서 백엔드로 결과 보내기
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/ai/callback")

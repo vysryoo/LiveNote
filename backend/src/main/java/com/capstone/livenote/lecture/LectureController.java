@@ -28,7 +28,6 @@ public class LectureController {
 
     private final LectureService lectureService;
 
-    // 강의 조회
     @Operation(summary = "현재 사용자의 강의 목록을 최신순으로 페이지 단위 조회")
     @GetMapping
     public ApiResponse<LecturePageDto> list(
@@ -43,7 +42,6 @@ public class LectureController {
         return ApiResponse.ok(new LecturePageDto(items, result.getTotalElements(), result.hasNext()));
     }
 
-    // 강의 상세 정보 조회 (transcripts, summaries, resources, qna, bookmarks 포함)
     @Operation(summary = "강의의 모든 상세 정보 조회 (transcripts, summaries, resources, qna, bookmarks 포함)")
     @GetMapping("/{lectureId}/detail")
     public ApiResponse<SessionDetailResponse> getDetail(@AuthenticationPrincipal Long userId,
@@ -52,7 +50,6 @@ public class LectureController {
         return ApiResponse.ok(detail);
     }
 
-    // 강의 생성
     @Operation(summary = "새로운 강의를 생성")
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ApiResponse<LectureResponseDto> create(@AuthenticationPrincipal Long userId,
@@ -89,7 +86,6 @@ public class LectureController {
     }
 
 
-    // 강의 종료
     @Operation(summary = "녹음을 종료하고 강의 상태를 완료로 변경")
     @PostMapping("/{lectureId}/end")
     public ApiResponse<LectureResponseDto> endLecture(

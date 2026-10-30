@@ -29,6 +29,12 @@ public class AuthController {
     @Value("${app.jwt.refresh-cookie-secure}")
     private boolean refreshCookieSecure;
 
+    /**
+     * 회원 가입하고 접근 토큰을 발급한다. 갱신 토큰은 쿠키로 보낸다.
+     *
+     * @param req 가입 정보
+     * @return 접근 토큰과 사용자 정보. 로그인 ID나 이메일을 이미 쓰고 있으면 400
+     */
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<AuthResponseDto>> signup(@RequestBody SignupRequestDto req) {
         AuthResponseDto auth = userService.signup(req);
@@ -36,6 +42,12 @@ public class AuthController {
                 .body(ApiResponse.ok(auth));
     }
 
+    /**
+     * 로그인하고 접근 토큰을 발급한다. 갱신 토큰은 쿠키로 보낸다.
+     *
+     * @param req 로그인 정보
+     * @return 접근 토큰과 사용자 정보. 로그인 ID가 없으면 404, 비밀번호가 틀리면 400
+     */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponseDto>> login(@RequestBody LoginRequestDto req) {
         AuthResponseDto auth = userService.login(req);
