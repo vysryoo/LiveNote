@@ -26,7 +26,8 @@ import java.util.stream.Collectors;
 public class SectionAggregationService {
 
     static final int PARTIAL_SEC = 15;
-    static final int SECTION_SEC = 30;
+    /** 섹션 하나의 길이(초) */
+    public static final int SECTION_SEC = 30;
 
     private final AiServerClient aiServerClient;
     private final TranscriptRepository transcriptRepository;

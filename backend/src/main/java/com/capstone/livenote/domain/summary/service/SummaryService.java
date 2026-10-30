@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
+import static com.capstone.livenote.application.ai.service.SectionAggregationService.SECTION_SEC;
+
 
 @Service
 @RequiredArgsConstructor
@@ -47,8 +49,8 @@ public class SummaryService {
     // 해당 섹션의 요약이 DB에 존재하는지 확인
     @Transactional(noRollbackFor = DataIntegrityViolationException.class)
     public Summary upsertFromCallback(SummaryCallbackDto dto) {
-        int startSec = dto.getStartSec() != null ? dto.getStartSec() : dto.getSectionIndex() * 30;
-        int endSec = dto.getEndSec() != null ? dto.getEndSec() : startSec + 30;
+        int startSec = dto.getStartSec() != null ? dto.getStartSec() : dto.getSectionIndex() * SECTION_SEC;
+        int endSec = dto.getEndSec() != null ? dto.getEndSec() : startSec + SECTION_SEC;
         SummaryPhase phase = SummaryPhase.from(dto.getPhase());
 
         // 1. 조회 시도
