@@ -1,6 +1,6 @@
 package com.capstone.livenote.global.security;
 
-import com.capstone.livenote.domain.lecture.service.LectureService;
+import com.capstone.livenote.lecture.LectureService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;

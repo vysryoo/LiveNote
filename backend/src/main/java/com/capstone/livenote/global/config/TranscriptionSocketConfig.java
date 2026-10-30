@@ -1,6 +1,6 @@
 package com.capstone.livenote.global.config;
 
-import com.capstone.livenote.application.ws.RealtimeTranscriptionWebSocketHandler;
+import com.capstone.livenote.recording.RealtimeTranscriptionWebSocketHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;

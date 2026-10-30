@@ -1,0 +1,34 @@
+package com.capstone.livenote.card;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class QnaResponseDto {
+    private Long id;
+    private Long lectureId;
+    private Long summaryId;
+    private Integer sectionIndex;
+    private String cardId;
+    private String type;
+    private String question;
+    private String answer;
+
+    public static QnaResponseDto from(Qna q) {
+        return new QnaResponseDto(
+                q.getId(),
+                q.getLectureId(),
+                q.getSummaryId(),
+                q.getSectionIndex(),
+                q.getCardId(),
+                q.getType().name().toLowerCase(),
+                q.getQuestion(),
+                q.getAnswer()
+        );
+    }
+}

@@ -1,7 +1,7 @@
 package com.capstone.livenote.global.security;
 
-import com.capstone.livenote.domain.lecture.entity.Lecture;
-import com.capstone.livenote.domain.lecture.service.LectureService;
+import com.capstone.livenote.lecture.Lecture;
+import com.capstone.livenote.lecture.LectureService;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
