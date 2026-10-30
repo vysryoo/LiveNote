@@ -29,6 +29,7 @@ from ..dependencies import (
     get_google_service,
 )
 from ..models import ResourceType
+from ..rec_graph import run_recommendations
 from ..security import internal_auth_headers
 from ..utils import (
     CamelModel,
@@ -180,9 +181,16 @@ async def recommend_resources(
         min_score=settings.rec.google.min_score,
     )
 
-    async def provider_task(res_type: ResourceType, coro):
+    providers = {
+        ResourceType.PAPER: lambda: openalex_service.recommend_papers(openalex_request),
+        ResourceType.WIKI: lambda: wiki_service.recommend_pages(wiki_request),
+        ResourceType.VIDEO: lambda: youtube_service.recommend_videos(youtube_request),
+        ResourceType.BLOG: lambda: google_service.recommend_results(google_request),
+    }
+
+    async def provider_task(res_type: ResourceType):
         try:
-            result = await coro
+            result = await providers[res_type]()
             mapped = map_resources(res_type, result)
             titles = [item.get("title") for item in mapped if item.get("title")]
             # INFO 레벨에서 보이지 않는 환경을 위해 WARNING으로 남김
@@ -200,16 +208,11 @@ async def recommend_resources(
             logger.exception("REC provider %s 실패: %s", res_type.value, exc)
             await post_resources_callback(request, [])
 
-    providers = {
-        ResourceType.PAPER: lambda: openalex_service.recommend_papers(openalex_request),
-        ResourceType.WIKI: lambda: wiki_service.recommend_pages(wiki_request),
-        ResourceType.VIDEO: lambda: youtube_service.recommend_videos(youtube_request),
-        ResourceType.BLOG: lambda: google_service.recommend_results(google_request),
-    }
-
-    for res_type in selected_resource_types:
-        task_coro = providers[res_type]()
-        run_in_background(provider_task(res_type, task_coro), name=f"rec-{res_type.value}-{request.lecture_id}")
+    # 자료 종류별 추천은 그래프가 동시에 실행하고, 각각 끝나는 대로 콜백을 보냄
+    run_in_background(
+        run_recommendations(selected_resource_types, provider_task),
+        name=f"rec-{request.lecture_id}-{request.section_index}",
+    )
 
     return {"status": "accepted", "collection_id": collection_id}
 
