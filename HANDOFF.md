@@ -158,7 +158,7 @@ QnA 흐름: 백엔드가 SSE의 `start`를 받으면 Redis에 카드 번호를 �
 
 ```bash
 cd frontend && npm run typecheck && npm run lint && npm test && npm run build
-cd backend && ./gradlew test        # 53개. 컨텍스트 로딩 테스트에 PostgreSQL 필요 (Redis·RabbitMQ 없이도 통과 확인)
+cd backend && ./gradlew test        # 54개. 컨텍스트 로딩 테스트에 PostgreSQL 필요 (Redis·RabbitMQ 없이도 통과 확인)
 cd ai && uv run pytest              # 109개, 외부 API 호출 없음
 ```
 
