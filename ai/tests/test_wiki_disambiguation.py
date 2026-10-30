@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from core.config import WikiSettings
 from recommend.providers.wiki import WikiProvider
 
 pytestmark = pytest.mark.anyio("asyncio")
@@ -17,7 +18,7 @@ class _FakeWikiApi:
 
 async def test_disambiguation_pages_are_excluded():
     provider = WikiProvider(
-        top_k=1, verify=False, min_score=5.0, language="ko", wiki_lang="en", fallback_to_ko=False,
+        WikiSettings(top_k=1, verify=False, min_score=5.0, language="ko", search_lang="en", fallback_to_other_lang=False),
         api=_FakeWikiApi({
             1: {"title": "Stack", "extract": "Stack may refer to:", "pageid": 1, "disambiguation": True},
             2: {"title": "Stack (abstract data type)", "extract": "A stack is ...", "pageid": 2, "disambiguation": False},

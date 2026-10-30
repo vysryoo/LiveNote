@@ -15,6 +15,7 @@ import httpx
 from pydantic import BaseModel
 
 from core import llm
+from core.config import WikiSettings
 from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
@@ -201,12 +202,10 @@ class WikiProvider(Provider[Dict[str, Any]]):
     resource_type = ResourceType.WIKI
     verify_concurrency = 10
 
-    def __init__(
-        self, top_k: int, verify: bool, min_score: float, language: str, wiki_lang: str, fallback_to_ko: bool, api: WikiClient
-    ) -> None:
-        super().__init__(top_k, verify, min_score, language)
-        self.wiki_lang = wiki_lang
-        self.fallback_to_ko = fallback_to_ko
+    def __init__(self, settings: WikiSettings, api: WikiClient) -> None:
+        super().__init__(settings)
+        self.search_lang = settings.search_lang
+        self.fallback_to_other_lang = settings.fallback_to_other_lang
         self.api = api
 
     async def close(self) -> None:
@@ -215,7 +214,7 @@ class WikiProvider(Provider[Dict[str, Any]]):
     async def build_queries(self, context: RecContext) -> List[str]:
         prompt = KEYWORD_PROMPT.format(
             lecture_summary=context.summary,
-            search_language=self.wiki_lang,
+            search_language=self.search_lang,
             previous_summaries=previous_text(context),
             rag_context=rag_text(context),
         )
@@ -227,12 +226,12 @@ class WikiProvider(Provider[Dict[str, Any]]):
             return context.summary.split()[:3]
 
     def search_rounds(self) -> Sequence[Optional[str]]:
-        if not self.fallback_to_ko:
-            return [self.wiki_lang]
-        return [self.wiki_lang, "ko" if self.wiki_lang == "en" else "en"]
+        if not self.fallback_to_other_lang:
+            return [self.search_lang]
+        return [self.search_lang, "ko" if self.search_lang == "en" else "en"]
 
     async def find_candidates(self, queries: List[str], context: RecContext, search_round: Optional[str]) -> List[Dict[str, Any]]:
-        lang = search_round or self.wiki_lang
+        lang = search_round or self.search_lang
         searches = await asyncio.gather(
             *[self.api.search_pages(keyword, lang, SEARCH_LIMIT) for keyword in queries[:FANOUT]], return_exceptions=True
         )
@@ -293,7 +292,7 @@ class WikiProvider(Provider[Dict[str, Any]]):
             "url": candidate.get("url", ""),
             "title": one_line(candidate.get("title", "")),
             "extract": one_line(candidate.get("extract", "")),
-            "lang": self.wiki_lang,
+            "lang": self.search_lang,
             "page_id": candidate.get("pageid", 0),
         }
         return Recommendation(

@@ -3,6 +3,7 @@ from __future__ import annotations
 import httpx
 import pytest
 
+from core.config import BlogSettings
 from recommend.providers.blog import BlogProvider, NaverBlogClient
 
 pytestmark = pytest.mark.anyio("asyncio")
@@ -72,7 +73,7 @@ async def test_search_shortening_drops_last_word_until_results():
             return [{"title": "결과"}] if query == "벅 컨버터" else []
 
     api = StubClient()
-    provider = BlogProvider(top_k=1, verify=True, min_score=3.0, language="ko", search_lang="ko", api=api)
+    provider = BlogProvider(BlogSettings(top_k=1, verify=True, min_score=3.0, language="ko", search_lang="ko"), api=api)
 
     results = await provider.search_shortening("벅 컨버터 전압초평형 듀티비")
 

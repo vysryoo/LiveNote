@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from rapidfuzz import fuzz
 
 from core import llm
+from core.config import VideoSettings
 from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
@@ -243,9 +244,9 @@ class VideoProvider(Provider[VideoCandidate]):
     resource_type = ResourceType.VIDEO
     verify_concurrency = 20
 
-    def __init__(self, top_k: int, verify: bool, min_score: float, language: str, yt_lang: str, api: YouTubeClient) -> None:
-        super().__init__(top_k, verify, min_score, language)
-        self.yt_lang = yt_lang
+    def __init__(self, settings: VideoSettings, api: YouTubeClient) -> None:
+        super().__init__(settings)
+        self.search_lang = settings.search_lang
         self.api = api
 
     async def close(self) -> None:
@@ -255,8 +256,8 @@ class VideoProvider(Provider[VideoCandidate]):
         prompt = QUERY_PROMPT.format(
             query_min=QUERY_MIN,
             lecture_summary=context.summary,
-            query_language=self.yt_lang or self.language or "en",
-            yt_lang=self.yt_lang,
+            query_language=self.search_lang or self.language or "en",
+            yt_lang=self.search_lang,
             previous_summaries=previous_text(context),
             rag_context=rag_text(context),
         )
@@ -265,7 +266,7 @@ class VideoProvider(Provider[VideoCandidate]):
         return queries or [context.summary[:60]]
 
     async def find_candidates(self, queries: List[str], context: RecContext, search_round: Optional[str]) -> List[VideoCandidate]:
-        searches = await asyncio.gather(*[self.api.search_videos(q=q, lang=self.yt_lang, max_results=MAX_SEARCH_RESULTS) for q in queries])
+        searches = await asyncio.gather(*[self.api.search_videos(q=q, lang=self.search_lang, max_results=MAX_SEARCH_RESULTS) for q in queries])
         excluded = {normalize_title(t) for t in context.excluded(self.resource_type)}
         seen, items = set(), []
         for item in (item for result in searches for item in result):
@@ -309,9 +310,9 @@ class VideoProvider(Provider[VideoCandidate]):
     def to_recommendation(self, candidate: VideoCandidate, score: Score) -> Recommendation:
         detail = candidate.detail
         if detail is None:
-            url, title, lang = f"https://www.youtube.com/watch?v={candidate.item.video_id}", candidate.item.title, self.yt_lang
+            url, title, lang = f"https://www.youtube.com/watch?v={candidate.item.video_id}", candidate.item.title, self.search_lang
         else:
-            url, title, lang = detail.url(), detail.title, detail.default_lang or self.yt_lang
+            url, title, lang = detail.url(), detail.title, detail.default_lang or self.search_lang
         info = {"url": url, "title": one_line(title), "extract": one_line(candidate.extract), "lang": lang}
         return Recommendation(
             type=self.resource_type,

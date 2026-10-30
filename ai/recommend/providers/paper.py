@@ -14,6 +14,7 @@ import httpx
 from pydantic import BaseModel
 
 from core import llm
+from core.config import PaperSettings
 from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
@@ -165,10 +166,10 @@ class PaperProvider(Provider[Dict[str, Any]]):
     resource_type = ResourceType.PAPER
     verify_concurrency = 20
 
-    def __init__(self, top_k: int, verify: bool, min_score: float, language: str, year_from: int, sort_by: str, api=None) -> None:
-        super().__init__(top_k, verify, min_score, language)
-        self.year_from = year_from
-        self.sort_by = sort_by
+    def __init__(self, settings: PaperSettings, api: Optional[OpenAlexClient] = None) -> None:
+        super().__init__(settings)
+        self.year_from = settings.year_from
+        self.sort_by = settings.sort_by
         self.api = api or OpenAlexClient()
 
     async def build_queries(self, context: RecContext) -> List[str]:

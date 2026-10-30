@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, List
 
 import pytest
 
+from core.config import BlogSettings, PaperSettings, VideoSettings, WikiSettings
 from core.llm import ModelPurpose
 from core.schemas import PreviousSummary, RAGChunk, ResourceType
 from recommend.models import RecContext
@@ -114,7 +115,9 @@ async def test_paper_provider(monkeypatch):
 
     llm = install_llm(monkeypatch, paper_llm)
     api = FakeOpenAlexApi()
-    provider = PaperProvider(top_k=3, verify=True, min_score=5.0, language="ko", year_from=1960, sort_by="hybrid", api=api)
+    provider = PaperProvider(
+        PaperSettings(top_k=3, verify=True, min_score=5.0, language="ko", year_from=1960, sort_by="hybrid"), api=api
+    )
 
     results = await run(provider, context(ResourceType.PAPER, ["W9"]))
 
@@ -183,7 +186,10 @@ async def test_wiki_provider(monkeypatch, verify):
     llm = install_llm(monkeypatch, wiki_llm)
     api = FakeWikiApi()
     provider = WikiProvider(
-        top_k=3 if verify else 2, verify=verify, min_score=5.0, language="ko", wiki_lang="en", fallback_to_ko=True, api=api
+        WikiSettings(
+            top_k=3 if verify else 2, verify=verify, min_score=5.0, language="ko", search_lang="en", fallback_to_other_lang=True
+        ),
+        api=api,
     )
 
     results = await run(provider, context(ResourceType.WIKI, ["Queue (abstract data type)"]))
@@ -263,7 +269,7 @@ async def test_video_provider(monkeypatch):
 
     llm = install_llm(monkeypatch, video_llm)
     api = FakeYouTubeApi()
-    provider = VideoProvider(top_k=2, verify=True, min_score=7.0, language="ko", yt_lang="en", api=api)
+    provider = VideoProvider(VideoSettings(top_k=2, verify=True, min_score=7.0, language="ko", search_lang="en"), api=api)
 
     results = await run(provider, context(ResourceType.VIDEO, ["Stack vs Queue | CS101"]))
 
@@ -311,7 +317,7 @@ async def test_blog_provider(monkeypatch):
 
     llm = install_llm(monkeypatch, blog_llm)
     api = FakeNaverApi()
-    provider = BlogProvider(top_k=2, verify=True, min_score=3.0, language="ko", search_lang="ko", api=api)
+    provider = BlogProvider(BlogSettings(top_k=2, verify=True, min_score=3.0, language="ko", search_lang="ko"), api=api)
 
     results = await run(provider, context(ResourceType.BLOG, ["https://blog.naver.com/c/3"]))
 

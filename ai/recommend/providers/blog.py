@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 import httpx
 
 from core import llm
+from core.config import BlogSettings
 from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
@@ -162,9 +163,9 @@ class BlogProvider(Provider[Dict[str, Any]]):
     resource_type = ResourceType.BLOG
     verify_concurrency = 15
 
-    def __init__(self, top_k: int, verify: bool, min_score: float, language: str, search_lang: str, api: NaverBlogClient) -> None:
-        super().__init__(top_k, verify, min_score, language)
-        self.search_lang = search_lang
+    def __init__(self, settings: BlogSettings, api: NaverBlogClient) -> None:
+        super().__init__(settings)
+        self.search_lang = settings.search_lang
         self.api = api
 
     async def close(self) -> None:
