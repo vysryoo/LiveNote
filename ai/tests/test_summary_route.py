@@ -4,6 +4,7 @@ import asyncio
 
 import pytest
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
+from pydantic import HttpUrl
 
 pytestmark = pytest.mark.anyio("asyncio")
 
@@ -71,4 +72,30 @@ async def test_missing_callback_url_is_rejected(async_client, callback_recorder,
     response = await async_client.post("/summary/generate", json={"lectureId": 1, "sectionIndex": 0, "transcript": TRANSCRIPT})
 
     assert response.status_code == 400
+    assert callback_recorder == []
+
+
+async def test_settings_callback_url_is_used_when_request_has_none(async_client, test_context, callback_recorder, summary_model):
+    test_context.settings.summary_callback_url = HttpUrl("http://backend/default")
+    response = await async_client.post("/summary/generate", json={"lectureId": 1, "sectionIndex": 0, "transcript": TRANSCRIPT})
+    await asyncio.sleep(0.05)
+
+    assert response.status_code == 202
+    assert [item["url"] for item in callback_recorder] == ["http://backend/default?type=summary"]
+
+
+async def test_failed_summary_sends_no_callback(async_client, callback_recorder, monkeypatch):
+    async def fail(self, transcript):
+        raise RuntimeError("OpenAI down")
+
+    monkeypatch.setattr("summary.service.SummaryService.summarize", fail)
+    response = await async_client.post("/summary/generate", json={
+        "lectureId": 1,
+        "sectionIndex": 0,
+        "transcript": TRANSCRIPT,
+        "callbackUrl": "http://backend/callback",
+    })
+    await asyncio.sleep(0.05)
+
+    assert response.json() == {"status": "accepted"}
     assert callback_recorder == []

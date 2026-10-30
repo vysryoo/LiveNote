@@ -4,7 +4,8 @@
 START → (자료 종류마다 Send) → recommend_one → END
 
 자료 종류별 추천(논문, 위키, 영상, 블로그)은 같은 단계에서 동시에 실행되고, 각 노드는 끝나는 대로
-결과를 콜백으로 보낸다. 종류별 추천 내부(검색어 생성, 검색, 거르기, 검증)는 recommend.pipeline이 맡는다.
+결과를 콜백으로 보낸다. 노드가 실행하는 종류별 작업(추천 후 콜백)은 server/routes/rec.py의 _recommend_and_send이고,
+종류별 추천 내부(검색어 생성, 검색, 거르기, 검증)는 recommend.pipeline이 맡는다.
 """
 from __future__ import annotations
 

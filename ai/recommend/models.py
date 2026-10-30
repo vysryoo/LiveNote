@@ -34,14 +34,17 @@ class RecContext:
 
 @dataclass(frozen=True)
 class Score:
-    """후보 하나의 관련도 점수와 이유."""
+    """후보 하나의 관련도 점수와 이유. LLM 검증과 휴리스틱이 공통으로 돌려준다."""
 
     score: float
     reason: str
 
 
 class LLMScore(BaseModel):
-    """LLM 검증 응답 형식."""
+    """LLM 검증 응답 형식 (구조화 출력 스키마).
+
+    클래스 이름이 스키마 이름으로 OpenAI 요청에 함께 전송되므로, Score와 필드가 같아도 합치지 않는다.
+    """
 
     score: float
     reason: str
@@ -85,3 +88,14 @@ def one_line(text: str) -> str:
         줄바꿈 없는 텍스트
     """
     return text.replace("\n", " ").replace("\r", " ")
+
+
+def to_prompt_line(text: str) -> str:
+    """프롬프트에 넣을 텍스트의 줄바꿈과 큰따옴표를 바꾼다. 프롬프트의 JSON 응답 예시가 깨지지 않게 한다.
+
+    Args:
+        text: 원문
+    Returns:
+        줄바꿈은 공백, 큰따옴표는 작은따옴표로 바꾸고 앞뒤 공백을 지운 텍스트
+    """
+    return text.replace("\n", " ").replace('"', "'").strip()

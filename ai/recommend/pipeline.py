@@ -14,6 +14,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any, Generic, List, Optional, Sequence, TypeVar
 
+from core.config import ProviderSettings
 from core.schemas import ResourceType
 
 from .models import RecContext, Recommendation, Score
@@ -30,19 +31,16 @@ class Provider(ABC, Generic[CandidateT]):
     # LLM 검증 동시 호출 수
     verify_concurrency: int = 10
 
-    def __init__(self, top_k: int, verify: bool, min_score: float, language: str) -> None:
+    def __init__(self, settings: ProviderSettings) -> None:
         """공통 설정을 받는다.
 
         Args:
-            top_k: 추천 개수
-            verify: True면 LLM으로 점수를 매기고, False면 휴리스틱
-            min_score: 남길 최소 점수 (0~10)
-            language: 추천 이유 언어
+            settings: 자료 종류 추천 설정 (top_k, verify, min_score, language)
         """
-        self.top_k = top_k
-        self.verify = verify
-        self.min_score = min_score
-        self.language = language
+        self.top_k = settings.top_k
+        self.verify = settings.verify
+        self.min_score = settings.min_score
+        self.language = settings.language
 
     @abstractmethod
     async def build_queries(self, context: RecContext) -> List[str]:

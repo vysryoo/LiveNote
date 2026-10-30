@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
@@ -60,14 +60,16 @@ class ChunkSettings:
         Raises:
             ValueError: 지원하지 않는 분할 방식인 경우
         """
-        overrides = {
-            field.name: getattr(settings, f"rag_{field.name}")
-            for field in fields(cls)
-            if getattr(settings, f"rag_{field.name}", None) is not None
+        values = {
+            "strategy": settings.rag_chunk_strategy,
+            "chunk_tokens": settings.rag_chunk_tokens,
+            "chunk_overlap_tokens": settings.rag_chunk_overlap_tokens,
+            "semantic_percentile": settings.rag_semantic_percentile,
+            "semantic_overlap_sentences": settings.rag_semantic_overlap_sentences,
+            "semantic_min_tokens": settings.rag_semantic_min_tokens,
+            "semantic_max_tokens": settings.rag_semantic_max_tokens,
         }
-        if settings.rag_chunk_strategy is not None:
-            overrides["strategy"] = settings.rag_chunk_strategy
-        return cls(**overrides)
+        return cls(**{name: value for name, value in values.items() if value is not None})
 
 
 @lru_cache(maxsize=1)

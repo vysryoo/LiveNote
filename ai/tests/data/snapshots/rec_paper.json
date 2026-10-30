@@ -4,14 +4,12 @@
       "exclude_ids": [
         "W9"
       ],
-      "query": {
-        "tokens": [
-          "stack",
-          "queue"
-        ],
-        "year_from": 1960
-      },
-      "sort_by": "hybrid"
+      "sort_by": "hybrid",
+      "tokens": [
+        "stack",
+        "queue"
+      ],
+      "year_from": 1960
     }
   ],
   "llm_calls": [

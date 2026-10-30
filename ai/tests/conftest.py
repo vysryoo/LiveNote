@@ -119,7 +119,7 @@ def test_context(tmp_path) -> TestContext:
     ctx.settings.rag.rec_retrieve_top_k = 3
     ctx.settings.qa.language = "ko"
     ctx.settings.qa.question_types = [QnAType.APPLICATION, QnAType.COMPARISON, QnAType.ADVANCED]
-    ctx.settings.qa.qa_top_k = 3
+    ctx.settings.qa.max_question_types = 3
     return ctx
 
 

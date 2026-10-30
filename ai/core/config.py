@@ -39,50 +39,46 @@ class QASettings(BaseModel):
         default_factory=lambda: [QnAType.CONCEPT, QnAType.APPLICATION, QnAType.COMPARISON, QnAType.ADVANCED],
         description="생성할 질문 유형",
     )
-    qa_top_k: int = Field(default=4, ge=1, description="QA 생성 개수")
+    max_question_types: int = Field(default=4, ge=1, description="한 요청에서 생성할 질문 유형 최대 개수 (유형마다 1개씩 생성)")
 
 
-class PaperSettings(BaseModel):
+class ProviderSettings(BaseModel):
+    """자료 종류 공통 추천 설정. 종류마다 기본값이 다른 항목은 자식 클래스에서 다시 정한다."""
+
+    top_k: int = Field(default=1, ge=1, le=10, description="추천 개수")
+    verify: bool = Field(default=True, description="True면 LLM으로 점수를 매기고, False면 휴리스틱")
+    min_score: float = Field(default=5.0, ge=0.0, le=10.0, description="남길 최소 점수")
+    language: str = Field(default="ko", description="추천 이유 등 응답 언어")
+
+
+class PaperSettings(ProviderSettings):
     """논문 추천 설정 (OpenAlex)."""
 
-    top_k: int = Field(default=1, ge=1, le=10, description="논문 추천 개수")
-    verify: bool = Field(default=True, description="LLM 검증 여부")
     year_from: int = Field(default=1960, description="검색 최소 연도")
     sort_by: str = Field(default="hybrid", description="정렬 기준")
-    min_score: float = Field(default=5.0, ge=0.0, le=10.0, description="최소 점수")
-    language: str = Field(default="ko", description="응답 언어")
 
 
-class WikiSettings(BaseModel):
+class WikiSettings(ProviderSettings):
     """위키 추천 설정."""
 
-    top_k: int = Field(default=1, ge=1, le=10, description="Wiki 추천 개수")
-    verify: bool = Field(default=False, description="LLM 검증 여부")
-    wiki_lang: str = Field(default="en", description="Wikipedia 검색 언어")
-    language: str = Field(default="ko", description="응답 언어")
-    min_score: float = Field(default=5.0, ge=0.0, le=10.0, description="최소 점수")
-    fallback_to_ko: bool = Field(default=True, description="부족 시 언어 fallback 여부")
+    verify: bool = Field(default=False, description="True면 LLM으로 점수를 매기고, False면 휴리스틱")
+    search_lang: str = Field(default="en", description="Wikipedia 검색 언어판")
+    fallback_to_other_lang: bool = Field(default=True, description="top_k를 못 채우면 다른 언어판(en ↔ ko)으로 채울지 여부")
 
 
-class VideoSettings(BaseModel):
+class VideoSettings(ProviderSettings):
     """영상 추천 설정 (YouTube)."""
 
-    top_k: int = Field(default=1, ge=1, le=10, description="YouTube 추천 개수")
-    verify: bool = Field(default=True, description="LLM 검증 여부")
-    yt_lang: str = Field(default="en", description="YouTube 검색 언어")
-    language: str = Field(default="ko", description="응답 언어")
-    min_score: float = Field(default=7.0, ge=0.0, le=10.0, description="최소 점수")
+    min_score: float = Field(default=7.0, ge=0.0, le=10.0, description="남길 최소 점수")
+    search_lang: str = Field(default="en", description="YouTube 검색 언어")
 
 
-class BlogSettings(BaseModel):
+class BlogSettings(ProviderSettings):
     """블로그 추천 설정 (네이버 블로그)."""
 
-    top_k: int = Field(default=1, ge=1, le=10, description="블로그 추천 개수")
-    verify: bool = Field(default=True, description="LLM 검증 여부")
+    min_score: float = Field(default=3.0, ge=0.0, le=10.0, description="남길 최소 점수")
     # 블로그 검색이 네이버라 검색 키워드를 한국어로 생성
     search_lang: str = Field(default="ko", description="블로그 검색 키워드 언어")
-    language: str = Field(default="ko", description="응답 언어")
-    min_score: float = Field(default=3.0, ge=0.0, le=10.0, description="최소 점수")
 
 
 class RECSettings(BaseModel):
@@ -99,22 +95,7 @@ class SummarySettings(BaseModel):
 
     # 모델과 추론 강도는 LLM 용도 설정(llm_summary_*)을 따름
     max_tokens: int = Field(default=256, ge=1, description="최대 토큰")
-    system_prompt: str = Field(
-        default=(
-            "당신은 강의 내용을 간결하게 요약하는 비서입니다. "
-            "아래에서 제공하는 전사 텍스트는 하나의 섹션(약 30초 분량)에 해당하며, "
-            "반드시 해당 섹션의 내용만 이용해서 요약하세요. "
-            "다른 섹션이나 이전/이후 내용은 절대 추측하거나 언급하지 마세요. "
-            "주어진 섹션을 한국어로 1~2문장 정도로 핵심만 요약해 주세요. "
-            "수식과 기호는 LaTeX 문법 없이 일반 텍스트로 쓰세요."
-        ),
-        description="시스템 프롬프트",
-    )
     min_transcript_length: int = Field(default=10, ge=1, description="요약을 시도할 최소 전사 길이(문자 수)")
-    short_transcript_message: str = Field(
-        default="요약을 생성하기에 강의가 너무 짧습니다.",
-        description="전사가 너무 짧을 때 콜백으로 전송할 안내 메시지",
-    )
     callback_url: Optional[HttpUrl] = Field(default=None, description="기본 요약 콜백 URL (요청에서 미지정 시 사용)")
 
 

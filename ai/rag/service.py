@@ -44,6 +44,23 @@ class SummaryItem:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
+def build_collection_id(prefix: str, lecture_id: str) -> str:
+    """강의의 RAG 컬렉션 ID를 만든다.
+
+    Args:
+        prefix: 컬렉션 ID 접두사
+        lecture_id: 강의 ID. 앞뒤 공백은 지움
+    Returns:
+        "접두사_강의ID"
+    Raises:
+        ValueError: 강의 ID가 비어 있는 경우
+    """
+    lecture_id = lecture_id.strip()
+    if not lecture_id:
+        raise ValueError("lecture_id는 비어 있을 수 없습니다.")
+    return f"{prefix}_{lecture_id}"
+
+
 def to_score(distance: float) -> float:
     """Chroma 거리(L2, 작을수록 가까움)를 0~1 유사도 점수(클수록 가까움)로 바꾼다.
 

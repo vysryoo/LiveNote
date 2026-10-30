@@ -10,6 +10,10 @@ from fastapi import Depends, FastAPI
 
 from core import tasks as background_tasks
 from core.config import Settings, get_settings
+from qa.service import QAService
+from rag.service import RAGService
+from recommend.service import RecommendService
+from summary.service import SummaryService
 
 from .dependencies import Services
 from .routes import qa_router, rag_router, rec_router, summary_router
@@ -27,11 +31,6 @@ def build_services(settings: Settings) -> Services:
     Returns:
         서비스 묶음
     """
-    from qa.service import QAService
-    from rag.service import RAGService
-    from recommend.service import RecommendService
-    from summary.service import SummaryService
-
     return Services(
         rag=RAGService(settings),
         qa=QAService(),

@@ -143,3 +143,21 @@ async def test_qa_generate_rejects_blank_summary(async_client):
     payload = {"lecture_id": 1, "section_index": 0, "section_summary": " " * 12}
     response = await async_client.post("/qa/generate", json=payload)
     assert response.status_code == 422
+
+
+async def test_qa_generate_retrieves_context_for_current_section(async_client, test_context):
+    payload = {
+        "lecture_id": 7,
+        "section_index": 5,
+        "section_summary": "스택과 큐의 차이를 자세히 설명한다.",
+    }
+    await async_client.post("/qa/generate", json=payload)
+
+    assert test_context.rag.retrieve_calls == [{
+        "collection_id": "test_7",
+        "query": "스택과 큐의 차이를 자세히 설명한다.",
+        "section_index": 5,
+        "top_k": 2,
+        "summary_top_k": 1,
+        "recent_window": 3,
+    }]
