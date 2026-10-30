@@ -15,8 +15,8 @@ import {
   estimateServerSeconds,
   resolveCurrentSection,
   toPaneStatus,
-} from "../sectionViews";
-import { initialSessionState, selectStreamingCards, sessionReducer } from "../state/sessionReducer";
+} from "../lib/sectionViews";
+import { initialSessionState, selectStreamingCards, sessionReducer } from "../lib/sessionReducer";
 import { EndSessionDialog } from "./EndSessionDialog";
 import { LecturePane } from "./LecturePane";
 import { RecordingControl } from "./RecordingControl";

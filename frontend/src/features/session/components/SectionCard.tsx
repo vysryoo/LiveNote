@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import type { SectionView } from "../sectionViews";
+import type { SectionView } from "../lib/sectionViews";
 
 type SectionCardProps = {
   section: SectionView;

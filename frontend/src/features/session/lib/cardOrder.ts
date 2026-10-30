@@ -1,5 +1,5 @@
-import { parseCardId } from "./realtime/messages";
-import type { StreamingCard } from "./state/sessionReducer";
+import { parseCardId } from "../realtime/messages";
+import type { StreamingCard } from "./sessionReducer";
 
 export type CardEntry<T> =
   { kind: "saved"; key: string; item: T } | { kind: "streaming"; key: string; card: StreamingCard };

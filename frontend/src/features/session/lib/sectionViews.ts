@@ -1,5 +1,5 @@
-import type { SessionDetail, Summary, Transcript } from "./api/schemas";
-import type { LiveTranscript } from "./state/sessionReducer";
+import type { SessionDetail, Summary, Transcript } from "../api/schemas";
+import type { LiveTranscript } from "./sessionReducer";
 
 export type SectionView = {
   sectionIndex: number;

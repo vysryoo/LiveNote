@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useState } from "react";
 import type { Summary } from "../api/schemas";
-import { findLatestFinalSection } from "../sectionViews";
+import { findLatestFinalSection } from "../lib/sectionViews";
 
 /**
  * 분할 화면에 띄울 섹션 선택을 관리한다.

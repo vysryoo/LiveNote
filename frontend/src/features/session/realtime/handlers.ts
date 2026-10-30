@@ -1,7 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { qnaSchema, resourceSchema, type SessionDetail } from "../api/schemas";
 import { sessionKeys } from "../api/sessionApi";
-import type { SessionAction } from "../state/sessionReducer";
+import type { SessionAction } from "../lib/sessionReducer";
 import type {
   QnaListMessage,
   ResourceListMessage,

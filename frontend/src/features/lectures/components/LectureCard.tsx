@@ -13,7 +13,7 @@ import {
 } from "@/shared/ui/dropdown-menu";
 import type { Lecture } from "../api/schemas";
 import { useRenameLecture } from "../hooks/useLectureMutations";
-import { getLectureDurationMinutes, toCategoryLabel } from "../lectureDisplay";
+import { getLectureDurationMinutes, toCategoryLabel } from "../lib/lectureDisplay";
 
 type LectureCardProps = {
   lecture: Lecture;

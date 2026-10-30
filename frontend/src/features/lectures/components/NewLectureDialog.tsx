@@ -21,7 +21,7 @@ import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { useCreateLecture } from "../hooks/useLectureMutations";
-import { LECTURE_CATEGORIES } from "../lectureDisplay";
+import { LECTURE_CATEGORIES } from "../lib/lectureDisplay";
 
 const newLectureSchema = z.object({
   sttLanguage: z.enum(LANGUAGE_CODES),

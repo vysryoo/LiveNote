@@ -2,8 +2,8 @@ import { Fragment, useLayoutEffect, useRef, useState, type ReactNode } from "rea
 import { useTranslation } from "react-i18next";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import type { Bookmark, QnA, Resource } from "../api/schemas";
-import type { StreamingCard } from "../state/sessionReducer";
-import { orderCards } from "../cardOrder";
+import type { StreamingCard } from "../lib/sessionReducer";
+import { orderCards } from "../lib/cardOrder";
 import { AnimatedLoaderIcon } from "./AnimatedLoaderIcon";
 import { QnaCard, ResourceCard, StreamingCardView } from "./SessionCards";
 

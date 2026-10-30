@@ -4,8 +4,8 @@ import { Badge } from "@/shared/ui/badge";
 import { cn } from "@/shared/ui/utils";
 import type { QnA, Resource } from "../api/schemas";
 import { useTypewriter } from "../hooks/useTypewriter";
-import { toDisplayReason } from "../resourceReason";
-import type { StreamingCard } from "../state/sessionReducer";
+import { toDisplayReason } from "../lib/resourceReason";
+import type { StreamingCard } from "../lib/sessionReducer";
 
 const CARD_CLASS =
   "border rounded-lg p-6 bg-white opacity-0 animate-[fadeInUp_0.4s_ease_forwards] flex flex-col h-[325px]";

@@ -10,7 +10,7 @@ import { Button } from "@/shared/ui/button";
 import type { Lecture } from "../api/schemas";
 import { useLectureList } from "../hooks/useLectureList";
 import { useDeleteLecture } from "../hooks/useLectureMutations";
-import { mergeLecturePages } from "../lectureDisplay";
+import { mergeLecturePages } from "../lib/lectureDisplay";
 import { DeleteLectureDialog } from "./DeleteLectureDialog";
 import { LectureCard } from "./LectureCard";
 import { NewLectureDialog } from "./NewLectureDialog";

@@ -1,4 +1,4 @@
-import type { Lecture, LecturePage } from "./api/schemas";
+import type { Lecture, LecturePage } from "../api/schemas";
 
 export const LECTURE_CATEGORIES = [
   "Computer Science",

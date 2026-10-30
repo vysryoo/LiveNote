@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { advanceReveal, TYPEWRITER_TICK_MS } from "../typewriter";
+import { advanceReveal, TYPEWRITER_TICK_MS } from "../lib/typewriter";
 
 /**
  * 텍스트가 한 글자씩 써지듯 나타나게 한다. 서버와 무관한 화면 연출이다.

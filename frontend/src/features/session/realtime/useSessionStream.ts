@@ -4,7 +4,7 @@ import { useEffect, useEffectEvent } from "react";
 import type { z } from "zod";
 import { getFreshAuthToken } from "@/shared/lib/http";
 import { sessionKeys } from "../api/sessionApi";
-import type { SessionAction } from "../state/sessionReducer";
+import type { SessionAction } from "../lib/sessionReducer";
 import { STOMP_BROKER_URL } from "./endpoints";
 import {
   applyQnaList,

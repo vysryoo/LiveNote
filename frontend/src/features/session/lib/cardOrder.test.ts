@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { orderCards } from "./cardOrder";
-import type { StreamingCard } from "./state/sessionReducer";
+import type { StreamingCard } from "./sessionReducer";
 
 const saved = (id: number, cardId: string | null) => ({ id, cardId });
 const streaming = (cardIndex: number): StreamingCard => ({

@@ -1,6 +1,6 @@
 import type { RefObject } from "react";
 import { useTranslation } from "react-i18next";
-import type { PaneStatus, SectionView } from "../sectionViews";
+import type { PaneStatus, SectionView } from "../lib/sectionViews";
 import { SectionCard } from "./SectionCard";
 
 type LecturePaneProps = {
