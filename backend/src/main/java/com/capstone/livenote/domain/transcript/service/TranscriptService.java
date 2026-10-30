@@ -8,14 +8,15 @@ import com.capstone.livenote.domain.transcript.repository.TranscriptRepository;
 import com.capstone.livenote.domain.transcript.service.RecordingStateStore.TimeOffset;
 import com.capstone.livenote.global.redis.RedisKeys;
 import com.capstone.livenote.global.redis.RedisLock;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.context.annotation.Lazy;
 
 import java.util.Optional;
 
 // STT 저장, 섹션/요약 트리거만
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class TranscriptService {
 
@@ -24,17 +25,6 @@ public class TranscriptService {
     private final SectionAggregationService sectionAggregationService;
     private final RecordingStateStore stateStore;
     private final RedisLock redisLock;
-
-    // 순환 참조 고리 끊기
-    public TranscriptService(TranscriptRepository transcriptRepository,
-                             @Lazy StreamGateway streamGateway, SectionAggregationService sectionAggregationService,
-                             RecordingStateStore stateStore, RedisLock redisLock) {
-        this.transcriptRepository = transcriptRepository;
-        this.streamGateway = streamGateway;
-        this.sectionAggregationService = sectionAggregationService;
-        this.stateStore = stateStore;
-        this.redisLock = redisLock;
-    }
 
     /**
      * STT 결과 저장 및 후속 처리

@@ -1,26 +1,26 @@
 package com.capstone.livenote.global.config;
 
-import com.capstone.livenote.application.ws.RealtimeTranscriptionWebSocketHandler;
 import com.capstone.livenote.global.security.StompAuthChannelInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
-import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
-import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+/**
+ * 브라우저로 실시간 메시지를 보내는 STOMP 설정.
+ *
+ * 녹음 WebSocket 설정({@link TranscriptionSocketConfig})과 나눠 둔다. 한 클래스에 두면 녹음 핸들러가 STOMP 전송
+ * 빈을 거쳐 다시 이 설정을 필요로 하는 순환이 생긴다.
+ */
 @Configuration
-@EnableWebSocket
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
-public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSocketConfigurer {
+public class StompConfig implements WebSocketMessageBrokerConfigurer {
 
-    private final RealtimeTranscriptionWebSocketHandler realtimeTranscriptionWebSocketHandler;
     private final StompAuthChannelInterceptor stompAuthChannelInterceptor;
 
     @Value("${app.stomp-relay.host}")
@@ -59,16 +59,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSoc
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // 프론트 STOMP용 기본 엔드포인트 (/ws)
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*");
-    }
-
-    // === WebSocket 설정 (새로 추가: 오디오 업로드용) ===
-    @Override
-    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        // OpenAI Realtime STT 중계용 WebSocket 엔드포인트 (프론트 경로: /ws/transcription)
-        registry.addHandler(realtimeTranscriptionWebSocketHandler, "/ws/transcription")
-                .setAllowedOrigins("*");
     }
 }

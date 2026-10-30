@@ -7,9 +7,9 @@ import com.capstone.livenote.domain.transcript.repository.TranscriptRepository;
 import com.capstone.livenote.domain.transcript.service.RecordingStateStore;
 import com.capstone.livenote.domain.transcript.service.RecordingStateStore.SectionState;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.context.annotation.Lazy;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
  * 상태를 읽고 쓰는 두 메서드는 강의 단위 잠금 안에서 호출해야 한다.
  */
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class SectionAggregationService {
 
@@ -33,14 +34,6 @@ public class SectionAggregationService {
     private final TranscriptRepository transcriptRepository;
     private final RecordingStateStore stateStore;
     private final StreamGateway streamGateway;
-
-    public SectionAggregationService(AiServerClient aiServerClient, TranscriptRepository transcriptRepository,
-                                     RecordingStateStore stateStore, @Lazy StreamGateway streamGateway) {
-        this.aiServerClient = aiServerClient;
-        this.transcriptRepository = transcriptRepository;
-        this.stateStore = stateStore;
-        this.streamGateway = streamGateway;
-    }
 
     /**
      * 새 전사가 속할 섹션을 정하고 섹션 상태를 갱신한다.
