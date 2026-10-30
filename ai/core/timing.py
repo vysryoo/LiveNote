@@ -12,20 +12,13 @@ from __future__ import annotations
 
 import json
 import logging
-import sys
 import time
 import uuid
 from typing import Any, Hashable
 
+# 출력 형식은 core.logs.setup_logging에서 정함. 레벨은 앱 로그 설정과 관계없이 기록되도록 고정
 logger = logging.getLogger("livenote.timing")
-
-# 서버에 로깅 설정이 없어 INFO 로그가 출력되지 않으므로 전용 출력을 붙임
-if not logger.handlers:
-    _handler = logging.StreamHandler(sys.stdout)
-    _handler.setFormatter(logging.Formatter("%(message)s"))
-    logger.addHandler(_handler)
-    logger.setLevel(logging.INFO)
-    logger.propagate = False
+logger.setLevel(logging.INFO)
 
 
 class RequestTimer:

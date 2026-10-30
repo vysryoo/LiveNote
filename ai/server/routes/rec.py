@@ -192,8 +192,7 @@ async def recommend_resources(
             result = await providers[res_type]()
             mapped = map_resources(res_type, result)
             titles = [item.get("title") for item in mapped if item.get("title")]
-            # INFO 레벨에서 보이지 않는 환경을 위해 WARNING으로 남김
-            logger.warning(
+            logger.info(
                 "REC provider %s 결과: %s개 (titles: %s)",
                 res_type.value,
                 len(mapped),
