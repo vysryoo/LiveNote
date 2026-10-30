@@ -1,0 +1,117 @@
+{
+  "api_calls": [
+    [
+      "search",
+      "stack queue data structure",
+      "en",
+      10
+    ],
+    [
+      "videos",
+      [
+        "v1",
+        "v3",
+        "v5",
+        "v6"
+      ]
+    ]
+  ],
+  "llm_calls": [
+    {
+      "max_tokens": 300,
+      "messages": [
+        [
+          "user",
+          "Evaluate video relevance to lecture section.\n\nLecture Summary: 스택은 마지막에 넣은 원소를 먼저 꺼내는 LIFO 자료구조이고, 큐와 비교해 설명함\nVideo Title: Cooking pasta at home\nVideo Summary: Cooking pasta at home 요약 문장 1. 요약 문장 2.\n\nScoring (엄격한 기준):\n- 10: 강의에서 다룬 개념의 **공식 튜토리얼** 또는 **창시자 직접 설명**\n     (Official tutorial OR creator's explanation of the concept)\n- 9: 강의 핵심 개념을 **직접** 다루고, 예제/실습 포함\n- 7-8: 핵심 개념 다루지만 **부분적** 또는 이론 위주\n- 5-6: 관련 배경지식이지만 강의 주제와 약간 벗어남\n- 3-4: 키워드만 겹치고 다른 맥락\n- 1-2: 거의 무관\n\nReturn JSON (reason in ko, one sentence, no line breaks):\n{\n  \"score\": <number>,\n  \"reason\": \"명확한 한 문장 평가\"\n}"
+        ]
+      ],
+      "purpose": "verify"
+    },
+    {
+      "max_tokens": 300,
+      "messages": [
+        [
+          "user",
+          "Evaluate video relevance to lecture section.\n\nLecture Summary: 스택은 마지막에 넣은 원소를 먼저 꺼내는 LIFO 자료구조이고, 큐와 비교해 설명함\nVideo Title: Stack overflow explained\nVideo Summary: Stack overflow explained 요약 문장 1. 요약 문장 2.\n\nScoring (엄격한 기준):\n- 10: 강의에서 다룬 개념의 **공식 튜토리얼** 또는 **창시자 직접 설명**\n     (Official tutorial OR creator's explanation of the concept)\n- 9: 강의 핵심 개념을 **직접** 다루고, 예제/실습 포함\n- 7-8: 핵심 개념 다루지만 **부분적** 또는 이론 위주\n- 5-6: 관련 배경지식이지만 강의 주제와 약간 벗어남\n- 3-4: 키워드만 겹치고 다른 맥락\n- 1-2: 거의 무관\n\nReturn JSON (reason in ko, one sentence, no line breaks):\n{\n  \"score\": <number>,\n  \"reason\": \"명확한 한 문장 평가\"\n}"
+        ]
+      ],
+      "purpose": "verify"
+    },
+    {
+      "max_tokens": 300,
+      "messages": [
+        [
+          "user",
+          "Evaluate video relevance to lecture section.\n\nLecture Summary: 스택은 마지막에 넣은 원소를 먼저 꺼내는 LIFO 자료구조이고, 큐와 비교해 설명함\nVideo Title: Stacks and Queues Explained\nVideo Summary: Stacks and Queues Explained 요약 문장 1. 요약 문장 2.\n\nScoring (엄격한 기준):\n- 10: 강의에서 다룬 개념의 **공식 튜토리얼** 또는 **창시자 직접 설명**\n     (Official tutorial OR creator's explanation of the concept)\n- 9: 강의 핵심 개념을 **직접** 다루고, 예제/실습 포함\n- 7-8: 핵심 개념 다루지만 **부분적** 또는 이론 위주\n- 5-6: 관련 배경지식이지만 강의 주제와 약간 벗어남\n- 3-4: 키워드만 겹치고 다른 맥락\n- 1-2: 거의 무관\n\nReturn JSON (reason in ko, one sentence, no line breaks):\n{\n  \"score\": <number>,\n  \"reason\": \"명확한 한 문장 평가\"\n}"
+        ]
+      ],
+      "purpose": "verify"
+    },
+    {
+      "max_tokens": 300,
+      "messages": [
+        [
+          "user",
+          "Generate 1 YouTube search queries (use en) focused on: \"스택은 마지막에 넣은 원소를 먼저 꺼내는 LIFO 자료구조이고, 큐와 비교해 설명함\"\n\nSettings:\n- Query language: en\n- Video language preference: en\n\nAdditional context (reference only):\n- Previous: [{'section_id': 1, 'summary': '자료구조 수업 소개와 배열 복습', 'timestamp': None}, {'section_id': 2, 'summary': '연결 리스트의 노드와 포인터 구조', 'timestamp': None}, {'section_id': 3, 'summary': '연결 리스트 삽입과 삭제의 시간 복잡도', 'timestamp': None}]\n- RAG: [{'text': '스택(Stack): push, pop 연산. 함수 호출 스택 예시', 'score': 0.71, 'metadata': {'source_type': 'pdf'}}, {'text': '큐(Queue): enqueue, dequeue. 프린터 대기열 예시', 'score': 0.64, 'metadata': {'source_type': 'pdf'}}, {'text': '섹션 1 요약: 자료구조 수업 소개', 'score': 0.52, 'metadata': {'source_type': 'summary'}}]\n\nReturn JSON:\n{\n  \"queries\": [\"query1\", \"query2\", ...],\n  \"rationale\": \"one sentence\"\n}\n\nFocus on lecture_summary. Keep queries concise with key technical terms.\nEach query must be 2-5 words, like what a student types into YouTube search. Do not list every concept from the summary."
+        ]
+      ],
+      "purpose": "query"
+    },
+    {
+      "max_tokens": 400,
+      "messages": [
+        [
+          "user",
+          "Based on title and description only, predict video content in exactly 2 sentences (ko).\n\nTitle: \"Cooking pasta at home\"\nDescription: \"Cooking pasta at home\nfull description\"\nChannel: \"CS Channel\"\n\nReturn JSON:\n{\n  \"extract\": \"Sentence 1. Sentence 2.\"\n}\n\nBe brief and informative."
+        ]
+      ],
+      "purpose": "verify"
+    },
+    {
+      "max_tokens": 400,
+      "messages": [
+        [
+          "user",
+          "Based on title and description only, predict video content in exactly 2 sentences (ko).\n\nTitle: \"Queue tutorial\"\nDescription: \"Queue tutorial description\"\nChannel: \"Unknown\"\n\nReturn JSON:\n{\n  \"extract\": \"Sentence 1. Sentence 2.\"\n}\n\nBe brief and informative."
+        ]
+      ],
+      "purpose": "verify"
+    },
+    {
+      "max_tokens": 400,
+      "messages": [
+        [
+          "user",
+          "Based on title and description only, predict video content in exactly 2 sentences (ko).\n\nTitle: \"Stack overflow explained\"\nDescription: \"Stack overflow explained\nfull description\"\nChannel: \"CS Channel\"\n\nReturn JSON:\n{\n  \"extract\": \"Sentence 1. Sentence 2.\"\n}\n\nBe brief and informative."
+        ]
+      ],
+      "purpose": "verify"
+    },
+    {
+      "max_tokens": 400,
+      "messages": [
+        [
+          "user",
+          "Based on title and description only, predict video content in exactly 2 sentences (ko).\n\nTitle: \"Stacks and Queues Explained\"\nDescription: \"Stacks and Queues Explained\nfull description\"\nChannel: \"CS Channel\"\n\nReturn JSON:\n{\n  \"extract\": \"Sentence 1. Sentence 2.\"\n}\n\nBe brief and informative."
+        ]
+      ],
+      "purpose": "verify"
+    }
+  ],
+  "results": [
+    {
+      "description": "Stacks and Queues Explained 요약 문장 1. 요약 문장 2.",
+      "detail": {
+        "extract": "Stacks and Queues Explained 요약 문장 1. 요약 문장 2.",
+        "lang": "en",
+        "title": "Stacks and Queues Explained",
+        "url": "https://www.youtube.com/watch?v=v1"
+      },
+      "reason": "스택과 큐를 직접 비교",
+      "score": 8.46,
+      "title": "Stacks and Queues Explained",
+      "type": "VIDEO",
+      "url": "https://www.youtube.com/watch?v=v1"
+    }
+  ]
+}

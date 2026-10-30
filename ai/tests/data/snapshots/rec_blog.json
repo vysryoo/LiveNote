@@ -1,0 +1,73 @@
+{
+  "api_calls": [
+    [
+      "스택 큐 차이 예제",
+      "ko",
+      10
+    ],
+    [
+      "스택 큐 차이",
+      "ko",
+      10
+    ]
+  ],
+  "llm_calls": [
+    {
+      "max_tokens": 120,
+      "messages": [
+        [
+          "user",
+          "You are evaluating the relevance of a search result to a lecture topic.\n\n**Lecture Summary:**\n스택은 마지막에 넣은 원소를 먼저 꺼내는 LIFO 자료구조이고, 큐와 비교해 설명함\n\n**Search Result:**\nTitle: 스택과 큐 차이 정리\nURL: https://blog.naver.com/a/1\nSnippet: 스택 큐 차이를 예제로\n\n**Task:**\nRate the relevance on a scale of 0-10 and provide a brief reason in ko.\n\n**Scoring Guidelines:**\n- 10: Original authoritative source (official documentation, seminal papers, standard specifications)\n- 9: Highly relevant with comprehensive technical depth and accurate explanations\n- 7-8: Very relevant, covers key concepts with good technical details\n- 5-6: Moderately relevant, provides useful background or related information\n- 3-4: Somewhat relevant, mentions the topic but lacks depth\n- 0-2: Not relevant, off-topic or too general\n\n**Response Format (JSON only):**\n{\"score\": <float>, \"reason\": \"<1-2 sentences in ko>\"}\n\n**JSON Response:**"
+        ]
+      ],
+      "purpose": "verify"
+    },
+    {
+      "max_tokens": 120,
+      "messages": [
+        [
+          "user",
+          "You are evaluating the relevance of a search result to a lecture topic.\n\n**Lecture Summary:**\n스택은 마지막에 넣은 원소를 먼저 꺼내는 LIFO 자료구조이고, 큐와 비교해 설명함\n\n**Search Result:**\nTitle: 자료구조 일기\nURL: https://blog.naver.com/b/2\nSnippet: 오늘 공부함\n\n**Task:**\nRate the relevance on a scale of 0-10 and provide a brief reason in ko.\n\n**Scoring Guidelines:**\n- 10: Original authoritative source (official documentation, seminal papers, standard specifications)\n- 9: Highly relevant with comprehensive technical depth and accurate explanations\n- 7-8: Very relevant, covers key concepts with good technical details\n- 5-6: Moderately relevant, provides useful background or related information\n- 3-4: Somewhat relevant, mentions the topic but lacks depth\n- 0-2: Not relevant, off-topic or too general\n\n**Response Format (JSON only):**\n{\"score\": <float>, \"reason\": \"<1-2 sentences in ko>\"}\n\n**JSON Response:**"
+        ]
+      ],
+      "purpose": "verify"
+    },
+    {
+      "max_tokens": 120,
+      "messages": [
+        [
+          "user",
+          "You are evaluating the relevance of a search result to a lecture topic.\n\n**Lecture Summary:**\n스택은 마지막에 넣은 원소를 먼저 꺼내는 LIFO 자료구조이고, 큐와 비교해 설명함\n\n**Search Result:**\nTitle: 큐 구현하기\nURL: https://blog.naver.com/d/4\nSnippet: 큐 구현\n\n**Task:**\nRate the relevance on a scale of 0-10 and provide a brief reason in ko.\n\n**Scoring Guidelines:**\n- 10: Original authoritative source (official documentation, seminal papers, standard specifications)\n- 9: Highly relevant with comprehensive technical depth and accurate explanations\n- 7-8: Very relevant, covers key concepts with good technical details\n- 5-6: Moderately relevant, provides useful background or related information\n- 3-4: Somewhat relevant, mentions the topic but lacks depth\n- 0-2: Not relevant, off-topic or too general\n\n**Response Format (JSON only):**\n{\"score\": <float>, \"reason\": \"<1-2 sentences in ko>\"}\n\n**JSON Response:**"
+        ]
+      ],
+      "purpose": "verify"
+    },
+    {
+      "max_tokens": 150,
+      "messages": [
+        [
+          "user",
+          "You are an expert search query generator for academic content.\n\nGenerate 1 specific search queries in ko for the given lecture topic.\n\n**Guidelines:**\n- Use short technical phrases (2-4 words). Naver blog search returns few results for long queries\n- Include specific concepts, technologies, or methodologies\n- Create queries optimized for Google search to find high-quality results\n- Return ONLY the queries, one per line\n\n**Lecture Summary:**\n스택은 마지막에 넣은 원소를 먼저 꺼내는 LIFO 자료구조이고, 큐와 비교해 설명함\n\n**Previous Context:**\nSection 1: 자료구조 수업 소개와 배열 복습\nSection 2: 연결 리스트의 노드와 포인터 구조\nSection 3: 연결 리스트 삽입과 삭제의 시간 복잡도\n\n**Related Materials:**\n스택(Stack): push, pop 연산. 함수 호출 스택 예시\n큐(Queue): enqueue, dequeue. 프린터 대기열 예시\n섹션 1 요약: 자료구조 수업 소개\n\n\n**Search Queries:**"
+        ]
+      ],
+      "purpose": "query"
+    }
+  ],
+  "results": [
+    {
+      "description": "스택 큐 차이를 예제로",
+      "detail": {
+        "display_link": "a",
+        "lang": "ko",
+        "snippet": "스택 큐 차이를 예제로",
+        "title": "스택과 큐 차이 정리",
+        "url": "https://blog.naver.com/a/1"
+      },
+      "reason": "차이를 예제로 설명",
+      "score": 8.0,
+      "title": "스택과 큐 차이 정리",
+      "type": "BLOG",
+      "url": "https://blog.naver.com/a/1"
+    }
+  ]
+}
