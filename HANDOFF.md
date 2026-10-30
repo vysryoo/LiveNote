@@ -19,6 +19,7 @@
 | 자료 추천 4종 실제 키로 동작 (논문, 위키, 영상, 블로그) | 완료. 블로그는 네이버 블로그 검색으로 교체 |
 | 쓰지 않는 코드·API 정리 (HTTP 녹음 업로드, 소유자 확인 없는 조회 API) | 완료 |
 | AI 서버 리팩토링 (LangChain·LangGraph, 모델 교체, 강의 자료 분할, 평가 체계) | 완료. 9절 |
+| 백엔드 리팩토링 (기능별 패키지, 프론트엔드 미사용 API 삭제, 인증 실패 401 통일, 북마크 추가 시 소유자·대상 확인) | 완료. 구조는 `backend/README.md` 파일 구조 절 |
 | 남은 문제 | 8절 |
 
 이전 버전의 이 문서(커밋 `2d0c46f`)는 재작성 착수 전 설계를 담고 있다. 설계 결정의 근거가 필요하면 그 버전을 참고한다.
@@ -118,9 +119,7 @@ AI 서버 가상환경은 `ai/setup.sh`(`uv sync`)로 만든다. 의존성은 `a
 
 QnA 흐름: 백엔드가 SSE의 `start`를 받으면 Redis에 카드 번호를 예약하고, `question`·`answer`를 STOMP `stream` 토픽으로 그대로 중계한다. `done`을 받으면 DB에 저장하고 완료 메시지와 섹션 전체 QnA 목록을 보낸다. 상세 형식은 `ai/README.md` 6.3절 참조.
 
-개발용 API(`TestController` 등)는 `dev` 프로필에서만 등록된다.
-
-강의 데이터(전사, 요약, QnA, 자료, 북마크) 조회는 `GET /api/lectures/{id}/detail` 하나로만 한다. 소유자를 확인하지 않던 개별 조회 API(`/api/transcripts`, `/api/summaries`, `/api/qna`, `/api/resources`)와 `POST /api/resources/callback`은 삭제했다. 없는 경로는 404로 응답한다. 전체 API 목록은 `backend/README.md` 참조.
+강의 데이터(전사, 요약, QnA, 자료, 북마크) 조회는 `GET /api/lectures/{id}/detail` 하나로만 한다. 소유자를 확인하지 않던 개별 조회 API(`/api/transcripts`, `/api/summaries`, `/api/qna`, `/api/resources`)와 `POST /api/resources/callback`은 삭제했다. 프론트엔드가 쓰지 않던 강의 단건 조회(`GET /api/lectures/{id}`), PDF 별도 업로드, 북마크 목록, AI 수동 생성(`/api/ai/generate-*`), `/api/cards-status`, 개발용 시험 API도 삭제했다. 없는 경로는 404로 응답한다. 전체 API 목록은 `backend/README.md` 참조.
 
 녹음은 WebSocket(`/ws/transcription`) 하나로만 받는다. 예전 HTTP 업로드(`/audio/chunk`)와 Whisper 전사 코드는 삭제했다.
 
@@ -146,7 +145,7 @@ QnA 흐름: 백엔드가 SSE의 `start`를 받으면 Redis에 카드 번호를 �
 주의할 규칙.
 
 - `Trans` 컴포넌트에는 항상 `t={t}`를 넘긴다. 넘기지 않으면 React Compiler가 이전 언어의 `Trans`를 재사용해 언어 변경이 반영되지 않음
-- 스트리밍 카드의 섹션 번호는 카드 ID(`{접두사}_{강의}_{섹션}_{카드}`)에서 꺼낸다. 백엔드 `stream` 메시지에 `sectionIndex` 필드가 없고, 접두사는 코드 경로마다 `qna`, `res`, `resource`로 다름. 카드 종류는 메시지의 `type`으로 판단함
+- 스트리밍 카드의 섹션 번호는 카드 ID(`{접두사}_{강의}_{섹션}_{카드}`)에서 꺼낸다. 백엔드 `stream` 메시지에 `sectionIndex` 필드가 없고, 접두사는 `qna`, `resource` 두 가지. 카드 종류는 메시지의 `type`으로 판단함
 - 백엔드 응답은 zod로 검사한다. 대소문자(`FINAL`/`final` 등)와 누락 값을 허용하도록 작성되어 있음
 - STOMP 토픽 주소에 `/`를 쓰지 않는다. RabbitMQ STOMP가 `/topic/` 뒤의 `/`를 `Invalid destination`으로 거부함
 
@@ -158,8 +157,14 @@ QnA 흐름: 백엔드가 SSE의 `start`를 받으면 Redis에 카드 번호를 �
 
 ```bash
 cd frontend && npm run typecheck && npm run lint && npm test && npm run build
-cd backend && ./gradlew test        # 53개. 컨텍스트 로딩 테스트에 PostgreSQL 필요 (Redis·RabbitMQ 없이도 통과 확인)
+cd backend && ./gradlew test        # 104개. 컨텍스트 로딩 테스트에 PostgreSQL 필요
 cd ai && uv run pytest              # 98개, 외부 API 호출 없음
+```
+
+백엔드 컨텍스트 로딩 테스트는 `env.properties`를 읽는다. 파일이 없는 git worktree에서는 원본 저장소의 파일을 지정해 실행한다.
+
+```bash
+SPRING_CONFIG_ADDITIONAL_LOCATION=optional:file:<원본 저장소>/backend/src/main/resources/env.properties ./gradlew test
 ```
 
 ### 7-2. 실제 환경 확인 (마이크 없이)
@@ -187,7 +192,13 @@ headless Chrome에 오디오 파일을 가짜 마이크로 넣어 녹음부터 �
 
 ### 8-1. 백엔드
 
-현재 확인된 문제 없음.
+백엔드 리팩토링에서 범위 밖으로 둔 것이다.
+
+| 문제 | 근거 |
+| --- | --- |
+| 로그인 응답 코드로 아이디 존재 여부가 드러남 | 없는 아이디는 404(`EntityNotFoundException`), 틀린 비밀번호는 400(`IllegalArgumentException`)으로 응답(`UserService.login`) |
+| 쓰이지 않는 DB 컬럼 4개 | `Lecture.duration`·`files`, `Resource.userId`·`thumbnail`. 값을 넣는 코드가 없음. `thumbnail`은 응답에 항상 null로 나감. 삭제하려면 마이그레이션 필요 |
+| 요약 콜백 트랜잭션 안에서 AI 서버를 호출함 | `SummaryCallbackService.handleSummaryCallback`(`@Transactional`)이 RAG 업서트와 카드 생성 요청을 트랜잭션 안에서 보냄. RAG 업서트는 AI 서버 응답을 기다리므로(`block()`) 그동안 DB 연결을 붙잡음 |
 
 ### 8-2. AI 서버
 
