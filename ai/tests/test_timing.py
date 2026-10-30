@@ -8,6 +8,7 @@ import pytest
 
 from core.schemas import RAGChunk
 from core.timing import RequestTimer, logger as timing_logger
+from qa.models import QAEvent
 
 
 class _RecordCollector(logging.Handler):
@@ -56,11 +57,11 @@ def test_mark_once_records_first_occurrence_per_key(timing_records):
 async def test_qa_generate_records_streaming_stages(async_client, test_context, timing_records):
     test_context.rag.retrieve_result = [RAGChunk(id="c1", text="스택", score=0.9, metadata={})]
     test_context.qa.events = [
-        ("start", "개념", {"item": 0}),
-        ("question", "개념", {"item": 0, "text": "Q"}),
-        ("answer", "개념", {"item": 0, "text": "A"}),
-        ("answer", "개념", {"item": 0, "text": "B"}),
-        ("qa", "개념", {"item": 0, "type": "개념", "question": "Q", "answer": "AB"}),
+        QAEvent("start", {"item": 0, "type": "CONCEPT"}),
+        QAEvent("question", {"item": 0, "text": "Q"}),
+        QAEvent("answer", {"item": 0, "text": "A"}),
+        QAEvent("answer", {"item": 0, "text": "B"}),
+        QAEvent("done", {"item": 0, "type": "CONCEPT", "question": "Q", "answer": "AB"}),
     ]
     payload = {
         "lecture_id": 1,

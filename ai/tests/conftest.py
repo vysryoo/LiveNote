@@ -4,7 +4,7 @@ import asyncio
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import pytest
 from fastapi import FastAPI
@@ -16,6 +16,7 @@ if str(ROOT_DIR) not in sys.path:
 
 from core.config import Settings, get_settings
 from core.schemas import QnAType, RAGChunk
+from qa.models import QAEvent
 from server.app import create_app
 
 
@@ -148,20 +149,13 @@ class StubQAService:
     """QA 서비스 스텁"""
     
     def __init__(self):
-        self.events: List[Tuple[str, str, Dict[str, Any]]] = []
+        self.events: List[QAEvent] = []
         self.request_payloads: List[Any] = []
-    
+
     async def stream_questions(self, request):
         self.request_payloads.append(request)
         for event in self.events:
-            if isinstance(event, Exception):
-                raise event
-            event_type, q_type, payload = event
-            # 작은 지연으로 순서를 제어
-            await asyncio.sleep(payload.get("_delay", 0))
-            clean_payload = dict(payload)
-            clean_payload.pop("_delay", None)
-            yield event_type, q_type, clean_payload
+            yield event
 
 
 class StubOpenAlexService:

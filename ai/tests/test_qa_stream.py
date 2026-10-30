@@ -5,9 +5,10 @@ from typing import List, Tuple
 
 import pytest
 
-pytestmark = pytest.mark.anyio("asyncio")
-
 from core.schemas import QnAType, RAGChunk
+from qa.models import QAEvent
+
+pytestmark = pytest.mark.anyio("asyncio")
 
 
 def _prepare_chunks() -> List[RAGChunk]:
@@ -25,17 +26,17 @@ def _parse_sse(body: str) -> List[Tuple[str, dict]]:
     return events
 
 
-def _qa_events(item: int, q_type: str, question: str, answer_parts: List[str]):
-    events = [("start", q_type, {"item": item}), ("question", q_type, {"item": item, "text": question})]
-    events += [("answer", q_type, {"item": item, "text": part}) for part in answer_parts]
-    events.append(("qa", q_type, {"item": item, "type": q_type, "question": question, "answer": "".join(answer_parts)}))
+def _qa_events(item: int, q_type: QnAType, question: str, answer_parts: List[str]) -> List[QAEvent]:
+    events = [QAEvent("start", {"item": item, "type": q_type.value}), QAEvent("question", {"item": item, "text": question})]
+    events += [QAEvent("answer", {"item": item, "text": part}) for part in answer_parts]
+    events.append(QAEvent("done", {"item": item, "type": q_type.value, "question": question, "answer": "".join(answer_parts)}))
     return events
 
 
 @pytest.mark.anyio("asyncio")
 async def test_qa_generate_streams_events_as_sse(async_client, test_context):
     test_context.rag.retrieve_result = _prepare_chunks()
-    test_context.qa.events = _qa_events(0, "응용", "응용Q", ["응용", "A"])
+    test_context.qa.events = _qa_events(0, QnAType.APPLICATION, "응용Q", ["응용", "A"])
     payload = {
         "lecture_id": 1,
         "summary_id": 1,
@@ -67,14 +68,13 @@ async def test_qa_generate_uses_default_question_types(async_client, test_contex
     await async_client.post("/qa/generate", json=payload)
 
     qa_request = test_context.qa.request_payloads[-1]
-    assert qa_request.question_types == ["응용", "비교", "심화"]
-    assert qa_request.qa_count == len(test_context.settings.qa.question_types)
+    assert qa_request.question_types == [QnAType.APPLICATION, QnAType.COMPARISON, QnAType.ADVANCED]
 
 
 @pytest.mark.anyio("asyncio")
 async def test_qa_generate_respects_question_types_override(async_client, test_context):
     test_context.rag.retrieve_result = _prepare_chunks()
-    test_context.qa.events = _qa_events(0, "개념", "Q1", ["A1"]) + _qa_events(1, "심화", "Q2", ["A2"])
+    test_context.qa.events = _qa_events(0, QnAType.CONCEPT, "Q1", ["A1"]) + _qa_events(1, QnAType.ADVANCED, "Q2", ["A2"])
     payload = {
         "lecture_id": 2,
         "summary_id": 2,
@@ -85,8 +85,7 @@ async def test_qa_generate_respects_question_types_override(async_client, test_c
     response = await async_client.post("/qa/generate", json=payload)
 
     qa_request = test_context.qa.request_payloads[-1]
-    assert qa_request.question_types == ["개념", "심화"]
-    assert qa_request.qa_count == 2
+    assert qa_request.question_types == [QnAType.CONCEPT, QnAType.ADVANCED]
     done_types = [data["type"] for event, data in _parse_sse(response.text) if event == "done"]
     assert done_types == [QnAType.CONCEPT.value, QnAType.ADVANCED.value]
 
@@ -95,8 +94,8 @@ async def test_qa_generate_respects_question_types_override(async_client, test_c
 async def test_qa_generate_reports_item_error(async_client, test_context):
     test_context.rag.retrieve_result = _prepare_chunks()
     test_context.qa.events = [
-        ("start", "개념", {"item": 0}),
-        ("error", "개념", {"item": 0, "error": "timeout"}),
+        QAEvent("start", {"item": 0, "type": "CONCEPT"}),
+        QAEvent("error", {"item": 0, "message": "timeout"}),
     ]
     payload = {
         "lecture_id": 5,

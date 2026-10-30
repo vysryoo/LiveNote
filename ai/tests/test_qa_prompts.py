@@ -11,7 +11,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from core.schemas import RAGChunk
-from qa.qakit.service import QAService
+from qa.service import QAService
 from server.app import create_app
 from tests.snapshots import assert_snapshot
 
@@ -29,7 +29,7 @@ def llm_calls(monkeypatch) -> List[Dict[str, Any]]:
         yield "질문\n"
         yield "답변"
 
-    monkeypatch.setattr("qa.qakit.llm.openai_client.stream", fake_stream)
+    monkeypatch.setattr("qa.service.stream", fake_stream)
     return calls
 
 

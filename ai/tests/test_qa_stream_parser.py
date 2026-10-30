@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List
 
-from qa.qakit.stream_parser import QAStreamParser
+from qa.parser import QAStreamParser
 
 
 def _run(chunks: List[str]):

@@ -50,7 +50,7 @@ def create_app(
     
     # 서비스 인스턴스를 한 번만 준비해 재사용
     _rag = rag_service if rag_service is not None else _create_rag_service(base_settings)
-    _qa = _ensure_service(qa_service, "qa.qakit.service.QAService")
+    _qa = _ensure_service(qa_service, "qa.service.QAService")
     _openalex = _ensure_service(openalex_service, "openalex.openalexkit.service.OpenAlexService")
     _wiki = _ensure_service(wiki_service, "wiki.wikikit.service.WikiService")
     _youtube = _ensure_service(youtube_service, "youtube.youtubekit.service.YouTubeService")
