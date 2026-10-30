@@ -7,13 +7,12 @@ import pytest
 
 pytestmark = pytest.mark.anyio("asyncio")
 
-from core.schemas import ResourceType
+from core.schemas import RAGChunk, ResourceType
 from tests.conftest import (
     GoogleResponse,
     GoogleSearchResult,
     OpenAlexResponse,
     PaperInfo,
-    StubRetrievedChunk,
     WikiPageInfo,
     WikiResponse,
     YouTubeResponse,
@@ -21,10 +20,10 @@ from tests.conftest import (
 )
 
 
-def prepare_chunks() -> List[StubRetrievedChunk]:
+def prepare_chunks() -> List[RAGChunk]:
     return [
-        StubRetrievedChunk(id="c1", text="알고리즘 분석 내용", score=0.9, metadata={"section_id": "1"}),
-        StubRetrievedChunk(id="c2", text="자료 구조 관련 설명", score=0.85, metadata={"section_id": "2"}),
+        RAGChunk(id="c1", text="알고리즘 분석 내용", score=0.9, metadata={"section_id": "1"}),
+        RAGChunk(id="c2", text="자료 구조 관련 설명", score=0.85, metadata={"section_id": "2"}),
     ]
 
 

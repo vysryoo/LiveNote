@@ -7,14 +7,13 @@ import pytest
 
 pytestmark = pytest.mark.anyio("asyncio")
 
-from core.schemas import QnAType
-from tests.conftest import StubRetrievedChunk
+from core.schemas import QnAType, RAGChunk
 
 
-def _prepare_chunks() -> List[StubRetrievedChunk]:
+def _prepare_chunks() -> List[RAGChunk]:
     return [
-        StubRetrievedChunk(id="c1", text="스택은 LIFO 구조다.", score=0.91, metadata={"section_id": "1"}),
-        StubRetrievedChunk(id="c2", text="큐는 FIFO 구조와 비교된다.", score=0.82, metadata={"section_id": "2"}),
+        RAGChunk(id="c1", text="스택은 LIFO 구조다.", score=0.91, metadata={"section_id": "1"}),
+        RAGChunk(id="c2", text="큐는 FIFO 구조와 비교된다.", score=0.82, metadata={"section_id": "2"}),
     ]
 
 

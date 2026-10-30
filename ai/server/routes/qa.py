@@ -15,10 +15,10 @@ from pydantic import Field, validator
 from core.config import Settings
 from core.schemas import QnAType
 from core.timing import RequestTimer
-from qa.qakit.models import QARequest, PreviousQA
+from qa.qakit.models import PreviousQA, QARequest, RAGContext
 
 from ..dependencies import get_qa_service, get_rag_service, get_settings
-from ..utils import CamelModel, build_collection_id, to_qa_rag_context
+from ..utils import CamelModel, build_collection_id
 
 router = APIRouter(prefix="/qa", tags=["QA"])
 logger = logging.getLogger(__name__)
@@ -128,7 +128,7 @@ async def generate_qa(
         language=settings.qa.language,
         question_types=qa_question_types,
         qa_count=len(qa_question_types),
-        rag_context=to_qa_rag_context(rag_chunks),
+        rag_context=RAGContext(chunks=rag_chunks),
         previous_qa=[
             PreviousQA(type=_normalize_previous_type(item.type), question=item.question, answer=item.answer)
             for item in request.previous_qa

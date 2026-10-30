@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import List
 
-from . import Chunk, PageText, normalize
+from .base import Chunk, PageText, normalize
 
 
 def split_by_page(pages: List[PageText]) -> List[Chunk]:

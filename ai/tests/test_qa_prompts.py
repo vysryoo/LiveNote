@@ -10,9 +10,9 @@ from typing import Any, Dict, List
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from core.schemas import RAGChunk
 from qa.qakit.service import QAService
 from server.app import create_app
-from tests.conftest import StubRetrievedChunk
 from tests.snapshots import assert_snapshot
 
 pytestmark = pytest.mark.anyio("asyncio")
@@ -61,9 +61,9 @@ async def test_qa_prompts(test_context, internal_api_key, llm_calls, with_contex
     test_context.settings.qa.qa_top_k = 4
     if with_context:
         test_context.rag.retrieve_result = [
-            StubRetrievedChunk(id="c1", text="스택(Stack): push, pop 연산", score=0.71, metadata={}),
-            StubRetrievedChunk(id="c2", text="큐(Queue): enqueue, dequeue", score=0.64, metadata={}),
-            StubRetrievedChunk(id="c3", text="섹션 1 요약: 자료구조 수업 소개", score=0.52, metadata={}),
+            RAGChunk(id="c1", text="스택(Stack): push, pop 연산", score=0.71, metadata={}),
+            RAGChunk(id="c2", text="큐(Queue): enqueue, dequeue", score=0.64, metadata={}),
+            RAGChunk(id="c3", text="섹션 1 요약: 자료구조 수업 소개", score=0.52, metadata={}),
         ]
         body["subject"] = "자료구조"
         body["previousQa"] = [

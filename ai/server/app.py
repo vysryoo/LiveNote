@@ -30,14 +30,9 @@ def _ensure_service(service: Any, factory_path: str):
 
 
 def _create_rag_service(settings: Settings):
-    from rag.ragkit.config import RAGConfig
-    from rag.ragkit.service import RAGService
+    from rag.service import RAGService
 
-    return RAGService(RAGConfig(
-        persist_dir=str(settings.rag_persist_dir),
-        embedding_model=settings.rag_embedding_model,
-        openai_api_key=settings.rag_openai_api_key or settings.openai_api_key,
-    ))
+    return RAGService(settings)
 
 
 def create_app(

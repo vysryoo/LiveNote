@@ -18,7 +18,7 @@ from typing import List, Sequence
 import numpy as np
 from langchain_text_splitters import TextSplitter
 
-from . import Chunk, ChunkSettings, PageText, count_tokens, normalize
+from .base import Chunk, ChunkSettings, PageText, count_tokens, normalize
 
 BULLET_PATTERN = re.compile(r"^\s*(?:[*\-•▪◦·]|\d+[.)])\s+")
 SENTENCE_END_PATTERN = re.compile(r"(?<=[.?!])\s+")

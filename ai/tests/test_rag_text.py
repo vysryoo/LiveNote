@@ -35,28 +35,13 @@ async def test_text_upsert_requires_lecture(async_client):
 
 
 @pytest.mark.anyio
-async def test_text_upsert_preserves_metadata(async_client, test_context):
-    payload = {
-        "lecture_id": "lec-meta",
-        "items": [
-            {"text": "내용", "metadata": {"tag": "core"}},
-        ],
-    }
-    await async_client.post("/rag/text-upsert", json=payload)
-    call = test_context.rag.text_calls[-1]
-    item = call["items"][0]
-    assert item["metadata"] == {"tag": "core", "source_type": "summary"}
-
-
-@pytest.mark.anyio
-async def test_text_upsert_marks_summary_with_section_index(async_client, test_context):
-    payload = {"lecture_id": "lec-sec", "items": [{"text": "요약", "section_id": "7"}]}
+async def test_text_upsert_passes_items_to_service(async_client, test_context):
+    payload = {"lecture_id": "lec-meta", "items": [{"text": "내용", "id": "s7", "section_id": "7", "metadata": {"tag": "core"}}]}
 
     await async_client.post("/rag/text-upsert", json=payload)
 
-    metadata = test_context.rag.text_calls[-1]["items"][0]["metadata"]
-    assert metadata["source_type"] == "summary"
-    assert metadata["section_index"] == 7
+    item = test_context.rag.text_calls[-1]["items"][0]
+    assert (item.text, item.id, item.section_id, item.metadata) == ("내용", "s7", "7", {"tag": "core"})
 
 
 @pytest.mark.anyio
@@ -64,4 +49,4 @@ async def test_text_upsert_returns_stub_result(async_client, test_context):
     payload = {"lecture_id": "lec-result", "items": [{"text": "내용"}]}
     response = await async_client.post("/rag/text-upsert", json=payload)
     assert response.status_code == 200
-    assert response.json()["result"] == test_context.rag.upsert_text_result
+    assert response.json()["result"] == test_context.rag.upsert_summaries_result

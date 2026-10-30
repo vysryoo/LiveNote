@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from pydantic import BaseModel, Field, validator
 
 from core.config import Settings
+from rag.service import SummaryItem
 
 from ..dependencies import get_rag_service, get_settings
 from ..utils import build_collection_id
@@ -116,26 +117,14 @@ async def upsert_text(
     """텍스트 요약본 업서트"""
     collection_id = build_collection_id(settings.rag.collection_prefix, request.lecture_id)
     
-    upsert_items = []
-    for item in request.items:
-        metadata = dict(item.metadata or {})
-        # 이 경로로 들어오는 텍스트는 백엔드가 보내는 섹션 확정 요약. 검색 시 강의 자료와 구분하고 섹션 번호로 거르기 위해 표시
-        metadata["source_type"] = "summary"
-        if item.section_id:
-            metadata.setdefault("section_id", item.section_id)
-            if item.section_id.isdigit():
-                metadata["section_index"] = int(item.section_id)
-        upsert_items.append(
-            {
-                "text": item.text,
-                "id": item.id,
-                "metadata": metadata,
-                "section_id": item.section_id,
-            }
-        )
-    
+    # 이 경로로 들어오는 텍스트는 백엔드가 보내는 섹션 확정 요약
+    summaries = [
+        SummaryItem(text=item.text, id=item.id, section_id=item.section_id, metadata=dict(item.metadata))
+        for item in request.items
+    ]
+
     def _run():
-        return rag_service.upsert_text(collection_id=collection_id, items=upsert_items)
+        return rag_service.upsert_summaries(collection_id=collection_id, items=summaries)
     
     result = await asyncio.to_thread(_run)
     return {"collection_id": collection_id, "result": result}

@@ -6,7 +6,7 @@ from typing import List, Tuple
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from . import TOKEN_ENCODING, Chunk, ChunkSettings, PageText, normalize
+from .base import TOKEN_ENCODING, Chunk, ChunkSettings, PageText, normalize
 
 PAGE_SEPARATOR = "\n\n"
 

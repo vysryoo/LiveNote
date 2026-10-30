@@ -32,6 +32,8 @@ class ResourceType(str, Enum):
 class RAGChunk(BaseModel):
     """RAG 검색 결과 조각."""
 
+    # 모듈 프롬프트에 조각을 통째로 넣는 곳이 있어 저장소 내부 ID는 직렬화에서 뺌
+    id: Optional[str] = Field(default=None, exclude=True, description="저장소 조각 ID")
     text: str = Field(..., description="조각 텍스트")
     score: float = Field(default=0.0, description="유사도 점수")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="메타데이터")

@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 from langchain_core.embeddings import DeterministicFakeEmbedding
 
-from rag.ragkit.splitters import ChunkSettings, PageText, split_document
-from rag.ragkit.splitters.semantic import (
+from rag.splitters import ChunkSettings, PageText, split_document
+from rag.splitters.semantic import (
     breakpoints,
     cosine_distances,
     fit_sizes,

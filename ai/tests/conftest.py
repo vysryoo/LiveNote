@@ -15,7 +15,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.append(str(ROOT_DIR))
 
 from core.config import Settings, get_settings
-from core.schemas import QnAType
+from core.schemas import QnAType, RAGChunk
 from server.app import create_app
 
 
@@ -100,15 +100,6 @@ class GoogleResponse(SimpleModel):
     score: float
 
 
-@dataclass
-class StubRetrievedChunk:
-    """단순 RAG 청크"""
-    id: str
-    text: str
-    score: float
-    metadata: Dict[str, Any]
-
-
 class StubRAGService:
     """RAG 서비스 스텁"""
     
@@ -116,9 +107,9 @@ class StubRAGService:
         self.pdf_calls: List[Dict[str, Any]] = []
         self.text_calls: List[Dict[str, Any]] = []
         self.retrieve_calls: List[Dict[str, Any]] = []
-        self.retrieve_result: List[StubRetrievedChunk] = []
+        self.retrieve_result: List[RAGChunk] = []
         self.upsert_pdf_result: Dict[str, Any] = {"count": 3, "status": "ok"}
-        self.upsert_text_result: Dict[str, Any] = {"count": 2, "status": "ok"}
+        self.upsert_summaries_result: Dict[str, Any] = {"count": 2, "status": "ok"}
     
     def upsert_pdf(self, collection_id: str, pdf_path: str, base_metadata: Optional[Dict[str, Any]] = None):
         self.pdf_calls.append(
@@ -130,26 +121,15 @@ class StubRAGService:
         )
         return self.upsert_pdf_result
     
-    def upsert_text(self, collection_id: str, items: List[Any]):
+    def upsert_summaries(self, collection_id: str, items: List[Any]):
         self.text_calls.append(
             {
                 "collection_id": collection_id,
                 "items": items,
             }
         )
-        return self.upsert_text_result
+        return self.upsert_summaries_result
     
-    def retrieve(self, collection_id: str, query: str, top_k: int, filters=None):
-        self.retrieve_calls.append(
-            {
-                "collection_id": collection_id,
-                "query": query,
-                "top_k": top_k,
-                "filters": filters,
-            }
-        )
-        return list(self.retrieve_result)
-
     def retrieve_context(self, collection_id: str, query: str, section_index: int, pdf_top_k: int, summary_top_k: int, recent_window: int):
         self.retrieve_calls.append(
             {

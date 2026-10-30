@@ -4,10 +4,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Iterable, List
 
-from core.schemas import RAGChunk
-from qa.qakit.models import RAGContext as QARAGContext
 from pydantic import BaseModel, ConfigDict
 
 
@@ -17,29 +14,6 @@ def build_collection_id(prefix: str, lecture_id: str) -> str:
     if not lecture_id:
         raise ValueError("lecture_id는 비어 있을 수 없습니다.")
     return f"{prefix}_{lecture_id}"
-
-
-def _as_metadata(chunk: Any) -> dict:
-    """메타데이터 가져오기"""
-    metadata = getattr(chunk, "metadata", None)
-    if metadata is None:
-        return {}
-    if isinstance(metadata, dict):
-        return metadata
-    return dict(metadata)
-
-
-def to_rag_chunks(chunks: Iterable[Any]) -> List[RAGChunk]:
-    """RAG 검색 결과를 모듈 공통 조각 형식으로 변환"""
-    return [
-        RAGChunk(text=getattr(chunk, "text", ""), score=getattr(chunk, "score", 0.0), metadata=_as_metadata(chunk))
-        for chunk in chunks
-    ]
-
-
-def to_qa_rag_context(chunks: Iterable[Any]) -> QARAGContext:
-    """RAG 검색 결과를 QA 컨텍스트로 변환"""
-    return QARAGContext(chunks=to_rag_chunks(chunks))
 
 
 def format_sse(data: dict, event: str | None = None) -> bytes:

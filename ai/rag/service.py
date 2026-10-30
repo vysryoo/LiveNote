@@ -8,27 +8,40 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import chromadb
-from chromadb.config import Settings
+from chromadb.config import Settings as ChromaSettings
 from chromadb.errors import NotFoundError
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
-from .config import RAGConfig
-from .models import RetrievedChunk, RetrieveFilters, UpsertItem
-from .splitters import ChunkSettings, PageText, split_document
-from .utils.pdf import load_pdf_pages
-from .utils.text import make_id
+from core.config import Settings
+from core.schemas import RAGChunk
+
+from .pdf import load_pdf_pages
+from .splitters import ChunkSettings, split_document
 
 logger = logging.getLogger(__name__)
 
 SOURCE_PDF = "pdf"
 SOURCE_SUMMARY = "summary"
 EMBEDDING_DIMENSIONS = {"text-embedding-3-large": 3072, "text-embedding-3-small": 1536}
+COLLECTION_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
+@dataclass
+class SummaryItem:
+    """저장할 섹션 요약."""
+
+    text: str
+    id: Optional[str] = None
+    section_id: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 def to_score(distance: float) -> float:
@@ -57,15 +70,15 @@ def clean_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _passes_filters(chunk: RetrievedChunk, filters: RetrieveFilters) -> bool:
-    # Chroma where 절은 문자열·숫자가 섞인 timestamp 비교를 지원하지 않아 검색 후 걸러냄
-    timestamp = chunk.metadata.get("timestamp")
-    if timestamp is not None:
-        if filters.min_timestamp is not None and timestamp < filters.min_timestamp:
-            return False
-        if filters.max_timestamp is not None and timestamp > filters.max_timestamp:
-            return False
-    return filters.confidence is None or chunk.score >= filters.confidence
+def make_id(text: str) -> str:
+    """텍스트 내용으로 같은 텍스트면 같은 ID를 만든다.
+
+    Args:
+        text: 텍스트
+    Returns:
+        SHA-256 앞 14자리
+    """
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:14]
 
 
 class RAGService:
@@ -73,25 +86,26 @@ class RAGService:
 
     def __init__(
         self,
-        config: RAGConfig | None = None,
+        settings: Settings,
         chunk_settings: ChunkSettings | None = None,
         embeddings=None,
     ):
-        """서비스를 만든다.
+        """서비스를 만든다. 저장 폴더가 없으면 만든다.
 
         Args:
-            config: 저장 경로·임베딩 모델 설정. None이면 기본값
-            chunk_settings: 분할 설정. None이면 환경변수(RAG_CHUNK_STRATEGY 등)
-            embeddings: LangChain Embeddings. None이면 config의 OpenAI 임베딩 모델
+            settings: 서버 설정 (저장 경로, 임베딩 모델, API 키, 분할 설정)
+            chunk_settings: 분할 설정. None이면 서버 설정의 RAG_CHUNK_*·RAG_SEMANTIC_* 값
+            embeddings: LangChain Embeddings. None이면 서버 설정의 OpenAI 임베딩 모델
         """
-        self.config = config or RAGConfig()
-        self.chunk_settings = chunk_settings or ChunkSettings.from_env()
+        self.embedding_model = settings.rag_embedding_model
+        self.chunk_settings = chunk_settings or ChunkSettings.from_settings(settings)
         self.embeddings = embeddings or OpenAIEmbeddings(
-            model=self.config.embedding_model, api_key=self.config.openai_api_key
+            model=self.embedding_model, api_key=settings.rag_openai_api_key or settings.openai_api_key or None
         )
+        settings.rag_persist_dir.mkdir(parents=True, exist_ok=True)
         self.client = chromadb.PersistentClient(
-            path=self.config.persist_dir,
-            settings=Settings(anonymized_telemetry=False, allow_reset=True),
+            path=str(settings.rag_persist_dir),
+            settings=ChromaSettings(anonymized_telemetry=False, allow_reset=True),
         )
         logger.info("RAGService initialized (strategy=%s)", self.chunk_settings.strategy)
 
@@ -109,31 +123,34 @@ class RAGService:
         return {
             "collection_id": collection_id,
             "count": count,
-            "embedding_dim": EMBEDDING_DIMENSIONS.get(self.config.embedding_model, 0) if count else 0,
+            "embedding_dim": EMBEDDING_DIMENSIONS.get(self.embedding_model, 0) if count else 0,
         }
 
-    def upsert_text(self, collection_id: str, items: List[UpsertItem] | List[Dict[str, Any]]) -> Dict[str, Any]:
-        """텍스트(섹션 요약 등)를 저장한다. 같은 ID는 덮어쓴다.
+    def upsert_summaries(self, collection_id: str, items: List[SummaryItem]) -> Dict[str, Any]:
+        """백엔드가 확정한 섹션 요약을 저장한다. 같은 ID는 덮어쓴다.
+
+        강의 자료와 구분하도록 source_type을 summary로 표시하고, 숫자 section_id는 섹션 번호(section_index)로도
+        남겨 retrieve_context가 직전 섹션 요약을 뺄 수 있게 한다.
 
         Args:
             collection_id: 컬렉션 이름
-            items: UpsertItem 또는 text·id·metadata·section_id를 가진 dict 목록
+            items: 요약 목록. id가 없으면 텍스트 내용으로 만듦
         Returns:
             {"collection_id", "count", "embedding_dim"}
         """
         if not items:
-            logger.warning("No items to upsert")
             return self._result(collection_id, 0)
-        upsert_items = [UpsertItem(**item) if isinstance(item, dict) else item for item in items]
         documents, ids = [], []
-        for item in upsert_items:
-            metadata = dict(item.metadata)
+        for item in items:
+            metadata = {**item.metadata, "source_type": SOURCE_SUMMARY}
             if item.section_id:
                 metadata["section_id"] = item.section_id
+                if item.section_id.isdigit():
+                    metadata["section_index"] = int(item.section_id)
             documents.append(Document(page_content=item.text, metadata=clean_metadata(metadata)))
             ids.append(item.id or make_id(item.text))
         self._store(collection_id).add_documents(documents, ids=ids)
-        logger.info("[Upsert Text] collection=%s count=%d", collection_id, len(ids))
+        logger.info("요약 저장: collection=%s count=%d", collection_id, len(ids))
         return self._result(collection_id, len(ids))
 
     def upsert_pdf(
@@ -155,9 +172,9 @@ class RAGService:
         Raises:
             ValueError: PDF를 읽지 못한 경우
         """
-        pages = [PageText(page=doc.metadata["page"], text=doc.page_content) for doc in load_pdf_pages(pdf_path)]
+        pages = load_pdf_pages(pdf_path)
         if not pages:
-            logger.warning("No pages loaded from %s", pdf_path)
+            logger.warning("텍스트가 있는 쪽 없음: %s", pdf_path)
             return self._result(collection_id, 0)
 
         file_name = Path(pdf_path).name
@@ -184,69 +201,35 @@ class RAGService:
             ids.append(f"pdf|{doc_hash}|{settings.strategy}|c{chunk.index}")
         if documents:
             store.add_documents(documents, ids=ids)
-        logger.info(
-            "[Upsert PDF] collection=%s file=%s strategy=%s chunks=%d", collection_id, file_name, settings.strategy, len(ids)
-        )
+        logger.info("PDF 저장: collection=%s file=%s strategy=%s chunks=%d", collection_id, file_name, settings.strategy, len(ids))
         return self._result(collection_id, len(ids))
 
-    def _search(self, collection_id: str, query: str, top_k: int, where: Dict[str, Any] | None) -> List[RetrievedChunk]:
+    def _search(self, collection_id: str, query: str, top_k: int, where: Dict[str, Any] | None) -> List[RAGChunk]:
         if top_k <= 0 or not self._exists(collection_id):
             return []
         results = self._store(collection_id).similarity_search_with_score(query, k=top_k, filter=where)
         return [
-            RetrievedChunk(
-                id=document.id or "",
-                text=document.page_content,
-                score=to_score(distance),
-                metadata=dict(document.metadata),
-                section_id=document.metadata.get("section_id"),
-            )
+            RAGChunk(id=document.id, text=document.page_content, score=to_score(distance), metadata=dict(document.metadata))
             for document, distance in results
         ]
 
-    def retrieve(
-        self,
-        collection_id: str,
-        query: str,
-        top_k: int = 5,
-        filters: RetrieveFilters | None = None,
-    ) -> List[RetrievedChunk]:
-        """질의와 가까운 조각을 찾는다.
+    def retrieve(self, collection_id: str, query: str, top_k: int = 5) -> List[RAGChunk]:
+        """질의와 가까운 조각을 찾는다. 평가(검색 단계 측정)에서 쓴다.
 
         Args:
             collection_id: 컬렉션 이름. 영문·숫자·하이픈·밑줄만 허용
             query: 질의 텍스트
             top_k: 돌려줄 개수
-            filters: 메타데이터 조건, timestamp 범위, 최소 점수
         Returns:
             점수 내림차순 조각 목록. 컬렉션이 없으면 빈 목록
         Raises:
             ValueError: 컬렉션 이름이나 질의가 비었거나 형식이 맞지 않는 경우
         """
-        import re
-
-        if not collection_id or not collection_id.strip():
-            raise ValueError("collection_id는 비어 있을 수 없습니다")
+        if not COLLECTION_ID_PATTERN.match(collection_id or ""):
+            raise ValueError("collection_id는 영문, 숫자, 하이픈, 언더스코어로 된 비어 있지 않은 문자열이어야 함")
         if not query or not query.strip():
-            raise ValueError("query는 비어 있을 수 없습니다")
-        if not re.match(r"^[a-zA-Z0-9_-]+$", collection_id):
-            raise ValueError("collection_id는 영문, 숫자, 하이픈, 언더스코어만 사용 가능합니다")
-        if filters and filters.confidence is not None and not 0.0 <= filters.confidence <= 1.0:
-            raise ValueError("confidence는 0.0과 1.0 사이여야 합니다")
-
-        where: Dict[str, Any] = {}
-        if filters:
-            if filters.subject:
-                where["subject"] = filters.subject
-            if filters.section_id:
-                where["section_id"] = filters.section_id
-            where.update(filters.custom)
-        if len(where) > 1:
-            where = {"$and": [{key: value} for key, value in where.items()]}
-        chunks = self._search(collection_id, query, top_k, where or None)
-        if filters:
-            chunks = [c for c in chunks if _passes_filters(c, filters)]
-        return sorted(chunks, key=lambda c: c.score, reverse=True)
+            raise ValueError("query는 비어 있을 수 없음")
+        return sorted(self._search(collection_id, query, top_k, None), key=lambda c: c.score, reverse=True)
 
     def retrieve_context(
         self,
@@ -256,7 +239,7 @@ class RAGService:
         pdf_top_k: int,
         summary_top_k: int,
         recent_window: int,
-    ) -> List[RetrievedChunk]:
+    ) -> List[RAGChunk]:
         """강의 자료 조각과 이전 섹션 요약을 따로 검색해 합친다.
 
         직전 recent_window개 섹션 요약은 백엔드가 previousSummaries로 따로 보내므로 검색에서 뺀다.
@@ -273,7 +256,7 @@ class RAGService:
         """
         pdf_chunks = self._search(collection_id, query, pdf_top_k, {"source_type": SOURCE_PDF})
         oldest_allowed = section_index - recent_window
-        summaries: List[RetrievedChunk] = []
+        summaries: List[RAGChunk] = []
         if oldest_allowed > 0:
             summaries = self._search(
                 collection_id,

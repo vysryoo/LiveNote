@@ -6,8 +6,8 @@ from typing import List
 
 import pytest
 
+from core.schemas import RAGChunk
 from core.timing import RequestTimer, logger as timing_logger
-from tests.conftest import StubRetrievedChunk
 
 
 class _RecordCollector(logging.Handler):
@@ -54,7 +54,7 @@ def test_mark_once_records_first_occurrence_per_key(timing_records):
 
 @pytest.mark.anyio("asyncio")
 async def test_qa_generate_records_streaming_stages(async_client, test_context, timing_records):
-    test_context.rag.retrieve_result = [StubRetrievedChunk(id="c1", text="스택", score=0.9, metadata={})]
+    test_context.rag.retrieve_result = [RAGChunk(id="c1", text="스택", score=0.9, metadata={})]
     test_context.qa.events = [
         ("start", "개념", {"item": 0}),
         ("question", "개념", {"item": 0, "text": "Q"}),
