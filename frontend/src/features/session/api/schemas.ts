@@ -10,7 +10,7 @@ const textSchema = z
 // DB 응답은 대문자, 실시간 메시지는 소문자로 와서 소문자로 통일
 const lowercaseSchema = z.string().transform((value) => value.toLowerCase());
 
-export const transcriptSchema = z.object({
+const transcriptSchema = z.object({
   id: z.number().optional(),
   sectionIndex: z.number(),
   startSec: z.number().nullish(),

@@ -7,7 +7,7 @@ export const lectureKeys = {
   detail: (lectureId: number) => ["lectures", "detail", lectureId] as const,
 };
 
-export const LECTURE_PAGE_SIZE = 20;
+const LECTURE_PAGE_SIZE = 20;
 
 /**
  * 로그인한 사용자의 강의 목록 한 페이지를 조회한다.

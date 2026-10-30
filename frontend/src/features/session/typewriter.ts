@@ -1,6 +1,6 @@
 // 초당 약 100자. 이전 백엔드 연출(0.1초마다 10자)과 같은 속도
 export const TYPEWRITER_TICK_MS = 50;
-export const TYPEWRITER_CHARS_PER_TICK = 5;
+const TYPEWRITER_CHARS_PER_TICK = 5;
 
 /**
  * 글자가 써지는 연출에서 다음 순간에 보일 글자 수를 구한다.
