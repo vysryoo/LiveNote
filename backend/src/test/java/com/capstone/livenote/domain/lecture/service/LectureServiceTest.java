@@ -1,8 +1,11 @@
 package com.capstone.livenote.domain.lecture.service;
 
 import com.capstone.livenote.application.ai.client.RagClient;
+import com.capstone.livenote.domain.bookmark.dto.BookmarkResponseDto;
+import com.capstone.livenote.domain.bookmark.entity.Bookmark;
 import com.capstone.livenote.domain.bookmark.repository.BookmarkRepository;
 import com.capstone.livenote.domain.lecture.dto.CreateLectureRequestDto;
+import com.capstone.livenote.domain.lecture.dto.SessionDetailResponse;
 import com.capstone.livenote.domain.lecture.entity.Lecture;
 import com.capstone.livenote.domain.lecture.repository.LectureRepository;
 import com.capstone.livenote.domain.qna.repository.QnaRepository;
@@ -15,13 +18,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -83,6 +90,22 @@ class LectureServiceTest {
         assertThatThrownBy(() -> service.endLecture(4L, 2L, "제목"))
                 .isInstanceOf(EntityNotFoundException.class);
         verify(lectureRepo, never()).save(any());
+    }
+
+    @Test
+    void getSessionDetail_returnsBookmarksWithoutLoadingTargets() {
+        Lecture lecture = Lecture.builder().id(4L).userId(1L).title("강의").status(Lecture.Status.RECORDING).build();
+        Bookmark bookmark = Bookmark.builder().id(3L).userId(1L).lectureId(4L).sectionIndex(0)
+                .targetType(Bookmark.TargetType.QNA).targetId(9L).build();
+        when(lectureRepo.findByIdAndUserId(4L, 1L)).thenReturn(Optional.of(lecture));
+        when(resourceRepository.findByLectureId(eq(4L), any())).thenReturn(Page.empty());
+        when(bookmarkRepository.findByUserIdAndLectureId(eq(1L), eq(4L), any())).thenReturn(new SliceImpl<>(List.of(bookmark)));
+
+        SessionDetailResponse detail = service.getSessionDetail(4L, 1L);
+
+        assertThat(detail.getBookmarks()).extracting(BookmarkResponseDto::getTargetId).containsExactly(9L);
+        verify(qnaRepository, never()).findById(any());
+        verify(resourceRepository, never()).findById(any());
     }
 
     @Test

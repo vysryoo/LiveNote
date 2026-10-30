@@ -2,7 +2,6 @@ package com.capstone.livenote.domain.lecture.service;
 
 import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.domain.bookmark.dto.BookmarkResponseDto;
-import com.capstone.livenote.domain.bookmark.entity.Bookmark;
 import com.capstone.livenote.domain.bookmark.repository.BookmarkRepository;
 import com.capstone.livenote.domain.lecture.dto.CreateLectureRequestDto;
 import com.capstone.livenote.domain.lecture.dto.SessionDetailResponse;
@@ -196,23 +195,7 @@ public class LectureService {
         var bookmarks = bookmarkRepository.findByUserIdAndLectureId(userId, lectureId, Pageable.unpaged())
                 .stream()
                 .sorted((b1, b2) -> Integer.compare(b1.getSectionIndex(), b2.getSectionIndex()))
-                .map(bm -> {
-                    Object content = null;
-
-                    // 타겟 타입에 따라 원본 데이터 조회
-                    if (bm.getTargetType() == Bookmark.TargetType.QNA) {
-                        content = qnaRepository.findById(bm.getTargetId())
-                                .map(QnaResponseDto::from)
-                                .orElse(null);
-                    } else if (bm.getTargetType() == Bookmark.TargetType.RESOURCE) {
-                        content = resourceRepository.findById(bm.getTargetId())
-                                .map(ResourceResponseDto::from)
-                                .orElse(null);
-                    }
-
-                    // BookmarkResponseDto 생성 시 content 함께 전달
-                    return BookmarkResponseDto.from(bm, content);
-                })
+                .map(BookmarkResponseDto::from)
                 .collect(Collectors.toList());
 
         log.info("✅ [DB READ] Session detail loaded: lectureId={} transcripts={} summaries={} resources={} qnas={} bookmarks={}",
