@@ -35,5 +35,4 @@ cd frontend && npm run dev
 
 | 문서 | 내용 |
 | --- | --- |
-| [HANDOFF.md](HANDOFF.md) | 현재 상태, 로컬 실행 환경, 통신 구조, 남은 문제, 평가 결과 |
 | [AGENTS.md](AGENTS.md) | 코드·커밋·PR 작성 규칙 (세부 규칙은 `.agent/`) |
