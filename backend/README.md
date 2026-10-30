@@ -111,12 +111,10 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 ```
 
----
-
 ### application.yml 변수 설명
 
 | 변수명 | 기본값 | 설명 |
-|--------|--------|------|
+| --- | --- | --- |
 | `SPRING_DATASOURCE_URL` | - | PostgreSQL 데이터베이스 JDBC URL |
 | `SPRING_DATASOURCE_USERNAME` | - | DB 사용자명 |
 | `SPRING_DATASOURCE_PASSWORD` | - | DB 비밀번호 |
@@ -141,7 +139,7 @@ REDIS_PORT=6379
 #### 히스토리/중복 방지 설정
 
 | 변수명 | 기본값 | 설명 |
-|--------|--------|------|
+| --- | --- | --- |
 | `app.ai.history.previous-summary-count` | 3 | REC에 전달할 직전 요약 수 |
 | `app.ai.history.previous-resource-sections` | 3 | REC exclude 윈도우 (이전 N섹션 자료 제외) |
 | `app.ai.history.previous-qa-sections` | 3 | QA에 전달할 직전 QA 섹션 수 |
@@ -216,7 +214,7 @@ backend/
 ### 콜백 처리 (`/api/ai/callback`)
 
 | 타입 | 설명 |
-|------|------|
+| --- | --- |
 | `summary` | 요약 결과 수신 → DB 저장 → STOMP `/topic/lectures.{id}.summary` 푸시 |
 | `resources` | 추천 자료 수신 → DB 저장 → STOMP `/topic/lectures.{id}.resources` 푸시 |
 
@@ -234,7 +232,7 @@ backend/
 ### 인증
 
 | 경로 | 메서드 | 설명 |
-|------|--------|------|
+| --- | --- | --- |
 | `/api/auth/signup` | POST | 회원가입 `{loginId, password, email, name}` → `{ok, data:{token, user}}` + 갱신 토큰 쿠키 |
 | `/api/auth/login` | POST | 로그인 `{loginId, password}` → `{ok, data:{token, user}}` + 갱신 토큰 쿠키 |
 | `/api/auth/refresh` | POST | 갱신 토큰 쿠키로 새 접근 토큰 발급 → `{ok, data:{token}}` + 새 갱신 토큰 쿠키. 쿠키가 없거나 만료·폐기됐으면 401 |
@@ -243,7 +241,7 @@ backend/
 ### 사용자
 
 | 경로 | 메서드 | 설명 |
-|------|--------|------|
+| --- | --- | --- |
 | `/api/users/me` | GET | 내 정보 조회 |
 | `/api/users/me/language` | PATCH | UI 언어 변경 `{language}` |
 | `/api/users/me/password` | PATCH | 비밀번호 변경 `{currentPassword, newPassword}` |
@@ -251,7 +249,7 @@ backend/
 ### 강의
 
 | 경로 | 메서드 | 설명 |
-|------|--------|------|
+| --- | --- | --- |
 | `/api/lectures` | GET | 강의 목록 최신순 조회 `?page=0&size=20` (size 최대 100) → `{items, total, hasNext}` |
 | `/api/lectures` | POST | 강의 생성. JSON `{title, subject, sttLanguage}` 또는 multipart(`title`, `subject`, `sttLanguage`, `files`: PDF) |
 | `/api/lectures/{id}/detail` | GET | 강의 상세 (전사, 요약, QnA, 자료, 북마크) |
@@ -262,7 +260,7 @@ backend/
 ### 북마크
 
 | 경로 | 메서드 | 설명 |
-|------|--------|------|
+| --- | --- | --- |
 | `/api/bookmarks` | POST | 북마크 추가 `{lectureId, sectionIndex, targetType, targetId}` (targetType: `RESOURCE` 또는 `QNA`. 소문자를 보내면 본문을 읽지 못해 500. 응답과 상세 조회의 `targetType`은 소문자). 본인 강의가 아니거나 대상이 그 강의에 없으면 404 |
 | `/api/bookmarks/{id}` | DELETE | 북마크 삭제. 본인 북마크가 아니면 404 |
 
@@ -271,7 +269,7 @@ backend/
 ### 추가 카드 요청
 
 | 경로 | 메서드 | 설명 |
-|------|--------|------|
+| --- | --- | --- |
 | `/api/start-qna-stream` | POST | 분할 화면 추가 카드: QnA 한 유형 생성 `?lectureId&sectionIndex&qnaType` → `{ok, data:null}` |
 | `/api/start-resources-stream` | POST | 분할 화면 추가 카드: 자료 한 유형 추천 `?lectureId&sectionIndex&resourceType` → `{ok, data:null}` |
 
@@ -282,14 +280,14 @@ backend/
 AI 서버 전용입니다. 로그인 토큰 대신 `X-Internal-Api-Key` 헤더로 확인합니다.
 
 | 경로 | 메서드 | 설명 |
-|------|--------|------|
+| --- | --- | --- |
 | `/api/ai/callback?type=summary` | POST | 요약 결과 수신 |
 | `/api/ai/callback?type=resources` | POST | 자료 추천 결과 수신 |
 
 ### WebSocket/STOMP
 
 | 경로 | 프로토콜 | 설명 |
-|------|----------|------|
+| --- | --- | --- |
 | `/ws/transcription?sessionId={lectureId}&token={접근 토큰}` | WebSocket | 실시간 녹음 전사 (Binary PCM16 ↔ JSON transcript). 브라우저 WebSocket은 헤더를 붙일 수 없어 토큰을 쿼리로 전달 |
 | `/ws` | STOMP | 브로커 연결. CONNECT 헤더에 `Authorization: Bearer {토큰}` 필요. 구독은 본인 강의 토픽만 허용, 클라이언트 SEND는 거부 |
 | `/topic/lectures.{id}.transcripts` | STOMP 구독 | 전사 이벤트 수신 |
@@ -312,7 +310,3 @@ AI 서버 전용입니다. 로그인 토큰 대신 `X-Internal-Api-Key` 헤더�
 - **OpenAI Realtime API** (실시간 전사)
 - **WebFlux WebClient** (AI 서버 요청, QnA SSE 수신)
 - **Gradle**
-
----
-
-### 끝.
