@@ -18,7 +18,7 @@ public record ResourceCallbackDto(
 
     @Builder
     public record ResourceItem(
-            String type,        // "blog", "video", "wiki", "paper"
+            String type,        // 변환 규칙은 Resource.Type.fromString
             String title,
             String url,
             String description,

@@ -32,7 +32,7 @@ public class Lecture {
     private LocalDateTime createdAt;
     private LocalDateTime endAt;
 
-    private Integer duration; // endAt - createdAt
+    private Integer duration; // 값을 채우지 않음. 응답의 진행 시간은 createdAt, endAt으로 계산함
 
     @Column(columnDefinition = "TEXT")
     private String files;

@@ -50,7 +50,6 @@ public class AiServerClient {
         return callbackBaseUrl + "/api/ai/callback?type=" + type;
     }
 
-    // 1. QnA 생성 요청 (snake_case 적용)
     /**
      * AI 서버에 QnA 생성을 요청하고 생성 과정을 SSE 이벤트로 받는다.
      *
@@ -87,7 +86,6 @@ public class AiServerClient {
                 .bodyToFlux(SSE_OF_STRING);
     }
 
-    // 2. Resource 추천 요청 (snake_case + 실제 필드 둘 다 보내기)
     public void requestResourceRecommendation(AiRequestPayloads.ResourceRecommendPayload payload, List<String> targetTypes) {
         Map<String, Object> body = new HashMap<>();
 
@@ -96,7 +94,6 @@ public class AiServerClient {
         body.put("section_index", payload.sectionIndex());
         body.put("section_summary", payload.sectionSummary());
 
-        // previous_summaries 변환
         List<Map<String, Object>> prev = payload.previousSummaries().stream()
                 .map(s -> {
                     Map<String, Object> m = new HashMap<>();
@@ -148,14 +145,10 @@ public class AiServerClient {
             body.put("end_sec", endSec);
         }
 
-        // 명세서: 기본값 FINAL, 대문자
         body.put("phase", phase != null ? phase.toUpperCase() : "FINAL");
 
-        // string 또는 array[string] 둘 다 허용 → 우리는 일단 통짜 string 으로 보냄
         body.put("transcript", transcript);
 
-        // 콜백 URL (type=summary 는 AI 서버가 자동으로 붙여 준다고 했지만
-        // 우리도 /api/ai/callback?type=summary 로 맞춰 줌)
         body.put("callback_url", callback("summary"));
 
         log.info("[AI Summary] Request: lectureId={} section={} phase={}", lectureId, sectionIndex, body.get("phase"));
@@ -176,12 +169,10 @@ public class AiServerClient {
         Map<String, Object> item = new HashMap<>();
         item.put("text", summary.getText());
 
-        // id: null이면 아예 안 넣기
         if (summary.getId() != null) {
             item.put("id", summary.getId().toString());
         }
 
-        // section_id 는 문자열로 보내기
         item.put("section_id", String.valueOf(summary.getSectionIndex()));
         item.put("metadata", metadata);
 
@@ -206,14 +197,13 @@ public class AiServerClient {
                 lectureId, pdfFile.getOriginalFilename(), pdfFile.getSize());
 
         try {
-            // [수정] 응답 본문을 받아서 collection_id 추출
             String responseBody = webClient.post()
                     .uri(url)
                     .header(InternalApiKey.HEADER, internalApiKey.value())
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(BodyInserters.fromMultipartData(builder.build()))
                     .retrieve()
-                    .bodyToMono(String.class) // String으로 받음
+                    .bodyToMono(String.class)
                     .block();
 
             // 응답 예: {"collection_id": "lecture_1", "result": {...}}

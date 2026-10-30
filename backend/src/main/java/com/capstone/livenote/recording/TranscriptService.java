@@ -17,21 +17,23 @@ import java.util.Optional;
 public class TranscriptService {
 
     private final TranscriptRepository transcriptRepository;
-    private final StreamGateway streamGateway; // 실시간 전송
+    private final StreamGateway streamGateway;
     private final SectionAggregationService sectionAggregationService;
     private final RecordingStateStore stateStore;
     private final RedisLock redisLock;
 
     /**
-     * STT 결과 저장 및 후속 처리
-     * 플로우:
-     * 1. 30초 단위 sectionIndex 계산
-     * 2. Transcript 저장
-     * 3. (섹션/요약/AI 요청 로직) 트리거
-     * 4. 저장된 내용을 DTO로 반환 → 호출한 쪽에서 WebSocket push
+     * 확정된 전사 한 문장을 강의 전체 기준 시각으로 바꿔 저장하고 실시간으로 전송한다.
      *
+     * 저장 전에 섹션을 정하고, 저장 후 섹션 길이에 따라 요약을 요청한다. 저장 후의 요약 요청 단계가 실패하면 로그로만 남긴다.
      * 같은 강의의 전사는 서버 여러 대에 걸쳐 한 번에 하나씩 처리한다. 섹션 상태를 읽고 고쳐 쓰는 사이에
      * 다른 전사가 끼어들면 섹션 번호가 어긋나기 때문이다.
+     *
+     * @param lectureId 강의 ID
+     * @param startSec 전사 시작 시각(초). 녹음이 다시 시작돼 이전보다 앞선 값이 오면 이어지도록 보정함
+     * @param endSec 전사 끝 시각(초)
+     * @param text 전사 문장
+     * @return 저장한 전사
      */
     public TranscriptResponseDto saveFromStt(Long lectureId, int startSec, int endSec, String text) {
         return redisLock.call(RedisKeys.transcriptLock(lectureId),
@@ -39,18 +41,15 @@ public class TranscriptService {
     }
 
     private TranscriptResponseDto saveLocked(Long lectureId, int startSec, int endSec, String text) {
-        // 1) 강의별 오프셋 계산 (이전 기록이 있는데 클라이언트 startSec이 리셋된 경우 이어붙이기)
         int offset = resolveOffset(lectureId, startSec);
         int adjustedStart = startSec + offset;
         int adjustedEnd = endSec + offset;
 
-        // 2) 섹션 배정: 섹션 시작으로부터 30초 이상 지난 전사는 새 섹션
         int sectionIndex = sectionAggregationService.assignSection(lectureId, adjustedStart, adjustedEnd);
 
         log.info("[TranscriptService] Saving transcript: lectureId={} startSec={} endSec={} sectionIndex={}",
                 lectureId, adjustedStart, adjustedEnd, sectionIndex);
 
-        // 3) Transcript 엔터티 저장
         Transcript t = transcriptRepository.save(
                 Transcript.builder()
                         .lectureId(lectureId)
@@ -61,11 +60,9 @@ public class TranscriptService {
                         .build()
         );
 
-        // 4) 저장된 전사를 모든 클라이언트에게 실시간 브로드캐스트 (WebSocket)
         TranscriptResponseDto dto = TranscriptResponseDto.from(t);
         streamGateway.sendTranscript(lectureId, dto, true);
 
-        //  5) 섹션 길이 확인 후 요약 요청 (15초/30초 트리거)
         try {
             sectionAggregationService.onTranscriptSaved(lectureId);
         } catch (Exception e) {

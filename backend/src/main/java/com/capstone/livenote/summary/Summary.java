@@ -21,10 +21,7 @@ public class Summary {
     @Column(name = "lecture_id", nullable = false)
     private Long lectureId;
 
-    /**
-     * 섹션 인덱스 (30초 단위)
-     * 계산식: startSec / 30
-     */
+    /** 섹션 번호. 녹음 중 SectionAggregationService가 정한 전사의 섹션 번호와 같음 */
     @Column(name = "section_index", nullable = false)
     private Integer sectionIndex;
 

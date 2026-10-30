@@ -90,12 +90,10 @@ public class ResourceCallbackService {
             streamGateway.sendStreamComplete(dto.lectureId(), "resource_stream", cardId, ResourceResponseDto.from(saved));
         }
 
-        // 2. 전체 조회
         List<Resource> allResources = resourceRepository.findByLectureIdAndSectionIndexOrderByIdAsc(
                 dto.lectureId(), dto.sectionIndex()
         );
 
-        // 3. DTO 변환 및 전송
         List<ResourceResponseDto> items = allResources.stream()
                 .map(ResourceResponseDto::from)
                 .toList();

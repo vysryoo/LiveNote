@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 섹션 단위 집계 -> AI 서버로 요약 요청 트리거
- * (결과는 비동기 콜백으로 수신되므로, 여기서는 요청만 보내고 끝냄)
+ * 전사를 30초 섹션으로 나누고, 섹션이 15초·30초에 도달하면 AI 서버에 부분·최종 요약을 요청한다.
+ * 요약 결과는 AI 서버 콜백으로 도착하므로 여기서는 요청만 보낸다.
  *
  * 섹션 상태는 {@link RecordingStateStore}(Redis)에 두어 서버 여러 대와 재시작 후에도 이어진다.
  * 상태를 읽고 쓰는 두 메서드는 강의 단위 잠금 안에서 호출해야 한다.
@@ -116,7 +116,6 @@ public class SectionAggregationService {
                 elapsedSec >= PARTIAL_SEC, elapsedSec >= SECTION_SEC);
     }
 
-    // 핵심 로직: 직접 처리하지 않고 AiServerClient를 통해 AI 서버로 넘김
     private void requestSummary(Long lectureId, SectionState state, String phase) {
         String sourceText = transcriptRepository
                 .findByLectureIdAndSectionIndexOrderByStartSecAsc(lectureId, state.index())
@@ -129,7 +128,6 @@ public class SectionAggregationService {
         log.info("[AI Request] Summary Generation ({}): lectureId={} section={} time={}~{}s len={}",
                 phase, lectureId, state.index(), state.startSec(), state.lastEndSec(), sourceText.length());
 
-        // 비동기 요청 전송 (결과는 나중에 CallbackService로 옴)
         aiServerClient.requestSummaryGeneration(
                 lectureId,
                 null, // 신규 생성이므로 ID 없음

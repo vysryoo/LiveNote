@@ -4,8 +4,8 @@ import lombok.Builder;
 
 @Builder
 public record SummaryCallbackDto(
-        Long id,           // AI 서버 내부 ID (안 써도 됨)
-        Long summaryId,    // 우리 DB summary PK 와 연결 용도 (없을 수도)
+        Long id,           // 받기만 하고 쓰지 않음
+        Long summaryId,    // 받기만 하고 쓰지 않음. 요약은 강의 ID와 섹션 번호로 찾음
         Long lectureId,
         Integer sectionIndex,
         Integer startSec,

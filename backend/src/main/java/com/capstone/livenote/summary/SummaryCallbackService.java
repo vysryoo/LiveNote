@@ -1,5 +1,3 @@
-// com.capstone.livenote.summary.SummaryCallbackService
-
 package com.capstone.livenote.summary;
 
 import com.capstone.livenote.card.CardRequestService;
@@ -30,7 +28,6 @@ public class SummaryCallbackService {
         log.info("[Callback] Summary received: lectureId={} section={} type={}",
                 dto.lectureId(), dto.sectionIndex(), dto.phase());
 
-        // 너무 짧은 전사 처리
         if (STATUS_TOO_SHORT.equalsIgnoreCase(dto.status())) {
             String message = dto.text() != null ? dto.text() : "요약을 생성하기에 강의가 너무 짧습니다.";
             streamGateway.sendError(dto.lectureId(), message);
@@ -40,10 +37,8 @@ public class SummaryCallbackService {
         SummaryPhase phase = SummaryPhase.from(dto.phase());
         Summary summary;
 
-        // 2. Phase에 따른 저장 로직 분기 (핵심 수정!)
         if (phase == SummaryPhase.PARTIAL) {
-            // PARTIAL: DB 저장 안 함 (임시 객체 생성)
-            // ID는 null로 설정됨
+            // 부분 요약은 화면 표시와 자동 카드 요청에만 쓰고 저장하지 않음. 그래서 ID가 없음
             summary = Summary.builder()
                     .lectureId(dto.lectureId())
                     .sectionIndex(dto.sectionIndex())
@@ -52,17 +47,13 @@ public class SummaryCallbackService {
                     .build();
             log.info("[Callback] PARTIAL summary: Skipping DB save.");
         } else {
-            // FINAL: DB 저장 (Upsert)
             summary = summaryService.upsertFromCallback(dto);
             log.info("[Callback] FINAL summary saved: id={}", summary.getId());
         }
 
-        // 2. 프론트엔드 실시간 전송 (STOMP)
         streamGateway.sendSummary(summary);
 
-        // 3. 단계별 분기 처리
         if (phase == SummaryPhase.FINAL) {
-            // FINAL 단계
             try {
                 log.info("[RAG Upsert] Sending FINAL summary: summaryId={}", summary.getId());
                 aiServerClient.upsertSummaryText(summary.getLectureId(), summary);
@@ -71,7 +62,6 @@ public class SummaryCallbackService {
             }
 
         } else {
-            // PARTIAL 단계
             if (!autoCardProperties.isEnabled()) {
                 log.info("[Partial Logic] Auto cards disabled: lectureId={} section={}",
                         dto.lectureId(), dto.sectionIndex());

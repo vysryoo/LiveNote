@@ -15,7 +15,7 @@ public class Transcript {
     private Long lectureId;
 
     @Column(name = "section_index", nullable = false)
-    private Integer sectionIndex;    // = startSec / 30
+    private Integer sectionIndex;    // 녹음 중 SectionAggregationService가 정함
 
     @Column(name = "start_sec", nullable = false)
     private Integer startSec;

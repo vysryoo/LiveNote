@@ -16,18 +16,16 @@ public class SwaggerConfig {
 
     @Bean
     public OpenAPI openAPI() {
-        // 1. Security 스키마 정의 (JWT 토큰 방식)
         String jwtSchemeName = "BearerAuth";
         SecurityRequirement securityRequirement = new SecurityRequirement().addList(jwtSchemeName);
 
         Components components = new Components()
                 .addSecuritySchemes(jwtSchemeName, new SecurityScheme()
                         .name(jwtSchemeName)
-                        .type(SecurityScheme.Type.HTTP) // HTTP 방식
-                        .scheme("bearer")               // Bearer 토큰
-                        .bearerFormat("JWT"));          // JWT 포맷
+                        .type(SecurityScheme.Type.HTTP)
+                        .scheme("bearer")
+                        .bearerFormat("JWT"));
 
-        // 2. OpenAPI 객체 생성 및 설정 주입
         return new OpenAPI()
                 .info(new Info()
                         .title("LiveNote API")

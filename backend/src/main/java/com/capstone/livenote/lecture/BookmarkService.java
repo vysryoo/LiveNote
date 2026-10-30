@@ -19,7 +19,6 @@ public class BookmarkService {
     // 북마크 생성
     @Transactional
     public Bookmark createBookmark(CreateBookmarkRequestDto req, Long userId) {
-        // 1. Enum 변환
         Bookmark.TargetType type = req.targetType();
 
         if (type == null) {
@@ -32,12 +31,10 @@ public class BookmarkService {
             throw new EntityNotFoundException("bookmark target");
         }
 
-        // 2. 중복 체크
         if (bookmarkRepository.existsByUserIdAndTargetTypeAndTargetId(userId, type, req.targetId())) {
             throw new IllegalArgumentException("이미 북마크된 아이템입니다.");
         }
 
-        // 3. 저장
         Bookmark bookmark = Bookmark.builder()
                 .userId(userId)
                 .lectureId(req.lectureId())

@@ -45,14 +45,12 @@ public class SummaryService {
         );
     }
 
-    // 해당 섹션의 요약이 DB에 존재하는지 확인
     @Transactional(noRollbackFor = DataIntegrityViolationException.class)
     public Summary upsertFromCallback(SummaryCallbackDto dto) {
         int startSec = dto.startSec() != null ? dto.startSec() : dto.sectionIndex() * SECTION_SEC;
         int endSec = dto.endSec() != null ? dto.endSec() : startSec + SECTION_SEC;
         SummaryPhase phase = SummaryPhase.from(dto.phase());
 
-        // 1. 조회 시도
         Optional<Summary> existingOpt = summaryRepository.findByLectureIdAndSectionIndex(
                 dto.lectureId(), dto.sectionIndex());
 
@@ -65,7 +63,7 @@ public class SummaryService {
             return existing; // Dirty Checking으로 자동 저장
         }
 
-        // 2. 없으면 저장 시도 (동시성 충돌 발생 가능 구간)
+        // 같은 섹션의 콜백이 동시에 들어와 다른 쪽이 먼저 저장하면 unique 제약 위반이 남
         try {
             return summaryRepository.save(
                     Summary.builder()
