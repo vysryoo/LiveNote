@@ -8,6 +8,7 @@ import com.capstone.livenote.domain.qna.dto.QnaResponseDto;
 import com.capstone.livenote.domain.qna.repository.QnaRepository;
 import com.capstone.livenote.domain.resource.dto.ResourceResponseDto;
 import com.capstone.livenote.domain.resource.repository.ResourceRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -103,12 +104,9 @@ public class BookmarkService {
     // 북마크 삭제
     @Transactional
     public void deleteBookmark(Long userId, Long bookmarkId) {
-        Bookmark b = bookmarkRepository.findById(bookmarkId)
-                .orElseThrow(() -> new RuntimeException("Bookmark not found"));
-
-        if (!b.getUserId().equals(userId)) {
-            throw new RuntimeException("No permission to delete this bookmark");
-        }
+        // 다른 사용자의 북마크도 없는 북마크와 같은 응답으로 처리해 존재 여부를 드러내지 않음
+        Bookmark b = bookmarkRepository.findByIdAndUserId(bookmarkId, userId)
+                .orElseThrow(() -> new EntityNotFoundException("bookmark"));
 
         bookmarkRepository.delete(b);
     }
