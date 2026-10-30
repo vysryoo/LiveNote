@@ -26,8 +26,7 @@ dependencies = [
     # 강의 자료 분할 (토큰 계산, semantic 분할 거리 계산)
     "tiktoken==0.14.0",
     "numpy==2.4.6",
-    # 영상 추천
-    "youtube-transcript-api==0.6.1",
+    # 영상 추천 휴리스틱(제목 유사도), eval 전사 오류율 계산
     "rapidfuzz==3.6.1",
 ]
 
