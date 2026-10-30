@@ -2,13 +2,12 @@
 QA 생성 서비스 (병렬 처리)
 """
 
-import asyncio
 from typing import AsyncGenerator, List, Tuple
 
 from .models import QARequest, QAResponse
 from .config.prompts import PromptTemplates
+from .graph import build_qa_graph
 from .llm.openai_client import OpenAIClient
-from .stream_parser import QAStreamParser
 
 
 class QAService:
@@ -18,6 +17,7 @@ class QAService:
         """초기화한다. 모델은 공통 LLM 계층의 QA 용도 설정을 따른다."""
         self.client = OpenAIClient()
         self.prompts = PromptTemplates()
+        self.graph = build_qa_graph(self.client)
     
     async def generate_questions(
         self,
@@ -72,52 +72,17 @@ class QAService:
         if not question_types:
             return
 
-        # 여러 유형의 생성 조각을 도착 순서대로 내보내기 위해 큐 하나로 모음
-        queue: asyncio.Queue = asyncio.Queue()
-        finished = object()
-
-        async def produce(item: int, q_type: str) -> None:
-            try:
-                prompt = self.prompts.get_prompt(q_type).format(
-                    section_summary=request.section_summary,
-                    rag_context=rag_context,
-                    context_qp=context_qp,
-                    scope_rule=self.prompts.SCOPE_RULE,
-                    subject_context=subject_context,
-                    language_instruction=language_instruction
-                )
-                await queue.put(("start", q_type, {"item": item}))
-                parser = QAStreamParser()
-                async for delta in self.client.stream_text(prompt):
-                    for kind, text in parser.feed(delta):
-                        await queue.put((kind, q_type, {"item": item, "text": text}))
-                for kind, text in parser.finish():
-                    await queue.put((kind, q_type, {"item": item, "text": text}))
-
-                if not parser.question or not parser.answer:
-                    await queue.put(("error", q_type, {"item": item, "error": "질문 또는 답변이 비어 있음"}))
-                else:
-                    await queue.put(("qa", q_type, {
-                        "item": item,
-                        "type": q_type,
-                        "question": parser.question,
-                        "answer": parser.answer,
-                    }))
-            except Exception as exc:
-                await queue.put(("error", q_type, {"item": item, "error": str(exc)}))
-            finally:
-                await queue.put(finished)
-
-        tasks = [asyncio.create_task(produce(item, q_type)) for item, q_type in enumerate(question_types)]
-        remaining = len(tasks)
-        try:
-            while remaining:
-                event = await queue.get()
-                if event is finished:
-                    remaining -= 1
-                    continue
-                yield event
-        finally:
-            # 받는 쪽이 중간에 끊으면 남은 생성을 멈춤
-            for task in tasks:
-                task.cancel()
+        items = [
+            (q_type, self.prompts.get_prompt(q_type).format(
+                section_summary=request.section_summary,
+                rag_context=rag_context,
+                context_qp=context_qp,
+                scope_rule=self.prompts.SCOPE_RULE,
+                subject_context=subject_context,
+                language_instruction=language_instruction
+            ))
+            for q_type in question_types
+        ]
+        # 받는 쪽이 중간에 끊으면 그래프 실행이 취소되어 남은 생성도 멈춤
+        async for event in self.graph.astream({"items": items}, stream_mode="custom"):
+            yield event
