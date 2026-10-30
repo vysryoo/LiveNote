@@ -1,10 +1,10 @@
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-interface DemoVideoModalProps {
+type DemoVideoModalProps = {
   isOpen: boolean;
   onClose: () => void;
-}
+};
 
 export function DemoVideoModal({ isOpen, onClose }: DemoVideoModalProps) {
   const { t } = useTranslation();
