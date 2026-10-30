@@ -17,7 +17,6 @@
     "clsx": "*",
     "i18next": "^26.4.2",
     "lucide-react": "^0.487.0",
-    "next-themes": "^0.4.6",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.55.0",
