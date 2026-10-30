@@ -40,9 +40,12 @@ class FakeLLM:
         self.handler = handler
         self.calls: List[Dict[str, Any]] = []
 
-    async def complete(self, purpose: ModelPurpose, messages, max_tokens=None, json_mode=False) -> str:
+    async def complete(self, purpose: ModelPurpose, messages, max_tokens=None) -> str:
         self.calls.append({"purpose": purpose.value, "messages": [list(m) for m in messages], "max_tokens": max_tokens})
         return self.handler(messages[-1][1])
+
+    async def complete_json(self, purpose: ModelPurpose, messages, schema, max_tokens=None):
+        return schema.model_validate_json(await self.complete(purpose, messages, max_tokens))
 
     def sorted_calls(self) -> List[Dict[str, Any]]:
         return sorted(self.calls, key=lambda call: json.dumps(call, ensure_ascii=False, sort_keys=True))
@@ -51,6 +54,7 @@ class FakeLLM:
 def install_llm(monkeypatch, handler: Handler) -> FakeLLM:
     fake = FakeLLM(handler)
     monkeypatch.setattr("core.llm.complete", fake.complete)
+    monkeypatch.setattr("core.llm.complete_json", fake.complete_json)
     return fake
 
 
@@ -93,7 +97,7 @@ class FakeOpenAlexApi:
 
 def paper_llm(prompt: str) -> str:
     if "search tokens for OpenAlex" in prompt:
-        return '```json\n{"tokens": ["stack", "queue"]}\n```'
+        return '{"tokens": ["stack", "queue"]}'
     if "Stack machines and LIFO" in prompt:
         return '{"score": 9, "reason": "LIFO 평가를 직접 다룸"}'
     if "Queueing theory" in prompt:
@@ -168,7 +172,7 @@ def wiki_llm(prompt: str) -> str:
     if "Document Title: 스택" in prompt:
         fail("검증 호출 실패")
     if "Document Title: 후입선출" in prompt:
-        return '```json\n{"score": 6.5, "reason": "배경 개념"}\n```'
+        return '{"score": 6.5, "reason": "배경 개념"}'
     raise AssertionError(prompt[:200])
 
 

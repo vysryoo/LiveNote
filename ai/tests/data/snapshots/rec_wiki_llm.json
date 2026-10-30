@@ -129,21 +129,6 @@
       "title": "후입선출",
       "type": "WIKI",
       "url": "https://ko.wikipedia.org/?curid=11"
-    },
-    {
-      "description": "스택은 LIFO 구조의 자료구조이다.",
-      "detail": {
-        "extract": "스택은 LIFO 구조의 자료구조이다.",
-        "lang": "en",
-        "page_id": 10,
-        "title": "스택",
-        "url": "https://ko.wikipedia.org/?curid=10"
-      },
-      "reason": "Scoring failed",
-      "score": 5.0,
-      "title": "스택",
-      "type": "WIKI",
-      "url": "https://ko.wikipedia.org/?curid=10"
     }
   ]
 }

@@ -87,7 +87,7 @@ async def test_complete_and_stream_use_purpose_model_and_log_usage(monkeypatch):
 
     monkeypatch.setattr(llm, "build_chat_model", fake_model)
     try:
-        assert await llm.complete(ModelPurpose.QUERY, [("user", "질문")], json_mode=True) == "응답 본문"
+        assert await llm.complete(ModelPurpose.QUERY, [("user", "질문")]) == "응답 본문"
         chunks = [c async for c in llm.stream(ModelPurpose.QA, [("system", "s"), ("user", "u")])]
     finally:
         timing_logger.removeHandler(collector)
@@ -96,6 +96,37 @@ async def test_complete_and_stream_use_purpose_model_and_log_usage(monkeypatch):
     logged = [r for r in collector.records if r["event"] == "llm"]
     assert [r["purpose"] for r in logged] == ["query", "qa"]
     assert all(r["elapsed_ms"] is not None for r in logged)
+
+
+async def test_complete_json_requests_schema_and_returns_model(clear_llm_env):
+    from pydantic import BaseModel
+
+    class Answer(BaseModel):
+        score: float
+        reason: str
+
+    model = llm.build_chat_model(ModelPurpose.VERIFY, max_tokens=50).with_structured_output(Answer, method="json_schema")
+    # langchain-openai는 스키마 클래스를 OpenAI SDK에 그대로 넘기고, 변환은 SDK가 함
+    assert model.first.kwargs["response_format"] is Answer
+
+    class FakeStructured:
+        async def ainvoke(self, messages):
+            assert messages == [("user", "질문")]
+            return Answer(score=7, reason="관련")
+
+    class FakeModel:
+        def with_structured_output(self, schema, method):
+            assert (schema, method) == (Answer, "json_schema")
+            return FakeStructured()
+
+    original = llm.build_chat_model
+    llm.build_chat_model = lambda purpose, max_tokens=None: FakeModel()
+    try:
+        result = await llm.complete_json(ModelPurpose.VERIFY, [("user", "질문")], Answer, max_tokens=50)
+    finally:
+        llm.build_chat_model = original
+
+    assert result == Answer(score=7.0, reason="관련")
 
 
 async def test_summary_chain_passes_braces_in_transcript_as_text(monkeypatch):

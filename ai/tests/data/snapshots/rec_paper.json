@@ -102,24 +102,6 @@
       "title": "Linked list queues",
       "type": "PAPER",
       "url": "https://doi.org/10.1/e"
-    },
-    {
-      "description": "An array stack.",
-      "detail": {
-        "abstract": "An array stack.",
-        "authors": [
-          "Park"
-        ],
-        "cited_by_count": 40,
-        "title": "Array based stack implementation",
-        "url": "https://doi.org/10.1/d",
-        "year": 2010
-      },
-      "reason": "검증 실패 (API 오류)",
-      "score": 5.0,
-      "title": "Array based stack implementation",
-      "type": "PAPER",
-      "url": "https://doi.org/10.1/d"
     }
   ]
 }

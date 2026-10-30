@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import asyncio
 import html
-import json
 import logging
 import re
 from typing import Any, Dict, List, Optional
@@ -24,7 +23,7 @@ from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
 
-from ..models import RecContext, Recommendation, Score, one_line
+from ..models import LLMScore, RecContext, Recommendation, Score, one_line
 from ..pipeline import Provider
 
 logger = logging.getLogger(__name__)
@@ -227,13 +226,8 @@ class BlogProvider(Provider[Dict[str, Any]]):
             url=candidate.get("link", ""),
             language=self.language,
         )
-        try:
-            content = await llm.complete(ModelPurpose.VERIFY, [("user", prompt)], max_tokens=MAX_TOKENS_SCORE, json_mode=True)
-            result = _parse_score_json(content)
-            return Score(float(result.get("score", 0.0)), result.get("reason", ""))
-        except Exception:
-            logger.exception("블로그 글 검증 실패")
-            return Score(0.0, "검증 실패")
+        result = await llm.complete_json(ModelPurpose.VERIFY, [("user", prompt)], LLMScore, max_tokens=MAX_TOKENS_SCORE)
+        return Score(result.score, result.reason)
 
     def heuristic_score(self, candidate: Dict[str, Any], context: RecContext, queries: List[str]) -> Score:
         title, snippet = candidate.get("title", "").lower(), candidate.get("snippet", "").lower()
@@ -288,14 +282,3 @@ def _rerank(results: List[Dict[str, Any]], keywords: List[str]) -> List[Dict[str
         return sum((2.0 if k in title else 0.0) + (1.0 if k in snippet else 0.0) for k in lowered)
 
     return sorted(results, key=match_score, reverse=True)
-
-
-def _parse_score_json(content: str) -> Dict[str, Any]:
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError:
-        score = re.search(r'"score"\s*:\s*([0-9.]+)', content)
-        reason = re.search(r'"reason"\s*:\s*"([^"]*)"', content)
-        if score and reason:
-            return {"score": float(score.group(1)), "reason": reason.group(1)}
-        raise

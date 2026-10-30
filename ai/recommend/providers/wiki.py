@@ -8,20 +8,19 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
-import re
 from textwrap import shorten
 from typing import Any, Dict, List, Optional, Sequence
 
 import httpx
+from pydantic import BaseModel
 
 from core import llm
 from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
 
-from ..models import RecContext, Recommendation, Score, one_line
+from ..models import LLMScore, RecContext, Recommendation, Score, one_line
 from ..pipeline import Provider
 
 logger = logging.getLogger(__name__)
@@ -80,6 +79,12 @@ Rate relevance (0-10):
 Output (JSON, one line):
 {{"score": <number>, "reason": "<1 sentence in {language}>"}}
 """
+
+
+class WikiKeywords(BaseModel):
+    """검색 키워드 응답 형식."""
+
+    keywords: List[str]
 
 
 def _semaphore() -> asyncio.Semaphore:
@@ -215,8 +220,8 @@ class WikiProvider(Provider[Dict[str, Any]]):
             rag_context=_rag_text(context),
         )
         try:
-            content = await llm.complete(ModelPurpose.QUERY, [("user", prompt)], max_tokens=MAX_TOKENS_QUERY, json_mode=True)
-            return json.loads(content).get("keywords", [])
+            result = await llm.complete_json(ModelPurpose.QUERY, [("user", prompt)], WikiKeywords, max_tokens=MAX_TOKENS_QUERY)
+            return result.keywords
         except Exception:
             logger.exception("위키 키워드 생성 실패")
             return context.summary.split()[:3]
@@ -262,18 +267,13 @@ class WikiProvider(Provider[Dict[str, Any]]):
         prompt = SCORE_PROMPT.format(
             lecture_summary=context.summary, title=candidate.get("title", ""), extract=extract, language=self.language
         )
-        try:
-            content = await llm.complete(
-                ModelPurpose.VERIFY,
-                [("system", "Return only valid JSON."), ("user", prompt)],
-                max_tokens=MAX_TOKENS_SCORE,
-                json_mode=True,
-            )
-            result = _parse_score_json(content)
-            return Score(float(result.get("score", 5.0)), result.get("reason", "LLM evaluation"))
-        except Exception:
-            logger.exception("위키 문서 검증 실패")
-            return Score(5.0, "Scoring failed")
+        result = await llm.complete_json(
+            ModelPurpose.VERIFY,
+            [("system", "Return only valid JSON."), ("user", prompt)],
+            LLMScore,
+            max_tokens=MAX_TOKENS_SCORE,
+        )
+        return Score(result.score, result.reason)
 
     def heuristic_score(self, candidate: Dict[str, Any], context: RecContext, queries: List[str]) -> Score:
         title = candidate.get("title", "").lower()
@@ -333,18 +333,3 @@ def _rerank(pages: List[Dict[str, Any]], keywords: List[str]) -> List[Dict[str, 
         return sum(2.0 if k in title else 0.5 if k in snippet else 0.0 for k in lowered)
 
     return sorted(pages, key=match_score, reverse=True)
-
-
-def _parse_score_json(text: str) -> Dict[str, Any]:
-    text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.MULTILINE)
-    text = re.sub(r"\s*```$", "", text, flags=re.MULTILINE)
-    text = text.replace("\n", " ").replace("\r", " ").strip()
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        score = re.search(r'"?score"?\s*:\s*(\d+(?:\.\d+)?)', text)
-        reason = re.search(r'"?reason"?\s*:\s*"([^"]*)"', text)
-        return {
-            "score": float(score.group(1)) if score else 5.0,
-            "reason": reason.group(1) if reason else "Parsing failed",
-        }

@@ -6,6 +6,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
+from pydantic import BaseModel
+
 from core.schemas import PreviousSummary, RAGChunk, ResourceType
 
 
@@ -33,6 +35,13 @@ class RecContext:
 @dataclass(frozen=True)
 class Score:
     """후보 하나의 관련도 점수와 이유."""
+
+    score: float
+    reason: str
+
+
+class LLMScore(BaseModel):
+    """LLM 검증 응답 형식."""
 
     score: float
     reason: str

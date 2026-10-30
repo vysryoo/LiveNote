@@ -14,13 +14,14 @@ import json
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, AsyncIterator, Dict, List, Optional, Sequence, Tuple
+from typing import Any, AsyncIterator, Dict, List, Optional, Sequence, Tuple, Type, TypeVar
 from uuid import UUID
 
 from langchain_core.callbacks import AsyncCallbackHandler
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import LLMResult
 from langchain_openai import ChatOpenAI
+from pydantic import BaseModel
 
 from core.config import Settings, get_settings
 from core.timing import logger as timing_logger
@@ -60,6 +61,7 @@ DEFAULT_REASONING_EFFORT = {
 
 # ("system" 또는 "user", 내용). LangChain 채팅 모델이 그대로 받음
 Message = Tuple[str, str]
+SchemaT = TypeVar("SchemaT", bound=BaseModel)
 
 
 def model_settings(purpose: ModelPurpose, settings: Optional[Settings] = None) -> ModelSettings:
@@ -161,7 +163,6 @@ async def complete(
     purpose: ModelPurpose,
     messages: Sequence[Message],
     max_tokens: Optional[int] = None,
-    json_mode: bool = False,
 ) -> str:
     """응답 전체를 한 번에 받는다.
 
@@ -169,16 +170,36 @@ async def complete(
         purpose: 호출 용도
         messages: ('system' 또는 'user', 내용) 목록
         max_tokens: 최대 출력 토큰
-        json_mode: True면 JSON 객체만 응답하도록 요청
     Returns:
         응답 본문 (앞뒤 공백 제거)
     Raises:
         openai.APIError: OpenAI 호출 실패 (재시도 후)
     """
-    model = build_chat_model(purpose, max_tokens)
-    runnable = model.bind(response_format={"type": "json_object"}) if json_mode else model
-    result: AIMessage = await runnable.ainvoke(list(messages))
+    result: AIMessage = await build_chat_model(purpose, max_tokens).ainvoke(list(messages))
     return str(result.content or "").strip()
+
+
+async def complete_json(
+    purpose: ModelPurpose,
+    messages: Sequence[Message],
+    schema: Type[SchemaT],
+    max_tokens: Optional[int] = None,
+) -> SchemaT:
+    """스키마에 맞는 JSON 응답을 받아 모델 객체로 돌려준다 (OpenAI 구조화 출력).
+
+    Args:
+        purpose: 호출 용도
+        messages: ('system' 또는 'user', 내용) 목록
+        schema: 응답 형식 Pydantic 모델
+        max_tokens: 최대 출력 토큰
+    Returns:
+        schema 객체
+    Raises:
+        openai.APIError: OpenAI 호출 실패 (재시도 후)
+        pydantic.ValidationError, langchain_core.exceptions.OutputParserException: 응답이 스키마에 맞지 않는 경우
+    """
+    model = build_chat_model(purpose, max_tokens).with_structured_output(schema, method="json_schema")
+    return await model.ainvoke(list(messages))
 
 
 async def stream(

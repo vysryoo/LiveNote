@@ -6,19 +6,19 @@
 """
 from __future__ import annotations
 
-import json
 import logging
 import re
 from typing import Any, Dict, List, Optional
 
 import httpx
+from pydantic import BaseModel
 
 from core import llm
 from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
 
-from ..models import RecContext, Recommendation, Score
+from ..models import LLMScore, RecContext, Recommendation, Score
 from ..pipeline import Provider
 
 logger = logging.getLogger(__name__)
@@ -77,6 +77,12 @@ Scoring (strict criteria):
 Return JSON (reason: one sentence, no line breaks, in {language}):
 {{"score": <number>, "reason": "clear one-sentence evaluation"}}
 """
+
+
+class PaperQuery(BaseModel):
+    """검색 토큰 응답 형식."""
+
+    tokens: List[str]
 
 
 class OpenAlexClient:
@@ -169,13 +175,11 @@ class PaperProvider(Provider[Dict[str, Any]]):
         rag_text = "\n".join(f"[{rc.score:.2f}] {rc.text[:100]}..." for rc in context.rag_chunks[:3]) or "(없음)"
         prompt = QUERY_PROMPT.format(section_summary=context.summary, previous_summaries=prev_text, rag_context=rag_text)
         try:
-            content = await llm.complete(ModelPurpose.QUERY, [("user", prompt)], max_tokens=MAX_TOKENS_QUERY)
-            return json.loads(_strip_code_fence(content)).get("tokens", [])
-        except json.JSONDecodeError:
-            return context.summary.split()[:3]
+            query = await llm.complete_json(ModelPurpose.QUERY, [("user", prompt)], PaperQuery, max_tokens=MAX_TOKENS_QUERY)
         except Exception:
             logger.exception("논문 검색어 생성 실패")
             return []
+        return query.tokens
 
     async def find_candidates(self, queries: List[str], context: RecContext, search_round: Optional[str]) -> List[Dict[str, Any]]:
         query = {"tokens": queries, "year_from": self.year_from}
@@ -192,14 +196,8 @@ class PaperProvider(Provider[Dict[str, Any]]):
             cited_by_count=candidate.get("cited_by_count", 0),
             language=self.language,
         )
-        try:
-            content = await llm.complete(ModelPurpose.VERIFY, [("user", prompt)], max_tokens=MAX_TOKENS_SCORE)
-            result = json.loads(_strip_code_fence(content))
-            return Score(float(result.get("score", 5.0)), result.get("reason", "검증 완료"))
-        except json.JSONDecodeError:
-            return Score(5.0, "검증 실패 (JSON 파싱 오류)")
-        except Exception:
-            return Score(5.0, "검증 실패 (API 오류)")
+        result = await llm.complete_json(ModelPurpose.VERIFY, [("user", prompt)], LLMScore, max_tokens=MAX_TOKENS_SCORE)
+        return Score(result.score, result.reason)
 
     def heuristic_score(self, candidate: Dict[str, Any], context: RecContext, queries: List[str]) -> Score:
         title = candidate.get("title", "").lower()
@@ -280,14 +278,6 @@ def _rerank(papers: List[Dict[str, Any]], tokens: List[str]) -> List[Dict[str, A
         return sum((3 if t in title else 0) + (1 if t in abstract else 0) for t in lowered)
 
     return sorted(papers, key=lambda p: (match_score(p), p.get("relevance_score", 0)), reverse=True)
-
-
-def _strip_code_fence(content: str) -> str:
-    if "```" in content:
-        content = content.split("```")[1]
-        if content.startswith("json"):
-            content = content[4:]
-    return content
 
 
 def _clean(text: str) -> str:

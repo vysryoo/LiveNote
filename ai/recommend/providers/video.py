@@ -9,13 +9,13 @@ YouTube 영상 추천
 from __future__ import annotations
 
 import asyncio
-import json
 import math
 import re
 from dataclasses import dataclass, replace
 from typing import Any, Dict, List, Optional
 
 import httpx
+from pydantic import BaseModel
 from rapidfuzz import fuzz
 
 from core import llm
@@ -23,7 +23,7 @@ from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
 
-from ..models import RecContext, Recommendation, Score, one_line
+from ..models import LLMScore, RecContext, Recommendation, Score, one_line
 from ..pipeline import Provider
 
 QUERY_MIN = 1
@@ -97,6 +97,19 @@ Return JSON (reason in {language}, one sentence, no line breaks):
   "reason": "명확한 한 문장 평가"
 }}
 """.strip()
+
+
+class VideoQueries(BaseModel):
+    """검색어 응답 형식."""
+
+    queries: List[str]
+    rationale: str
+
+
+class VideoSummary(BaseModel):
+    """영상 내용 요약 응답 형식."""
+
+    extract: str
 
 
 @dataclass(frozen=True)
@@ -245,8 +258,8 @@ class VideoProvider(Provider[VideoCandidate]):
             previous_summaries=[s.model_dump() for s in context.previous_summaries],
             rag_context=[c.model_dump() for c in context.rag_chunks],
         )
-        payload = await _complete_json(ModelPurpose.QUERY, prompt, MAX_TOKENS_QUERY)
-        queries = list(dict.fromkeys(q.strip() for q in payload.get("queries", []) if q.strip()))[:QUERY_MAX]
+        result = await llm.complete_json(ModelPurpose.QUERY, [("user", prompt)], VideoQueries, max_tokens=MAX_TOKENS_QUERY)
+        queries = list(dict.fromkeys(q.strip() for q in result.queries if q.strip()))[:QUERY_MAX]
         return queries or [context.summary[:60]]
 
     async def find_candidates(self, queries: List[str], context: RecContext, search_round: Optional[str]) -> List[VideoCandidate]:
@@ -267,15 +280,13 @@ class VideoProvider(Provider[VideoCandidate]):
         detail = candidate.detail
         if detail is None:
             title, description, channel = candidate.item.title, candidate.item.description, "Unknown"
-            fallback = description[:300]
         else:
             title, description, channel = detail.title, detail.description or "", detail.channel_title
-            fallback = (detail.description or detail.title)[:300]
         if len(description) > MAX_DESCRIPTION_LENGTH:
             description = description[:MAX_DESCRIPTION_LENGTH] + "..."
         prompt = SUMMARY_PROMPT.format(title=title, description=description, channel=channel, language=self.language)
-        payload = await _complete_json(ModelPurpose.VERIFY, prompt, MAX_TOKENS_SUMMARY)
-        return replace(candidate, extract=payload.get("extract", fallback))
+        result = await llm.complete_json(ModelPurpose.VERIFY, [("user", prompt)], VideoSummary, max_tokens=MAX_TOKENS_SUMMARY)
+        return replace(candidate, extract=result.extract)
 
     def uses_llm(self, candidate: VideoCandidate) -> bool:
         return self.verify and candidate.detail is not None
@@ -284,8 +295,8 @@ class VideoProvider(Provider[VideoCandidate]):
         prompt = SCORE_PROMPT.format(
             lecture_summary=context.summary, title=candidate.detail.title, extract=candidate.extract, language=self.language
         )
-        payload = await _complete_json(ModelPurpose.VERIFY, prompt, MAX_TOKENS_SCORE)
-        return Score(round(float(payload.get("score", 5.0) or 5.0), 2), payload.get("reason", "LLM verification"))
+        result = await llm.complete_json(ModelPurpose.VERIFY, [("user", prompt)], LLMScore, max_tokens=MAX_TOKENS_SCORE)
+        return Score(round(result.score, 2), result.reason)
 
     def heuristic_score(self, candidate: VideoCandidate, context: RecContext, queries: List[str]) -> Score:
         detail = candidate.detail
@@ -346,7 +357,3 @@ def heuristic_score(*, title: str, query: str, view_count: int, publish_time: st
 
 def _best_heuristic(title: str, view_count: int, publish_time: str, queries: List[str]) -> float:
     return max(heuristic_score(title=title, query=q, view_count=view_count, publish_time=publish_time) for q in queries)
-
-
-async def _complete_json(purpose: ModelPurpose, prompt: str, max_tokens: int) -> Dict[str, Any]:
-    return json.loads(await llm.complete(purpose, [("user", prompt)], max_tokens=max_tokens, json_mode=True))
