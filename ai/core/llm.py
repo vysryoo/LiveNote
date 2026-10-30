@@ -52,12 +52,7 @@ class ModelSettings:
 
 
 # QA는 질문 표시 중앙값이 none 1670ms, low 3345ms(eval/results/L_none.md, L_low.md)라 추론을 끔
-DEFAULT_REASONING_EFFORT = {
-    ModelPurpose.SUMMARY: "none",
-    ModelPurpose.QA: "none",
-    ModelPurpose.QUERY: "none",
-    ModelPurpose.VERIFY: "none",
-}
+DEFAULT_REASONING_EFFORT = "none"
 
 # ("system" 또는 "user", 내용). LangChain 채팅 모델이 그대로 받음
 Message = Tuple[str, str]
@@ -74,8 +69,15 @@ def model_settings(purpose: ModelPurpose, settings: Optional[Settings] = None) -
         모델 설정. 추론 모델이 아니면 reasoning_effort는 None
     """
     settings = settings or get_settings()
-    model = getattr(settings, f"llm_{purpose.value}_model") or settings.llm_model or DEFAULT_MODEL
-    effort = getattr(settings, f"llm_{purpose.value}_reasoning_effort") or DEFAULT_REASONING_EFFORT[purpose]
+    overrides = {
+        ModelPurpose.SUMMARY: (settings.llm_summary_model, settings.llm_summary_reasoning_effort),
+        ModelPurpose.QA: (settings.llm_qa_model, settings.llm_qa_reasoning_effort),
+        ModelPurpose.QUERY: (settings.llm_query_model, settings.llm_query_reasoning_effort),
+        ModelPurpose.VERIFY: (settings.llm_verify_model, settings.llm_verify_reasoning_effort),
+    }
+    purpose_model, purpose_effort = overrides[purpose]
+    model = purpose_model or settings.llm_model or DEFAULT_MODEL
+    effort = purpose_effort or DEFAULT_REASONING_EFFORT
     if not model.startswith(REASONING_MODEL_PREFIXES):
         effort = None
     return ModelSettings(model=model, reasoning_effort=effort)
