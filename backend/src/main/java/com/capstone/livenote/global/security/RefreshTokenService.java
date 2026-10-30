@@ -1,5 +1,6 @@
 package com.capstone.livenote.global.security;
 
+import com.capstone.livenote.global.redis.RedisKeys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -93,7 +94,7 @@ public class RefreshTokenService {
     }
 
     private static String key(String token) {
-        return "livenote:refresh:" + sha256(token);
+        return RedisKeys.refreshToken(sha256(token));
     }
 
     private static String sha256(String value) {

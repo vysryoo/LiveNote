@@ -7,6 +7,7 @@ import com.capstone.livenote.domain.resource.entity.Resource;
 import com.capstone.livenote.domain.resource.repository.ResourceRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.capstone.livenote.global.redis.RedisKeys;
 import com.capstone.livenote.global.redis.RedisLock;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,8 +39,7 @@ public class ResourceCallbackService {
      * @throws IllegalStateException 잠금을 얻지 못한 경우
      */
     public void handleResourceCallback(ResourceCallbackDto dto) {
-        String lockKey = "livenote:lock:lecture:" + dto.getLectureId() + ":section:" + dto.getSectionIndex() + ":resource";
-        redisLock.run(lockKey, () -> transactionTemplate.executeWithoutResult(status -> saveCards(dto)));
+        redisLock.run(RedisKeys.resourceLock(dto.getLectureId(), dto.getSectionIndex()), () -> transactionTemplate.executeWithoutResult(status -> saveCards(dto)));
     }
 
     private void saveCards(ResourceCallbackDto dto) {

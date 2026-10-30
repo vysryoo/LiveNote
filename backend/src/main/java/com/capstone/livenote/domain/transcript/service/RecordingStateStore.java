@@ -1,5 +1,6 @@
 package com.capstone.livenote.domain.transcript.service;
 
+import com.capstone.livenote.global.redis.RedisKeys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -71,7 +72,7 @@ public class RecordingStateStore {
      * @return 섹션 상태. 저장된 적이 없거나 만료됐으면 비어 있음
      */
     public Optional<SectionState> findSection(Long lectureId) {
-        Map<Object, Object> fields = redis.opsForHash().entries(sectionKey(lectureId));
+        Map<Object, Object> fields = redis.opsForHash().entries(RedisKeys.sectionState(lectureId));
         if (fields.isEmpty()) {
             return Optional.empty();
         }
@@ -90,7 +91,7 @@ public class RecordingStateStore {
      * @param state 저장할 섹션 상태
      */
     public void saveSection(Long lectureId, SectionState state) {
-        String key = sectionKey(lectureId);
+        String key = RedisKeys.sectionState(lectureId);
         redis.opsForHash().putAll(key, Map.of(
                 "index", String.valueOf(state.index()),
                 "startSec", String.valueOf(state.startSec()),
@@ -107,7 +108,7 @@ public class RecordingStateStore {
      * @return 시각 보정값. 저장된 적이 없거나 만료됐으면 비어 있음
      */
     public Optional<TimeOffset> findOffset(Long lectureId) {
-        Map<Object, Object> fields = redis.opsForHash().entries(offsetKey(lectureId));
+        Map<Object, Object> fields = redis.opsForHash().entries(RedisKeys.timeOffset(lectureId));
         if (fields.isEmpty()) {
             return Optional.empty();
         }
@@ -121,19 +122,11 @@ public class RecordingStateStore {
      * @param offset 저장할 시각 보정값
      */
     public void saveOffset(Long lectureId, TimeOffset offset) {
-        String key = offsetKey(lectureId);
+        String key = RedisKeys.timeOffset(lectureId);
         redis.opsForHash().putAll(key, Map.of(
                 "base", String.valueOf(offset.base()),
                 "lastRawStart", String.valueOf(offset.lastRawStart())));
         redis.expire(key, TTL);
-    }
-
-    private static String sectionKey(Long lectureId) {
-        return "livenote:lecture:" + lectureId + ":section";
-    }
-
-    private static String offsetKey(Long lectureId) {
-        return "livenote:lecture:" + lectureId + ":offset";
     }
 
     private static int intOf(Map<Object, Object> fields, String name) {

@@ -6,6 +6,7 @@ import com.capstone.livenote.domain.transcript.dto.TranscriptResponseDto;
 import com.capstone.livenote.domain.transcript.entity.Transcript;
 import com.capstone.livenote.domain.transcript.repository.TranscriptRepository;
 import com.capstone.livenote.domain.transcript.service.RecordingStateStore.TimeOffset;
+import com.capstone.livenote.global.redis.RedisKeys;
 import com.capstone.livenote.global.redis.RedisLock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +49,7 @@ public class TranscriptService {
      * 다른 전사가 끼어들면 섹션 번호가 어긋나기 때문이다.
      */
     public TranscriptResponseDto saveFromStt(Long lectureId, int startSec, int endSec, String text) {
-        return redisLock.call("livenote:lock:lecture:" + lectureId + ":transcript",
+        return redisLock.call(RedisKeys.transcriptLock(lectureId),
                 () -> saveLocked(lectureId, startSec, endSec, text));
     }
 

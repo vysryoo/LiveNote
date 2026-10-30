@@ -6,6 +6,7 @@ import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.qna.dto.QnaResponseDto;
 import com.capstone.livenote.domain.qna.entity.Qna;
 import com.capstone.livenote.domain.qna.repository.QnaRepository;
+import com.capstone.livenote.global.redis.RedisKeys;
 import com.capstone.livenote.global.redis.RedisLock;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -185,7 +186,7 @@ public class QnaStreamService {
         }
 
         private Qna saveCard(Card card, String question, String answer) {
-            return redisLock.call(lockKey(payload.getLectureId(), payload.getSectionIndex()),
+            return redisLock.call(RedisKeys.qnaLock(payload.getLectureId(), payload.getSectionIndex()),
                     () -> transactionTemplate.execute(status -> {
                         // 같은 질문·답변이 이미 있으면 새로 저장하지 않고 기존 카드를 완료 데이터로 사용
                         List<Qna> existing = qnaRepository.findByLectureIdAndSectionIndexOrderByIdAsc(
@@ -220,8 +221,8 @@ public class QnaStreamService {
 
     // 저장된 카드와 생성 중인 카드의 번호를 모두 피해 다음 번호를 정함
     private int reserveCardIndex(Long lectureId, Integer sectionIndex) {
-        String reservationKey = "livenote:lecture:" + lectureId + ":section:" + sectionIndex + ":qna:next-card";
-        return redisLock.call(lockKey(lectureId, sectionIndex), () -> {
+        String reservationKey = RedisKeys.qnaNextCard(lectureId, sectionIndex);
+        return redisLock.call(RedisKeys.qnaLock(lectureId, sectionIndex), () -> {
             List<Qna> existing = qnaRepository.findByLectureIdAndSectionIndexOrderByIdAsc(lectureId, sectionIndex);
             String reserved = redis.opsForValue().get(reservationKey);
             int next = Math.max(CardIds.nextIndex(existing.stream().map(Qna::getCardId).toList()),
@@ -229,10 +230,6 @@ public class QnaStreamService {
             redis.opsForValue().set(reservationKey, String.valueOf(next + 1), RESERVATION_TTL);
             return next;
         });
-    }
-
-    private static String lockKey(Long lectureId, Integer sectionIndex) {
-        return "livenote:lock:lecture:" + lectureId + ":section:" + sectionIndex + ":qna";
     }
 
     private JsonNode parse(String json) {
