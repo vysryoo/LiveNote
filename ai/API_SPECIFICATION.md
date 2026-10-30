@@ -536,14 +536,14 @@ POST /rec/recommend
 | yt_exclude | array[string] | 아니오 | 추천에서 제외할 유튜브 영상 제목 목록 |
 | wiki_exclude | array[string] | 아니오 | 추천에서 제외할 위키피디아 문서 제목 목록 |
 | paper_exclude | array[string] | 아니오 | 추천에서 제외할 논문 ID(OpenAlex ID) 목록 |
-| google_exclude | array[string] | 아니오 | 추천에서 제외할 구글 검색 결과 URL 목록 |
-| resource_types | array[enum] | 아니오 | 실행할 Provider 필터. 미지정 시 모든 Provider(OpenAlex/Wiki/YouTube/Google) 실행. Enum: `PAPER`(OpenAlex), `WIKI`(Wikipedia), `VIDEO`(YouTube), `BLOG`(Google) |
+| google_exclude | array[string] | 아니오 | 추천에서 제외할 블로그 URL 목록 (필드 이름은 기존 호환을 위해 유지) |
+| resource_types | array[enum] | 아니오 | 실행할 Provider 필터. 미지정 시 모든 Provider(OpenAlex/Wiki/YouTube/네이버 블로그) 실행. Enum: `PAPER`(OpenAlex), `WIKI`(Wikipedia), `VIDEO`(YouTube), `BLOG`(네이버 블로그) |
 
 **exclude 적용 규칙 (resource_types 지정 시)**  
 - `PAPER` → OpenAlex 호출 시 `paper_exclude`를 `exclude_ids`로 전달 (OpenAlex 모듈이 ID/URL/DOI 포함 여부로 제외 처리)  
 - `WIKI` → Wikipedia 호출 시 `wiki_exclude`를 `exclude_titles`로 전달  
 - `VIDEO` → YouTube 호출 시 `yt_exclude`를 `exclude_titles`로 전달  
-- `BLOG` → Google 호출 시 `google_exclude`를 `exclude_urls`로 전달  
+- `BLOG` → 네이버 블로그 검색 호출 시 `google_exclude`를 `exclude_urls`로 전달 (필드 이름은 기존 호환을 위해 유지)  
 그 외 exclude 배열은 무시. 콜백 직전 추가 필터링은 없습니다.
 
 ### 동작 방식
@@ -551,7 +551,7 @@ POST /rec/recommend
 1. 클라이언트가 `/rec/recommend`로 추천 요청을 보냅니다.
 2. 서버는 내부 RAG에서 컨텍스트 청크를 검색합니다.
 3. RAG 검색에 성공하면 HTTP `202 Accepted`와 함께 `collection_id`를 응답하고,  
-   이후 백그라운드에서 4개 Provider(OpenAlex, Wiki, YouTube, Google)를 비동기로 호출합니다.
+   이후 백그라운드에서 추천 그래프가 4개 Provider(OpenAlex, Wiki, YouTube, 네이버 블로그)를 동시에 실행합니다.
 4. 각 Provider의 추천 결과는 준비되는 대로 `callback_url`로 별도 `POST` 요청으로 전달됩니다.
 
 ### 즉시 응답 형식 (`202 Accepted`)
@@ -662,15 +662,10 @@ POST {callback_url}
  - 4개 Provider가 모두 실패한 경우에도 콜백이 0개 또는 `resources: []` 형태로 도착할 수 있습니다
  - exclude 배열에 너무 많은 항목이 있으면 추천 결과가 적어질 수 있습니다
  - `resource_types`에 존재하지 않는 Enum 값이 들어오면 HTTP 422
- - OpenAlex는 요청 단계에서만 `exclude_ids`(ID/URL/DOI 부분 매칭)로 제외합니다. Wiki/YouTube/Google은 요청 단계에서만 제외를 적용합니다.
+ - OpenAlex는 요청 단계에서만 `exclude_ids`(ID/URL/DOI 부분 매칭)로 제외합니다. Wiki/YouTube/블로그는 요청 단계에서만 제외를 적용합니다.
 
 ### 참고
-- 4개 Provider(OpenAlex, Wiki, YouTube, Google)는 병렬로 실행되며 콜백 도착 순서는 보장되지 않습니다
-- 각 Provider의 상세 동작은 다음 문서를 참조하세요:
-  - OpenAlex: `documents/REC_OPENALEX_동작과정.md`
-  - YouTube: `documents/REC_YOUTUBE_동작과정.md`
-  - Google: `documents/REC_GOOGLE_동작과정.md`
-  - Wikipedia: `documents/REC_WIKI_동작과정.md`
+- 4개 Provider(OpenAlex, Wiki, YouTube, 네이버 블로그)는 동시에 실행되며 콜백 도착 순서는 보장되지 않습니다
 - Provider별 `top_k`, `verify`, `min_score` 등은 `server/config.py`에서 조정 가능
 - RAG 검색에 사용되는 청크 수는 `RAGSettings.rec_retrieve_top_k`로 조정 (기본: 3개)
 

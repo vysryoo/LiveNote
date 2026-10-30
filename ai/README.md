@@ -26,31 +26,34 @@
 
 LiveNote AI 게이트웨이는 다음과 같은 기능을 제공합니다.
 
-- **RAG(Retrieval-Augmented Generation)** 기반의 문서 저장 및 검색
-- **OpenAI**를 활용한 다중 질문 유형의 **QA 생성**
-- **OpenAlex / Wikipedia / YouTube / Google**를 통합한 **자료 추천(REC)**
+- **RAG** 기반 강의 자료·섹션 요약 저장 및 검색 (LangChain Chroma, OpenAI 임베딩)
+- 질문 유형별 **QA 생성**과 SSE 스트리밍
+- **OpenAlex / Wikipedia / YouTube / 네이버 블로그**를 통합한 **자료 추천(REC)**
 - **섹션별 요약 생성**
-- 모든 생성 결과는 **콜백 방식**으로 비동기 전송
+- 요약·추천 결과는 **콜백 방식**으로 비동기 전송
 
 ---
 
 ## 2. 아키텍처 개요
 
 ```
-클라이언트(Spring / curl / Postman)
-           │
-           ▼
+백엔드(Spring)
+     │  X-Internal-Api-Key
+     ▼
 FastAPI (server/)
- ├─ RAG 라우터 → rag (OpenAI Embedding + ChromaDB)
- ├─ QA 라우터  → qa (OpenAI Chat Completion)
- ├─ REC 라우터 → openalex / wiki / youtube / blog
- └─ Summary 라우터 → OpenAI Chat Completion
+ ├─ RAG 라우터     → rag (분할: page | recursive | semantic, Chroma 저장)
+ ├─ QA 라우터      → 강의 자료·이전 요약 검색 → qa 그래프 (질문 유형별 동시 생성, SSE)
+ ├─ REC 라우터     → 강의 자료·이전 요약 검색 → 추천 그래프 (openalex / wiki / youtube / blog 동시 실행, 종류별 콜백)
+ └─ Summary 라우터 → 요약 체인 (프롬프트 | 모델 | 문자열) → 콜백
 ```
 
-- **server/**: FastAPI 앱, 라우터, 설정, 유틸리티
-- **\*_module**: 각각의 기능을 담당하는 독립 모듈
-- **ChromaDB**: `RAG_PERSIST_DIR` 경로에 벡터 데이터 저장
-- **외부 API**: OpenAI, OpenAlex, Wikipedia, YouTube Data API, 네이버 블로그 검색
+- **LLM 호출**: 모든 모듈이 `core/llm.py`(LangChain `ChatOpenAI`)를 거침. 용도별 모델·추론 강도는 환경변수로 지정하고, 호출마다 토큰 사용량을 JSON 로그로 남김
+- **그래프**: QnA(`qa/qakit/graph.py`)와 추천(`server/rec_graph.py`)은 LangGraph `Send`로 항목을 동시에 실행. 한 항목이 실패해도 나머지는 계속 진행
+- **강의 자료 분할**: 기본 `semantic`(이웃 문장 임베딩 거리가 크게 벌어지는 곳에서 자르고 문장 1개를 겹침). `RAG_CHUNK_STRATEGY`로 변경
+- **검색**: 강의 자료 조각과 이전 섹션 요약을 따로 검색해 합침. 직전 3개 섹션 요약은 백엔드가 직접 보내므로 검색에서 제외
+- **QnA 출제 범위**: 강의 자료에는 아직 설명하지 않은 내용도 있어, 현재 섹션에서 말한 내용만 근거로 출제하도록 제한
+- **백그라운드 작업**: `core/tasks.py`가 콜백 작업의 참조를 보관하고, 서버 종료 시 최대 30초 기다림
+- **시간 기록**: `core/timing.py`가 요청별 단계 경과 시간(ms)을 JSON 로그로 남김
 
 ---
 
@@ -58,18 +61,21 @@ FastAPI (server/)
 
 | 경로 | 설명 |
 |------|------|
-| `qa/` | QA 생성 모듈 |
-| `rag/` | RAG 저장/검색 모듈 (Chroma + Embedding) |
-| `openalex/` | 논문 추천 모듈 |
-| `wiki/` | 위키 추천 모듈 |
-| `youtube/` | 유튜브 추천 모듈 |
-| `blog/` | 블로그 추천 모듈 (네이버 블로그 검색 사용) |
-| `server/` | FastAPI 서버 구성 |
-| `tests/` | 단위/통합 테스트 |
-| `setup.sh` | 환경 구축 자동 스크립트 |
+| `server/` | FastAPI 앱, 라우터, 설정, 추천 그래프 |
+| `core/` | 공통 LLM 계층, 공통 모델, 백그라운드 작업, 시간 기록 |
+| `rag/` | 강의 자료 분할·저장·검색 |
+| `qa/` | QnA 프롬프트와 생성 그래프 |
+| `openalex/` | 논문 추천 |
+| `wiki/` | 위키백과 추천 |
+| `youtube/` | 유튜브 추천 |
+| `blog/` | 블로그 추천 (네이버 블로그 검색) |
+| `eval/` | 정확도(Precision@k)·응답 시간·전사 오류율 측정 도구와 보고서(`eval/results/`) |
+| `tests/` | 단위·통합 테스트 (외부 API 호출 없음) |
+| `setup.sh` | 환경 구축 스크립트 (`uv sync`, `.env` 준비) |
 | `pyproject.toml` | 의존성 목록 (런타임, `dev` 그룹: 테스트·평가) |
 | `uv.lock` | 간접 의존성까지 고정한 잠금 파일 |
 | `.env.example` / `.env` | 환경 변수 템플릿 및 실제 설정 |
+| `API_SPECIFICATION.md` | API 상세 명세 |
 
 ---
 
@@ -314,7 +320,7 @@ POST /rec/recommend
 | yt_exclude | array[string] | 아니오 | 제외할 유튜브 영상 제목 |
 | wiki_exclude | array[string] | 아니오 | 제외할 위키 문서 제목 |
 | paper_exclude | array[string] | 아니오 | 제외할 논문 ID |
-| google_exclude | array[string] | 아니오 | 제외할 구글 검색 URL |
+| google_exclude | array[string] | 아니오 | 제외할 블로그 URL (필드 이름은 기존 호환을 위해 유지) |
 
 #### 즉시 응답 (`202 Accepted`)
 
@@ -346,7 +352,7 @@ POST /rec/recommend
 }
 ```
 
-**위키/유튜브/구글 콜백:**
+**위키/유튜브/블로그 콜백:**
 ```json
 {
   "lectureId": 1,
@@ -370,7 +376,7 @@ POST /rec/recommend
 
 #### 주의 사항
 
-- 4개 Provider(OpenAlex, Wiki, YouTube, Google)는 병렬 실행
+- 4개 Provider(OpenAlex, Wiki, YouTube, 네이버 블로그)는 추천 그래프에서 동시 실행
 - 콜백 도착 순서는 보장되지 않음
 - `resource_types`에 잘못된 Enum 값이 들어오면 HTTP 422
 
@@ -469,7 +475,17 @@ POST /summary/generate
 uv run pytest
 ```
 
-실제 API를 쓰는 정확도·응답 시간 측정은 `eval/`의 스크립트로 한다.
+실제 API를 쓰는 측정은 `eval/`의 스크립트로 한다. 비용이 들며, 결과 보고서는 `eval/results/`에 저장된다.
+
+| 스크립트 | 측정 |
+|------|------|
+| `eval.prepare_data` / `eval.collect_sections` | 평가 데이터 준비(PDF·TTS 녹음), 실제 서비스 경로로 전사·섹션·요약 수집 |
+| `eval.run_retrieval` | 강의 자료 검색 Precision@4 (분할 방식별) |
+| `eval.run_cards` | QnA·추천 자료 Precision@4 (AI 서버를 띄운 상태에서 실행) |
+| `eval.run_latency` | QnA 스트리밍 응답 시간 |
+| `eval.transcription_cer` | 전사 모델별 글자 오류율 |
+
+채점은 `gpt-6.1-terra`가 이진 판정(관련/무관)으로 하며, 데이터는 dev(조정용)와 test(최종 측정용)로 나눠 쓴다.
 
 ---
 
@@ -486,8 +502,7 @@ uv run pytest
 
 - QA·REC 검색 대상 컬렉션이 없으면 오류 대신 빈 검색 결과로 처리하고 섹션 요약만으로 생성함. 컬렉션은 첫 확정 요약을 업서트할 때 생김
 
-- `.env` 적용이 되지 않은 상태에서 서버 기동 → 기본 경로 사용
-- 해결: `source .venv/bin/activate`로 `.env` 적용 후 서버 실행
+- 서버는 시작할 때 `ai/.env`를 읽고 같은 이름의 셸 환경변수를 덮어씀. 저장 경로(`RAG_PERSIST_DIR`) 등을 바꾸려면 `.env` 값을 고쳐야 함
 
 ---
 
@@ -497,7 +512,7 @@ uv run pytest
 
 - **RAG**: 기존 데이터를 참고해 답변을 생성하는 방식
 - **콜백**: 서버에서 클라이언트로 결과를 비동기 전송하는 방식
-- **Provider**: 추천 자료를 제공하는 외부 서비스 (OpenAlex, Wiki, YouTube, Google)
+- **Provider**: 추천 자료를 제공하는 외부 서비스 (OpenAlex, Wiki, YouTube, 네이버 블로그)
 
 ---
 
