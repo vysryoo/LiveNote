@@ -15,6 +15,7 @@ from core.llm import ModelPurpose
 from core.schemas import PreviousSummary, RAGChunk, ResourceType
 from recommend.models import RecContext
 from recommend.pipeline import recommend
+from recommend.providers.paper import Paper
 from tests.snapshots import assert_snapshot
 
 pytestmark = pytest.mark.anyio("asyncio")
@@ -91,9 +92,9 @@ class FakeOpenAlexApi:
     def __init__(self) -> None:
         self.calls: List[Dict[str, Any]] = []
 
-    async def search_papers(self, query, exclude_ids=None, sort_by="relevance"):
-        self.calls.append({"query": query, "exclude_ids": exclude_ids, "sort_by": sort_by})
-        return [dict(paper) for paper in PAPERS]
+    async def search_papers(self, tokens, year_from, exclude_ids=None, sort_by="relevance"):
+        self.calls.append({"tokens": tokens, "year_from": year_from, "exclude_ids": exclude_ids, "sort_by": sort_by})
+        return [Paper(**paper) for paper in PAPERS]
 
 
 def paper_llm(prompt: str) -> str:

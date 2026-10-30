@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import re
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -87,6 +88,21 @@ class PaperQuery(BaseModel):
     tokens: List[str]
 
 
+@dataclass(frozen=True)
+class Paper:
+    """OpenAlex 검색 결과 논문."""
+
+    id: str
+    title: str
+    abstract: str
+    year: Optional[int]
+    cited_by_count: int
+    # DOI 주소. DOI가 없으면 OpenAlex ID 주소
+    url: str
+    authors: List[str]
+    relevance_score: float
+
+
 class OpenAlexClient:
     """OpenAlex works 검색 클라이언트."""
 
@@ -105,19 +121,22 @@ class OpenAlexClient:
             transport=transport,
         )
 
-    async def search_papers(self, query: Dict[str, Any], exclude_ids: Optional[List[str]] = None, sort_by: str = "relevance") -> List[Dict]:
+    async def search_papers(
+        self, tokens: List[str], year_from: int, exclude_ids: Optional[List[str]] = None, sort_by: str = "relevance"
+    ) -> List[Paper]:
         """논문을 검색한다.
 
         Args:
-            query: {"tokens", "year_from"}
+            tokens: 검색 토큰
+            year_from: 검색 최소 연도
             exclude_ids: 제외할 논문 ID·URL 일부 문자열
             sort_by: relevance(연관성순), cited_by_count(인용순), hybrid(연관성 상위 60% 안에서 인용순)
         Returns:
             논문 목록. 초록이 없고 인용 100회 미만인 논문은 뺌. 실패하면 빈 목록
         """
-        search = " ".join(query.get("tokens", []))
+        search = " ".join(tokens)
         filters = [
-            f"from_publication_date:{query['year_from']}-01-01",
+            f"from_publication_date:{year_from}-01-01",
             "language:en",
             "is_paratext:false",
             "type:article",
@@ -143,14 +162,14 @@ class OpenAlexClient:
             paper = _parse_work(work)
             if paper is None:
                 continue
-            ids = f"{paper['id']} {paper['url']}".lower()
+            ids = f"{paper.id} {paper.url}".lower()
             if any(token in ids for token in exclude_tokens):
                 continue
             papers.append(paper)
 
         if sort_by == "hybrid" and papers:
-            threshold = max(p["relevance_score"] for p in papers) * 0.6
-            relevant = sorted((p for p in papers if p["relevance_score"] >= threshold), key=lambda p: p["cited_by_count"], reverse=True)
+            threshold = max(p.relevance_score for p in papers) * 0.6
+            relevant = sorted((p for p in papers if p.relevance_score >= threshold), key=lambda p: p.cited_by_count, reverse=True)
             papers = relevant[:PER_PAGE]
         logger.info("OpenAlex 검색: %r → %d개", search, len(papers))
         return papers
@@ -160,7 +179,7 @@ class OpenAlexClient:
         await self.http_client.aclose()
 
 
-class PaperProvider(Provider[Dict[str, Any]]):
+class PaperProvider(Provider[Paper]):
     """OpenAlex 논문 추천."""
 
     resource_type = ResourceType.PAPER
@@ -183,41 +202,42 @@ class PaperProvider(Provider[Dict[str, Any]]):
             return []
         return query.tokens
 
-    async def find_candidates(self, queries: List[str], context: RecContext, search_round: Optional[str]) -> List[Dict[str, Any]]:
-        query = {"tokens": queries, "year_from": self.year_from}
-        papers = await self.api.search_papers(query=query, exclude_ids=context.excluded(self.resource_type), sort_by=self.sort_by)
+    async def find_candidates(self, queries: List[str], context: RecContext, search_round: Optional[str]) -> List[Paper]:
+        papers = await self.api.search_papers(
+            tokens=queries, year_from=self.year_from, exclude_ids=context.excluded(self.resource_type), sort_by=self.sort_by
+        )
         return _rerank(_deduplicate(papers), queries)[:CARD_LIMIT]
 
-    async def llm_score(self, candidate: Dict[str, Any], context: RecContext, queries: List[str]) -> Score:
+    async def llm_score(self, candidate: Paper, context: RecContext, queries: List[str]) -> Score:
         prompt = SCORE_PROMPT.format(
             section_summary=to_prompt_line(context.summary),
             keywords=", ".join(queries),
-            title=to_prompt_line(candidate.get("title", "")),
-            abstract=to_prompt_line(candidate.get("abstract", ""))[:ABSTRACT_MAX_LENGTH],
-            year=candidate.get("year", "N/A"),
-            cited_by_count=candidate.get("cited_by_count", 0),
+            title=to_prompt_line(candidate.title),
+            abstract=to_prompt_line(candidate.abstract)[:ABSTRACT_MAX_LENGTH],
+            year=candidate.year,
+            cited_by_count=candidate.cited_by_count,
             language=self.language,
         )
         result = await llm.complete_json(ModelPurpose.VERIFY, [("user", prompt)], LLMScore, max_tokens=MAX_TOKENS_SCORE)
         return Score(result.score, result.reason)
 
-    def heuristic_score(self, candidate: Dict[str, Any], context: RecContext, queries: List[str]) -> Score:
-        title = candidate.get("title", "").lower()
-        abstract = candidate.get("abstract", "").lower()
+    def heuristic_score(self, candidate: Paper, context: RecContext, queries: List[str]) -> Score:
+        title = candidate.title.lower()
+        abstract = candidate.abstract.lower()
         score = 5.0
         for token in (q.lower() for q in queries):
             score += (0.5 if token in title else 0.0) + (0.2 if token in abstract else 0.0)
-        score += min(candidate.get("relevance_score", 0) / 10, 2.0)
+        score += min(candidate.relevance_score / 10, 2.0)
         return Score(min(score, 10.0), "Heuristic")
 
-    def to_recommendation(self, candidate: Dict[str, Any], score: Score) -> Recommendation:
+    def to_recommendation(self, candidate: Paper, score: Score) -> Recommendation:
         detail = {
-            "url": candidate.get("url", ""),
-            "title": candidate.get("title", ""),
-            "abstract": candidate.get("abstract", "")[:ABSTRACT_MAX_LENGTH],
-            "year": candidate.get("year"),
-            "cited_by_count": candidate.get("cited_by_count", 0),
-            "authors": candidate.get("authors", []),
+            "url": candidate.url,
+            "title": candidate.title,
+            "abstract": candidate.abstract[:ABSTRACT_MAX_LENGTH],
+            "year": candidate.year,
+            "cited_by_count": candidate.cited_by_count,
+            "authors": candidate.authors,
         }
         return Recommendation(
             type=self.resource_type,
@@ -233,24 +253,23 @@ class PaperProvider(Provider[Dict[str, Any]]):
         await self.api.close()
 
 
-def _parse_work(work: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def _parse_work(work: Dict[str, Any]) -> Optional[Paper]:
+    # 초록이 없으면 인용이 많은 논문만 남김
     abstract = _abstract_text(work.get("abstract_inverted_index"))
     cited_by_count = work.get("cited_by_count", 0)
-    no_abstract = len(abstract.strip()) < 50
-    if no_abstract and cited_by_count < 100:
+    if len(abstract.strip()) < 50 and cited_by_count < 100:
         return None
     paper_id = work.get("id", "")
-    return {
-        "id": paper_id,
-        "title": work.get("title", ""),
-        "abstract": abstract,
-        "year": work.get("publication_year"),
-        "cited_by_count": cited_by_count,
-        "url": work.get("doi") or paper_id,
-        "authors": [a["author"]["display_name"] for a in work.get("authorships", [])[:5] if a.get("author", {}).get("display_name")],
-        "no_abstract": no_abstract,
-        "relevance_score": work.get("relevance_score", 0.0),
-    }
+    return Paper(
+        id=paper_id,
+        title=work.get("title", ""),
+        abstract=abstract,
+        year=work.get("publication_year"),
+        cited_by_count=cited_by_count,
+        url=work.get("doi") or paper_id,
+        authors=[a["author"]["display_name"] for a in work.get("authorships", [])[:5] if a.get("author", {}).get("display_name")],
+        relevance_score=work.get("relevance_score", 0.0),
+    )
 
 
 def _abstract_text(inverted_index: Optional[Dict[str, List[int]]]) -> str:
@@ -261,22 +280,22 @@ def _abstract_text(inverted_index: Optional[Dict[str, List[int]]]) -> str:
     return " ".join(word for _, word in positions)[:ABSTRACT_MAX_LENGTH]
 
 
-def _deduplicate(papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _deduplicate(papers: List[Paper]) -> List[Paper]:
     seen, unique = set(), []
     for paper in papers:
-        url = paper.get("url", "")
-        key = url if url.startswith("http") else re.sub(r"[^\w\s]", "", paper.get("title", "").lower()).strip()
+        url = paper.url
+        key = url if url.startswith("http") else re.sub(r"[^\w\s]", "", paper.title.lower()).strip()
         if key and key not in seen:
             seen.add(key)
             unique.append(paper)
     return unique
 
 
-def _rerank(papers: List[Dict[str, Any]], tokens: List[str]) -> List[Dict[str, Any]]:
+def _rerank(papers: List[Paper], tokens: List[str]) -> List[Paper]:
     lowered = [t.lower() for t in tokens]
 
-    def match_score(paper: Dict[str, Any]) -> int:
-        title, abstract = paper.get("title", "").lower(), paper.get("abstract", "").lower()
+    def match_score(paper: Paper) -> int:
+        title, abstract = paper.title.lower(), paper.abstract.lower()
         return sum((3 if t in title else 0) + (1 if t in abstract else 0) for t in lowered)
 
-    return sorted(papers, key=lambda p: (match_score(p), p.get("relevance_score", 0)), reverse=True)
+    return sorted(papers, key=lambda p: (match_score(p), p.relevance_score), reverse=True)
