@@ -14,7 +14,7 @@ from pydantic import Field
 from core.config import Settings
 from core.schemas import QnAType
 from core.timing import RequestTimer
-from qa.models import PreviousQA, QARequest
+from qa.models import PreviousQA, QAEvent, QARequest
 from rag.service import build_collection_id
 
 from ..dependencies import Services, get_app_settings, get_services
@@ -73,41 +73,49 @@ async def generate_qa(
     )
     timer.mark("retrieved", chunks=len(rag_chunks))
 
-    requested_types = request.question_types if request.question_types is not None else settings.qa.question_types
-    question_types: List[QnAType] = list(requested_types)[: settings.qa.max_question_types]
-    if not question_types:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="생성할 질문 유형이 설정되지 않았습니다."
-        )
-
     qa_request = QARequest(
         section_summary=request.section_summary,
-        question_types=question_types,
+        question_types=_select_question_types(request.question_types, settings),
         subject=request.subject,
         language=settings.qa.language,
         rag_chunks=rag_chunks,
         previous_qa=[PreviousQA(type=item.type, question=item.question, answer=item.answer) for item in request.previous_qa],
     )
 
-    async def events() -> AsyncIterator[str]:
-        async for event in services.qa.stream_questions(qa_request):
-            item = event.data["item"]
-            if event.name == "start":
-                timer.mark("item_start", item=item, type=event.data["type"])
-            elif event.name == "question":
-                timer.mark("item_question", item=item)
-            elif event.name == "answer":
-                timer.mark_once("item_first_answer", key=item, item=item)
-            elif event.name == "done":
-                timer.mark("item_done", item=item, answer_chars=len(event.data["answer"]))
-            elif event.name == "error":
-                timer.mark("item_error", item=item)
-                logger.warning("QA 생성 실패: item=%s error=%s", item, event.data["message"])
-            yield _sse(event.name, event.data)
-        timer.mark("completed")
+    return StreamingResponse(_stream_sse(services, qa_request, timer), media_type="text/event-stream")
 
-    return StreamingResponse(events(), media_type="text/event-stream")
+
+def _select_question_types(requested: Optional[List[QnAType]], settings: Settings) -> List[QnAType]:
+    """요청한 질문 유형(없으면 설정값)을 최대 개수까지 고른다. 남는 유형이 없으면 400으로 거절한다."""
+    question_types = list(requested if requested is not None else settings.qa.question_types)[: settings.qa.max_question_types]
+    if not question_types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="생성할 질문 유형이 설정되지 않았습니다."
+        )
+    return question_types
+
+
+async def _stream_sse(services: Services, qa_request: QARequest, timer: RequestTimer) -> AsyncIterator[str]:
+    async for event in services.qa.stream_questions(qa_request):
+        _mark_event(timer, event)
+        yield _sse(event.name, event.data)
+    timer.mark("completed")
+
+
+def _mark_event(timer: RequestTimer, event: QAEvent) -> None:
+    item = event.data["item"]
+    if event.name == "start":
+        timer.mark("item_start", item=item, type=event.data["type"])
+    elif event.name == "question":
+        timer.mark("item_question", item=item)
+    elif event.name == "answer":
+        timer.mark_once("item_first_answer", key=item, item=item)
+    elif event.name == "done":
+        timer.mark("item_done", item=item, answer_chars=len(event.data["answer"]))
+    elif event.name == "error":
+        timer.mark("item_error", item=item)
+        logger.warning("QA 생성 실패: item=%s error=%s", item, event.data["message"])
 
 
 def _sse(event: str, data: dict) -> str:
