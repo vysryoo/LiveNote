@@ -14,7 +14,6 @@ export default defineConfig({
     tailwindcss(),
   ],
   resolve: {
-    extensions: [".js", ".jsx", ".ts", ".tsx", ".json"],
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
@@ -29,19 +28,12 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
-    // proxy 설정
     proxy: {
       "/api": {
         target: "http://localhost:8080",
         changeOrigin: true,
         secure: false,
       },
-      "/ws": {
-        target: "ws://localhost:8080",
-        ws: true,
-        changeOrigin: true,
-      },
     },
-    // proxy 설정
   },
 });
