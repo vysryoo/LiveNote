@@ -44,5 +44,5 @@ dev = [
 package = false
 
 [tool.pytest.ini_options]
-anyio_backend = "asyncio"
 testpaths = ["tests"]
+pythonpath = ["."]

@@ -1,17 +1,11 @@
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
-
-ROOT_DIR = Path(__file__).resolve().parents[1]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.append(str(ROOT_DIR))
 
 from core.config import Settings, get_settings
 from core.schemas import QnAType, RAGChunk, ResourceType
@@ -114,8 +108,11 @@ class TestContext:
 
 
 @pytest.fixture
-def test_context() -> TestContext:
+def test_context(tmp_path) -> TestContext:
     ctx = TestContext()
+    # 업로드·벡터 저장을 실제 ai/server_storage 대신 임시 폴더에 둠
+    ctx.settings.rag_upload_dir = tmp_path / "uploads"
+    ctx.settings.rag_persist_dir = tmp_path / "chroma"
     # 기본 설정 조정
     ctx.settings.rag.collection_prefix = "test"
     ctx.settings.rag.qa_retrieve_top_k = 2
