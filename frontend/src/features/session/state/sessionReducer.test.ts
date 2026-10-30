@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   initialSessionState,
+  selectStreamingCards,
   sessionReducer,
   type SessionAction,
   type SessionState,
@@ -108,6 +109,24 @@ describe("STREAMS_FAILED", () => {
     ]);
     expect(state.streamingCards).toEqual({});
     expect(state.liveTranscripts[0]).toEqual({ lines: ["문장"], pending: null });
+  });
+});
+
+describe("selectStreamingCards", () => {
+  it("선택한 섹션의 카드만 종류별로 나눔", () => {
+    const state = reduce([
+      token("qna_7_1_2", "a"),
+      token("res_7_1_3", "b", { kind: "resource" }),
+      token("qna_7_2_2", "c", { sectionIndex: 2 }),
+    ]);
+    const cards = selectStreamingCards(state, 1);
+    expect(cards.qna.map((card) => card.cardId)).toEqual(["qna_7_1_2"]);
+    expect(cards.resource.map((card) => card.cardId)).toEqual(["res_7_1_3"]);
+  });
+
+  it("섹션을 선택하지 않았으면 빈 목록", () => {
+    const state = reduce([token("qna_7_1_2", "a")]);
+    expect(selectStreamingCards(state, null)).toEqual({ qna: [], resource: [] });
   });
 });
 

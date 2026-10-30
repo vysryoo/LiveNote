@@ -101,3 +101,23 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       return { ...state, streamingCards: {} };
   }
 }
+
+/**
+ * 한 섹션의 생성 중인 카드를 종류별로 나눠 반환한다. 화면 순서는 `orderCards`가 정한다.
+ *
+ * @param state 현재 상태
+ * @param sectionIndex 섹션 번호. `null`이면 빈 목록
+ * @returns 종류별 생성 중인 카드
+ */
+export function selectStreamingCards(
+  state: SessionState,
+  sectionIndex: number | null,
+): Record<StreamingCard["kind"], StreamingCard[]> {
+  const cards = Object.values(state.streamingCards).filter(
+    (card) => card.sectionIndex === sectionIndex,
+  );
+  return {
+    qna: cards.filter((card) => card.kind === "qna"),
+    resource: cards.filter((card) => card.kind === "resource"),
+  };
+}

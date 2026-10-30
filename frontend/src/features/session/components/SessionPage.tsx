@@ -11,7 +11,7 @@ import { useExtendedCards } from "../hooks/useExtendedCards";
 import { useCurrentSection, useSessionDetail } from "../hooks/useSessionDetail";
 import { useSessionStream } from "../realtime/useSessionStream";
 import { buildSectionViews } from "../sectionViews";
-import { initialSessionState, sessionReducer } from "../state/sessionReducer";
+import { initialSessionState, selectStreamingCards, sessionReducer } from "../state/sessionReducer";
 import { EndSessionDialog } from "./EndSessionDialog";
 import { LecturePane } from "./LecturePane";
 import { RecordingControl } from "./RecordingControl";
@@ -154,9 +154,7 @@ function SessionView({ lectureId }: { lectureId: number }) {
     else navigate("/lectures");
   };
 
-  const streamingCards = Object.values(liveState.streamingCards)
-    .filter((card) => card.sectionIndex === selectedSection)
-    .sort((a, b) => a.cardIndex - b.cardIndex);
+  const streamingCards = selectStreamingCards(liveState, selectedSection);
 
   const hasRecordingData =
     recording.isRecording ||
@@ -202,8 +200,8 @@ function SessionView({ lectureId }: { lectureId: number }) {
             key={selectedSection}
             resources={(detail?.resources ?? []).filter((r) => r.sectionIndex === selectedSection)}
             qna={(detail?.qna ?? []).filter((q) => q.sectionIndex === selectedSection)}
-            streamingResources={streamingCards.filter((card) => card.kind === "resource")}
-            streamingQna={streamingCards.filter((card) => card.kind === "qna")}
+            streamingResources={streamingCards.resource}
+            streamingQna={streamingCards.qna}
             isGenerating={extendedCards.pendingSectionIndex === selectedSection}
             showBookmarkedOnly={showBookmarkedOnly}
             autoMode={autoMode}
