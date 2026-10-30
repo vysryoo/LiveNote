@@ -9,8 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 
+// 카드 번호는 생성이 시작될 때 서버가 정하므로, 프론트엔드가 함께 보내는 cardIndex는 받지 않음
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -23,34 +23,30 @@ public class AiController {
     // QnA 스트리밍
     @Operation(summary = "QnA 확장 카드 스트리밍 시작")
     @PostMapping("/start-qna-stream")
-    public ApiResponse<Map<String, Object>> startQnaStream(
+    public ApiResponse<Void> startQnaStream(
             @AuthenticationPrincipal Long userId,
             @RequestParam Long lectureId,
             @RequestParam Integer sectionIndex,
-            @RequestParam Integer cardIndex,
             @RequestParam String qnaType
     ) {
         // 다른 사용자의 강의로 AI 생성을 요청하지 못하도록 소유자를 확인. 아니면 404
         lectureService.getOwned(lectureId, userId);
         cardRequestService.requestExtraQna(lectureId, sectionIndex, qnaType);
-        String cardId = "qna_" + lectureId + "_" + sectionIndex + "_" + cardIndex;
-        return ApiResponse.ok(Map.of("success", true, "cardId", cardId, "type", "qna"));
+        return ApiResponse.ok();
     }
 
     // Resource 스트리밍
     @Operation(summary = "Resource 확장 카드 스트리밍 시작")
     @PostMapping("/start-resources-stream")
-    public ApiResponse<Map<String, Object>> startResourceStream(
+    public ApiResponse<Void> startResourceStream(
             @AuthenticationPrincipal Long userId,
             @RequestParam Long lectureId,
             @RequestParam Integer sectionIndex,
-            @RequestParam Integer cardIndex,
             @RequestParam String resourceType
     ) {
         // 다른 사용자의 강의로 AI 생성을 요청하지 못하도록 소유자를 확인. 아니면 404
         lectureService.getOwned(lectureId, userId);
         cardRequestService.requestExtraResource(lectureId, sectionIndex, resourceType);
-        String cardId = "res_" + lectureId + "_" + sectionIndex + "_" + cardIndex;
-        return ApiResponse.ok(Map.of("success", true, "cardId", cardId, "type", "resource_stream"));
+        return ApiResponse.ok();
     }
 }
