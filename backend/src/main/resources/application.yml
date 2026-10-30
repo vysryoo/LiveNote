@@ -38,9 +38,6 @@ app:
       key: ${OPENAI_API_KEY}
     realtime:
       transcription-model: ${APP_OPENAI_REALTIME_TRANSCRIPTION_MODEL:gpt-4o-transcribe}
-    summary:
-      model: gpt-4o-mini
-      max-tokens: 500
 
   jwt:
     secret: ${APP_JWT_SECRET}
