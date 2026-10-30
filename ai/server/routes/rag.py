@@ -12,10 +12,10 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from pydantic import BaseModel, Field
 
 from core.config import Settings
-from rag.service import SummaryItem
+from rag.service import SummaryItem, build_collection_id
 
 from ..dependencies import Services, get_app_settings, get_services
-from ..models import NonBlankStr, build_collection_id
+from ..models import NonBlankStr
 
 router = APIRouter(prefix="/rag", tags=["RAG"])
 

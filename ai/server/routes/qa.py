@@ -3,7 +3,6 @@ QA 생성 API (SSE 스트리밍)
 """
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 from typing import AsyncIterator, List, Optional
@@ -16,9 +15,11 @@ from core.config import Settings
 from core.schemas import QnAType
 from core.timing import RequestTimer
 from qa.models import PreviousQA, QARequest
+from rag.service import build_collection_id
 
 from ..dependencies import Services, get_app_settings, get_services
-from ..models import CamelModel, NonBlankStr, build_collection_id
+from ..models import CamelModel, NonBlankStr
+from ..retrieval import retrieve_section_context
 
 router = APIRouter(prefix="/qa", tags=["QA"])
 logger = logging.getLogger(__name__)
@@ -67,24 +68,9 @@ async def generate_qa(
     timer = RequestTimer("qa", lecture_id=request.lecture_id, section_index=request.section_index)
     timer.mark("received")
     collection_id = build_collection_id(settings.rag.collection_prefix, str(request.lecture_id))
-
-    def _retrieve():
-        return services.rag.retrieve_context(
-            collection_id=collection_id,
-            query=request.section_summary,
-            section_index=request.section_index,
-            pdf_top_k=settings.rag.qa_retrieve_top_k,
-            summary_top_k=settings.rag.summary_retrieve_top_k,
-            recent_window=settings.rag.recent_summary_window,
-        )
-
-    try:
-        rag_chunks = await asyncio.to_thread(_retrieve)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"RAG 검색 실패: {exc}"
-        ) from exc
+    rag_chunks = await retrieve_section_context(
+        services, settings, collection_id, request.section_index, request.section_summary, settings.rag.qa_retrieve_top_k
+    )
     timer.mark("retrieved", chunks=len(rag_chunks))
 
     requested_types = request.question_types if request.question_types is not None else settings.qa.question_types
