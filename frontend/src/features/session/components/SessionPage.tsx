@@ -4,9 +4,8 @@ import { Navigate, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { useLogout } from "@/features/auth/hooks/useLogout";
 import { useEndLecture } from "@/features/lectures/hooks/useLectureMutations";
-import type { Bookmark } from "../api/schemas";
 import { RecordingError, useAudioRecording } from "../audio/useAudioRecording";
-import { useBookmarkToggle } from "../hooks/useBookmarks";
+import { useBookmarks } from "../hooks/useBookmarks";
 import { useElapsedSeconds } from "../hooks/useElapsedSeconds";
 import { useExtendedCards } from "../hooks/useExtendedCards";
 import { useCurrentSection, useSessionDetail } from "../hooks/useSessionDetail";
@@ -73,9 +72,8 @@ function SessionView({ lectureId }: { lectureId: number }) {
   const detail = detailQuery.data;
   const transcripts = detail?.transcripts ?? [];
   const summaries = detail?.summaries ?? [];
-  const bookmarks = detail?.bookmarks ?? [];
   const extendedCards = useExtendedCards(lectureId);
-  const toggleBookmark = useBookmarkToggle(lectureId, bookmarks);
+  const bookmarks = useBookmarks(lectureId, detail?.bookmarks ?? []);
 
   // 오토 모드에서는 확정 요약이 있는 가장 최근 섹션을 자동으로 선택
   const finalSectionIndexes = summaries
@@ -156,8 +154,6 @@ function SessionView({ lectureId }: { lectureId: number }) {
     else navigate("/lectures");
   };
 
-  const isBookmarked = (targetType: Bookmark["targetType"], targetId: number) =>
-    bookmarks.some((b) => b.targetType === targetType && b.targetId === targetId);
   const streamingCards = Object.values(liveState.streamingCards)
     .filter((card) => card.sectionIndex === selectedSection)
     .sort((a, b) => a.cardIndex - b.cardIndex);
@@ -211,8 +207,8 @@ function SessionView({ lectureId }: { lectureId: number }) {
             isGenerating={extendedCards.pendingSectionIndex === selectedSection}
             showBookmarkedOnly={showBookmarkedOnly}
             autoMode={autoMode}
-            isBookmarked={isBookmarked}
-            onToggleBookmark={toggleBookmark}
+            isBookmarked={bookmarks.isBookmarked}
+            onToggleBookmark={bookmarks.toggle}
             onClose={closeSplit}
             onToggleBookmarkedOnly={() => setShowBookmarkedOnly((value) => !value)}
             onToggleAutoMode={() => setAutoMode((value) => !value)}

@@ -11,13 +11,13 @@ type BookmarkTarget = {
 };
 
 /**
- * 북마크 추가·해제 함수를 반환한다. 결과는 강의 상세 캐시의 북마크 목록에 반영한다.
+ * 북마크 여부 판별 함수와 추가·해제 함수를 반환한다. 추가·해제 결과는 강의 상세 캐시의 북마크 목록에 반영한다.
  *
  * @param lectureId 강의 ID
  * @param bookmarks 현재 북마크 목록
- * @returns 대상의 북마크 여부를 바꾸는 함수
+ * @returns `isBookmarked`(대상이 북마크됐는지)와 `toggle`(대상의 북마크 여부를 바꿈)
  */
-export function useBookmarkToggle(lectureId: number, bookmarks: Bookmark[]) {
+export function useBookmarks(lectureId: number, bookmarks: Bookmark[]) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
 
@@ -45,5 +45,9 @@ export function useBookmarkToggle(lectureId: number, bookmarks: Bookmark[]) {
     onError: () => toast.error(t("session.bookmarkFailed")),
   });
 
-  return (target: BookmarkTarget) => mutation.mutate(target);
+  return {
+    isBookmarked: (targetType: Bookmark["targetType"], targetId: number) =>
+      bookmarks.some((b) => b.targetType === targetType && b.targetId === targetId),
+    toggle: (target: BookmarkTarget) => mutation.mutate(target),
+  };
 }
