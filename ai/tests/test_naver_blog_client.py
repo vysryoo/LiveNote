@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from core.config import BlogSettings
-from recommend.providers.blog import BlogProvider, NaverBlogClient
+from recommend.providers.blog import BlogPost, BlogProvider, NaverBlogClient
 
 pytestmark = pytest.mark.anyio("asyncio")
 
@@ -35,12 +35,12 @@ async def test_search_sends_credentials_and_normalizes_items():
     assert request.headers["X-NCP-APIGW-API-KEY"] == "secret"
     assert request.url.params["query"] == "스택 큐"
     assert request.url.params["display"] == "5"
-    assert results == [{
-        "title": "스택과 큐 정리 & 예제",
-        "link": "https://blog.naver.com/a/1",
-        "snippet": "스택은 LIFO 구조입니다.",
-        "displayLink": "개발노트",
-    }]
+    assert results == [BlogPost(
+        title="스택과 큐 정리 & 예제",
+        url="https://blog.naver.com/a/1",
+        snippet="스택은 LIFO 구조입니다.",
+        blogger="개발노트",
+    )]
 
 
 @pytest.mark.anyio("asyncio")
@@ -64,20 +64,22 @@ def test_missing_credentials_are_rejected():
 
 
 async def test_search_shortening_drops_last_word_until_results():
+    found = BlogPost(title="결과", url="https://blog.naver.com/a/1", snippet="", blogger="a")
+
     class StubClient:
         def __init__(self):
             self.queries = []
 
         async def search(self, query, num):
             self.queries.append(query)
-            return [{"title": "결과"}] if query == "벅 컨버터" else []
+            return [found] if query == "벅 컨버터" else []
 
     api = StubClient()
     provider = BlogProvider(BlogSettings(top_k=1, verify=True, min_score=3.0, language="ko", search_lang="ko"), api=api)
 
     results = await provider.search_shortening("벅 컨버터 전압초평형 듀티비")
 
-    assert results == [{"title": "결과"}]
+    assert results == [found]
     assert api.queries == ["벅 컨버터 전압초평형 듀티비", "벅 컨버터 전압초평형", "벅 컨버터"]
 
 
@@ -96,5 +98,5 @@ async def test_search_retries_after_429(monkeypatch):
 
     results = await _client(handler).search("스택")
 
-    assert [r["title"] for r in results] == ["글"]
+    assert [r.title for r in results] == ["글"]
     assert statuses == []

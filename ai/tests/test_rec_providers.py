@@ -15,6 +15,7 @@ from core.llm import ModelPurpose
 from core.schemas import PreviousSummary, RAGChunk, ResourceType
 from recommend.models import RecContext
 from recommend.pipeline import recommend
+from recommend.providers.blog import BlogPost
 from recommend.providers.paper import Paper
 from recommend.providers.wiki import WikiPage, WikiSearchHit
 from tests.snapshots import assert_snapshot
@@ -288,11 +289,11 @@ async def test_video_provider(monkeypatch):
 # 블로그
 
 BLOG_RESULTS = [
-    {"title": "스택과 큐 차이 정리", "link": "https://blog.naver.com/a/1", "snippet": "스택 큐 차이를 예제로", "displayLink": "a"},
-    {"title": "스택과 큐 차이 정리 (복사)", "link": "https://www.blog.naver.com/a/1", "snippet": "중복 글", "displayLink": "a"},
-    {"title": "자료구조 일기", "link": "https://blog.naver.com/b/2", "snippet": "오늘 공부함", "displayLink": "b"},
-    {"title": "이미 본 글", "link": "https://blog.naver.com/c/3", "snippet": "스택", "displayLink": "c"},
-    {"title": "큐 구현하기", "link": "https://blog.naver.com/d/4", "snippet": "큐 구현", "displayLink": "d"},
+    BlogPost(title="스택과 큐 차이 정리", url="https://blog.naver.com/a/1", snippet="스택 큐 차이를 예제로", blogger="a"),
+    BlogPost(title="스택과 큐 차이 정리 (복사)", url="https://www.blog.naver.com/a/1", snippet="중복 글", blogger="a"),
+    BlogPost(title="자료구조 일기", url="https://blog.naver.com/b/2", snippet="오늘 공부함", blogger="b"),
+    BlogPost(title="이미 본 글", url="https://blog.naver.com/c/3", snippet="스택", blogger="c"),
+    BlogPost(title="큐 구현하기", url="https://blog.naver.com/d/4", snippet="큐 구현", blogger="d"),
 ]
 
 
@@ -302,7 +303,7 @@ class FakeNaverApi:
 
     async def search(self, query, num=10):
         self.calls.append([query, num])
-        return [dict(result) for result in BLOG_RESULTS] if query == "스택 큐 차이" else []
+        return list(BLOG_RESULTS) if query == "스택 큐 차이" else []
 
 
 def blog_llm(prompt: str) -> str:
