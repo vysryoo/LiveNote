@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.stream.Collectors;
 
 /**
  * 강의의 생성, 조회, 종료, 삭제와 강의 상세 조회를 맡는다.
@@ -179,34 +178,32 @@ public class LectureService {
     @Transactional(readOnly = true)
     public SessionDetailResponse getSessionDetail(Long lectureId, Long userId) {
         Lecture lecture = getOwned(lectureId, userId);
-        
+
         var transcripts = transcriptRepository.findByLectureIdOrderByStartSecAsc(lectureId)
                 .stream()
                 .map(TranscriptResponseDto::from)
-                .collect(Collectors.toList());
-        
+                .toList();
+
         var summaries = summaryRepository.findByLectureIdOrderBySectionIndexAsc(lectureId)
                 .stream()
                 .map(SummaryResponseDto::from)
-                .collect(Collectors.toList());
-        
+                .toList();
+
         var resources = resourceRepository.findByLectureIdOrderBySectionIndexAscIdAsc(lectureId)
                 .stream()
                 .map(ResourceResponseDto::from)
-                .collect(Collectors.toList());
-        
+                .toList();
+
         var qnas = qnaRepository.findByLectureIdOrderBySectionIndexAscIdAsc(lectureId)
                 .stream()
                 .map(QnaResponseDto::from)
-                .collect(Collectors.toList());
+                .toList();
 
         var bookmarks = bookmarkRepository.findByUserIdAndLectureIdOrderBySectionIndexAscIdAsc(userId, lectureId)
                 .stream()
                 .map(BookmarkResponseDto::from)
-                .collect(Collectors.toList());
-
+                .toList();
 
         return SessionDetailResponse.from(lecture, transcripts, summaries, resources, qnas, bookmarks);
     }
-
 }

@@ -39,7 +39,8 @@ public class ResourceCallbackService {
      * @throws IllegalStateException 잠금을 얻지 못한 경우
      */
     public void handleResourceCallback(ResourceCallbackDto dto) {
-        redisLock.run(RedisKeys.resourceLock(dto.lectureId(), dto.sectionIndex()), () -> transactionTemplate.executeWithoutResult(status -> saveCards(dto)));
+        redisLock.run(RedisKeys.resourceLock(dto.lectureId(), dto.sectionIndex()),
+                () -> transactionTemplate.executeWithoutResult(status -> saveCards(dto)));
     }
 
     private void saveCards(ResourceCallbackDto dto) {

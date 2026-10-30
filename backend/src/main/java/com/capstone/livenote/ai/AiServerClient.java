@@ -22,7 +22,6 @@ import reactor.core.publisher.Flux;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * AI 서버(FastAPI)에 요약, 자료 추천, QnA 생성, RAG 업서트를 요청한다.
@@ -112,7 +111,7 @@ public class AiServerClient {
                     m.put("summary", s.summary());
                     return m;
                 })
-                .collect(Collectors.toList());
+                .toList();
         body.put("previous_summaries", prev);
 
         body.put("yt_exclude", payload.ytExclude());
