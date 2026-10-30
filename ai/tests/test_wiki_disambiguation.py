@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from wiki.wikikit.config.wiki_config import WikiConfig
 from wiki.wikikit.service import WikiService
 
 pytestmark = pytest.mark.anyio("asyncio")
@@ -16,7 +17,8 @@ class _FakeWikiApi:
 
 
 @pytest.mark.anyio("asyncio")
-async def test_disambiguation_pages_are_excluded():
+async def test_disambiguation_pages_are_excluded(monkeypatch):
+    monkeypatch.setattr(WikiConfig, "OPENAI_API_KEY", "sk-test")
     service = WikiService()
     service.api_client = _FakeWikiApi({
         1: {"title": "Stack", "extract": "Stack may refer to:", "pageid": 1, "disambiguation": True},
