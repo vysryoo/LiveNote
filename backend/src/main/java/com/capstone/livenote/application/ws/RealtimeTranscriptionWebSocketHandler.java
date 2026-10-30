@@ -61,7 +61,7 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
     private final ObjectMapper objectMapper;
     private final JwtTokenProvider jwtTokenProvider;
 
-    @Value("${OPENAI_API_KEY}")
+    @Value("${app.openai.api.key}")
     private String openAiApiKey;
 
     @Value("${app.openai.realtime.transcription-model:gpt-transcribe}")

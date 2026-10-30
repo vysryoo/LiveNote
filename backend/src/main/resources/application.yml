@@ -22,14 +22,6 @@ spring:
     multipart:
       max-file-size: 50MB      # 파일 하나당 최대 크기
       max-request-size: 50MB   # 요청 전체 최대 크기
-ai:
-  server:
-    url: ${AI_SERVER_URL}
-
-
-openai:
-  api:
-    key: ${OPENAI_API_KEY}
 app:
   openai:
     api:
@@ -44,11 +36,6 @@ app:
     refresh-expiration-days: ${APP_JWT_REFRESH_EXPIRATION_DAYS:14}
     # 갱신 토큰 쿠키에 Secure 속성을 붙일지 여부. HTTPS가 아닌 주소에서 쿠키가 저장되지 않으면 false로 설정
     refresh-cookie-secure: ${APP_JWT_REFRESH_COOKIE_SECURE:true}
-
-
-  logging:
-    level:
-      i.n.r.d.DnsServerAddressStreamProviders: WARN
 
   callback-base-url: ${APP_CALLBACK_BASE_URL:http://localhost:8080}
 

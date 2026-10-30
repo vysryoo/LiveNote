@@ -34,7 +34,6 @@ public class SwaggerConfig {
                         .description("LiveNote 백엔드 API 명세서")
                         .version("1.0.0"))
                 .servers(List.of(
-                        new Server().url("http://54.180.135.94:8080").description("AWS EC2 Server"),
                         new Server().url("http://localhost:8080").description("Local Development")
                 ))
                 .addSecurityItem(securityRequirement)

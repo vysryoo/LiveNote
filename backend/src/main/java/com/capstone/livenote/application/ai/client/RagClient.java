@@ -40,7 +40,7 @@ public class RagClient {
     private final ObjectMapper objectMapper;
     private final InternalApiKey internalApiKey;
 
-    @Value("${ai.server.url:${app.ai.base-url}}")
+    @Value("${app.ai.base-url}")
     private String baseUrl;
 
     @Value("${app.callback-base-url}")
