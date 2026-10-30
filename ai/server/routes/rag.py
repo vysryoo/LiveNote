@@ -58,21 +58,9 @@ async def upsert_pdf(
             detail="lecture_id는 비어 있을 수 없습니다."
         )
     
-    metadata_dict: Optional[dict[str, Any]] = None
-    if base_metadata:
-        try:
-            metadata_dict = json.loads(base_metadata)
-        except json.JSONDecodeError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"base_metadata JSON 파싱 실패: {exc}"
-            ) from exc
-    
-    upload_dir = settings.rag_upload_dir / lecture_id
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    safe_name = Path(file.filename or "uploaded.pdf").name
-    pdf_path = upload_dir / safe_name
-    
+    metadata = _parse_metadata(base_metadata)
+    pdf_path = _prepare_upload_path(settings, lecture_id, file.filename)
+
     content = await file.read()
     if not content:
         raise HTTPException(
@@ -82,15 +70,9 @@ async def upsert_pdf(
     pdf_path.write_bytes(content)
     
     collection_id = build_collection_id(settings.rag.collection_prefix, lecture_id)
-    
-    def _run():
-        return services.rag.upsert_pdf(
-            collection_id=collection_id,
-            pdf_path=str(pdf_path),
-            base_metadata=metadata_dict
-        )
-    
-    result = await asyncio.to_thread(_run)
+    result = await asyncio.to_thread(
+        services.rag.upsert_pdf, collection_id=collection_id, pdf_path=str(pdf_path), base_metadata=metadata
+    )
     return {"collection_id": collection_id, "result": result}
 
 
@@ -108,9 +90,25 @@ async def upsert_text(
         SummaryItem(text=item.text, id=item.id, section_id=item.section_id, metadata=dict(item.metadata))
         for item in request.items
     ]
-
-    def _run():
-        return services.rag.upsert_summaries(collection_id=collection_id, items=summaries)
-    
-    result = await asyncio.to_thread(_run)
+    result = await asyncio.to_thread(services.rag.upsert_summaries, collection_id=collection_id, items=summaries)
     return {"collection_id": collection_id, "result": result}
+
+
+def _parse_metadata(base_metadata: Optional[str]) -> Optional[dict[str, Any]]:
+    """PDF 메타데이터 JSON 문자열을 dict로 바꾼다. 없으면 None, 형식이 틀리면 400으로 거절한다."""
+    if not base_metadata:
+        return None
+    try:
+        return json.loads(base_metadata)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"base_metadata JSON 파싱 실패: {exc}"
+        ) from exc
+
+
+def _prepare_upload_path(settings: Settings, lecture_id: str, filename: Optional[str]) -> Path:
+    """강의별 업로드 폴더를 만들고 PDF를 저장할 경로를 돌려준다. 파일 이름의 경로 부분은 버린다."""
+    upload_dir = settings.rag_upload_dir / lecture_id
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    return upload_dir / Path(filename or "uploaded.pdf").name
