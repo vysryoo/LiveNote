@@ -40,8 +40,6 @@ public class LectureService {
 
     @Transactional
     public Lecture create(Long userId, CreateLectureRequestDto req){
-        log.info("💾 [DB WRITE] Creating new lecture: userId={} title={}", userId, req.getTitle());
-
         Lecture lec = Lecture.builder()
                 .userId(userId)
                 .title(req.getTitle())
@@ -51,7 +49,7 @@ public class LectureService {
                 .build();
 
         Lecture saved = lectureRepo.save(lec);
-        log.info("✅ [DB WRITE] Lecture created: id={} title={}", saved.getId(), saved.getTitle());
+        log.info("Lecture created: id={} userId={}", saved.getId(), userId);
         return saved;
     }
 
@@ -89,18 +87,12 @@ public class LectureService {
 
     @Transactional(readOnly = true)
     public Page<Lecture> list(Long userId, Pageable pageable){
-        log.info("📂 [DB READ] Fetching lecture list: userId={}", userId);
-        Page<Lecture> result = lectureRepo.findByUserIdOrderByCreatedAtDesc(userId, pageable);
-        log.info("✅ [DB READ] Loaded {} lectures for userId={}", result.getContent().size(), userId);
-        return result;
+        return lectureRepo.findByUserIdOrderByCreatedAtDesc(userId, pageable);
     }
     @Transactional(readOnly = true)
     public Lecture get(Long id){
-        log.info("📂 [DB READ] Fetching lecture: lectureId={}", id);
-        Lecture lecture = lectureRepo.findById(id)
+        return lectureRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("lecture"));
-        log.info("✅ [DB READ] Loaded lecture: id={} title={}", lecture.getId(), lecture.getTitle());
-        return lecture;
     }
 
     /**
@@ -112,9 +104,8 @@ public class LectureService {
      */
     @Transactional
     public void delete(Long lectureId, Long userId){
-        log.info("🗑️ [DB DELETE] Deleting lecture: lectureId={}", lectureId);
         lectureRepo.delete(getOwned(lectureId, userId));
-        log.info("✅ [DB DELETE] Lecture deleted: lectureId={}", lectureId);
+        log.info("Lecture deleted: id={}", lectureId);
     }
 
     /**
@@ -128,7 +119,6 @@ public class LectureService {
      */
     @Transactional
     public Lecture endLecture(Long id, Long userId, String title) {
-        log.info("💾 [DB WRITE] Ending lecture: lectureId={}", id);
         Lecture lecture = getOwned(id, userId);
         if (title != null && !title.isBlank()) {
             lecture.setTitle(title.trim());
@@ -136,7 +126,7 @@ public class LectureService {
         lecture.setStatus(Lecture.Status.COMPLETED);
         lecture.setEndAt(java.time.LocalDateTime.now());
         lectureRepo.save(lecture);
-        log.info("✅ [DB WRITE] Lecture ended: id={} status=COMPLETED", id);
+        log.info("Lecture ended: id={}", id);
         return lecture;
     }
 
@@ -166,8 +156,6 @@ public class LectureService {
      */
     @Transactional(readOnly = true)
     public SessionDetailResponse getSessionDetail(Long lectureId, Long userId) {
-        log.info("📂 [DB READ] Fetching session detail: lectureId={}", lectureId);
-        
         Lecture lecture = getOwned(lectureId, userId);
         
         var transcripts = transcriptRepository.findByLectureIdOrderByStartSecAsc(lectureId)
@@ -195,8 +183,6 @@ public class LectureService {
                 .map(BookmarkResponseDto::from)
                 .collect(Collectors.toList());
 
-        log.info("✅ [DB READ] Session detail loaded: lectureId={} transcripts={} summaries={} resources={} qnas={} bookmarks={}",
-                lectureId, transcripts.size(), summaries.size(), resources.size(), qnas.size(), bookmarks.size());
 
         return SessionDetailResponse.from(lecture, transcripts, summaries, resources, qnas, bookmarks);
     }

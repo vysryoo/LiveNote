@@ -27,14 +27,12 @@ public class UserService {
 
     @Transactional
     public AuthResponseDto signup(SignupRequestDto req) {
-        log.info("💾 [DB WRITE] Creating new user: loginId={} email={}", req.getLoginId(), req.getEmail());
-        
         if (userRepository.existsByLoginId(req.getLoginId())) {
-            log.warn("❌ Signup failed: duplicated loginId={}", req.getLoginId());
+            log.warn("Signup failed: duplicated loginId={}", req.getLoginId());
             throw new IllegalArgumentException("duplicated loginId");
         }
         if (req.getEmail() != null && userRepository.existsByEmail(req.getEmail())) {
-            log.warn("❌ Signup failed: duplicated email={}", req.getEmail());
+            log.warn("Signup failed: duplicated email={}", req.getEmail());
             throw new IllegalArgumentException("duplicated email");
         }
 
@@ -47,7 +45,7 @@ public class UserService {
                 .build();
 
         User saved = userRepository.save(user);
-        log.info("✅ [DB WRITE] User created: id={} loginId={}", saved.getId(), saved.getLoginId());
+        log.info("User created: id={}", saved.getId());
         
         String token = jwtTokenProvider.createToken(saved.getId());
 
@@ -56,20 +54,18 @@ public class UserService {
 
     @Transactional
     public AuthResponseDto login(LoginRequestDto req) {
-        log.info("📂 [DB READ] User login attempt: loginId={}", req.getLoginId());
-        
         User user = userRepository.findByLoginId(req.getLoginId())
                 .orElseThrow(() -> {
-                    log.warn("❌ Login failed: user not found loginId={}", req.getLoginId());
+                    log.warn("Login failed: user not found loginId={}", req.getLoginId());
                     return new EntityNotFoundException("no user");
                 });
 
         if (!encoder.matches(req.getPassword(), user.getPassword())) {
-            log.warn("❌ Login failed: invalid password for loginId={}", req.getLoginId());
+            log.warn("Login failed: invalid password for loginId={}", req.getLoginId());
             throw new IllegalArgumentException("bad credential");
         }
 
-        log.info("✅ [DB READ] User logged in: id={} loginId={}", user.getId(), user.getLoginId());
+        log.info("User logged in: id={}", user.getId());
         String token = jwtTokenProvider.createToken(user.getId());
 
         return new AuthResponseDto(token, UserViewDto.from(user));
@@ -77,14 +73,7 @@ public class UserService {
 
     @Transactional
     public Optional<User> findById(Long id) {
-        log.info("📂 [DB READ] Fetching user: userId={}", id);
-        Optional<User> user = userRepository.findById(id);
-        if (user.isPresent()) {
-            log.info("✅ [DB READ] User found: id={} loginId={}", user.get().getId(), user.get().getLoginId());
-        } else {
-            log.warn("❌ [DB READ] User not found: userId={}", id);
-        }
-        return user;
+        return userRepository.findById(id);
     }
 
     @Transactional
@@ -93,7 +82,7 @@ public class UserService {
                 .orElseThrow(() -> new EntityNotFoundException("user not found"));
         user.setUiLanguage(language != null ? language : "ko");
         userRepository.save(user);
-        log.info("💾 [DB WRITE] Language updated: userId={} lang={}", userId, user.getUiLanguage());
+        log.info("Language updated: userId={} lang={}", userId, user.getUiLanguage());
         return UserViewDto.from(user);
     }
 
@@ -109,7 +98,7 @@ public class UserService {
         }
         user.setPassword(encoder.encode(newPassword));
         userRepository.save(user);
-        log.info("💾 [DB WRITE] Password updated: userId={}", userId);
+        log.info("Password updated: userId={}", userId);
         return UserViewDto.from(user);
     }
 }

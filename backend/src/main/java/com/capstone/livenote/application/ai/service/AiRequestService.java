@@ -43,7 +43,7 @@ public class AiRequestService {
     // 프론트 start-qna-stream → 특정 타입 한 건 요청
     public void requestQnaWithType(Long lectureId, Integer sectionIndex, String qnaType) {
         if (qnaService.byLectureAndSection(lectureId, sectionIndex).size() >= 3) {
-            log.info("⏭️ [AI Request] QnA (single type) skipped (already >=3): lectureId={} section={}", lectureId, sectionIndex);
+            log.info("[AI Request] QnA (single type) skipped (already >=3): lectureId={} section={}", lectureId, sectionIndex);
             var existing = qnaService.byLectureAndSection(lectureId, sectionIndex).stream()
                     .map(com.capstone.livenote.domain.qna.dto.QnaResponseDto::from)
                     .toList();
@@ -52,21 +52,21 @@ public class AiRequestService {
         }
         Summary summary = findSummaryWithRetry(lectureId, sectionIndex);
         if (summary == null) {
-            log.warn("⏭️ [AI Request] QnA (single type) skipped after retry (summary not found): lectureId={} section={}", lectureId, sectionIndex);
+            log.warn("[AI Request] QnA (single type) skipped after retry (summary not found): lectureId={} section={}", lectureId, sectionIndex);
             return;
         }
         Lecture lecture = lectureService.get(lectureId);
         var payload = buildQnaPayload(lecture, summary.getId(), sectionIndex, summary.getText());
 
         List<String> types = qnaType != null ? List.of(qnaType.toUpperCase()) : null;
-        log.info("🔄 [AI Request] QnA generation (Single type): lectureId={} section={} type={}", lectureId, sectionIndex, types);
+        log.info("[AI Request] QnA generation (Single type): lectureId={} section={} type={}", lectureId, sectionIndex, types);
         qnaStreamService.generate(payload, types);
     }
 
     // 프론트 start-resources-stream → 특정 타입 한 건 요청
     public void requestResourcesWithType(Long lectureId, Integer sectionIndex, String resourceType) {
         if (resourceService.findBySectionRange(lectureId, sectionIndex, sectionIndex).size() >= 3) {
-            log.info("⏭️ [AI Request] Resource (single type) skipped (already >=3): lectureId={} section={}", lectureId, sectionIndex);
+            log.info("[AI Request] Resource (single type) skipped (already >=3): lectureId={} section={}", lectureId, sectionIndex);
             var existing = resourceService.findBySectionRange(lectureId, sectionIndex, sectionIndex).stream()
                     .map(com.capstone.livenote.domain.resource.dto.ResourceResponseDto::from)
                     .toList();
@@ -75,13 +75,13 @@ public class AiRequestService {
         }
         Summary summary = findSummaryWithRetry(lectureId, sectionIndex);
         if (summary == null) {
-            log.warn("⏭️ [AI Request] Resource (single type) skipped after retry (summary not found): lectureId={} section={}", lectureId, sectionIndex);
+            log.warn("[AI Request] Resource (single type) skipped after retry (summary not found): lectureId={} section={}", lectureId, sectionIndex);
             return;
         }
         ResourceRecommendPayload payload = buildResourcePayload(lectureId, summary.getId(), sectionIndex, summary.getText());
 
         List<String> types = resourceType != null ? List.of(resourceType.toUpperCase()) : null;
-        log.info("🔄 [AI Request] Resource recommendation (Single type): lectureId={} section={} type={}", lectureId, sectionIndex, types);
+        log.info("[AI Request] Resource recommendation (Single type): lectureId={} section={} type={}", lectureId, sectionIndex, types);
         aiServerClient.requestResourceRecommendation(payload, types);
     }
 

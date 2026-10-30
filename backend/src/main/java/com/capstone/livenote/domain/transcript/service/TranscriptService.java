@@ -104,7 +104,7 @@ public class TranscriptService {
             Integer maxEndSec = transcriptRepository.findMaxEndSecByLectureId(lectureId);
             if (maxEndSec != null && rawStartSec < maxEndSec) {
                 base = maxEndSec;
-                log.info("🔄 [TranscriptService] Detected resume: lectureId={} baseOffset={}", lectureId, base);
+                log.info("[TranscriptService] Detected resume: lectureId={} baseOffset={}", lectureId, base);
             } else {
                 base = 0;
             }
@@ -115,7 +115,7 @@ public class TranscriptService {
                 Integer maxEndSec = transcriptRepository.findMaxEndSecByLectureId(lectureId);
                 if (maxEndSec != null) {
                     base = maxEndSec;
-                    log.info("🔄 [TranscriptService] Detected restart mid-session: lectureId={} baseOffset={}", lectureId, base);
+                    log.info("[TranscriptService] Detected restart mid-session: lectureId={} baseOffset={}", lectureId, base);
                 }
             }
         }

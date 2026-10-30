@@ -29,7 +29,7 @@ public class SummaryCallbackService {
 
     @Transactional
     public void handleSummaryCallback(SummaryCallbackDto dto) {
-        log.info("📝 [Callback] Summary received: lectureId={} section={} type={}",
+        log.info("[Callback] Summary received: lectureId={} section={} type={}",
                 dto.getLectureId(), dto.getSectionIndex(), dto.getPhase());
 
         // 너무 짧은 전사 처리
@@ -52,11 +52,11 @@ public class SummaryCallbackService {
                     .text(dto.getText())
                     .phase(phase)
                     .build();
-            log.info("⏭️ [Callback] PARTIAL summary: Skipping DB save.");
+            log.info("[Callback] PARTIAL summary: Skipping DB save.");
         } else {
             // FINAL: DB 저장 (Upsert)
             summary = summaryService.upsertFromCallback(dto);
-            log.info("💾 [Callback] FINAL summary saved: id={}", summary.getId());
+            log.info("[Callback] FINAL summary saved: id={}", summary.getId());
         }
 
         // 2. 프론트엔드 실시간 전송 (STOMP)
@@ -66,10 +66,10 @@ public class SummaryCallbackService {
         if (phase == SummaryPhase.FINAL) {
             // FINAL 단계
             try {
-                log.info("🗂️ [RAG Upsert] Sending FINAL summary: summaryId={}", summary.getId());
+                log.info("[RAG Upsert] Sending FINAL summary: summaryId={}", summary.getId());
                 aiServerClient.upsertSummaryText(summary.getLectureId(), summary);
             } catch (Exception e) {
-                log.error("❌ RAG Upsert failed", e);
+                log.error("RAG Upsert failed", e);
             }
 
         } else {
@@ -79,7 +79,7 @@ public class SummaryCallbackService {
                         dto.getLectureId(), dto.getSectionIndex());
                 return;
             }
-            log.info("🚀 [Partial Logic] Requesting initial 2 QnA & 2 Resources");
+            log.info("[Partial Logic] Requesting initial 2 QnA & 2 Resources");
 
             // limit=2 로 요청. 한쪽 요청이 실패해도 다른 쪽과 요약 저장 결과에는 영향을 주지 않음
             try {
@@ -87,7 +87,7 @@ public class SummaryCallbackService {
                         dto.getLectureId(), null, dto.getSectionIndex(), dto.getText(), 2
                 );
             } catch (Exception e) {
-                log.error("❌ Resource request after PARTIAL summary failed: lectureId={} section={} error={}",
+                log.error("Resource request after PARTIAL summary failed: lectureId={} section={} error={}",
                         dto.getLectureId(), dto.getSectionIndex(), e.getMessage());
             }
             try {
@@ -95,7 +95,7 @@ public class SummaryCallbackService {
                         dto.getLectureId(), null, dto.getSectionIndex(), dto.getText(), 2
                 );
             } catch (Exception e) {
-                log.error("❌ QnA request after PARTIAL summary failed: lectureId={} section={} error={}",
+                log.error("QnA request after PARTIAL summary failed: lectureId={} section={} error={}",
                         dto.getLectureId(), dto.getSectionIndex(), e.getMessage());
             }
         }

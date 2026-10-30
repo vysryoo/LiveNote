@@ -206,7 +206,7 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
 
                 ctx.lastTranscriptEndSec = endSec;
 
-                log.info("[RealtimeWS] ✅ Transcript saved to DB via TranscriptService: lectureId={} startSec={} endSec={} text={}",
+                log.info("[RealtimeWS] Transcript saved: lectureId={} startSec={} endSec={} text={}",
                         ctx.lectureId, startSec, endSec, 
                         content.length() > 50 ? content.substring(0, 50) + "..." : content);
             }

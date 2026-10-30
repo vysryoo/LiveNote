@@ -75,7 +75,7 @@ public class AiServerClient {
             body.put("question_types", targetTypes);
         }
 
-        log.info("🤖 [AI QnA] Stream request: lecture_id={} section_index={} types={}",
+        log.info("[AI QnA] Stream request: lecture_id={} section_index={} types={}",
                 payload.getLectureId(), payload.getSectionIndex(), targetTypes);
 
         return webClient.post()
@@ -116,7 +116,8 @@ public class AiServerClient {
 
         body.put("callback_url", callback("resources"));
 
-        log.info("🤖 [AI Resource] Request body = {}", body);
+        log.info("[AI Resource] Request: lectureId={} section={} types={}",
+                payload.getLectureId(), payload.getSectionIndex(), targetTypes);
 
         if (targetTypes != null && !targetTypes.isEmpty()) {
             body.put("resource_types", targetTypes);
@@ -158,7 +159,7 @@ public class AiServerClient {
         // 우리도 /api/ai/callback?type=summary 로 맞춰 줌)
         body.put("callback_url", callback("summary"));
 
-        log.info("🤖 [AI Summary] Request body = {}", body);
+        log.info("[AI Summary] Request: lectureId={} section={} phase={}", lectureId, sectionIndex, body.get("phase"));
 
         post("/summary/generate", body);
     }
@@ -176,12 +177,12 @@ public class AiServerClient {
         Map<String, Object> item = new HashMap<>();
         item.put("text", summary.getText());
 
-        // ✅ id: null이면 아예 안 넣기
+        // id: null이면 아예 안 넣기
         if (summary.getId() != null) {
             item.put("id", summary.getId().toString());
         }
 
-        // ✅ section_id 는 문자열로 보내기
+        // section_id 는 문자열로 보내기
         item.put("section_id", String.valueOf(summary.getSectionIndex()));
         item.put("metadata", metadata);
 
@@ -189,7 +190,7 @@ public class AiServerClient {
         body.put("lecture_id", String.valueOf(lectureId));
         body.put("items", List.of(item));
 
-        log.info("🤖 [AI Server Call] RAG Text Upsert Request body = {}", body);
+        log.info("[AI RAG] Summary upsert request: lectureId={} summaryId={}", lectureId, summary.getId());
 
         post("/rag/text-upsert", body);
     }
@@ -202,11 +203,8 @@ public class AiServerClient {
 
         String url = baseUrl + "/rag/pdf-upsert";
 
-        log.info("🤖 [AI Server Call] RAG PDF Upsert Request:");
-        log.info("   └─ URL: POST {}", url);
-        log.info("   └─ lectureId: {}", lectureId);
-        log.info("   └─ filename: {}", pdfFile.getOriginalFilename());
-        log.info("   └─ fileSize: {} bytes", pdfFile.getSize());
+        log.info("[AI RAG] PDF upsert request: lectureId={} file={} size={}B",
+                lectureId, pdfFile.getOriginalFilename(), pdfFile.getSize());
 
         try {
             // [수정] 응답 본문을 받아서 collection_id 추출
@@ -219,14 +217,13 @@ public class AiServerClient {
                     .bodyToMono(String.class) // String으로 받음
                     .block();
 
-            log.info("✅ [AI Server Call] PDF upsert completed. Response: {}", responseBody);
-
-            // 간단한 JSON 파싱 (Jackson 사용 가정)
-            // {"collection_id": "lecture_1", "result": {...}}
-            return objectMapper.readTree(responseBody).get("collection_id").asText();
+            // 응답 예: {"collection_id": "lecture_1", "result": {...}}
+            String collectionId = objectMapper.readTree(responseBody).get("collection_id").asText();
+            log.info("[AI RAG] PDF upsert completed: lectureId={} collectionId={}", lectureId, collectionId);
+            return collectionId;
 
         } catch (Exception e) {
-            log.error("❌ [AI Server Call] PDF upsert failed: {}", e.getMessage(), e);
+            log.error("[AI Server Call] PDF upsert failed: {}", e.getMessage(), e);
             throw new RuntimeException("RAG Upsert Failed", e);
         }
     }
