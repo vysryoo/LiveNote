@@ -49,7 +49,7 @@ uv run pytest                                   # 테스트 (외부 API 호출 �
 
 ```
 ai/
-├── server/         # FastAPI 앱, 라우트, 서비스 묶음, 내부 인증, 콜백 전송
+├── server/         # FastAPI 앱, 라우트, 요청 모델, 서비스 묶음, QnA·추천 공통 RAG 문맥 검색, 내부 인증, 콜백 전송
 ├── core/           # 설정, LLM 호출, 외부 API 재시도, 로깅, 공용 모델
 ├── rag/            # PDF 분할(page, recursive, semantic), Chroma 저장·검색
 ├── qa/             # QnA 프롬프트, 생성 그래프, 스트림 파서
