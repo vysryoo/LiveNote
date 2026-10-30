@@ -7,7 +7,7 @@ import logoImage from "@/assets/logo.png";
 import { LoginDialog } from "@/features/auth/components/LoginDialog";
 import { Button } from "@/shared/ui/button";
 import { DemoVideoModal } from "./DemoVideoModal";
-import GradientText from "./GradientText";
+import { GradientText } from "./GradientText";
 
 export function LandingPage() {
   // Trans에 t를 넘겨야 언어가 바뀔 때 다시 그려짐. 넘기지 않으면 React Compiler가 이전 언어의 Trans를 재사용함
@@ -66,7 +66,6 @@ export function LandingPage() {
                 <GradientText
                   colors={["#639BEE", "#3B72DD", "#4D82E0", "#83EAF1", "#639BEE"]}
                   animationSpeed={3}
-                  showBorder={false}
                 >
                   <Trans t={t} i18nKey="landing.hero.title" />
                 </GradientText>
