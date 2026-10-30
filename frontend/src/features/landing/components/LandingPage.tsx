@@ -569,19 +569,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-
       {/* Demo Video Modal */}
       <DemoVideoModal isOpen={showDemoModal} onClose={() => setShowDemoModal(false)} />
       <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} onSignupClick={goToSignup} />
