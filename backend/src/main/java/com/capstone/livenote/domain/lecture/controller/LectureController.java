@@ -66,16 +66,6 @@ public class LectureController {
         return ApiResponse.ok(new LecturePageDto(items, result.getTotalElements(), result.hasNext()));
     }
 
-    // 강의 상세 조회
-    @Operation(summary = "특정 강의의 상세 정보를 조회")
-    @GetMapping("/{lectureId}")
-    public ApiResponse<LectureResponseDto> get(@PathVariable Long lectureId){
-        Long userId = currentUserId();
-        lectureService.getOwned(lectureId, userId);
-        var l = lectureService.getWithBookmarks(lectureId, userId);
-        return ApiResponse.ok(l);
-    }
-
     // 강의 상세 정보 조회 (transcripts, summaries, resources, qna, bookmarks 포함)
     @Operation(summary = "강의의 모든 상세 정보 조회 (transcripts, summaries, resources, qna, bookmarks 포함)")
     @GetMapping("/{lectureId}/detail")
@@ -163,26 +153,6 @@ public class LectureController {
         return ApiResponse.ok(LectureResponseDto.from(updated));
     }
 
-
-    // PDF 업로드 및 RAG 업서트 요청
-    @Operation(summary = "강의 PDF 자료 업로드 (RAG 업서트)")
-    @PostMapping(value = "/{lectureId}/pdf", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiResponse<String> uploadPdf(
-            @PathVariable Long lectureId,
-            @RequestPart("file") MultipartFile file
-    ) {
-        // 1. 사용자 권한 검증
-        lectureService.getOwned(lectureId, currentUserId());
-
-        // 2. AI 서버로 전송하여 RAG 업서트 수행 및 collectionId 획득
-        // (RagClient.upsertPdf는 이제 String collectionId를 반환해야 함)
-        String collectionId = ragClient.upsertPdf(lectureId, file, null);
-
-        // 3. DB에 collectionId 업데이트
-        lectureService.updateCollectionId(lectureId, collectionId);
-
-        return ApiResponse.ok(collectionId);
-    }
 
     // 전사
 //    @Operation(summary = "전사 목록 조회 (내부용)", hidden = true)

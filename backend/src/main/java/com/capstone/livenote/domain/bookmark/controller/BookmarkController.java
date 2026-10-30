@@ -8,14 +8,10 @@ import com.capstone.livenote.global.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
 
 
 @Tag(name = "Bookmark API", description = "북마크 API")
@@ -47,21 +43,6 @@ public class BookmarkController {
     ) {
         Bookmark bookmark = bookmarkService.createBookmark(req, currentUserId());
         return ApiResponse.ok(BookmarkResponseDto.from(bookmark));
-    }
-
-    // 북마크 목록 조회
-    @Operation(summary = "특정 강의의 북마크 목록을 조회")
-    @GetMapping
-    public ApiResponse<List<BookmarkResponseDto>> getBookmarks(
-            @RequestParam Long lectureId,
-            @RequestParam(required = false) Integer sectionIndex,
-            @PageableDefault(size = 50) Pageable pageable
-    ) {
-        List<BookmarkResponseDto> list = bookmarkService.getBookmarks(
-                currentUserId(), lectureId, sectionIndex, pageable
-        );
-
-        return ApiResponse.ok(list);
     }
 
     // 북마크 삭제
