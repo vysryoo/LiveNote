@@ -9,7 +9,8 @@ from langchain_core.messages import AIMessage
 from langchain_core.outputs import ChatGeneration, LLMResult
 
 from core import llm
-from core.llm import ModelPurpose, model_settings, to_messages, usage_from_result
+from core.config import Settings
+from core.llm import ModelPurpose, model_settings, usage_from_result
 from core.timing import logger as timing_logger
 
 pytestmark = pytest.mark.anyio("asyncio")
@@ -41,24 +42,21 @@ def test_model_settings_env_override_and_drop_effort_for_non_reasoning_model(cle
     monkeypatch.setenv("LLM_QA_REASONING_EFFORT", "low")
     monkeypatch.setenv("LLM_VERIFY_MODEL", "gpt-4o")
 
-    assert model_settings(ModelPurpose.QA).reasoning_effort == "low"
-    assert model_settings(ModelPurpose.VERIFY) == llm.ModelSettings(model="gpt-4o", reasoning_effort=None)
+    settings = Settings()
+
+    assert model_settings(ModelPurpose.QA, settings).reasoning_effort == "low"
+    assert model_settings(ModelPurpose.VERIFY, settings) == llm.ModelSettings(model="gpt-4o", reasoning_effort=None)
 
 
 def test_build_chat_model_sends_effort_and_token_limit(clear_llm_env):
     model = llm.build_chat_model(ModelPurpose.SUMMARY, max_tokens=256)
 
-    payload = model._get_request_payload(to_messages([("user", "hi")]))
+    payload = model._get_request_payload([("user", "hi")])
 
     assert payload["model"] == "gpt-6-luna"
     assert payload["reasoning_effort"] == "none"
     assert payload["max_completion_tokens"] == 256
     assert "temperature" not in payload
-
-
-def test_to_messages_rejects_unknown_role():
-    with pytest.raises(ValueError):
-        to_messages([("assistant", "x")])
 
 
 def test_usage_from_result_reads_reasoning_tokens():
@@ -89,7 +87,7 @@ async def test_complete_and_stream_use_purpose_model_and_log_usage(monkeypatch):
 
     monkeypatch.setattr(llm, "build_chat_model", fake_model)
     try:
-        assert await llm.complete(ModelPurpose.QUERY, [("user", "질문")], json_mode=True) == "응답 본문"
+        assert await llm.complete(ModelPurpose.QUERY, [("user", "질문")]) == "응답 본문"
         chunks = [c async for c in llm.stream(ModelPurpose.QA, [("system", "s"), ("user", "u")])]
     finally:
         timing_logger.removeHandler(collector)
@@ -100,10 +98,42 @@ async def test_complete_and_stream_use_purpose_model_and_log_usage(monkeypatch):
     assert all(r["elapsed_ms"] is not None for r in logged)
 
 
+async def test_complete_json_requests_schema_and_returns_model(clear_llm_env):
+    from pydantic import BaseModel
+
+    class Answer(BaseModel):
+        score: float
+        reason: str
+
+    model = llm.build_chat_model(ModelPurpose.VERIFY, max_tokens=50).with_structured_output(Answer, method="json_schema")
+    # langchain-openai는 스키마 클래스를 OpenAI SDK에 그대로 넘기고, 변환은 SDK가 함
+    assert model.first.kwargs["response_format"] is Answer
+
+    class FakeStructured:
+        async def ainvoke(self, messages):
+            assert messages == [("user", "질문")]
+            return Answer(score=7, reason="관련")
+
+    class FakeModel:
+        def with_structured_output(self, schema, method):
+            assert (schema, method) == (Answer, "json_schema")
+            return FakeStructured()
+
+    original = llm.build_chat_model
+    llm.build_chat_model = lambda purpose, max_tokens=None: FakeModel()
+    try:
+        result = await llm.complete_json(ModelPurpose.VERIFY, [("user", "질문")], Answer, max_tokens=50)
+    finally:
+        llm.build_chat_model = original
+
+    assert result == Answer(score=7.0, reason="관련")
+
+
 async def test_summary_chain_passes_braces_in_transcript_as_text(monkeypatch):
     from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
-    from server.routes import summary
+    from summary import service
+    from summary.service import SummaryService
 
     seen = []
 
@@ -112,12 +142,12 @@ async def test_summary_chain_passes_braces_in_transcript_as_text(monkeypatch):
             seen.append(messages)
             return await super()._agenerate(messages, *args, **kwargs)
 
-    summary.build_summary_chain.cache_clear()
-    monkeypatch.setattr(summary, "build_chat_model", lambda purpose, max_tokens: RecordingModel(responses=["  요약 결과  "]))
-    settings = summary.AppSettings()
+    service.build_summary_chain.cache_clear()
+    monkeypatch.setattr(service, "build_chat_model", lambda purpose, max_tokens: RecordingModel(responses=["  요약 결과  "]))
+    settings = Settings()
 
-    result = await summary._generate_summary_text("집합 {a, b}를 정의한다", settings)
-    summary.build_summary_chain.cache_clear()
+    result = await SummaryService(settings.summary).summarize("집합 {a, b}를 정의한다")
+    service.build_summary_chain.cache_clear()
 
     assert result == "요약 결과"
     assert seen[0][0].content == settings.summary.system_prompt

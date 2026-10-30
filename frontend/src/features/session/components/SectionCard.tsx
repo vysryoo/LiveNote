@@ -1,14 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { SectionView } from "../sectionViews";
 
-const GRADIENT_BORDER = {
-  border: "2px solid transparent",
-  backgroundImage:
-    "linear-gradient(white, white), linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
-  backgroundOrigin: "border-box",
-  backgroundClip: "padding-box, border-box",
-} as const;
-
 type SectionCardProps = {
   section: SectionView;
   onSummaryClick: (sectionIndex: number) => void;
@@ -39,11 +31,8 @@ export function SectionCard({ section, onSummaryClick }: SectionCardProps) {
         } ${
           isSelected
             ? "bg-gradient-to-br from-[#4D82E0] via-[#639BEE] to-[#83EAF1] text-white"
-            : "bg-white hover:bg-muted"
+            : `bg-white hover:bg-muted ${summaryText ? "border-brand-gradient" : "border-2 border-[#C3C7CB]"}`
         }`}
-        style={
-          isSelected ? undefined : summaryText ? GRADIENT_BORDER : { border: "2px solid #C3C7CB" }
-        }
       >
         <div className="flex items-center justify-between mb-4">
           <h4 className={isSelected ? "text-white" : ""}>{t("session.header.summary")}</h4>

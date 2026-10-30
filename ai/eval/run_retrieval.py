@@ -50,7 +50,7 @@ def retrieve_rows(experiment: str, chunk_settings, sections: List[Section], k: i
 
     Args:
         experiment: 실험 이름. 평가 전용 컬렉션 이름에 쓰임
-        chunk_settings: 분할 설정 (rag.ragkit.splitters.ChunkSettings)
+        chunk_settings: 분할 설정 (rag.splitters.ChunkSettings)
         sections: 평가할 섹션 목록
         k: 검색 개수
     Returns:
@@ -58,11 +58,11 @@ def retrieve_rows(experiment: str, chunk_settings, sections: List[Section], k: i
     """
     from dotenv import load_dotenv
 
-    from rag.ragkit.config import RAGConfig
-    from rag.ragkit.service import RAGService
+    from core.config import Settings
+    from rag.service import RAGService
 
     load_dotenv(Path(__file__).resolve().parent.parent / ".env")
-    rag = RAGService(RAGConfig(persist_dir=str(CHROMA_DIR)), chunk_settings)
+    rag = RAGService(Settings(rag_persist_dir=CHROMA_DIR), chunk_settings)
     collections = {lid: _ensure_index(rag, experiment, lid) for lid in {s.lecture_id for s in sections}}
     rows = []
     for section in sections:
@@ -113,7 +113,7 @@ def main() -> None:
                 filtered.append(s)
         sections = filtered
 
-    from rag.ragkit.splitters import ChunkSettings, count_tokens
+    from rag.splitters import ChunkSettings, count_tokens
 
     overrides = {
         "chunk_tokens": args.chunk_tokens,

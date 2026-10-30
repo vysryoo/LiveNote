@@ -183,7 +183,10 @@ async def judge_items(items: List[JudgeItem]) -> List[Judgment]:
     from dotenv import load_dotenv
     from openai import AsyncOpenAI
 
+    from core.logs import setup_logging
+
     load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+    setup_logging()
     semaphore = asyncio.Semaphore(JUDGE_CONCURRENCY)
     async with AsyncOpenAI(timeout=120.0, max_retries=3) as client:
         return list(await asyncio.gather(*[_judge_one(client, item, semaphore) for item in items]))

@@ -1,17 +1,12 @@
-import { Loader2, LogOut, Plus, Settings, User } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import logoImage from "@/assets/logo.png";
 import { useLogout } from "@/features/auth/hooks/useLogout";
+import { AppHeader, AppLogo } from "@/shared/components/AppHeader";
+import { UserMenu } from "@/shared/components/UserMenu";
 import { Button } from "@/shared/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/shared/ui/dropdown-menu";
 import type { Lecture } from "../api/schemas";
 import { useLectureList } from "../hooks/useLectureList";
 import { useDeleteLecture } from "../hooks/useLectureMutations";
@@ -44,46 +39,22 @@ export function LectureListPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background bg-wave-pattern-bottom">
-      <header className="border-b bg-white/80 backdrop-blur-sm shadow-lg">
-        <div className="px-[3%] py-[0.4%]" style={{ fontSize: "clamp(14px, 1.2vw, 18px)" }}>
-          <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <img src={logoImage} alt="LiveNote" style={{ height: "3em" }} />
-            </div>
+    <div className="min-h-screen bg-background">
+      <AppHeader>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center">
+            <AppLogo />
+          </div>
 
-            <div className="flex items-center" style={{ gap: "1.2em" }}>
-              <Button onClick={openNewLecture} className="bg-[#3B72DD] hover:bg-[#4D82E0]">
-                <Plus style={{ width: "1.4em", height: "1.4em", marginRight: "0.5em" }} />
-                {t("main.startNewLecture")}
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full bg-[#f5f5f5] transition-all duration-300 [box-shadow:2px_2px_4px_#d8d8d8,-2px_-2px_4px_#ffffff] data-[state=open]:[box-shadow:inset_2px_2px_4px_#d8d8d8,inset_-2px_-2px_4px_#ffffff] active:[box-shadow:inset_2px_2px_4px_#d8d8d8,inset_-2px_-2px_4px_#ffffff] hover:bg-[#f5f5f5]"
-                    style={{ width: "32px", height: "32px" }}
-                  >
-                    <User style={{ width: "16px", height: "16px" }} color="#6A737D" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate("/settings")}>
-                    <Settings className="w-4 h-4 mr-2" />
-                    {t("common.settings")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={logout}>
-                    <LogOut className="w-4 h-4 mr-2" />
-                    {t("common.logout")}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+          <div className="flex items-center" style={{ gap: "1.2em" }}>
+            <Button variant="brand" onClick={openNewLecture}>
+              <Plus style={{ width: "1.4em", height: "1.4em", marginRight: "0.5em" }} />
+              {t("main.startNewLecture")}
+            </Button>
+            <UserMenu onSettingsClick={() => navigate("/settings")} onLogoutClick={logout} />
           </div>
         </div>
-      </header>
+      </AppHeader>
 
       <main className="max-w-[1400px] mx-auto px-6 py-12">
         <div className="flex justify-between items-center mb-8">
@@ -113,7 +84,7 @@ export function LectureListPage() {
             <div className="text-6xl mb-4">📚</div>
             <h3 className="text-xl mb-2">{t("main.noLecturesTitle")}</h3>
             <p className="text-muted-foreground mb-6">{t("main.noLecturesDesc")}</p>
-            <Button onClick={openNewLecture} className="bg-[#3B72DD] hover:bg-[#4D82E0]">
+            <Button variant="brand" onClick={openNewLecture}>
               <Plus className="w-5 h-5 mr-2" />
               {t("main.startNewLecture")}
             </Button>

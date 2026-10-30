@@ -67,7 +67,6 @@
     "bookmarkAdded": "북마크가 추가되었습니다",
     "bookmarkRemoved": "북마크가 제거되었습니다",
     "bookmarkFailed": "북마크 처리에 실패했습니다",
-    "wsError": "녹음 연결 중 오류가 발생했습니다",
     "recordingError": "녹음을 시작할 수 없습니다",
     "micPermissionDenied": "마이크 권한이 필요합니다",
     "startHint": "강의 시작 버튼을 눌러 실시간 기록을 시작하세요.",

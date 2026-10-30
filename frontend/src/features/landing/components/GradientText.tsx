@@ -1,29 +1,22 @@
+import type { ReactNode } from "react";
 import "./GradientText.css";
 
-interface GradientTextProps {
-  children: React.ReactNode;
-  className?: string;
-  colors?: string[];
-  animationSpeed?: number;
-  showBorder?: boolean;
-}
+type GradientTextProps = {
+  children: ReactNode;
+  colors: string[];
+  animationSpeed: number;
+};
 
-export default function GradientText({
-  children,
-  className = "",
-  colors = ["#40ffaa", "#4079ff", "#40ffaa", "#4079ff", "#40ffaa"],
-  animationSpeed = 8,
-  showBorder = false,
-}: GradientTextProps) {
-  const gradientStyle = {
-    backgroundImage: `linear-gradient(to right, ${colors.join(", ")})`,
-    animationDuration: `${animationSpeed}s`,
-  };
-
+export function GradientText({ children, colors, animationSpeed }: GradientTextProps) {
   return (
-    <div className={`animated-gradient-text ${className}`}>
-      {showBorder && <div className="gradient-overlay" style={gradientStyle}></div>}
-      <div className="text-content" style={gradientStyle}>
+    <div className="animated-gradient-text">
+      <div
+        className="text-content"
+        style={{
+          backgroundImage: `linear-gradient(to right, ${colors.join(", ")})`,
+          animationDuration: `${animationSpeed}s`,
+        }}
+      >
         {children}
       </div>
     </div>

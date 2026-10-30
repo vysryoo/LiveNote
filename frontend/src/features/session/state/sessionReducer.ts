@@ -101,15 +101,3 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       return { ...state, streamingCards: {} };
   }
 }
-
-/**
- * 실시간 전사를 화면에 표시할 텍스트로 합친다.
- *
- * @param transcript 섹션의 실시간 전사
- * @returns 줄바꿈으로 이은 텍스트
- */
-export function toLiveTranscriptText(transcript: LiveTranscript): string {
-  const lines =
-    transcript.pending === null ? transcript.lines : [...transcript.lines, transcript.pending];
-  return lines.join("\n");
-}

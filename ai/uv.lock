@@ -832,13 +832,13 @@ dependencies = [
     { name = "numpy" },
     { name = "openai" },
     { name = "pydantic" },
+    { name = "pydantic-settings" },
     { name = "pypdf" },
     { name = "python-dotenv" },
     { name = "python-multipart" },
     { name = "rapidfuzz" },
     { name = "tiktoken" },
     { name = "uvicorn", extra = ["standard"] },
-    { name = "youtube-transcript-api" },
 ]
 
 [package.dev-dependencies]
@@ -861,13 +861,13 @@ requires-dist = [
     { name = "numpy", specifier = "==2.4.6" },
     { name = "openai", specifier = "==3.41.0" },
     { name = "pydantic", specifier = "==2.9.0" },
+    { name = "pydantic-settings", specifier = "==2.15.0" },
     { name = "pypdf", specifier = "==4.2.0" },
     { name = "python-dotenv", specifier = "==1.0.1" },
     { name = "python-multipart", specifier = "==0.0.9" },
     { name = "rapidfuzz", specifier = "==3.6.1" },
     { name = "tiktoken", specifier = "==0.14.0" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.30.6" },
-    { name = "youtube-transcript-api", specifier = "==0.6.1" },
 ]
 
 [package.metadata.requires-dev]
@@ -1936,18 +1936,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/aa/9d/8cdceec66a9b940700cb45931741403f045b162afd79bcb93c41cadd0972/yarl-1.25.1-cp311-cp311-win_amd64.whl", hash = "sha256:d7306dee25b8a0e737363f347362b875094b4dc4e367311470656ae420fdbf8e", size = 102894, upload-time = "2026-09-15T19:30:57.606Z" },
     { url = "https://files.pythonhosted.org/packages/17/f1/7ec357db1d3ad2863542d71e8fe64a126bbec17b134cd7d30951196809a5/yarl-1.25.1-cp311-cp311-win_arm64.whl", hash = "sha256:abb1384477f5901d436b5d2e5465954de46ea6098f59163d243660b5c4461d35", size = 98609, upload-time = "2026-09-15T19:30:59.705Z" },
     { url = "https://files.pythonhosted.org/packages/54/22/318c7980066769c6bcd9221ed2248294f5698811da099013098c670565ed/yarl-1.25.1-py3-none-any.whl", hash = "sha256:681c758b0490f9e96b78e5fa8e8dc6e648e9185bb6eaebe73183c33ea0c445f3", size = 63617, upload-time = "2026-09-15T19:34:59.616Z" },
-]
-
-[[package]]
-name = "youtube-transcript-api"
-version = "0.6.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "requests" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e8/ae/f4d0bf7751685b6adb30eb6e78fa33a29883e8bf44adc155a0ecdad2f683/youtube_transcript_api-0.6.1.tar.gz", hash = "sha256:bc148ea687af7d8e80853d4cd005c7d28859106a5eb5501722fd3dac9f9b68be", size = 24325, upload-time = "2023-06-16T13:25:35.378Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/33/c1/18e32c7cd693802056f385c3ee78825102566be94a811b6556f17783c743/youtube_transcript_api-0.6.1-py3-none-any.whl", hash = "sha256:f0ce9c8475953c108d3cbfda0426dc35f195638bf841837968530d300c6c7ec5", size = 24005, upload-time = "2023-06-16T13:25:33.67Z" },
 ]
 
 [[package]]

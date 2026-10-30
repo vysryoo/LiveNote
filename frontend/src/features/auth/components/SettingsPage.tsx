@@ -1,21 +1,22 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ParseKeys } from "i18next";
 import { ArrowLeft } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { z } from "zod";
-import { LANGUAGE_CODES, LANGUAGE_LABELS } from "@/shared/i18n";
+import { AppHeader } from "@/shared/components/AppHeader";
+import { LanguageSelect } from "@/shared/components/LanguageSelect";
+import { LANGUAGE_CODES } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { toAuthErrorKey } from "../api/errors";
 import type { User } from "../api/schemas";
 import { useUpdateSettings } from "../hooks/useAuthMutations";
 import { useMe } from "../hooks/useMe";
 import { FieldError } from "@/shared/components/FieldError";
+import { FormError } from "@/shared/components/FormError";
 
 const settingsSchema = z
   .object({
@@ -89,20 +90,18 @@ function SettingsForm({ user }: { user: User }) {
   });
 
   return (
-    <div className="min-h-screen bg-background bg-wave-pattern-bottom">
-      <header className="border-b bg-white/80 backdrop-blur-sm shadow-lg">
-        <div className="px-[3%] py-[0.4%]" style={{ fontSize: "clamp(14px, 1.2vw, 18px)" }}>
-          <button
-            type="button"
-            onClick={goToLectures}
-            className="flex items-center text-muted-foreground hover:text-foreground"
-            style={{ gap: "0.5em" }}
-          >
-            <ArrowLeft style={{ width: "1.2em", height: "1.2em" }} />
-            {t("settings.back")}
-          </button>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background">
+      <AppHeader>
+        <button
+          type="button"
+          onClick={goToLectures}
+          className="flex items-center text-muted-foreground hover:text-foreground"
+          style={{ gap: "0.5em" }}
+        >
+          <ArrowLeft style={{ width: "1.2em", height: "1.2em" }} />
+          {t("settings.back")}
+        </button>
+      </AppHeader>
 
       <main className="max-w-[1400px] mx-auto px-6 py-12">
         <div className="max-w-2xl mx-auto">
@@ -115,18 +114,7 @@ function SettingsForm({ user }: { user: User }) {
                 control={form.control}
                 name="language"
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LANGUAGE_CODES.map((code) => (
-                        <SelectItem key={code} value={code}>
-                          {LANGUAGE_LABELS[code]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <LanguageSelect value={field.value} onChange={field.onChange} />
                 )}
               />
             </div>
@@ -168,20 +156,15 @@ function SettingsForm({ user }: { user: User }) {
                   <FieldError messageKey={errors.confirmPassword?.message} />
                 </div>
 
-                {errors.root?.message && (
-                  <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
-                    {t(errors.root.message as ParseKeys)}
-                  </div>
-                )}
+                <FormError
+                  messageKey={errors.root?.message}
+                  className="bg-red-50 text-red-600 p-3 rounded-lg text-sm"
+                />
               </div>
             </div>
 
             <div className="pt-4">
-              <Button
-                type="submit"
-                className="w-full bg-[#3B72DD] hover:bg-[#4D82E0]"
-                disabled={isSubmitting}
-              >
+              <Button type="submit" variant="brand" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? `${t("settings.save")}...` : t("settings.save")}
               </Button>
             </div>

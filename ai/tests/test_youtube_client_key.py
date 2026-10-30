@@ -3,13 +3,13 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from youtube.youtubekit.api.youtube_client import YouTubeAPIClient
+from recommend.providers.video import YouTubeClient
 
 pytestmark = pytest.mark.anyio("asyncio")
 
 
 @pytest.mark.anyio("asyncio")
-async def test_api_key_is_sent_in_header_not_url(monkeypatch):
+async def test_api_key_is_sent_in_header_not_url():
     requests = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -18,9 +18,7 @@ async def test_api_key_is_sent_in_header_not_url(monkeypatch):
             return httpx.Response(400, json={"error": {"message": "bad"}})
         return httpx.Response(200, json={"items": []})
 
-    real_client = httpx.AsyncClient
-    monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs))
-    client = YouTubeAPIClient(api_key="secret-key")
+    client = YouTubeClient("secret-key", transport=httpx.MockTransport(handler))
 
     with pytest.raises(httpx.HTTPStatusError) as error:
         await client.search_videos("stack", lang="ko", max_results=3)

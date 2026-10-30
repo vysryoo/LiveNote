@@ -9,6 +9,8 @@ dependencies = [
     "uvicorn[standard]==0.30.6",
     "python-multipart==0.0.9",
     "pydantic==2.9.0",
+    # 환경변수·.env 설정 (core/config.py)
+    "pydantic-settings==2.15.0",
     "python-dotenv==1.0.1",
     # HTTP (OpenAlex 클라이언트가 HTTP/2 사용)
     "httpx[http2]==0.27.2",
@@ -24,8 +26,7 @@ dependencies = [
     # 강의 자료 분할 (토큰 계산, semantic 분할 거리 계산)
     "tiktoken==0.14.0",
     "numpy==2.4.6",
-    # 영상 추천
-    "youtube-transcript-api==0.6.1",
+    # 영상 추천 휴리스틱(제목 유사도), eval 전사 오류율 계산
     "rapidfuzz==3.6.1",
 ]
 
@@ -43,5 +44,5 @@ dev = [
 package = false
 
 [tool.pytest.ini_options]
-anyio_backend = "asyncio"
 testpaths = ["tests"]
+pythonpath = ["."]

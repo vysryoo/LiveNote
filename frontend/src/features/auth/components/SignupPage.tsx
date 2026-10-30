@@ -1,18 +1,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ParseKeys } from "i18next";
 import { ArrowLeft } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Trans, useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { z } from "zod";
-import logoImage from "@/assets/logo.png";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { toAuthErrorKey } from "../api/errors";
 import { useSignup } from "../hooks/useAuthMutations";
+import { AppLogo } from "@/shared/components/AppHeader";
 import { FieldError } from "@/shared/components/FieldError";
+import { FormError } from "@/shared/components/FormError";
 
 const signupSchema = z
   .object({
@@ -60,7 +60,7 @@ export function SignupPage() {
   const goToLanding = () => navigate("/");
 
   return (
-    <div className="min-h-screen bg-[#F6F9FC] bg-wave-pattern-bottom flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#F6F9FC] flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <button
           type="button"
@@ -73,7 +73,7 @@ export function SignupPage() {
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8">
           <div className="flex items-center mb-8 py-[0.4%]">
-            <img src={logoImage} alt="LiveNote" style={{ height: "3em" }} />
+            <AppLogo />
           </div>
 
           <div className="mb-8">
@@ -159,11 +159,10 @@ export function SignupPage() {
               <FieldError messageKey={errors.email?.message} />
             </div>
 
-            {errors.root?.message && (
-              <div className="bg-[#FF4D4D]/10 border border-[#FF4D4D]/20 text-[#FF4D4D] p-3 rounded-lg text-sm">
-                {t(errors.root.message as ParseKeys)}
-              </div>
-            )}
+            <FormError
+              messageKey={errors.root?.message}
+              className="bg-[#FF4D4D]/10 border border-[#FF4D4D]/20 text-[#FF4D4D] p-3 rounded-lg text-sm"
+            />
 
             <Button
               type="submit"

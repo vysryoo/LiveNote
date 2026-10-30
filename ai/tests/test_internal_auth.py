@@ -23,8 +23,8 @@ async def test_rejects_request_with_wrong_key(fastapi_app):
 
 
 @pytest.mark.anyio
-async def test_rejects_all_requests_when_server_key_missing(fastapi_app, monkeypatch):
-    monkeypatch.delenv("INTERNAL_API_KEY")
+async def test_rejects_all_requests_when_server_key_missing(fastapi_app, test_context):
+    test_context.settings.internal_api_key = ""
     response = await _post_text_upsert(fastapi_app, {INTERNAL_API_KEY_HEADER: ""})
     assert response.status_code == 401
 
@@ -37,5 +37,5 @@ async def test_health_is_open(fastapi_app):
     assert response.status_code == 200
 
 
-def test_callback_headers_carry_key(internal_api_key):
-    assert internal_auth_headers() == {INTERNAL_API_KEY_HEADER: internal_api_key}
+def test_callback_headers_carry_key(test_context, internal_api_key):
+    assert internal_auth_headers(test_context.settings) == {INTERNAL_API_KEY_HEADER: internal_api_key}

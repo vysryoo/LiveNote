@@ -4,25 +4,26 @@ LLM 호출 공통 계층
 모든 OpenAI 채팅 호출을 LangChain ChatOpenAI로 일원화한다.
 용도(요약, QnA, 검색어 생성, 후보 검증)별 모델과 추론 강도를 한곳에서 정하고, 호출마다 소요 시간과 토큰 사용량을 로그로 남긴다.
 
-환경변수로 덮어쓰기:
+설정(core.config)으로 덮어쓰기:
     LLM_MODEL: 모든 용도의 모델
     LLM_{용도}_MODEL, LLM_{용도}_REASONING_EFFORT: 용도별 모델, 추론 강도 (용도: SUMMARY, QA, QUERY, VERIFY)
 """
 from __future__ import annotations
 
 import json
-import os
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, AsyncIterator, Dict, List, Optional, Sequence, Tuple
+from typing import Any, AsyncIterator, Dict, List, Optional, Sequence, Tuple, Type, TypeVar
 from uuid import UUID
 
 from langchain_core.callbacks import AsyncCallbackHandler
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import LLMResult
 from langchain_openai import ChatOpenAI
+from pydantic import BaseModel
 
+from core.config import Settings, get_settings
 from core.timing import logger as timing_logger
 
 DEFAULT_MODEL = "gpt-6-luna"
@@ -50,7 +51,7 @@ class ModelSettings:
     reasoning_effort: Optional[str]
 
 
-# 스트리밍(QA)은 첫 글자 시간을 줄이기 위해 추론을 끔. 값은 스트리밍 측정(L)에서 다시 정함
+# QA는 질문 표시 중앙값이 none 1670ms, low 3345ms(eval/results/L_none.md, L_low.md)라 추론을 끔
 DEFAULT_REASONING_EFFORT = {
     ModelPurpose.SUMMARY: "none",
     ModelPurpose.QA: "none",
@@ -58,20 +59,23 @@ DEFAULT_REASONING_EFFORT = {
     ModelPurpose.VERIFY: "none",
 }
 
+# ("system" 또는 "user", 내용). LangChain 채팅 모델이 그대로 받음
 Message = Tuple[str, str]
+SchemaT = TypeVar("SchemaT", bound=BaseModel)
 
 
-def model_settings(purpose: ModelPurpose) -> ModelSettings:
-    """용도의 모델 설정을 환경변수와 기본값으로 정한다.
+def model_settings(purpose: ModelPurpose, settings: Optional[Settings] = None) -> ModelSettings:
+    """용도의 모델 설정을 설정값과 기본값으로 정한다.
 
     Args:
         purpose: 호출 용도
+        settings: 서버 설정. None이면 get_settings()
     Returns:
         모델 설정. 추론 모델이 아니면 reasoning_effort는 None
     """
-    prefix = f"LLM_{purpose.name}"
-    model = os.getenv(f"{prefix}_MODEL") or os.getenv("LLM_MODEL") or DEFAULT_MODEL
-    effort = os.getenv(f"{prefix}_REASONING_EFFORT") or DEFAULT_REASONING_EFFORT[purpose]
+    settings = settings or get_settings()
+    model = getattr(settings, f"llm_{purpose.value}_model") or settings.llm_model or DEFAULT_MODEL
+    effort = getattr(settings, f"llm_{purpose.value}_reasoning_effort") or DEFAULT_REASONING_EFFORT[purpose]
     if not model.startswith(REASONING_MODEL_PREFIXES):
         effort = None
     return ModelSettings(model=model, reasoning_effort=effort)
@@ -142,6 +146,7 @@ def build_chat_model(purpose: ModelPurpose, max_tokens: Optional[int] = None) ->
     settings = model_settings(purpose)
     kwargs: Dict[str, Any] = {
         "model": settings.model,
+        "api_key": get_settings().openai_api_key or None,
         "timeout": DEFAULT_TIMEOUT_SEC,
         "max_retries": DEFAULT_MAX_RETRIES,
         "stream_usage": True,
@@ -154,32 +159,10 @@ def build_chat_model(purpose: ModelPurpose, max_tokens: Optional[int] = None) ->
     return ChatOpenAI(**kwargs)
 
 
-def to_messages(messages: Sequence[Message]) -> List[BaseMessage]:
-    """(역할, 내용) 목록을 LangChain 메시지로 바꾼다.
-
-    Args:
-        messages: ('system' 또는 'user', 내용) 목록
-    Returns:
-        LangChain 메시지 목록
-    Raises:
-        ValueError: 지원하지 않는 역할인 경우
-    """
-    converted: List[BaseMessage] = []
-    for role, content in messages:
-        if role == "system":
-            converted.append(SystemMessage(content))
-        elif role == "user":
-            converted.append(HumanMessage(content))
-        else:
-            raise ValueError(f"지원하지 않는 역할: {role}")
-    return converted
-
-
 async def complete(
     purpose: ModelPurpose,
     messages: Sequence[Message],
     max_tokens: Optional[int] = None,
-    json_mode: bool = False,
 ) -> str:
     """응답 전체를 한 번에 받는다.
 
@@ -187,16 +170,36 @@ async def complete(
         purpose: 호출 용도
         messages: ('system' 또는 'user', 내용) 목록
         max_tokens: 최대 출력 토큰
-        json_mode: True면 JSON 객체만 응답하도록 요청
     Returns:
         응답 본문 (앞뒤 공백 제거)
     Raises:
         openai.APIError: OpenAI 호출 실패 (재시도 후)
     """
-    model = build_chat_model(purpose, max_tokens)
-    runnable = model.bind(response_format={"type": "json_object"}) if json_mode else model
-    result: AIMessage = await runnable.ainvoke(to_messages(messages))
+    result: AIMessage = await build_chat_model(purpose, max_tokens).ainvoke(list(messages))
     return str(result.content or "").strip()
+
+
+async def complete_json(
+    purpose: ModelPurpose,
+    messages: Sequence[Message],
+    schema: Type[SchemaT],
+    max_tokens: Optional[int] = None,
+) -> SchemaT:
+    """스키마에 맞는 JSON 응답을 받아 모델 객체로 돌려준다 (OpenAI 구조화 출력).
+
+    Args:
+        purpose: 호출 용도
+        messages: ('system' 또는 'user', 내용) 목록
+        schema: 응답 형식 Pydantic 모델
+        max_tokens: 최대 출력 토큰
+    Returns:
+        schema 객체
+    Raises:
+        openai.APIError: OpenAI 호출 실패 (재시도 후)
+        pydantic.ValidationError, langchain_core.exceptions.OutputParserException: 응답이 스키마에 맞지 않는 경우
+    """
+    model = build_chat_model(purpose, max_tokens).with_structured_output(schema, method="json_schema")
+    return await model.ainvoke(list(messages))
 
 
 async def stream(
@@ -216,6 +219,6 @@ async def stream(
         openai.APIError: OpenAI 호출 실패. 이미 돌려준 조각은 취소되지 않음
     """
     model = build_chat_model(purpose, max_tokens)
-    async for chunk in model.astream(to_messages(messages)):
+    async for chunk in model.astream(list(messages)):
         if chunk.content:
             yield str(chunk.content)

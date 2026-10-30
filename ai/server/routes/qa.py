@@ -6,31 +6,22 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import AsyncIterator, Optional, List
+from typing import AsyncIterator, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
-from pydantic import Field, validator
+from pydantic import Field
 
+from core.config import Settings
+from core.schemas import QnAType
 from core.timing import RequestTimer
-from qa.qakit.models import QARequest, PreviousQA
+from qa.models import PreviousQA, QARequest
 
-from ..config import AppSettings
-from ..dependencies import get_qa_service, get_rag_service, get_settings
-from ..models import QnAType
-from ..utils import CamelModel, build_collection_id, to_qa_rag_context
+from ..dependencies import Services, get_services, get_settings
+from ..utils import CamelModel, NonBlankStr, build_collection_id
 
 router = APIRouter(prefix="/qa", tags=["QA"])
 logger = logging.getLogger(__name__)
-
-QNA_TYPE_TO_INTERNAL = {
-    QnAType.CONCEPT: "개념",
-    QnAType.APPLICATION: "응용",
-    QnAType.ADVANCED: "심화",
-    QnAType.COMPARISON: "비교",
-}
-INTERNAL_TO_QNA_TYPE = {v: k for k, v in QNA_TYPE_TO_INTERNAL.items()}
-
 
 class PreviousQAItem(CamelModel):
     """이전 QA 항목 (API 입력용)"""
@@ -45,7 +36,7 @@ class QAGenerateRequest(CamelModel):
     lecture_id: int = Field(..., ge=1, description="강의 ID")
     summary_id: Optional[int] = Field(default=None, description="요약 ID")
     section_index: int = Field(..., ge=0, description="섹션 인덱스(0-base)")
-    section_summary: str = Field(..., min_length=10, description="섹션 요약")
+    section_summary: NonBlankStr = Field(..., min_length=10, description="섹션 요약")
     subject: Optional[str] = Field(default=None, description="선택 과목 정보")
     question_types: Optional[List[QnAType]] = Field(
         default=None,
@@ -56,19 +47,12 @@ class QAGenerateRequest(CamelModel):
         description="중복 방지를 위한 이전 QA 목록"
     )
 
-    @validator("section_summary")
-    def validate_section_summary(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("section_summary는 비어 있을 수 없습니다.")
-        return value
-
 
 @router.post("/generate")
 async def generate_qa(
     request: QAGenerateRequest,
-    rag_service=Depends(get_rag_service),
-    qa_service=Depends(get_qa_service),
-    settings: AppSettings = Depends(get_settings),
+    services: Services = Depends(get_services),
+    settings: Settings = Depends(get_settings),
 ):
     """질문 유형별 QA를 생성하며 생성 과정을 SSE로 응답한다.
 
@@ -82,12 +66,10 @@ async def generate_qa(
     """
     timer = RequestTimer("qa", lecture_id=request.lecture_id, section_index=request.section_index)
     timer.mark("received")
-    lecture_id_str = str(request.lecture_id)
-    collection_id = build_collection_id(settings.rag.collection_prefix, lecture_id_str)
-    section_id_for_provider = request.section_index + 1  # QA 모듈은 1-base
+    collection_id = build_collection_id(settings.rag.collection_prefix, str(request.lecture_id))
 
     def _retrieve():
-        return rag_service.retrieve_context(
+        return services.rag.retrieve_context(
             collection_id=collection_id,
             query=request.section_summary,
             section_index=request.section_index,
@@ -105,62 +87,38 @@ async def generate_qa(
         ) from exc
     timer.mark("retrieved", chunks=len(rag_chunks))
 
-    requested_types = list(request.question_types) if request.question_types is not None else list(settings.qa.question_types)
-    qa_question_types_enum: List[QnAType] = requested_types[: settings.qa.qa_top_k]
-    if not qa_question_types_enum:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="생성할 질문 유형이 설정되지 않았습니다."
-        )
-
-    qa_question_types = [_to_internal_qna_type(q_type) for q_type in qa_question_types_enum]
-    if not qa_question_types:
+    requested_types = request.question_types if request.question_types is not None else settings.qa.question_types
+    question_types: List[QnAType] = list(requested_types)[: settings.qa.qa_top_k]
+    if not question_types:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="생성할 질문 유형이 설정되지 않았습니다."
         )
 
     qa_request = QARequest(
-        lecture_id=lecture_id_str,
-        section_id=section_id_for_provider,
         section_summary=request.section_summary,
+        question_types=question_types,
         subject=request.subject,
         language=settings.qa.language,
-        question_types=qa_question_types,
-        qa_count=len(qa_question_types),
-        rag_context=to_qa_rag_context(rag_chunks),
-        previous_qa=[
-            PreviousQA(type=_normalize_previous_type(item.type), question=item.question, answer=item.answer)
-            for item in request.previous_qa
-        ]
+        rag_chunks=rag_chunks,
+        previous_qa=[PreviousQA(type=item.type, question=item.question, answer=item.answer) for item in request.previous_qa],
     )
 
     async def events() -> AsyncIterator[str]:
-        async for event_type, q_type, payload in qa_service.stream_questions(qa_request):
-            enum_type = _to_qna_enum(payload.get("type") or q_type)
-            type_value = enum_type.value if enum_type else q_type
-            item = payload.get("item")
-            if event_type == "start":
-                timer.mark("item_start", item=item, type=type_value)
-                yield _sse("start", {"item": item, "type": type_value})
-            elif event_type in ("question", "answer"):
-                if event_type == "question":
-                    timer.mark("item_question", item=item)
-                else:
-                    timer.mark_once("item_first_answer", key=item, item=item)
-                yield _sse(event_type, {"item": item, "text": payload.get("text", "")})
-            elif event_type == "qa":
-                timer.mark("item_done", item=item, answer_chars=len(payload.get("answer") or ""))
-                yield _sse("done", {
-                    "item": item,
-                    "type": type_value,
-                    "question": payload.get("question"),
-                    "answer": payload.get("answer"),
-                })
-            elif event_type == "error":
+        async for event in services.qa.stream_questions(qa_request):
+            item = event.data["item"]
+            if event.name == "start":
+                timer.mark("item_start", item=item, type=event.data["type"])
+            elif event.name == "question":
+                timer.mark("item_question", item=item)
+            elif event.name == "answer":
+                timer.mark_once("item_first_answer", key=item, item=item)
+            elif event.name == "done":
+                timer.mark("item_done", item=item, answer_chars=len(event.data["answer"]))
+            elif event.name == "error":
                 timer.mark("item_error", item=item)
-                logger.warning("QA 생성 실패: type=%s error=%s", q_type, payload.get("error"))
-                yield _sse("error", {"item": item, "message": payload.get("error")})
+                logger.warning("QA 생성 실패: item=%s error=%s", item, event.data["message"])
+            yield _sse(event.name, event.data)
         timer.mark("completed")
 
     return StreamingResponse(events(), media_type="text/event-stream")
@@ -169,35 +127,3 @@ async def generate_qa(
 def _sse(event: str, data: dict) -> str:
     """SSE 이벤트 한 개를 문자열로 만든다."""
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
-
-
-def _to_internal_qna_type(q_type: QnAType | str) -> str:
-    """Enum 값을 QA 모듈에서 사용하는 유형 문자열로 변환"""
-    try:
-        enum_type = q_type if isinstance(q_type, QnAType) else QnAType(q_type)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"지원하지 않는 질문 유형: {q_type}"
-        ) from exc
-    return QNA_TYPE_TO_INTERNAL[enum_type]
-
-
-def _normalize_previous_type(value: str) -> str:
-    """이전 QA 유형을 QA 모듈용 문자열로 정규화"""
-    try:
-        return _to_internal_qna_type(value)
-    except HTTPException:
-        return value
-
-
-def _to_qna_enum(value: Optional[str]) -> Optional[QnAType]:
-    """QA 모듈 응답을 Enum 값으로 역매핑"""
-    if value is None:
-        return None
-    if value in INTERNAL_TO_QNA_TYPE:
-        return INTERNAL_TO_QNA_TYPE[value]
-    try:
-        return QnAType(value)
-    except ValueError:
-        return None

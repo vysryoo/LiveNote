@@ -4,8 +4,8 @@ import asyncio
 
 import pytest
 
-from server.models import ResourceType
-from server.rec_graph import run_recommendations
+from core.schemas import ResourceType
+from recommend.graph import run_recommendations
 
 pytestmark = pytest.mark.anyio("asyncio")
 

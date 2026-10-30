@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from wiki.wikikit.service import WikiService
+from recommend.providers.wiki import WikiProvider
 
 pytestmark = pytest.mark.anyio("asyncio")
 
@@ -15,14 +15,15 @@ class _FakeWikiApi:
         return dict(self.pages[page_id])
 
 
-@pytest.mark.anyio("asyncio")
 async def test_disambiguation_pages_are_excluded():
-    service = WikiService()
-    service.api_client = _FakeWikiApi({
-        1: {"title": "Stack", "extract": "Stack may refer to:", "pageid": 1, "disambiguation": True},
-        2: {"title": "Stack (abstract data type)", "extract": "A stack is ...", "pageid": 2, "disambiguation": False},
-    })
+    provider = WikiProvider(
+        top_k=1, verify=False, min_score=5.0, language="ko", wiki_lang="en", fallback_to_ko=False,
+        api=_FakeWikiApi({
+            1: {"title": "Stack", "extract": "Stack may refer to:", "pageid": 1, "disambiguation": True},
+            2: {"title": "Stack (abstract data type)", "extract": "A stack is ...", "pageid": 2, "disambiguation": False},
+        }),
+    )
 
-    pages = await service._fetch_details_parallel([{"pageid": 1}, {"pageid": 2}], "en")
+    pages = await provider.fetch_details([{"pageid": 1}, {"pageid": 2}], "en")
 
     assert [page["title"] for page in pages] == ["Stack (abstract data type)"]

@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ParseKeys } from "i18next";
 import { FileText, Upload, X } from "lucide-react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -7,7 +6,9 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { z } from "zod";
 import { FieldError } from "@/shared/components/FieldError";
-import { isLanguageCode, LANGUAGE_CODES, LANGUAGE_LABELS } from "@/shared/i18n";
+import { FormError } from "@/shared/components/FormError";
+import { LanguageSelect } from "@/shared/components/LanguageSelect";
+import { isLanguageCode, LANGUAGE_CODES } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   Dialog,
@@ -89,18 +90,7 @@ export function NewLectureDialog({ open, onOpenChange }: NewLectureDialogProps) 
               control={form.control}
               name="sttLanguage"
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGE_CODES.map((code) => (
-                      <SelectItem key={code} value={code}>
-                        {LANGUAGE_LABELS[code]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <LanguageSelect value={field.value} onChange={field.onChange} />
               )}
             />
           </div>
@@ -183,16 +173,8 @@ export function NewLectureDialog({ open, onOpenChange }: NewLectureDialogProps) 
             </div>
           )}
 
-          {errors.root?.message && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-md p-2">
-              {t(errors.root.message as ParseKeys)}
-            </div>
-          )}
-          <Button
-            type="submit"
-            className="w-full bg-[#3B72DD] hover:bg-[#4D82E0]"
-            disabled={isSubmitting}
-          >
+          <FormError messageKey={errors.root?.message} />
+          <Button type="submit" variant="brand" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? `${t("main.startNewLecture")}...` : t("main.startNewLecture")}
           </Button>
         </form>

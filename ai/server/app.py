@@ -4,19 +4,14 @@ FastAPI 애플리케이션 생성
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from pathlib import Path
-from typing import Any
-
-from dotenv import load_dotenv
-
-# Ensure .env is loaded even if the working directory differs (override stale env)
-load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
+from typing import Optional
 
 from fastapi import Depends, FastAPI
 
 from core import tasks as background_tasks
+from core.config import Settings, get_settings
 
-from .config import AppSettings
+from .dependencies import Services
 from .routes import qa_router, rag_router, rec_router, summary_router
 from .security import verify_internal_api_key
 
@@ -24,57 +19,52 @@ from .security import verify_internal_api_key
 BACKGROUND_SHUTDOWN_TIMEOUT_SEC = 30.0
 
 
-def _ensure_service(service: Any, factory_path: str):
-    """지연 로딩으로 서비스 인스턴스 확보"""
-    if service is not None:
-        return service
-    
-    module_name, attr = factory_path.rsplit(".", 1)
-    module = __import__(module_name, fromlist=[attr])
-    factory = getattr(module, attr)
-    return factory()
+def build_services(settings: Settings) -> Services:
+    """설정으로 실제 서비스들을 만든다.
+
+    Args:
+        settings: 서버 설정
+    Returns:
+        서비스 묶음
+    """
+    from qa.service import QAService
+    from rag.service import RAGService
+    from recommend.service import RecommendService
+    from summary.service import SummaryService
+
+    return Services(
+        rag=RAGService(settings),
+        qa=QAService(),
+        rec=RecommendService(settings),
+        summary=SummaryService(settings.summary),
+    )
 
 
-def create_app(
-    settings: AppSettings | None = None,
-    *,
-    rag_service=None,
-    qa_service=None,
-    openalex_service=None,
-    wiki_service=None,
-    youtube_service=None,
-    google_service=None,
-) -> FastAPI:
-    """FastAPI 앱 생성"""
-    base_settings = settings or AppSettings()
-    
-    # 서비스 인스턴스를 한 번만 준비해 재사용
-    _rag = _ensure_service(rag_service, "rag.ragkit.service.RAGService")
-    _qa = _ensure_service(qa_service, "qa.qakit.service.QAService")
-    _openalex = _ensure_service(openalex_service, "openalex.openalexkit.service.OpenAlexService")
-    _wiki = _ensure_service(wiki_service, "wiki.wikikit.service.WikiService")
-    _youtube = _ensure_service(youtube_service, "youtube.youtubekit.service.YouTubeService")
-    _google = _ensure_service(google_service, "blog.blogkit.service.GoogleService")
-    _openalex_owned = openalex_service is None
-    
+def create_app(settings: Optional[Settings] = None, services: Optional[Services] = None) -> FastAPI:
+    """FastAPI 앱을 만든다.
+
+    Args:
+        settings: 서버 설정. None이면 환경변수와 ai/.env로 만든 설정
+        services: 서비스 묶음. None이면 설정으로 만들고, 서버 종료 시 연결을 닫음
+    Returns:
+        FastAPI 앱
+    """
+    settings = settings or get_settings()
+    owns_services = services is None
+    services = services or build_services(settings)
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        app.state.app_settings = base_settings
-        app.state.rag_service = _rag
-        app.state.qa_service = _qa
-        app.state.openalex_service = _openalex
-        app.state.wiki_service = _wiki
-        app.state.youtube_service = _youtube
-        app.state.google_service = _google
-        
+        # 키가 빠진 채 요청을 받기 시작하지 않도록 서버 시작 단계에서 멈춤
+        settings.check_required()
         try:
             yield
         finally:
             # 요청에 먼저 응답한 요약·추천 콜백이 끝나도록 잠시 기다림
             await background_tasks.shutdown(timeout_sec=BACKGROUND_SHUTDOWN_TIMEOUT_SEC)
-            if _openalex_owned and hasattr(_openalex, "close"):
-                await _openalex.close()
-    
+            if owns_services:
+                await services.rec.close()
+
     app = FastAPI(
         title="LiveNote AI Gateway",
         version="1.0.0",
@@ -82,9 +72,11 @@ def create_app(
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
-        lifespan=lifespan
+        lifespan=lifespan,
     )
-    
+    app.state.settings = settings
+    app.state.services = services
+
     # /health를 제외한 모든 API는 백엔드만 호출하도록 공유 키를 확인
     internal_only = [Depends(verify_internal_api_key)]
     app.include_router(rag_router, dependencies=internal_only)
@@ -92,18 +84,9 @@ def create_app(
     app.include_router(rec_router, dependencies=internal_only)
     app.include_router(summary_router, dependencies=internal_only)
 
-    # 테스트나 수동 호출 시 lifespan이 실행되지 않아도 안전하도록 기본 상태를 설정
-    app.state.app_settings = base_settings
-    app.state.rag_service = _rag
-    app.state.qa_service = _qa
-    app.state.openalex_service = _openalex
-    app.state.wiki_service = _wiki
-    app.state.youtube_service = _youtube
-    app.state.google_service = _google
-    
     @app.get("/health")
     async def health_check():
         """간단한 헬스 체크"""
         return {"status": "ok"}
-    
+
     return app
