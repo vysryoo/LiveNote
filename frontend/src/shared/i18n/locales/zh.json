@@ -67,7 +67,6 @@
     "bookmarkAdded": "已添加书签",
     "bookmarkRemoved": "已移除书签",
     "bookmarkFailed": "书签处理失败",
-    "wsError": "录音连接时发生错误",
     "recordingError": "无法开始录音",
     "micPermissionDenied": "需要麦克风权限",
     "startHint": "请按开始按钮开始实时记录。",

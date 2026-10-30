@@ -68,7 +68,6 @@
     "bookmarkAdded": "Bookmark added",
     "bookmarkRemoved": "Bookmark removed",
     "bookmarkFailed": "Failed to process bookmark",
-    "wsError": "An error occurred while connecting for recording",
     "recordingError": "Failed to start recording",
     "micPermissionDenied": "Microphone permission is required",
     "startHint": "Press the start button to begin live note-taking.",

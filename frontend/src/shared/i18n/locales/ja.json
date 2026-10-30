@@ -67,7 +67,6 @@
     "bookmarkAdded": "ブックマークを追加しました",
     "bookmarkRemoved": "ブックマークを削除しました",
     "bookmarkFailed": "ブックマーク処理に失敗しました",
-    "wsError": "録音用の接続でエラーが発生しました",
     "recordingError": "録音を開始できませんでした",
     "micPermissionDenied": "マイクの権限が必要です",
     "startHint": "開始ボタンを押してリアルタイム記録を始めてください。",
