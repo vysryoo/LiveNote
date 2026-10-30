@@ -3,6 +3,7 @@ package com.capstone.livenote.recording;
 import com.capstone.livenote.ai.AiServerClient;
 import com.capstone.livenote.global.stomp.StreamGateway;
 import com.capstone.livenote.recording.RecordingStateStore.SectionState;
+import com.capstone.livenote.summary.SummaryPhase;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,7 +56,7 @@ public class SectionAggregationService {
             next = SectionState.start(current.index() + 1, startSec, endSec);
             if (!current.finalRequested()) {
                 log.info("[SectionAgg] Section {} closed without FINAL: sending FINAL", current.index());
-                requestSummary(lectureId, current, "FINAL");
+                requestSummary(lectureId, current, SummaryPhase.FINAL);
                 streamGateway.sendSection(lectureId, next.index());
             }
         } else {
@@ -83,13 +84,13 @@ public class SectionAggregationService {
 
         if (!state.partialRequested() && elapsedSec >= PARTIAL_SEC && elapsedSec < SECTION_SEC) {
             log.info("[SectionAgg] Section {} reached {}s: PARTIAL summary", state.index(), PARTIAL_SEC);
-            requestSummary(lectureId, state, "PARTIAL");
+            requestSummary(lectureId, state, SummaryPhase.PARTIAL);
             next = next.withPartialRequested();
         }
 
         if (!state.finalRequested() && elapsedSec >= SECTION_SEC) {
             log.info("[SectionAgg] Section {} reached {}s: FINAL summary", state.index(), SECTION_SEC);
-            requestSummary(lectureId, state, "FINAL");
+            requestSummary(lectureId, state, SummaryPhase.FINAL);
             next = next.withFinalRequested();
             streamGateway.sendSection(lectureId, state.index() + 1);
         }
@@ -116,7 +117,7 @@ public class SectionAggregationService {
                 elapsedSec >= PARTIAL_SEC, elapsedSec >= SECTION_SEC);
     }
 
-    private void requestSummary(Long lectureId, SectionState state, String phase) {
+    private void requestSummary(Long lectureId, SectionState state, SummaryPhase phase) {
         String sourceText = transcriptRepository
                 .findByLectureIdAndSectionIndexOrderByStartSecAsc(lectureId, state.index())
                 .stream()
@@ -129,13 +130,6 @@ public class SectionAggregationService {
                 phase, lectureId, state.index(), state.startSec(), state.lastEndSec(), sourceText.length());
 
         aiServerClient.requestSummaryGeneration(
-                lectureId,
-                null, // 신규 생성이므로 ID 없음
-                state.index(),
-                state.startSec(),
-                state.lastEndSec(),
-                phase,
-                sourceText
-        );
+                lectureId, state.index(), state.startSec(), state.lastEndSec(), phase, sourceText);
     }
 }

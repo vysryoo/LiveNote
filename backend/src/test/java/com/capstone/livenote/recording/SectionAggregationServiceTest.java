@@ -3,6 +3,7 @@ package com.capstone.livenote.recording;
 import com.capstone.livenote.ai.AiServerClient;
 import com.capstone.livenote.global.stomp.StreamGateway;
 import com.capstone.livenote.recording.RecordingStateStore.SectionState;
+import com.capstone.livenote.summary.SummaryPhase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,7 +23,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -69,9 +69,9 @@ class SectionAggregationServiceTest {
         return sectionIndex;
     }
 
-    private void verifySummary(String phase, int sectionIndex, int startSec, int endSec, String text) {
+    private void verifySummary(SummaryPhase phase, int sectionIndex, int startSec, int endSec, String text) {
         verify(aiServerClient).requestSummaryGeneration(
-                eq(LECTURE), isNull(), eq(sectionIndex), eq(startSec), eq(endSec), eq(phase), eq(text));
+                eq(LECTURE), eq(sectionIndex), eq(startSec), eq(endSec), eq(phase), eq(text));
     }
 
     @Test
@@ -88,9 +88,9 @@ class SectionAggregationServiceTest {
         receive(7, 17, "b");
         receive(17, 25, "c");
 
-        verifySummary("PARTIAL", 0, 0, 17, "a b");
+        verifySummary(SummaryPhase.PARTIAL, 0, 0, 17, "a b");
         verify(aiServerClient, times(1)).requestSummaryGeneration(
-                anyLong(), any(), anyInt(), anyInt(), anyInt(), eq("PARTIAL"), anyString());
+                anyLong(), anyInt(), anyInt(), anyInt(), eq(SummaryPhase.PARTIAL), anyString());
     }
 
     @Test
@@ -100,7 +100,7 @@ class SectionAggregationServiceTest {
         receive(17, 27, "c");
         receive(27, 35, "d");
 
-        verifySummary("FINAL", 0, 0, 35, "a b c d");
+        verifySummary(SummaryPhase.FINAL, 0, 0, 35, "a b c d");
         InOrder order = inOrder(streamGateway);
         order.verify(streamGateway).sendSection(LECTURE, 0);
         order.verify(streamGateway).sendSection(LECTURE, 1);
@@ -123,7 +123,7 @@ class SectionAggregationServiceTest {
         // 섹션 시작 후 30초가 지나 들어온 전사. 이전 섹션은 30초를 채우지 못해 최종 요약이 없었음
         assertThat(receive(40, 45, "b")).isEqualTo(1);
 
-        verifySummary("FINAL", 0, 0, 20, "a");
+        verifySummary(SummaryPhase.FINAL, 0, 0, 20, "a");
         verify(streamGateway).sendSection(LECTURE, 1);
     }
 

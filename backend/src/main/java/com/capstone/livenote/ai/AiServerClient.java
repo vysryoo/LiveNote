@@ -1,6 +1,7 @@
 package com.capstone.livenote.ai;
 
 import com.capstone.livenote.summary.Summary;
+import com.capstone.livenote.summary.SummaryPhase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.capstone.livenote.global.security.InternalApiKey;
 import lombok.RequiredArgsConstructor;
@@ -123,35 +124,18 @@ public class AiServerClient {
     }
 
 
-    public void requestSummaryGeneration(Long lectureId,
-                                         Long summaryId,
-                                         Integer sectionIndex,
-                                         Integer startSec,
-                                         Integer endSec,
-                                         String phase,          // "FINAL" 또는 "PARTIAL"
-                                         String transcript) {
-
+    public void requestSummaryGeneration(Long lectureId, int sectionIndex, int startSec, int endSec,
+                                         SummaryPhase phase, String transcript) {
         Map<String, Object> body = new HashMap<>();
         body.put("lecture_id", lectureId);
-        if (summaryId != null) {
-            body.put("summary_id", summaryId);
-        }
         body.put("section_index", sectionIndex);
-
-        if (startSec != null) {
-            body.put("start_sec", startSec);
-        }
-        if (endSec != null) {
-            body.put("end_sec", endSec);
-        }
-
-        body.put("phase", phase != null ? phase.toUpperCase() : "FINAL");
-
+        body.put("start_sec", startSec);
+        body.put("end_sec", endSec);
+        body.put("phase", phase.name());
         body.put("transcript", transcript);
-
         body.put("callback_url", callback("summary"));
 
-        log.info("[AI Summary] Request: lectureId={} section={} phase={}", lectureId, sectionIndex, body.get("phase"));
+        log.info("[AI Summary] Request: lectureId={} section={} phase={}", lectureId, sectionIndex, phase);
 
         post("/summary/generate", body);
     }

@@ -5,6 +5,7 @@ import com.capstone.livenote.ai.AiRequestPayloads.PreviousSummaryPayload;
 import com.capstone.livenote.ai.AiRequestPayloads.QnaGeneratePayload;
 import com.capstone.livenote.ai.AiRequestPayloads.ResourceRecommendPayload;
 import com.capstone.livenote.summary.Summary;
+import com.capstone.livenote.summary.SummaryPhase;
 import com.capstone.livenote.global.security.InternalApiKey;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,7 +66,7 @@ class AiServerClientTest {
 
     @Test
     void summaryRequest() throws Exception {
-        client.requestSummaryGeneration(7L, null, 2, 60, 90, "partial", "전사 내용");
+        client.requestSummaryGeneration(7L, 2, 60, 90, SummaryPhase.PARTIAL, "전사 내용");
 
         assertRequest(AI_SERVER + "/summary/generate", """
                 {"lecture_id":7,"section_index":2,"start_sec":60,"end_sec":90,"phase":"PARTIAL",
