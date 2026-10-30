@@ -53,7 +53,7 @@ export function LectureListPage() {
             </div>
 
             <div className="flex items-center" style={{ gap: "1.2em" }}>
-              <Button onClick={openNewLecture} className="bg-[#3B72DD] hover:bg-[#4D82E0]">
+              <Button variant="brand" onClick={openNewLecture}>
                 <Plus style={{ width: "1.4em", height: "1.4em", marginRight: "0.5em" }} />
                 {t("main.startNewLecture")}
               </Button>
@@ -113,7 +113,7 @@ export function LectureListPage() {
             <div className="text-6xl mb-4">📚</div>
             <h3 className="text-xl mb-2">{t("main.noLecturesTitle")}</h3>
             <p className="text-muted-foreground mb-6">{t("main.noLecturesDesc")}</p>
-            <Button onClick={openNewLecture} className="bg-[#3B72DD] hover:bg-[#4D82E0]">
+            <Button variant="brand" onClick={openNewLecture}>
               <Plus className="w-5 h-5 mr-2" />
               {t("main.startNewLecture")}
             </Button>

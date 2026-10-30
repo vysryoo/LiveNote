@@ -89,11 +89,7 @@ export function LoginDialog({ open, onOpenChange, onSignupClick }: LoginDialogPr
               {t(errors.root.message as ParseKeys)}
             </div>
           )}
-          <Button
-            type="submit"
-            className="w-full bg-[rgb(59,114,221)] hover:bg-[#4D82E0] text-[rgb(255,255,255)]"
-            disabled={isSubmitting}
-          >
+          <Button type="submit" variant="brand" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? `${t("login.login")}...` : t("login.login")}
           </Button>
           <div className="text-center text-sm text-muted-foreground">

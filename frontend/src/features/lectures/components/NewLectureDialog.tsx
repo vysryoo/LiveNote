@@ -188,11 +188,7 @@ export function NewLectureDialog({ open, onOpenChange }: NewLectureDialogProps) 
               {t(errors.root.message as ParseKeys)}
             </div>
           )}
-          <Button
-            type="submit"
-            className="w-full bg-[#3B72DD] hover:bg-[#4D82E0]"
-            disabled={isSubmitting}
-          >
+          <Button type="submit" variant="brand" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? `${t("main.startNewLecture")}...` : t("main.startNewLecture")}
           </Button>
         </form>

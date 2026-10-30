@@ -83,11 +83,7 @@ export function EndSessionDialog({
             <Button type="button" variant="outline" onClick={onCancel}>
               {t("common.cancel")}
             </Button>
-            <Button
-              type="submit"
-              className="bg-[#3B72DD] hover:bg-[#4D82E0]"
-              disabled={isSubmitting}
-            >
+            <Button type="submit" variant="brand" disabled={isSubmitting}>
               {isSubmitting ? `${t("common.save")}...` : t("common.saveAndEnd")}
             </Button>
           </DialogFooter>

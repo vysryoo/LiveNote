@@ -177,11 +177,7 @@ function SettingsForm({ user }: { user: User }) {
             </div>
 
             <div className="pt-4">
-              <Button
-                type="submit"
-                className="w-full bg-[#3B72DD] hover:bg-[#4D82E0]"
-                disabled={isSubmitting}
-              >
+              <Button type="submit" variant="brand" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? `${t("settings.save")}...` : t("settings.save")}
               </Button>
             </div>
