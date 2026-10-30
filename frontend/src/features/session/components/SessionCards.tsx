@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/shared/ui/badge";
 import type { QnA, Resource } from "../api/schemas";
@@ -77,29 +78,22 @@ export function ResourceCard({
   const description = useTypewriter(resource.text, animate);
   const reason = toDisplayReason(resource.reason);
   return (
-    <div className={CARD_CLASS}>
-      <div className="flex items-start justify-between mb-3 flex-shrink-0">
-        <Badge
-          className="text-xs text-[rgb(255,255,255)] flex-shrink-0 self-center"
-          style={{ background: RESOURCE_GRADIENTS[category] }}
-        >
-          {t(`session.resourceTypes.${category}`)}
-        </Badge>
+    <CardFrame
+      badge={t(`session.resourceTypes.${category}`)}
+      badgeBackground={RESOURCE_GRADIENTS[category]}
+      centerBadge
+      bookmark={
         <BookmarkToggle
           id={`checkboxInput-resource-${resource.id}`}
           checked={bookmarked}
           onToggle={onToggleBookmark}
           className="text-[rgb(163,172,183)]"
         />
-      </div>
-      <div className="mb-3 flex-shrink-0">
-        <p className="font-medium">{resource.title || t("lectures.untitled")}</p>
-      </div>
-      <div className="flex-1 overflow-y-auto">
-        <p className="text-sm text-muted-foreground">
-          {resource.text ? description : t("session.noDescription")}
-        </p>
-      </div>
+      }
+      title={resource.title || t("lectures.untitled")}
+      body={resource.text ? description : t("session.noDescription")}
+      keepLineBreaks={false}
+    >
       {reason && (
         <div className="pt-3 flex-shrink-0 text-xs text-muted-foreground">
           <span className="font-medium">{t("session.recommendationReason")}</span>
@@ -115,7 +109,7 @@ export function ResourceCard({
           </a>
         </div>
       )}
-    </div>
+    </CardFrame>
   );
 }
 
@@ -131,27 +125,19 @@ export function QnaCard({
   const { t } = useTranslation();
   const typeKey = QNA_TYPE_KEYS[qna.type as keyof typeof QNA_TYPE_KEYS] ?? QNA_TYPE_KEYS.comparison;
   return (
-    <div className={CARD_CLASS}>
-      <div className="flex items-start justify-between mb-3 flex-shrink-0">
-        <Badge
-          className="text-xs text-[rgb(255,255,255)] flex-shrink-0"
-          style={{ background: BRAND_GRADIENT }}
-        >
-          {t(typeKey)}
-        </Badge>
+    <CardFrame
+      badge={t(typeKey)}
+      badgeBackground={BRAND_GRADIENT}
+      bookmark={
         <BookmarkToggle
           id={`checkboxInput-ai-${qna.id}`}
           checked={bookmarked}
           onToggle={onToggleBookmark}
         />
-      </div>
-      <div className="mb-3 flex-shrink-0">
-        <p className="font-medium">{qna.question}</p>
-      </div>
-      <div className="flex-1 overflow-y-auto">
-        <p className="text-sm text-muted-foreground whitespace-pre-line">{qna.answer}</p>
-      </div>
-    </div>
+      }
+      title={qna.question}
+      body={qna.answer}
+    />
   );
 }
 
@@ -163,20 +149,57 @@ export function StreamingCardView({ card }: { card: StreamingCard }) {
       ? RESOURCE_GRADIENTS[toResourceCategory(card.resourceType)]
       : BRAND_GRADIENT;
   return (
+    <CardFrame
+      badge={generating}
+      badgeBackground={background}
+      title={card.title || generating}
+      body={card.content || generating}
+    />
+  );
+}
+
+// 카드 3종의 공통 틀: 배지와 북마크 줄, 제목, 스크롤되는 본문, 추가 내용
+function CardFrame({
+  badge,
+  badgeBackground,
+  centerBadge = false,
+  bookmark,
+  title,
+  body,
+  keepLineBreaks = true,
+  children,
+}: {
+  badge: string;
+  badgeBackground: string;
+  centerBadge?: boolean;
+  bookmark?: ReactNode;
+  title: string;
+  body: string;
+  keepLineBreaks?: boolean;
+  children?: ReactNode;
+}) {
+  return (
     <div className={CARD_CLASS}>
       <div className="flex items-start justify-between mb-3 flex-shrink-0">
-        <Badge className="text-xs text-[rgb(255,255,255)] flex-shrink-0" style={{ background }}>
-          {generating}
+        <Badge
+          className={`text-xs text-[rgb(255,255,255)] flex-shrink-0${centerBadge ? " self-center" : ""}`}
+          style={{ background: badgeBackground }}
+        >
+          {badge}
         </Badge>
+        {bookmark}
       </div>
       <div className="mb-3 flex-shrink-0">
-        <p className="font-medium">{card.title || generating}</p>
+        <p className="font-medium">{title}</p>
       </div>
       <div className="flex-1 overflow-y-auto">
-        <p className="text-sm text-muted-foreground whitespace-pre-line">
-          {card.content || generating}
+        <p
+          className={`text-sm text-muted-foreground${keepLineBreaks ? " whitespace-pre-line" : ""}`}
+        >
+          {body}
         </p>
       </div>
+      {children}
     </div>
   );
 }
