@@ -6,6 +6,8 @@ import com.capstone.livenote.domain.summary.entity.SummaryPhase;
 import com.capstone.livenote.domain.summary.repository.SummaryRepository;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,10 +35,10 @@ public class SummaryService {
         if (limit <= 0) {
             return List.of();
         }
-        var pageable = org.springframework.data.domain.PageRequest.of(
+        var pageable = PageRequest.of(
                 0,
                 limit,
-                org.springframework.data.domain.Sort.by("sectionIndex").descending()
+                Sort.by("sectionIndex").descending()
         );
         return summaryRepository.findByLectureIdAndSectionIndexLessThanAndPhaseOrderBySectionIndexDesc(
                 lectureId,

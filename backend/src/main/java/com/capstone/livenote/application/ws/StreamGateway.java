@@ -2,7 +2,6 @@ package com.capstone.livenote.application.ws;
 
 import com.capstone.livenote.domain.qna.dto.QnaResponseDto;
 import com.capstone.livenote.domain.resource.dto.ResourceResponseDto;
-import com.capstone.livenote.domain.summary.dto.SummaryResponseDto;
 import com.capstone.livenote.domain.summary.entity.Summary;
 import com.capstone.livenote.domain.transcript.dto.TranscriptResponseDto;
 import lombok.RequiredArgsConstructor;

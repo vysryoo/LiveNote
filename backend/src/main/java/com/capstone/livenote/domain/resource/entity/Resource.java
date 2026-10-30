@@ -1,7 +1,5 @@
 package com.capstone.livenote.domain.resource.entity;
 
-import com.capstone.livenote.domain.lecture.entity.Lecture;
-import com.capstone.livenote.domain.summary.entity.Summary;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.*;

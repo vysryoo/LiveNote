@@ -1,9 +1,7 @@
 package com.capstone.livenote.domain.lecture.entity;
 
-import com.capstone.livenote.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 @Entity
@@ -39,7 +37,7 @@ public class Lecture {
     private String files;
 
     @PrePersist void prePersist() {
-        if (createdAt == null) createdAt = java.time.LocalDateTime.now();
+        if (createdAt == null) createdAt = LocalDateTime.now();
     }
 
     // RAG 컬렉션 ID 저장용

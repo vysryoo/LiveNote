@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -55,7 +56,7 @@ public class SessionDetailResponse {
         
         // duration 계산 (녹화 중이거나 종료된 경우)
         if (lecture.getEndAt() != null && lecture.getCreatedAt() != null) {
-            response.setDuration((int) java.time.Duration.between(lecture.getCreatedAt(), lecture.getEndAt()).getSeconds());
+            response.setDuration((int) Duration.between(lecture.getCreatedAt(), lecture.getEndAt()).getSeconds());
         }
         
         response.setTranscripts(transcripts);

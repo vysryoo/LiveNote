@@ -24,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 @Service
@@ -124,7 +125,7 @@ public class LectureService {
             lecture.setTitle(title.trim());
         }
         lecture.setStatus(Lecture.Status.COMPLETED);
-        lecture.setEndAt(java.time.LocalDateTime.now());
+        lecture.setEndAt(LocalDateTime.now());
         lectureRepo.save(lecture);
         log.info("Lecture ended: id={}", id);
         return lecture;

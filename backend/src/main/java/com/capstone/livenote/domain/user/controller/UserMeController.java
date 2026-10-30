@@ -16,7 +16,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.capstone.livenote.domain.user.dto.SetLanguageRequest;
 import com.capstone.livenote.domain.user.dto.SetPasswordRequest;
-import com.capstone.livenote.domain.user.dto.UserViewDto;
 
 @RestController
 @RequestMapping("/api/users")

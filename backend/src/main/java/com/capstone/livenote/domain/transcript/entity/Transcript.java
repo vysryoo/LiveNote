@@ -1,6 +1,5 @@
 package com.capstone.livenote.domain.transcript.entity;
 
-import com.capstone.livenote.domain.lecture.entity.Lecture;
 import jakarta.persistence.*;
 import lombok.*;
 

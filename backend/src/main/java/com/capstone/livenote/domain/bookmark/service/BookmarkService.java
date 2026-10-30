@@ -7,7 +7,6 @@ import com.capstone.livenote.domain.lecture.service.LectureService;
 import com.capstone.livenote.domain.qna.repository.QnaRepository;
 import com.capstone.livenote.domain.resource.repository.ResourceRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,7 +15,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class BookmarkService {
 
-    @Autowired
     private final BookmarkRepository bookmarkRepository;
     private final QnaRepository qnaRepository;
     private final ResourceRepository resourceRepository;

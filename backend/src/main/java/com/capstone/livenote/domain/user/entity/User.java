@@ -1,9 +1,7 @@
 package com.capstone.livenote.domain.user.entity;
 
-import com.capstone.livenote.domain.lecture.entity.Lecture;
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.List;
 
 @Entity
 @Table(name = "users")

@@ -8,7 +8,6 @@ import com.capstone.livenote.domain.transcript.repository.TranscriptRepository;
 import com.capstone.livenote.domain.transcript.service.RecordingStateStore.TimeOffset;
 import com.capstone.livenote.global.redis.RedisKeys;
 import com.capstone.livenote.global.redis.RedisLock;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.context.annotation.Lazy;
