@@ -4,6 +4,7 @@ import com.capstone.livenote.domain.bookmark.dto.BookmarkResponseDto;
 import com.capstone.livenote.domain.bookmark.dto.CreateBookmarkRequestDto;
 import com.capstone.livenote.domain.bookmark.entity.Bookmark;
 import com.capstone.livenote.domain.bookmark.repository.BookmarkRepository;
+import com.capstone.livenote.domain.lecture.service.LectureService;
 import com.capstone.livenote.domain.qna.dto.QnaResponseDto;
 import com.capstone.livenote.domain.qna.repository.QnaRepository;
 import com.capstone.livenote.domain.resource.dto.ResourceResponseDto;
@@ -25,6 +26,7 @@ public class BookmarkService {
     private final BookmarkRepository bookmarkRepository;
     private final QnaRepository qnaRepository;
     private final ResourceRepository resourceRepository;
+    private final LectureService lectureService;
 
     // 북마크 생성
     @Transactional
@@ -34,6 +36,12 @@ public class BookmarkService {
 
         if (type == null) {
             throw new IllegalArgumentException("Invalid target type (must be RESOURCE or QNA)");
+        }
+
+        // 다른 사용자의 강의나 다른 강의의 카드를 가리키는 북마크가 저장되지 않도록 확인
+        lectureService.getOwned(req.getLectureId(), userId);
+        if (!isTargetInLecture(type, req.getTargetId(), req.getLectureId())) {
+            throw new EntityNotFoundException("bookmark target");
         }
 
         // 2. 중복 체크
@@ -109,5 +117,12 @@ public class BookmarkService {
                 .orElseThrow(() -> new EntityNotFoundException("bookmark"));
 
         bookmarkRepository.delete(b);
+    }
+
+    private boolean isTargetInLecture(Bookmark.TargetType type, Long targetId, Long lectureId) {
+        return switch (type) {
+            case QNA -> qnaRepository.existsByIdAndLectureId(targetId, lectureId);
+            case RESOURCE -> resourceRepository.existsByIdAndLectureId(targetId, lectureId);
+        };
     }
 }

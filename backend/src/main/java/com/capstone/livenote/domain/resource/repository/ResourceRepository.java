@@ -26,5 +26,7 @@ public interface ResourceRepository extends JpaRepository<Resource, Long> {
 
     boolean existsByLectureIdAndSectionIndexAndCardId(Long lectureId, Integer sectionIndex, String cardId);
 
+    boolean existsByIdAndLectureId(Long id, Long lectureId);
+
     boolean existsByLectureIdAndSectionIndexAndTitleAndUrl(Long lectureId, Integer sectionIndex, String title, String url);
 }

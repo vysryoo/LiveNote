@@ -1,7 +1,9 @@
 package com.capstone.livenote.domain.bookmark.service;
 
+import com.capstone.livenote.domain.bookmark.dto.CreateBookmarkRequestDto;
 import com.capstone.livenote.domain.bookmark.entity.Bookmark;
 import com.capstone.livenote.domain.bookmark.repository.BookmarkRepository;
+import com.capstone.livenote.domain.lecture.service.LectureService;
 import com.capstone.livenote.domain.qna.repository.QnaRepository;
 import com.capstone.livenote.domain.resource.repository.ResourceRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -13,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -24,8 +27,43 @@ class BookmarkServiceTest {
     @Mock QnaRepository qnaRepository;
     @Mock ResourceRepository resourceRepository;
 
+    @Mock LectureService lectureService;
+
     @InjectMocks
     BookmarkService service;
+
+    @Test
+    void createBookmark_savesTargetOfOwnLecture() {
+        when(resourceRepository.existsByIdAndLectureId(9L, 5L)).thenReturn(true);
+        when(bookmarkRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Bookmark saved = service.createBookmark(
+                new CreateBookmarkRequestDto(5L, 0, Bookmark.TargetType.RESOURCE, 9L), 1L);
+
+        verify(lectureService).getOwned(5L, 1L);
+        assertThat(saved.getUserId()).isEqualTo(1L);
+        assertThat(saved.getTargetId()).isEqualTo(9L);
+    }
+
+    @Test
+    void createBookmark_rejectsOtherUsersLecture() {
+        when(lectureService.getOwned(5L, 2L)).thenThrow(new EntityNotFoundException("lecture"));
+
+        assertThatThrownBy(() -> service.createBookmark(
+                new CreateBookmarkRequestDto(5L, 0, Bookmark.TargetType.QNA, 9L), 2L))
+                .isInstanceOf(EntityNotFoundException.class);
+        verify(bookmarkRepository, never()).save(any());
+    }
+
+    @Test
+    void createBookmark_rejectsTargetOfAnotherLecture() {
+        when(qnaRepository.existsByIdAndLectureId(9L, 5L)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.createBookmark(
+                new CreateBookmarkRequestDto(5L, 0, Bookmark.TargetType.QNA, 9L), 1L))
+                .isInstanceOf(EntityNotFoundException.class);
+        verify(bookmarkRepository, never()).save(any());
+    }
 
     @Test
     void deleteBookmark_deletesOwnBookmark() {
