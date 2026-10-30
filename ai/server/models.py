@@ -1,5 +1,5 @@
 """
-라우트 공용 타입과 함수
+라우트 공용 요청 모델 타입과 함수
 """
 from __future__ import annotations
 

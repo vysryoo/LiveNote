@@ -15,7 +15,7 @@ from core.config import Settings
 from rag.service import SummaryItem
 
 from ..dependencies import Services, get_app_settings, get_services
-from ..utils import NonBlankStr, build_collection_id
+from ..models import NonBlankStr, build_collection_id
 
 router = APIRouter(prefix="/rag", tags=["RAG"])
 

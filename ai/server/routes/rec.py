@@ -19,7 +19,7 @@ from recommend.models import RecContext
 
 from ..callback import post_callback
 from ..dependencies import Services, get_app_settings, get_services
-from ..utils import CamelModel, NonBlankStr, build_collection_id
+from ..models import CamelModel, NonBlankStr, build_collection_id
 
 router = APIRouter(prefix="/rec", tags=["REC"])
 logger = logging.getLogger(__name__)

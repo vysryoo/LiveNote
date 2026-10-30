@@ -18,7 +18,7 @@ from core.timing import RequestTimer
 from qa.models import PreviousQA, QARequest
 
 from ..dependencies import Services, get_app_settings, get_services
-from ..utils import CamelModel, NonBlankStr, build_collection_id
+from ..models import CamelModel, NonBlankStr, build_collection_id
 
 router = APIRouter(prefix="/qa", tags=["QA"])
 logger = logging.getLogger(__name__)

@@ -16,7 +16,7 @@ from core.timing import RequestTimer
 
 from ..callback import post_callback
 from ..dependencies import Services, get_app_settings, get_services
-from ..utils import CamelModel
+from ..models import CamelModel
 
 router = APIRouter(prefix="/summary", tags=["SUMMARY"])
 logger = logging.getLogger(__name__)
