@@ -18,8 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.SliceImpl;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.List;
@@ -28,7 +26,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -98,8 +95,7 @@ class LectureServiceTest {
         Bookmark bookmark = Bookmark.builder().id(3L).userId(1L).lectureId(4L).sectionIndex(0)
                 .targetType(Bookmark.TargetType.QNA).targetId(9L).build();
         when(lectureRepo.findByIdAndUserId(4L, 1L)).thenReturn(Optional.of(lecture));
-        when(resourceRepository.findByLectureId(eq(4L), any())).thenReturn(Page.empty());
-        when(bookmarkRepository.findByUserIdAndLectureId(eq(1L), eq(4L), any())).thenReturn(new SliceImpl<>(List.of(bookmark)));
+        when(bookmarkRepository.findByUserIdAndLectureIdOrderBySectionIndexAscIdAsc(1L, 4L)).thenReturn(List.of(bookmark));
 
         SessionDetailResponse detail = service.getSessionDetail(4L, 1L);
 

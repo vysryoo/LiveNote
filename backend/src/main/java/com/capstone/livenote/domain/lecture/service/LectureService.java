@@ -180,21 +180,18 @@ public class LectureService {
                 .map(SummaryResponseDto::from)
                 .collect(Collectors.toList());
         
-        // Resource는 lectureId로 조회 후 sectionIndex로 정렬
-        var resources = resourceRepository.findByLectureId(lectureId, Pageable.unpaged())
+        var resources = resourceRepository.findByLectureIdOrderBySectionIndexAscIdAsc(lectureId)
                 .stream()
-                .sorted((r1, r2) -> Integer.compare(r1.getSectionIndex(), r2.getSectionIndex()))
                 .map(ResourceResponseDto::from)
                 .collect(Collectors.toList());
         
-        var qnas = qnaRepository.findByLectureIdOrderBySectionIndexAsc(lectureId)
+        var qnas = qnaRepository.findByLectureIdOrderBySectionIndexAscIdAsc(lectureId)
                 .stream()
                 .map(QnaResponseDto::from)
                 .collect(Collectors.toList());
 
-        var bookmarks = bookmarkRepository.findByUserIdAndLectureId(userId, lectureId, Pageable.unpaged())
+        var bookmarks = bookmarkRepository.findByUserIdAndLectureIdOrderBySectionIndexAscIdAsc(userId, lectureId)
                 .stream()
-                .sorted((b1, b2) -> Integer.compare(b1.getSectionIndex(), b2.getSectionIndex()))
                 .map(BookmarkResponseDto::from)
                 .collect(Collectors.toList());
 
