@@ -4,13 +4,14 @@ REC 통합 API (Callback)
 from __future__ import annotations
 
 import logging
+from functools import partial
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import Field, HttpUrl
 
 from core.config import Settings
-from core.schemas import PreviousSummary, ResourceType
+from core.schemas import PreviousSummary, RAGChunk, ResourceType
 from core.tasks import run_in_background
 from core.timing import RequestTimer
 from rag.service import build_collection_id
@@ -75,7 +76,26 @@ async def recommend_resources(
             detail="요청된 리소스 유형이 없습니다."
         )
 
-    context = RecContext(
+    recommend_and_send = partial(
+        _recommend_and_send,
+        context=_to_rec_context(request, rag_chunks),
+        request=request,
+        services=services,
+        settings=settings,
+        timer=timer,
+    )
+    # 자료 종류별 추천은 그래프가 동시에 실행하고, 각각 끝나는 대로 콜백을 보냄
+    run_in_background(
+        run_recommendations(selected_resource_types, recommend_and_send),
+        name=f"rec-{request.lecture_id}-{request.section_index}",
+    )
+
+    return {"status": "accepted", "collection_id": collection_id}
+
+
+def _to_rec_context(request: RECRequest, rag_chunks: List[RAGChunk]) -> RecContext:
+    """요청과 검색 결과로 모든 공급자가 함께 쓰는 추천 입력을 만든다."""
+    return RecContext(
         summary=request.section_summary,
         # 추천 프롬프트는 섹션 번호를 1부터 표시
         previous_summaries=[
@@ -91,30 +111,31 @@ async def recommend_resources(
         },
     )
 
-    async def provider_task(res_type: ResourceType):
-        try:
-            resources = [r.to_resource() for r in await services.rec.recommend(res_type, context)]
-            logger.info(
-                "추천 결과: %s %d개 (%s)",
-                res_type.value,
-                len(resources),
-                ", ".join(r["title"] for r in resources[:5]) or "none",
-            )
-            timer.mark("provider_done", resource_type=res_type.value, count=len(resources))
-            await post_resources_callback(request, resources, settings)
-            timer.mark("provider_callback_sent", resource_type=res_type.value)
-        except Exception as exc:  # pragma: no cover - 외부 서비스 예외
-            timer.mark("provider_failed", resource_type=res_type.value)
-            logger.exception("추천 실패: %s %s", res_type.value, exc)
-            await post_resources_callback(request, [], settings)
 
-    # 자료 종류별 추천은 그래프가 동시에 실행하고, 각각 끝나는 대로 콜백을 보냄
-    run_in_background(
-        run_recommendations(selected_resource_types, provider_task),
-        name=f"rec-{request.lecture_id}-{request.section_index}",
-    )
-
-    return {"status": "accepted", "collection_id": collection_id}
+async def _recommend_and_send(
+    resource_type: ResourceType,
+    context: RecContext,
+    request: RECRequest,
+    services: Services,
+    settings: Settings,
+    timer: RequestTimer,
+) -> None:
+    """자료 종류 하나를 추천해 콜백으로 보낸다. 추천에 실패하면 빈 목록을 보낸다."""
+    try:
+        resources = [r.to_resource() for r in await services.rec.recommend(resource_type, context)]
+        logger.info(
+            "추천 결과: %s %d개 (%s)",
+            resource_type.value,
+            len(resources),
+            ", ".join(r["title"] for r in resources[:5]) or "none",
+        )
+        timer.mark("provider_done", resource_type=resource_type.value, count=len(resources))
+        await post_resources_callback(request, resources, settings)
+        timer.mark("provider_callback_sent", resource_type=resource_type.value)
+    except Exception as exc:
+        timer.mark("provider_failed", resource_type=resource_type.value)
+        logger.exception("추천 실패: %s %s", resource_type.value, exc)
+        await post_resources_callback(request, [], settings)
 
 
 def _select_resource_types(resource_types: Optional[List[ResourceType]]) -> List[ResourceType]:
