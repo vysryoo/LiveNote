@@ -37,7 +37,7 @@ app:
     api:
       key: ${OPENAI_API_KEY}
     realtime:
-      transcription-model: ${APP_OPENAI_REALTIME_TRANSCRIPTION_MODEL:gpt-4o-transcribe}
+      transcription-model: ${APP_OPENAI_REALTIME_TRANSCRIPTION_MODEL:gpt-transcribe}
 
   jwt:
     secret: ${APP_JWT_SECRET}

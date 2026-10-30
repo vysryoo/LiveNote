@@ -135,7 +135,7 @@ REDIS_PORT=6379
 | `RABBITMQ_VHOST` | livenote | RabbitMQ vhost |
 | `REDIS_HOST` | localhost | 녹음 상태(섹션, 시각 보정값)와 잠금을 저장할 Redis 주소 |
 | `REDIS_PORT` | 6379 | Redis 포트 |
-| `APP_OPENAI_REALTIME_TRANSCRIPTION_MODEL` | gpt-4o-transcribe | 실시간 전사 세션의 전사 모델 |
+| `APP_OPENAI_REALTIME_TRANSCRIPTION_MODEL` | gpt-transcribe | 실시간 전사 세션의 전사 모델 |
 | `APP_AI_AUTO_CARDS_ENABLED` | true | 부분 요약 시 QnA 2개·자료 2종 자동 생성. 전사·요약만 필요한 평가 데이터 수집 때 false |
 
 #### 히스토리/중복 방지 설정
@@ -193,7 +193,7 @@ backend/
 ### 실시간 전사 (WebSocket)
 
 - **오디오 스트리밍**: WebSocket으로 실시간 오디오 수신 (PCM16, 24kHz)
-- **OpenAI Realtime 전사**: 받은 음성을 OpenAI Realtime API(`gpt-4o-transcribe`)로 중계해 전사. 전사 시각은 OpenAI가 알려 주는 녹음 음성 안의 위치로 계산
+- **OpenAI Realtime 전사**: 받은 음성을 OpenAI Realtime API(`gpt-transcribe`)로 중계해 전사. 전사 시각은 OpenAI가 알려 주는 녹음 음성 안의 위치로 계산
 - **녹음 종료 처리**: 녹음을 멈춘 순간 말하던 문장도 전사가 끝날 때까지(최대 10초) 기다려 저장
 - **전사 저장**: 섹션별 전사 내용 DB 저장
 - **실시간 전송**: STOMP를 통해 프론트엔드로 전사 결과 푸시. 메시지는 RabbitMQ가 중계해 백엔드 인스턴스가 여러 개여도 모든 구독자에게 전달됨

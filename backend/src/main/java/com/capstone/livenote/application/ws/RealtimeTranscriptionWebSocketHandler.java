@@ -64,7 +64,7 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
     @Value("${OPENAI_API_KEY}")
     private String openAiApiKey;
 
-    @Value("${app.openai.realtime.transcription-model:gpt-4o-transcribe}")
+    @Value("${app.openai.realtime.transcription-model:gpt-transcribe}")
     private String transcriptionModel;
 
     @Value("${app.callback-base-url:http://localhost:8080}")
