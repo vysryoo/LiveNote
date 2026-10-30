@@ -1,6 +1,6 @@
 package com.capstone.livenote.application.ai.controller;
 
-import com.capstone.livenote.application.ai.service.AiRequestService;
+import com.capstone.livenote.application.ai.service.CardRequestService;
 import com.capstone.livenote.domain.lecture.service.LectureService;
 import com.capstone.livenote.global.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,7 +17,7 @@ import java.util.Map;
 @Tag(name = "AI & Cards API", description = "분할 화면 추가 카드 스트리밍")
 public class AiController {
 
-    private final AiRequestService aiRequestService;
+    private final CardRequestService cardRequestService;
     private final LectureService lectureService;
 
     // QnA 스트리밍
@@ -32,7 +32,7 @@ public class AiController {
     ) {
         // 다른 사용자의 강의로 AI 생성을 요청하지 못하도록 소유자를 확인. 아니면 404
         lectureService.getOwned(lectureId, userId);
-        aiRequestService.requestQnaWithType(lectureId, sectionIndex, qnaType);
+        cardRequestService.requestExtraQna(lectureId, sectionIndex, qnaType);
         String cardId = "qna_" + lectureId + "_" + sectionIndex + "_" + cardIndex;
         return ApiResponse.ok(Map.of("success", true, "cardId", cardId, "type", "qna"));
     }
@@ -49,7 +49,7 @@ public class AiController {
     ) {
         // 다른 사용자의 강의로 AI 생성을 요청하지 못하도록 소유자를 확인. 아니면 404
         lectureService.getOwned(lectureId, userId);
-        aiRequestService.requestResourcesWithType(lectureId, sectionIndex, resourceType);
+        cardRequestService.requestExtraResource(lectureId, sectionIndex, resourceType);
         String cardId = "res_" + lectureId + "_" + sectionIndex + "_" + cardIndex;
         return ApiResponse.ok(Map.of("success", true, "cardId", cardId, "type", "resource_stream"));
     }
