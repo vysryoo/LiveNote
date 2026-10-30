@@ -75,7 +75,7 @@ async def recommend_resources(
 
     try:
         rag_chunks = await asyncio.to_thread(_retrieve)
-    except Exception as exc:  # pragma: no cover - 파라미터 검증
+    except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"RAG 검색 실패: {exc}",
@@ -132,26 +132,10 @@ async def recommend_resources(
 
 
 def _select_resource_types(resource_types: Optional[List[ResourceType]]) -> List[ResourceType]:
-    """요청된 리소스 유형을 정규화 (중복 제거 포함)"""
+    """요청된 리소스 유형에서 중복을 뺀다. 지정하지 않았으면 모든 유형"""
     if resource_types is None:
-        return [
-            ResourceType.PAPER,
-            ResourceType.WIKI,
-            ResourceType.VIDEO,
-            ResourceType.BLOG,
-        ]
-    normalized: List[ResourceType] = []
-    for res_type in resource_types:
-        try:
-            enum_value = res_type if isinstance(res_type, ResourceType) else ResourceType(res_type)
-        except ValueError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"지원하지 않는 리소스 유형: {res_type}"
-            ) from exc
-        if enum_value not in normalized:
-            normalized.append(enum_value)
-    return normalized
+        return list(ResourceType)
+    return list(dict.fromkeys(resource_types))
 
 
 async def post_resources_callback(request: RECRequest, resources: List[dict], settings: Settings) -> None:

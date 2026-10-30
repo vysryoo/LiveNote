@@ -289,8 +289,8 @@ class FakeNaverApi:
     def __init__(self) -> None:
         self.calls: List[Any] = []
 
-    async def search(self, query, lang="ko", num=10):
-        self.calls.append([query, lang, num])
+    async def search(self, query, num=10):
+        self.calls.append([query, num])
         return [dict(result) for result in BLOG_RESULTS] if query == "스택 큐 차이" else []
 
 

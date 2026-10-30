@@ -67,7 +67,7 @@ async def test_search_shortening_drops_last_word_until_results():
         def __init__(self):
             self.queries = []
 
-        async def search(self, query, lang, num):
+        async def search(self, query, num):
             self.queries.append(query)
             return [{"title": "결과"}] if query == "벅 컨버터" else []
 

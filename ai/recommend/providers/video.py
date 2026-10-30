@@ -254,7 +254,6 @@ class VideoProvider(Provider[VideoCandidate]):
     async def build_queries(self, context: RecContext) -> List[str]:
         prompt = QUERY_PROMPT.format(
             query_min=QUERY_MIN,
-            query_max=QUERY_MAX,
             lecture_summary=context.summary,
             query_language=self.yt_lang or self.language or "en",
             yt_lang=self.yt_lang,

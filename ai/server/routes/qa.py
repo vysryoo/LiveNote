@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 class PreviousQAItem(CamelModel):
     """이전 QA 항목 (API 입력용)"""
-    type: str = Field(..., description="질문 유형 (개념/응용/비교/심화/실습)")
+    type: str = Field(..., description="질문 유형 (CONCEPT 등 QnAType 값 또는 개념/응용/비교/심화)")
     question: str = Field(..., description="질문 내용")
     answer: str = Field(..., description="답변 내용")
 

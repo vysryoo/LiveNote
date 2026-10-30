@@ -30,7 +30,6 @@ from ..pipeline import Provider
 logger = logging.getLogger(__name__)
 
 KEYWORD_MIN = 1
-KEYWORD_MAX = 2
 # 동시에 검색할 키워드 수, 검색 한 번에 받을 결과 수
 FANOUT = 1
 SEARCH_LIMIT = 10
@@ -127,12 +126,11 @@ class NaverBlogClient:
         """HTTP 연결을 닫는다."""
         await self.http_client.aclose()
 
-    async def search(self, query: str, lang: str = "ko", num: int = 10) -> List[Dict[str, Any]]:
+    async def search(self, query: str, num: int = 10) -> List[Dict[str, Any]]:
         """블로그 글을 검색한다.
 
         Args:
             query: 검색어
-            lang: 호출부 호환용. 네이버 블로그 검색은 언어 지정을 지원하지 않아 사용하지 않음
             num: 결과 개수 (최대 100)
         Returns:
             {"title", "link", "snippet", "displayLink"} 목록. 실패하면 빈 목록
@@ -180,7 +178,6 @@ class BlogProvider(Provider[Dict[str, Any]]):
             )
         prompt = KEYWORD_PROMPT.format(
             keyword_min=KEYWORD_MIN,
-            keyword_max=KEYWORD_MAX,
             language=self.search_lang,
             lecture_summary=context.summary,
             context=context_text,
@@ -212,7 +209,7 @@ class BlogProvider(Provider[Dict[str, Any]]):
         """
         words = keyword.split()
         while words:
-            results = await self.api.search(query=" ".join(words), lang=self.search_lang, num=SEARCH_LIMIT)
+            results = await self.api.search(query=" ".join(words), num=SEARCH_LIMIT)
             if results or len(words) == 1:
                 return results
             words = words[:-1]

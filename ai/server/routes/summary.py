@@ -67,12 +67,6 @@ async def generate_summary(
     )
     timer.mark("received")
     transcript_text = _to_transcript_text(request.transcript)
-    if not transcript_text:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="전사 내용이 비어 있습니다.",
-        )
-
     callback_url = _resolve_callback_url(request.callback_url, settings)
 
     if services.summary.is_too_short(transcript_text):
