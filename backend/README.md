@@ -263,7 +263,7 @@ backend/
 
 | 경로 | 메서드 | 설명 |
 |------|--------|------|
-| `/api/bookmarks` | POST | 북마크 추가 `{lectureId, sectionIndex, targetType, targetId}` (targetType: `resource` 또는 `qna`). 본인 강의가 아니거나 대상이 그 강의에 없으면 404 |
+| `/api/bookmarks` | POST | 북마크 추가 `{lectureId, sectionIndex, targetType, targetId}` (targetType: `RESOURCE` 또는 `QNA`. 소문자를 보내면 본문을 읽지 못해 500. 응답과 상세 조회의 `targetType`은 소문자). 본인 강의가 아니거나 대상이 그 강의에 없으면 404 |
 | `/api/bookmarks/{id}` | DELETE | 북마크 삭제. 본인 북마크가 아니면 404 |
 
 북마크 목록은 강의 상세(`/detail`)의 `bookmarks`로 받습니다.
