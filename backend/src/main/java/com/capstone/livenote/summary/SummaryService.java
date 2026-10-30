@@ -55,12 +55,7 @@ public class SummaryService {
                 dto.lectureId(), dto.sectionIndex());
 
         if (existingOpt.isPresent()) {
-            Summary existing = existingOpt.get();
-            existing.setText(dto.text());
-            existing.setStartSec(startSec);
-            existing.setEndSec(endSec);
-            existing.setPhase(phase);
-            return existing; // Dirty Checking으로 자동 저장
+            return overwrite(existingOpt.get(), dto.text(), startSec, endSec, phase);
         }
 
         // 같은 섹션의 콜백이 동시에 들어와 다른 쪽이 먼저 저장하면 unique 제약 위반이 남
@@ -79,12 +74,16 @@ public class SummaryService {
             Summary existing = summaryRepository.findByLectureIdAndSectionIndex(
                             dto.lectureId(), dto.sectionIndex())
                     .orElseThrow(() -> new IllegalStateException("Summary duplicate error but not found", e));
-
-            existing.setText(dto.text());
-            existing.setStartSec(startSec);
-            existing.setEndSec(endSec);
-            existing.setPhase(phase);
-            return existing;
+            return overwrite(existing, dto.text(), startSec, endSec, phase);
         }
+    }
+
+    // 조회한 엔티티의 값만 바꾸면 트랜잭션이 끝날 때 dirty checking으로 저장됨
+    private static Summary overwrite(Summary summary, String text, int startSec, int endSec, SummaryPhase phase) {
+        summary.setText(text);
+        summary.setStartSec(startSec);
+        summary.setEndSec(endSec);
+        summary.setPhase(phase);
+        return summary;
     }
 }

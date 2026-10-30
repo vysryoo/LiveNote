@@ -34,40 +34,42 @@ public class SummaryCallbackService {
             return;
         }
 
-        SummaryPhase phase = SummaryPhase.from(dto.phase());
-        Summary summary;
-
-        if (phase == SummaryPhase.PARTIAL) {
-            // 부분 요약은 화면 표시와 자동 카드 요청에만 쓰고 저장하지 않음. 그래서 ID가 없음
-            summary = Summary.builder()
-                    .lectureId(dto.lectureId())
-                    .sectionIndex(dto.sectionIndex())
-                    .text(dto.text())
-                    .phase(phase)
-                    .build();
-            log.info("[Callback] PARTIAL summary: Skipping DB save.");
+        if (SummaryPhase.from(dto.phase()) == SummaryPhase.PARTIAL) {
+            handlePartial(dto);
         } else {
-            summary = summaryService.upsertFromCallback(dto);
-            log.info("[Callback] FINAL summary saved: id={}", summary.getId());
+            handleFinal(dto);
         }
+    }
 
+    // 부분 요약은 화면 표시와 자동 카드 요청에만 쓰고 저장하지 않음. 그래서 ID가 없음
+    private void handlePartial(SummaryCallbackDto dto) {
+        Summary summary = Summary.builder()
+                .lectureId(dto.lectureId())
+                .sectionIndex(dto.sectionIndex())
+                .text(dto.text())
+                .phase(SummaryPhase.PARTIAL)
+                .build();
+        log.info("[Callback] PARTIAL summary: Skipping DB save.");
         streamGateway.sendSummary(summary);
 
-        if (phase == SummaryPhase.FINAL) {
-            try {
-                log.info("[RAG Upsert] Sending FINAL summary: summaryId={}", summary.getId());
-                aiServerClient.upsertSummaryText(summary.getLectureId(), summary);
-            } catch (Exception e) {
-                log.error("RAG Upsert failed", e);
-            }
+        if (!autoCardProperties.isEnabled()) {
+            log.info("[Partial Logic] Auto cards disabled: lectureId={} section={}",
+                    dto.lectureId(), dto.sectionIndex());
+            return;
+        }
+        cardRequestService.startAutoCards(dto.lectureId(), dto.sectionIndex(), dto.text());
+    }
 
-        } else {
-            if (!autoCardProperties.isEnabled()) {
-                log.info("[Partial Logic] Auto cards disabled: lectureId={} section={}",
-                        dto.lectureId(), dto.sectionIndex());
-                return;
-            }
-            cardRequestService.startAutoCards(dto.lectureId(), dto.sectionIndex(), dto.text());
+    private void handleFinal(SummaryCallbackDto dto) {
+        Summary summary = summaryService.upsertFromCallback(dto);
+        log.info("[Callback] FINAL summary saved: id={}", summary.getId());
+        streamGateway.sendSummary(summary);
+
+        try {
+            log.info("[RAG Upsert] Sending FINAL summary: summaryId={}", summary.getId());
+            aiServerClient.upsertSummaryText(summary.getLectureId(), summary);
+        } catch (Exception e) {
+            log.error("RAG Upsert failed", e);
         }
     }
 }
