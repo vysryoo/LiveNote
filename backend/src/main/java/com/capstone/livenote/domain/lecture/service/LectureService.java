@@ -15,7 +15,6 @@ import com.capstone.livenote.domain.summary.dto.SummaryResponseDto;
 import com.capstone.livenote.domain.summary.repository.SummaryRepository;
 import com.capstone.livenote.domain.transcript.dto.TranscriptResponseDto;
 import com.capstone.livenote.domain.transcript.repository.TranscriptRepository;
-import com.capstone.livenote.domain.user.entity.User;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -40,8 +39,6 @@ public class LectureService {
     @Transactional
     public Lecture create(Long userId, CreateLectureRequestDto req){
         log.info("💾 [DB WRITE] Creating new lecture: userId={} title={}", userId, req.getTitle());
-        //var user = new User();      // userId만 세팅
-        //user.setId(userId);
 
         Lecture lec = Lecture.builder()
                 .userId(userId)
@@ -93,14 +90,6 @@ public class LectureService {
         lectureRepo.deleteById(id);
         log.info("✅ [DB DELETE] Lecture deleted: lectureId={}", id);
     }
-//    @Transactional
-//    public void startProcessing(Long id){
-//        lectureRepo.updateStatus(id, Lecture.Status.RECORDING);
-//    }
-//    @Transactional
-//    public void complete(Long id){
-//        lectureRepo.updateStatus(id, Lecture.Status.COMPLETED);
-//    }
 
     @Transactional
     public void startRecording(Long id) {

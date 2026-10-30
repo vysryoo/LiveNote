@@ -22,8 +22,6 @@ spring:
     multipart:
       max-file-size: 50MB      # 파일 하나당 최대 크기
       max-request-size: 50MB   # 요청 전체 최대 크기
-#  main:
-#    allow-circular-references: true
 ai:
   server:
     url: ${AI_SERVER_URL}

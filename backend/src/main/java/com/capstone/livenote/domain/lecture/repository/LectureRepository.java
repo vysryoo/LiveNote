@@ -11,7 +11,6 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface LectureRepository extends JpaRepository<Lecture, Long> {
-    //Page<Lecture> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     Page<Lecture> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 

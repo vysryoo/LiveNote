@@ -2,7 +2,6 @@ package com.capstone.livenote.domain.transcript.service;
 
 import com.capstone.livenote.application.ai.service.SectionAggregationService;
 import com.capstone.livenote.application.ws.StreamGateway;
-import com.capstone.livenote.domain.summary.service.SummaryService;
 import com.capstone.livenote.domain.transcript.dto.TranscriptResponseDto;
 import com.capstone.livenote.domain.transcript.entity.Transcript;
 import com.capstone.livenote.domain.transcript.repository.TranscriptRepository;
@@ -23,7 +22,6 @@ import java.util.Optional;
 public class TranscriptService {
 
     private final TranscriptRepository transcriptRepository;
-    // private final SummaryService summaryService;      // 예전 30초 요약용 (사용 안 하면 삭제해도 됨)
     private final StreamGateway streamGateway; // 실시간 전송
     private final SectionAggregationService sectionAggregationService;
     private final RecordingStateStore stateStore;

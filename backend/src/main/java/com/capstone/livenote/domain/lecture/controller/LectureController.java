@@ -126,14 +126,6 @@ public class LectureController {
         return ApiResponse.ok(LectureResponseDto.from(lecture));
     }
 
-
-    // endLecture 이랑 연결되는 것
-//    @PostMapping("/{lectureId}/audio/complete")
-//    @Deprecated
-//    public ApiResponse<Void> complete(@PathVariable Long lectureId){
-//        return endLecture(lectureId);
-//    }
-
     @Operation(summary = "특정 강의와 관련 데이터를 삭제")
     @DeleteMapping("/{lectureId}")
     public ApiResponse<Void> delete(@PathVariable Long lectureId){
@@ -152,42 +144,5 @@ public class LectureController {
         var updated = lectureService.updateLectureTitle(lectureId, req.getTitle());
         return ApiResponse.ok(LectureResponseDto.from(updated));
     }
-
-
-    // 전사
-//    @Operation(summary = "전사 목록 조회 (내부용)", hidden = true)
-//    @GetMapping("/{lectureId}/transcripts")
-//    public ApiResponse<List<TranscriptResponseDto>> transcripts(
-//            @PathVariable Long lectureId,
-//            @RequestParam(required = false) Integer sinceSec
-//    ){
-//        var list = trQuery.findSince(lectureId, sinceSec).stream()
-//                .map(TranscriptResponseDto::from)
-//                .toList();
-//
-//        return ApiResponse.ok(list);
-//    }
-
-    // 요약
-//    @Operation(summary = "강의의 요약 목록을 조회")
-//    @GetMapping("/{lectureId}/summaries")
-//    public ApiResponse<List<SummaryResponseDto>> summaries(
-//            @PathVariable Long lectureId,
-//            @RequestParam(required = false) Integer sinceChunk){
-//        var list = smQuery.findSince(lectureId, sinceChunk).stream()
-//                .map(SummaryResponseDto::from)
-//                .toList();
-//        return ApiResponse.ok(list);
-//    }
-
-    // QnA
-//    @Operation(summary = "강의에 대한 QnA 목록을 조회")
-//    @GetMapping("/{lectureId}/qna")
-//    public ApiResponse<List<QnaResponseDto>> qna(@PathVariable Long lectureId){
-//        var list = qnaService.byLecture(lectureId).stream()
-//                .map(QnaResponseDto::from)
-//                .toList();
-//        return ApiResponse.ok(list);
-//    }
 
 }
