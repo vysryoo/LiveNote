@@ -10,10 +10,13 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.Optional;
 
 @Component
 @Slf4j
 public class JwtTokenProvider {
+
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final SecretKey secretKey;
     private final long validityInMilliseconds;
@@ -39,25 +42,39 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public Long getUserIdFromToken(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-        return Long.parseLong(claims.getSubject());
-    }
-
-    public boolean validateToken(String token) {
+    /**
+     * 접근 토큰의 서명과 만료를 확인하고 사용자 ID를 꺼낸다.
+     *
+     * @param token 접근 토큰. null 허용
+     * @return 사용자 ID. 토큰이 없거나 서명이 틀렸거나 만료됐으면 비어 있음
+     */
+    public Optional<Long> findUserId(String token) {
+        if (token == null) {
+            return Optional.empty();
+        }
         try {
-            Jwts.parser()
+            Claims claims = Jwts.parser()
                     .verifyWith(secretKey)
                     .build()
-                    .parseSignedClaims(token);
-            return true;
+                    .parseSignedClaims(token)
+                    .getPayload();
+            return Optional.of(Long.parseLong(claims.getSubject()));
         } catch (JwtException | IllegalArgumentException e) {
             log.debug("Invalid JWT token: {}", e.getMessage());
-            return false;
+            return Optional.empty();
         }
+    }
+
+    /**
+     * {@code Authorization} 헤더 값에서 Bearer 토큰을 꺼낸다.
+     *
+     * @param authorizationHeader 헤더 값. null 허용
+     * @return 토큰. 헤더가 없거나 Bearer 형식이 아니면 null
+     */
+    public static String resolveBearerToken(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
+            return null;
+        }
+        return authorizationHeader.substring(BEARER_PREFIX.length());
     }
 }

@@ -85,16 +85,14 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
             return;
         }
 
-        String token = getQueryParam(session, "token");
-        if (token == null || !jwtTokenProvider.validateToken(token)) {
+        Optional<Long> userId = jwtTokenProvider.findUserId(getQueryParam(session, "token"));
+        if (userId.isEmpty()) {
             sendErrorAndClose(session, "unauthorized");
             return;
         }
-        Long userId = jwtTokenProvider.getUserIdFromToken(token);
 
         // 다른 사용자의 강의도 없는 강의와 같은 응답으로 처리해 존재 여부를 드러내지 않음
-        Optional<Lecture> lectureOpt = lectureRepository.findById(lectureId)
-                .filter(lecture -> userId.equals(lecture.getUserId()));
+        Optional<Lecture> lectureOpt = lectureRepository.findByIdAndUserId(lectureId, userId.get());
         if (lectureOpt.isEmpty()) {
             sendErrorAndClose(session, "lecture not found");
             return;

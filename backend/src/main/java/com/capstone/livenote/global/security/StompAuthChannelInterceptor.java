@@ -33,7 +33,6 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     // 단어를 영문·숫자로 제한해 RabbitMQ 와일드카드(*, #)로 다른 강의 토픽을 구독하지 못하게 함
     private static final Pattern LECTURE_TOPIC = Pattern.compile("^/topic/lectures\\.(\\d+)(\\.[A-Za-z0-9]+)*$");
     private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenProvider jwtTokenProvider;
     private final LectureService lectureService;
@@ -57,14 +56,12 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     }
 
     private Principal authenticate(String authorizationHeader) {
-        if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
+        String token = JwtTokenProvider.resolveBearerToken(authorizationHeader);
+        if (token == null) {
             throw new AccessDeniedException("missing token");
         }
-        String token = authorizationHeader.substring(BEARER_PREFIX.length());
-        if (!jwtTokenProvider.validateToken(token)) {
-            throw new AccessDeniedException("invalid token");
-        }
-        Long userId = jwtTokenProvider.getUserIdFromToken(token);
+        Long userId = jwtTokenProvider.findUserId(token)
+                .orElseThrow(() -> new AccessDeniedException("invalid token"));
         return new UsernamePasswordAuthenticationToken(userId, null, Collections.emptyList());
     }
 

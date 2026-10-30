@@ -60,8 +60,7 @@ class StompAuthChannelInterceptorTest {
 
     @Test
     void connect_withValidToken_setsUser() {
-        when(jwtTokenProvider.validateToken("good")).thenReturn(true);
-        when(jwtTokenProvider.getUserIdFromToken("good")).thenReturn(1L);
+        when(jwtTokenProvider.findUserId("good")).thenReturn(Optional.of(1L));
 
         Message<?> result = interceptor.preSend(connect("Bearer good"), channel);
 
@@ -78,7 +77,7 @@ class StompAuthChannelInterceptorTest {
 
     @Test
     void connect_withInvalidToken_isRejected() {
-        when(jwtTokenProvider.validateToken("bad")).thenReturn(false);
+        when(jwtTokenProvider.findUserId("bad")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> interceptor.preSend(connect("Bearer bad"), channel))
                 .isInstanceOf(AccessDeniedException.class);
@@ -131,8 +130,7 @@ class StompAuthChannelInterceptorTest {
 
     @Test
     void connect_removesTokenBeforeRelayingToBroker() {
-        when(jwtTokenProvider.validateToken("good")).thenReturn(true);
-        when(jwtTokenProvider.getUserIdFromToken("good")).thenReturn(1L);
+        when(jwtTokenProvider.findUserId("good")).thenReturn(Optional.of(1L));
 
         Message<?> result = interceptor.preSend(connect("Bearer good"), channel);
 
