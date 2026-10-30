@@ -1,6 +1,6 @@
 package com.capstone.livenote.application.ai.service;
 
-import com.capstone.livenote.application.ai.client.RagClient;
+import com.capstone.livenote.application.ai.client.AiServerClient;
 import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.transcript.entity.Transcript;
 import com.capstone.livenote.domain.transcript.repository.TranscriptRepository;
@@ -34,7 +34,7 @@ class SectionAggregationServiceTest {
 
     private static final long LECTURE = 1L;
 
-    @Mock RagClient ragClient;
+    @Mock AiServerClient aiServerClient;
     @Mock TranscriptRepository transcriptRepository;
     @Mock RecordingStateStore stateStore;
     @Mock StreamGateway streamGateway;
@@ -45,7 +45,7 @@ class SectionAggregationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new SectionAggregationService(ragClient, transcriptRepository, stateStore, streamGateway);
+        service = new SectionAggregationService(aiServerClient, transcriptRepository, stateStore, streamGateway);
 
         when(stateStore.findSection(LECTURE)).thenAnswer(inv -> Optional.ofNullable(storedState));
         doAnswer(inv -> {
@@ -73,7 +73,7 @@ class SectionAggregationServiceTest {
     }
 
     private void verifySummary(String phase, int sectionIndex, int startSec, int endSec, String text) {
-        verify(ragClient).requestSummaryGeneration(
+        verify(aiServerClient).requestSummaryGeneration(
                 eq(LECTURE), isNull(), eq(sectionIndex), eq(startSec), eq(endSec), eq(phase), eq(text));
     }
 
@@ -82,7 +82,7 @@ class SectionAggregationServiceTest {
         assertThat(receive(0, 7, "a")).isZero();
 
         verify(streamGateway).sendSection(LECTURE, 0);
-        verifyNoInteractions(ragClient);
+        verifyNoInteractions(aiServerClient);
     }
 
     @Test
@@ -92,7 +92,7 @@ class SectionAggregationServiceTest {
         receive(17, 25, "c");
 
         verifySummary("PARTIAL", 0, 0, 17, "a b");
-        verify(ragClient, times(1)).requestSummaryGeneration(
+        verify(aiServerClient, times(1)).requestSummaryGeneration(
                 anyLong(), any(), anyInt(), anyInt(), anyInt(), eq("PARTIAL"), anyString());
     }
 
@@ -139,7 +139,7 @@ class SectionAggregationServiceTest {
 
         assertThat(storedState).isEqualTo(new SectionState(1, 35, 58, true, false));
         verify(streamGateway, never()).sendSection(anyLong(), anyInt());
-        verifyNoInteractions(ragClient);
+        verifyNoInteractions(aiServerClient);
     }
 
     @Test
@@ -147,6 +147,6 @@ class SectionAggregationServiceTest {
         transcripts.add(Transcript.builder().lectureId(LECTURE).sectionIndex(2).startSec(60).endSec(92).text("a").build());
 
         assertThat(receive(92, 99, "b")).isEqualTo(3);
-        verifyNoInteractions(ragClient);
+        verifyNoInteractions(aiServerClient);
     }
 }

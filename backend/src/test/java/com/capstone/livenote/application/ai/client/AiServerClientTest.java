@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * AI 서버로 보내는 요청의 주소, 헤더, 본문을 고정한다. AI 서버가 이 형식으로 요청을 읽으므로 바뀌면 안 된다.
  */
-class RagClientTest {
+class AiServerClientTest {
 
     private static final String AI_SERVER = "http://ai";
     private static final String BACKEND = "http://backend";
@@ -37,7 +37,7 @@ class RagClientTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final List<ClientRequest> requests = new ArrayList<>();
     private final List<String> bodies = new ArrayList<>();
-    private RagClient client;
+    private AiServerClient client;
     private String responseBody = "";
     private MediaType responseType = MediaType.APPLICATION_JSON;
 
@@ -58,7 +58,7 @@ class RagClientTest {
                             });
                 })
                 .build();
-        client = new RagClient(webClient, objectMapper, new InternalApiKey("secret"));
+        client = new AiServerClient(webClient, objectMapper, new InternalApiKey("secret"));
         ReflectionTestUtils.setField(client, "baseUrl", AI_SERVER);
         ReflectionTestUtils.setField(client, "callbackBaseUrl", BACKEND);
     }
@@ -126,7 +126,7 @@ class RagClientTest {
         responseBody = "{\"collection_id\":\"lecture_7\"}";
         var pdf = new MockMultipartFile("files", "slides.pdf", "application/pdf", new byte[]{1, 2, 3});
 
-        String collectionId = client.upsertPdf(7L, pdf, null);
+        String collectionId = client.upsertPdf(7L, pdf);
 
         assertThat(collectionId).isEqualTo("lecture_7");
         assertThat(requests.get(0).url().toString()).isEqualTo(AI_SERVER + "/rag/pdf-upsert");

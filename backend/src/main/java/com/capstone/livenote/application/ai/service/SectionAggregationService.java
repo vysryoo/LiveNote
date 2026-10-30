@@ -1,6 +1,6 @@
 package com.capstone.livenote.application.ai.service;
 
-import com.capstone.livenote.application.ai.client.RagClient;
+import com.capstone.livenote.application.ai.client.AiServerClient;
 import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.transcript.entity.Transcript;
 import com.capstone.livenote.domain.transcript.repository.TranscriptRepository;
@@ -28,14 +28,14 @@ public class SectionAggregationService {
     static final int PARTIAL_SEC = 15;
     static final int SECTION_SEC = 30;
 
-    private final RagClient ragClient;
+    private final AiServerClient aiServerClient;
     private final TranscriptRepository transcriptRepository;
     private final RecordingStateStore stateStore;
     private final StreamGateway streamGateway;
 
-    public SectionAggregationService(RagClient ragClient, TranscriptRepository transcriptRepository,
+    public SectionAggregationService(AiServerClient aiServerClient, TranscriptRepository transcriptRepository,
                                      RecordingStateStore stateStore, @Lazy StreamGateway streamGateway) {
-        this.ragClient = ragClient;
+        this.aiServerClient = aiServerClient;
         this.transcriptRepository = transcriptRepository;
         this.stateStore = stateStore;
         this.streamGateway = streamGateway;
@@ -125,7 +125,7 @@ public class SectionAggregationService {
                 elapsedSec >= PARTIAL_SEC, elapsedSec >= SECTION_SEC);
     }
 
-    // 핵심 로직: 직접 처리하지 않고 RagClient를 통해 AI 서버로 넘김
+    // 핵심 로직: 직접 처리하지 않고 AiServerClient를 통해 AI 서버로 넘김
     private void requestSummary(Long lectureId, SectionState state, String phase) {
         String sourceText = transcriptRepository
                 .findByLectureIdAndSectionIndexOrderByStartSecAsc(lectureId, state.index())
@@ -139,7 +139,7 @@ public class SectionAggregationService {
                 phase, lectureId, state.index(), state.startSec(), state.lastEndSec(), sourceText.length());
 
         // 비동기 요청 전송 (결과는 나중에 CallbackService로 옴)
-        ragClient.requestSummaryGeneration(
+        aiServerClient.requestSummaryGeneration(
                 lectureId,
                 null, // 신규 생성이므로 ID 없음
                 state.index(),

@@ -1,6 +1,6 @@
 package com.capstone.livenote.application.ai.service;
 
-import com.capstone.livenote.application.ai.client.RagClient;
+import com.capstone.livenote.application.ai.client.AiServerClient;
 import com.capstone.livenote.application.ai.dto.AiRequestPayloads.QnaGeneratePayload;
 import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.qna.dto.QnaResponseDto;
@@ -46,7 +46,7 @@ class QnaStreamServiceTest {
     private static final int SECTION = 5;
     private static final String RESERVATION_KEY = "livenote:lecture:1:section:5:qna:next-card";
 
-    @Mock RagClient ragClient;
+    @Mock AiServerClient aiServerClient;
     @Mock QnaRepository qnaRepository;
     @Mock StreamGateway streamGateway;
     @Mock RedisLock redisLock;
@@ -60,7 +60,7 @@ class QnaStreamServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new QnaStreamService(ragClient, qnaRepository, streamGateway, redisLock,
+        service = new QnaStreamService(aiServerClient, qnaRepository, streamGateway, redisLock,
                 transactionTemplate, redis, new ObjectMapper());
 
         when(redisLock.call(anyString(), any())).thenAnswer(inv -> inv.<Supplier<?>>getArgument(1).get());

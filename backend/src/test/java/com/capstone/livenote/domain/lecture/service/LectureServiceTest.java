@@ -1,6 +1,6 @@
 package com.capstone.livenote.domain.lecture.service;
 
-import com.capstone.livenote.application.ai.client.RagClient;
+import com.capstone.livenote.application.ai.client.AiServerClient;
 import com.capstone.livenote.domain.bookmark.dto.BookmarkResponseDto;
 import com.capstone.livenote.domain.bookmark.entity.Bookmark;
 import com.capstone.livenote.domain.bookmark.repository.BookmarkRepository;
@@ -37,7 +37,7 @@ class LectureServiceTest {
     @Mock ResourceRepository resourceRepository;
     @Mock QnaRepository qnaRepository;
     @Mock BookmarkRepository bookmarkRepository;
-    @Mock RagClient ragClient;
+    @Mock AiServerClient aiServerClient;
 
     @InjectMocks
     LectureService service;
@@ -112,7 +112,7 @@ class LectureServiceTest {
             if (lecture.getId() == null) lecture.setId(9L);
             return lecture;
         });
-        when(ragClient.upsertPdf(9L, pdf, null)).thenReturn("lecture_9");
+        when(aiServerClient.upsertPdf(9L, pdf)).thenReturn("lecture_9");
 
         Lecture created = service.createWithPdf(1L, new CreateLectureRequestDto("제목", "과목", "ko"), pdf);
 
@@ -128,7 +128,7 @@ class LectureServiceTest {
             lecture.setId(9L);
             return lecture;
         });
-        when(ragClient.upsertPdf(9L, pdf, null)).thenThrow(new RuntimeException("RAG Upsert Failed"));
+        when(aiServerClient.upsertPdf(9L, pdf)).thenThrow(new RuntimeException("RAG Upsert Failed"));
 
         assertThatThrownBy(() -> service.createWithPdf(1L, new CreateLectureRequestDto("제목", "과목", "ko"), pdf))
                 .isInstanceOf(RuntimeException.class);

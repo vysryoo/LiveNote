@@ -1,6 +1,6 @@
 package com.capstone.livenote.application.ai.service;
 
-import com.capstone.livenote.application.ai.client.RagClient;
+import com.capstone.livenote.application.ai.client.AiServerClient;
 import com.capstone.livenote.application.ai.config.AiHistoryProperties;
 import com.capstone.livenote.application.ai.dto.AiRequestPayloads;
 import com.capstone.livenote.application.ws.StreamGateway;
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class AiRequestServiceTest {
 
-    @Mock RagClient ragClient;
+    @Mock AiServerClient aiServerClient;
     @Mock SummaryService summaryService;
     @Mock ResourceService resourceService;
     @Mock QnaService qnaService;
@@ -60,14 +60,14 @@ class AiRequestServiceTest {
         ));
 
         AiRequestService service = new AiRequestService(
-                ragClient, summaryService, resourceService, qnaService, lectureService, props, streamGateway, qnaStreamService
+                aiServerClient, summaryService, resourceService, qnaService, lectureService, props, streamGateway, qnaStreamService
         );
 
         service.requestResourcesWithType(1L, 3, "paper");
 
         ArgumentCaptor<AiRequestPayloads.ResourceRecommendPayload> captor =
                 ArgumentCaptor.forClass(AiRequestPayloads.ResourceRecommendPayload.class);
-        verify(ragClient).requestResourceRecommendation(captor.capture(), eq(List.of("PAPER")));
+        verify(aiServerClient).requestResourceRecommendation(captor.capture(), eq(List.of("PAPER")));
         var payload = captor.getValue();
 
         assertThat(payload.getPreviousSummaries()).hasSize(2);
@@ -93,7 +93,7 @@ class AiRequestServiceTest {
         ));
 
         AiRequestService service = new AiRequestService(
-                ragClient, summaryService, resourceService, qnaService, lectureService, props, streamGateway, qnaStreamService
+                aiServerClient, summaryService, resourceService, qnaService, lectureService, props, streamGateway, qnaStreamService
         );
 
         service.requestQnaWithType(7L, 4, "concept");
@@ -112,11 +112,11 @@ class AiRequestServiceTest {
     void requestResourcesWithSummary_partialRequestsWikiAndBlogOnly() {
         AiHistoryProperties props = new AiHistoryProperties();
         AiRequestService service = new AiRequestService(
-                ragClient, summaryService, resourceService, qnaService, lectureService, props, streamGateway, qnaStreamService
+                aiServerClient, summaryService, resourceService, qnaService, lectureService, props, streamGateway, qnaStreamService
         );
 
         service.requestResourcesWithSummary(7L, null, 0, "스택과 큐의 차이를 설명한다.", 2);
 
-        verify(ragClient).requestResourceRecommendation(any(AiRequestPayloads.ResourceRecommendPayload.class), eq(List.of("WIKI", "BLOG")));
+        verify(aiServerClient).requestResourceRecommendation(any(AiRequestPayloads.ResourceRecommendPayload.class), eq(List.of("WIKI", "BLOG")));
     }
 }

@@ -1,6 +1,6 @@
 package com.capstone.livenote.application.ai.service;
 
-import com.capstone.livenote.application.ai.client.RagClient;
+import com.capstone.livenote.application.ai.client.AiServerClient;
 import com.capstone.livenote.application.ai.config.AiAutoCardProperties;
 import com.capstone.livenote.application.ai.dto.SummaryCallbackDto;
 import com.capstone.livenote.application.ws.StreamGateway;
@@ -27,7 +27,7 @@ class SummaryCallbackServiceTest {
     @Mock SummaryService summaryService;
     @Mock StreamGateway streamGateway;
     @Mock AiRequestService aiRequestService;
-    @Mock RagClient ragClient;
+    @Mock AiServerClient aiServerClient;
     @Spy AiAutoCardProperties autoCardProperties = new AiAutoCardProperties();
 
     @InjectMocks

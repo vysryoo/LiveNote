@@ -1,7 +1,7 @@
 package com.capstone.livenote.application.ai.service;
 
 import com.capstone.livenote.application.ai.config.AiHistoryProperties;
-import com.capstone.livenote.application.ai.client.RagClient;
+import com.capstone.livenote.application.ai.client.AiServerClient;
 import com.capstone.livenote.application.ai.dto.AiRequestPayloads;
 import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.lecture.entity.Lecture;
@@ -31,7 +31,7 @@ import static com.capstone.livenote.application.ai.dto.AiRequestPayloads.Resourc
 @Slf4j
 public class AiRequestService {
 
-    private final RagClient ragClient;
+    private final AiServerClient aiServerClient;
     private final SummaryService summaryService;
     private final ResourceService resourceService;
     private final QnaService qnaService;
@@ -82,7 +82,7 @@ public class AiRequestService {
 
         List<String> types = resourceType != null ? List.of(resourceType.toUpperCase()) : null;
         log.info("🔄 [AI Request] Resource recommendation (Single type): lectureId={} section={} type={}", lectureId, sectionIndex, types);
-        ragClient.requestResourceRecommendation(payload, types);
+        aiServerClient.requestResourceRecommendation(payload, types);
     }
 
     // limit 숫자를 받아서 -> 구체적인 Type List로 변환하여 요청
@@ -97,7 +97,7 @@ public class AiRequestService {
         }
         // limit가 null이면 types도 null -> AI가 알아서 전체(4개) 수행
 
-        ragClient.requestResourceRecommendation(payload, types);
+        aiServerClient.requestResourceRecommendation(payload, types);
     }
 
     // limit 숫자를 받아서 -> 구체적인 Type List로 변환하여 요청

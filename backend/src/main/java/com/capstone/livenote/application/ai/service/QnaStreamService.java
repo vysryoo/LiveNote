@@ -1,6 +1,6 @@
 package com.capstone.livenote.application.ai.service;
 
-import com.capstone.livenote.application.ai.client.RagClient;
+import com.capstone.livenote.application.ai.client.AiServerClient;
 import com.capstone.livenote.application.ai.dto.AiRequestPayloads.QnaGeneratePayload;
 import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.qna.dto.QnaResponseDto;
@@ -40,7 +40,7 @@ public class QnaStreamService {
     // 생성 중인 카드의 번호 예약을 기억하는 시간. 생성은 수 초 안에 끝나므로 넉넉하게 잡음
     private static final Duration RESERVATION_TTL = Duration.ofMinutes(10);
 
-    private final RagClient ragClient;
+    private final AiServerClient aiServerClient;
     private final QnaRepository qnaRepository;
     private final StreamGateway streamGateway;
     private final RedisLock redisLock;
@@ -57,7 +57,7 @@ public class QnaStreamService {
      * @param targetTypes 생성할 질문 유형. null이면 AI 서버 설정값 사용
      */
     public void generate(QnaGeneratePayload payload, List<String> targetTypes) {
-        relay(payload, ragClient.streamQnaGeneration(payload, targetTypes)).subscribe();
+        relay(payload, aiServerClient.streamQnaGeneration(payload, targetTypes)).subscribe();
     }
 
     /**

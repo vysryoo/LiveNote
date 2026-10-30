@@ -2,7 +2,7 @@
 
 package com.capstone.livenote.application.ai.service;
 
-import com.capstone.livenote.application.ai.client.RagClient;
+import com.capstone.livenote.application.ai.client.AiServerClient;
 import com.capstone.livenote.application.ai.config.AiAutoCardProperties;
 import com.capstone.livenote.application.ai.dto.SummaryCallbackDto;
 import com.capstone.livenote.application.ws.StreamGateway;
@@ -24,7 +24,7 @@ public class SummaryCallbackService {
     private final SummaryService summaryService;
     private final StreamGateway streamGateway;
     private final AiRequestService aiRequestService;
-    private final RagClient ragClient;
+    private final AiServerClient aiServerClient;
     private final AiAutoCardProperties autoCardProperties;
 
     @Transactional
@@ -67,7 +67,7 @@ public class SummaryCallbackService {
             // FINAL 단계
             try {
                 log.info("🗂️ [RAG Upsert] Sending FINAL summary: summaryId={}", summary.getId());
-                ragClient.upsertSummaryText(summary.getLectureId(), summary);
+                aiServerClient.upsertSummaryText(summary.getLectureId(), summary);
             } catch (Exception e) {
                 log.error("❌ RAG Upsert failed", e);
             }

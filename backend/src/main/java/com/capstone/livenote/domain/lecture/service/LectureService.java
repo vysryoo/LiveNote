@@ -1,6 +1,6 @@
 package com.capstone.livenote.domain.lecture.service;
 
-import com.capstone.livenote.application.ai.client.RagClient;
+import com.capstone.livenote.application.ai.client.AiServerClient;
 import com.capstone.livenote.domain.bookmark.dto.BookmarkResponseDto;
 import com.capstone.livenote.domain.bookmark.repository.BookmarkRepository;
 import com.capstone.livenote.domain.lecture.dto.CreateLectureRequestDto;
@@ -36,7 +36,7 @@ public class LectureService {
     private final ResourceRepository resourceRepository;
     private final QnaRepository qnaRepository;
     private final BookmarkRepository bookmarkRepository;
-    private final RagClient ragClient;
+    private final AiServerClient aiServerClient;
 
     @Transactional
     public Lecture create(Long userId, CreateLectureRequestDto req){
@@ -68,7 +68,7 @@ public class LectureService {
      */
     public Lecture createWithPdf(Long userId, CreateLectureRequestDto req, MultipartFile pdf) {
         Lecture lecture = create(userId, req);
-        lecture.setCollectionId(ragClient.upsertPdf(lecture.getId(), pdf, null));
+        lecture.setCollectionId(aiServerClient.upsertPdf(lecture.getId(), pdf));
         return lectureRepo.save(lecture);
     }
 

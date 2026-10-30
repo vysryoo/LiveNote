@@ -2,7 +2,6 @@ package com.capstone.livenote.application.ai.client;
 
 import com.capstone.livenote.application.ai.dto.AiRequestPayloads;
 import com.capstone.livenote.domain.summary.entity.Summary;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.capstone.livenote.global.security.InternalApiKey;
 import lombok.RequiredArgsConstructor;
@@ -26,12 +25,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * AI 서버(FastAPI) RAG 연동 클라이언트
+ * AI 서버(FastAPI)에 요약, 자료 추천, QnA 생성, RAG 업서트를 요청한다.
+ *
+ * 모든 요청에 백엔드와 AI 서버가 공유하는 내부 키를 붙인다. 요약과 자료 추천 결과는 콜백으로 돌아온다.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class RagClient {
+public class AiServerClient {
 
     private static final ParameterizedTypeReference<ServerSentEvent<String>> SSE_OF_STRING =
             new ParameterizedTypeReference<>() {};
@@ -115,34 +116,13 @@ public class RagClient {
 
         body.put("callback_url", callback("resources"));
 
-        String url = baseUrl + "/rec/recommend";
-
         log.info("🤖 [AI Resource] Request body = {}", body);
 
         if (targetTypes != null && !targetTypes.isEmpty()) {
             body.put("resource_types", targetTypes);
         }
 
-        try {
-            webClient.post()
-                    .uri(url)
-                    .header(InternalApiKey.HEADER, internalApiKey.value())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(body)
-                    .retrieve()
-                    .toBodilessEntity()
-                    .block();
-            log.info("✅ [AI Resource] Request sent successfully");
-        } catch (WebClientResponseException e) {
-            // 🔥 AI 서버가 보낸 에러 응답 body 로그
-            log.error("❌ [AI Resource] status={} body={}",
-                    e.getStatusCode().value(),
-                    e.getResponseBodyAsString());
-            throw e;
-        } catch (Exception e) {
-            log.error("❌ [AI Resource] Request failed (non-HTTP error): {}", e.getMessage(), e);
-            throw e;
-        }
+        post("/rec/recommend", body);
     }
 
 
@@ -178,24 +158,9 @@ public class RagClient {
         // 우리도 /api/ai/callback?type=summary 로 맞춰 줌)
         body.put("callback_url", callback("summary"));
 
-        String url = baseUrl + "/summary/generate";
-
         log.info("🤖 [AI Summary] Request body = {}", body);
 
-        try {
-            webClient.post()
-                    .uri(url)
-                    .header(InternalApiKey.HEADER, internalApiKey.value())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(body)
-                    .retrieve()
-                    .toBodilessEntity()
-                    .block();
-            log.info("✅ [AI Summary] Request sent successfully");
-        } catch (Exception e) {
-            log.error("❌ [AI Summary] Request failed: {}", e.getMessage(), e);
-            throw e;
-        }
+        post("/summary/generate", body);
     }
 
     public void upsertSummaryText(Long lectureId, Summary summary) {
@@ -224,39 +189,16 @@ public class RagClient {
         body.put("lecture_id", String.valueOf(lectureId));
         body.put("items", List.of(item));
 
-        String url = baseUrl + "/rag/text-upsert";
-
         log.info("🤖 [AI Server Call] RAG Text Upsert Request body = {}", body);
 
-        try {
-            webClient.post()
-                    .uri(url)
-                    .header(InternalApiKey.HEADER, internalApiKey.value())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(body)
-                    .retrieve()
-                    .toBodilessEntity()
-                    .block();
-            log.info("✅ [AI Server Call] RAG text upsert completed successfully");
-        } catch (WebClientResponseException e) {
-            // ✅ 어디서 터지는지 AI가 준 detail 까지 찍기
-            log.error("❌ [AI Server Call] RAG text upsert failed: status={} body={}",
-                    e.getStatusCode(), e.getResponseBodyAsString());
-            throw e;
-        } catch (Exception e) {
-            log.error("❌ [AI Server Call] RAG text upsert failed: {}", e.getMessage(), e);
-            throw e;
-        }
+        post("/rag/text-upsert", body);
     }
 
 
-    public String upsertPdf(Long lectureId, MultipartFile pdfFile, Map<String, Object> metadata) {
+    public String upsertPdf(Long lectureId, MultipartFile pdfFile) {
         MultipartBodyBuilder builder = new MultipartBodyBuilder();
         builder.part("lecture_id", lectureId.toString());
         builder.part("file", pdfFile.getResource()).filename(pdfFile.getOriginalFilename());
-        if (metadata != null && !metadata.isEmpty()) {
-            builder.part("base_metadata", toJson(metadata));
-        }
 
         String url = baseUrl + "/rag/pdf-upsert";
 
@@ -265,7 +207,6 @@ public class RagClient {
         log.info("   └─ lectureId: {}", lectureId);
         log.info("   └─ filename: {}", pdfFile.getOriginalFilename());
         log.info("   └─ fileSize: {} bytes", pdfFile.getSize());
-        log.info("   └─ metadata: {}", metadata != null ? metadata.keySet() : "none");
 
         try {
             // [수정] 응답 본문을 받아서 collection_id 추출
@@ -290,13 +231,24 @@ public class RagClient {
         }
     }
 
-    private String toJson(Map<String, Object> metadata) {
+    // 응답 본문이 필요 없는 요청. 실패하면 AI 서버의 오류 응답을 로그로 남기고 예외를 그대로 던짐
+    private void post(String path, Map<String, Object> body) {
         try {
-            return objectMapper.writeValueAsString(metadata);
-        } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("failed to serialize metadata", e);
+            webClient.post()
+                    .uri(baseUrl + path)
+                    .header(InternalApiKey.HEADER, internalApiKey.value())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(body)
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+        } catch (WebClientResponseException e) {
+            log.error("AI server request failed: path={} status={} body={}",
+                    path, e.getStatusCode().value(), e.getResponseBodyAsString());
+            throw e;
+        } catch (Exception e) {
+            log.error("AI server request failed: path={} error={}", path, e.getMessage(), e);
+            throw e;
         }
     }
-
-
 }
