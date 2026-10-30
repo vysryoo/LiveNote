@@ -20,7 +20,7 @@ from core.llm import ModelPurpose
 from core.schemas import ResourceType
 
 from ..context import previous_text, rag_text
-from ..models import LLMScore, RecContext, Recommendation, Score, one_line
+from ..models import LLMScore, RecContext, Recommendation, Score, one_line, to_prompt_line
 from ..pipeline import Provider
 
 logger = logging.getLogger(__name__)
@@ -263,9 +263,11 @@ class WikiProvider(Provider[Dict[str, Any]]):
         return [p for p in pages if isinstance(p, dict)]
 
     async def llm_score(self, candidate: Dict[str, Any], context: RecContext, queries: List[str]) -> Score:
-        extract = candidate.get("extract", "")[:300].replace("\n", " ").replace('"', "'").strip()
         prompt = SCORE_PROMPT.format(
-            lecture_summary=context.summary, title=candidate.get("title", ""), extract=extract, language=self.language
+            lecture_summary=context.summary,
+            title=candidate.get("title", ""),
+            extract=to_prompt_line(candidate.get("extract", "")[:300]),
+            language=self.language,
         )
         result = await llm.complete_json(
             ModelPurpose.VERIFY,

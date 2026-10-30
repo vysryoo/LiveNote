@@ -11,22 +11,22 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import Field, HttpUrl
 
 from core.config import Settings
-from core.schemas import PreviousSummary as ProviderPreviousSummary, ResourceType
+from core.schemas import PreviousSummary, ResourceType
 from core.tasks import run_in_background
 from core.timing import RequestTimer
 from recommend.graph import run_recommendations
 from recommend.models import RecContext
 
 from ..callback import post_callback
-from ..dependencies import Services, get_services, get_settings
+from ..dependencies import Services, get_app_settings, get_services
 from ..utils import CamelModel, NonBlankStr, build_collection_id
 
 router = APIRouter(prefix="/rec", tags=["REC"])
 logger = logging.getLogger(__name__)
 
 
-class PreviousSummary(CamelModel):
-    """이전 섹션 요약 정보"""
+class PreviousSummaryItem(CamelModel):
+    """이전 섹션 요약 (API 입력용)"""
 
     section_index: int = Field(..., ge=0, description="섹션 ID")
     summary: str = Field(..., min_length=5, description="요약 내용")
@@ -41,7 +41,7 @@ class RECRequest(CamelModel):
     section_index: int = Field(..., ge=0, description="섹션 인덱스(0-base)")
     section_summary: NonBlankStr = Field(..., min_length=10, description="섹션 요약")
     callback_url: HttpUrl = Field(..., description="콜백 URL")
-    previous_summaries: List[PreviousSummary] = Field(default_factory=list, description="이전 요약")
+    previous_summaries: List[PreviousSummaryItem] = Field(default_factory=list, description="이전 요약")
     yt_exclude: List[str] = Field(default_factory=list, description="제외할 유튜브 제목")
     wiki_exclude: List[str] = Field(default_factory=list, description="제외할 위키 제목")
     paper_exclude: List[str] = Field(default_factory=list, description="제외할 논문 ID")
@@ -56,7 +56,7 @@ class RECRequest(CamelModel):
 async def recommend_resources(
     request: RECRequest,
     services: Services = Depends(get_services),
-    settings: Settings = Depends(get_settings),
+    settings: Settings = Depends(get_app_settings),
 ):
     """자료 종류별 추천을 시작하고 바로 응답한다. 종류마다 끝나는 대로 콜백으로 결과를 보낸다."""
     timer = RequestTimer("rec", lecture_id=request.lecture_id, section_index=request.section_index)
@@ -93,7 +93,7 @@ async def recommend_resources(
         summary=request.section_summary,
         # 추천 프롬프트는 섹션 번호를 1부터 표시
         previous_summaries=[
-            ProviderPreviousSummary(section_id=ps.section_index + 1, summary=ps.summary, timestamp=ps.timestamp)
+            PreviousSummary(section_id=ps.section_index + 1, summary=ps.summary, timestamp=ps.timestamp)
             for ps in request.previous_summaries
         ],
         rag_chunks=rag_chunks,

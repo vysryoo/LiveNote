@@ -15,7 +15,7 @@ from core.tasks import run_in_background
 from core.timing import RequestTimer
 
 from ..callback import post_callback
-from ..dependencies import Services, get_services, get_settings
+from ..dependencies import Services, get_app_settings, get_services
 from ..utils import CamelModel
 
 router = APIRouter(prefix="/summary", tags=["SUMMARY"])
@@ -59,7 +59,7 @@ class SummaryGenerateRequest(CamelModel):
 async def generate_summary(
     request: SummaryGenerateRequest,
     services: Services = Depends(get_services),
-    settings: Settings = Depends(get_settings),
+    settings: Settings = Depends(get_app_settings),
 ):
     """요약 생성 콜백 엔드포인트"""
     timer = RequestTimer(

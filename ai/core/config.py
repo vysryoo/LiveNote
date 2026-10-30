@@ -39,7 +39,7 @@ class QASettings(BaseModel):
         default_factory=lambda: [QnAType.CONCEPT, QnAType.APPLICATION, QnAType.COMPARISON, QnAType.ADVANCED],
         description="생성할 질문 유형",
     )
-    qa_top_k: int = Field(default=4, ge=1, description="QA 생성 개수")
+    max_question_types: int = Field(default=4, ge=1, description="한 요청에서 생성할 질문 유형 최대 개수 (유형마다 1개씩 생성)")
 
 
 class PaperSettings(BaseModel):

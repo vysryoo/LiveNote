@@ -304,8 +304,8 @@ class VideoProvider(Provider[VideoCandidate]):
     def heuristic_score(self, candidate: VideoCandidate, context: RecContext, queries: List[str]) -> Score:
         detail = candidate.detail
         if detail is None:
-            return Score(_best_heuristic(candidate.item.title, 0, candidate.item.publish_time, queries), "Heuristic")
-        return Score(round(_best_heuristic(detail.title, detail.view_count, detail.publish_time, queries), 2), "Heuristic")
+            return Score(_heuristic_points(candidate.item.title, 0, candidate.item.publish_time, queries), "Heuristic")
+        return Score(round(_heuristic_points(detail.title, detail.view_count, detail.publish_time, queries), 2), "Heuristic")
 
     def to_recommendation(self, candidate: VideoCandidate, score: Score) -> Recommendation:
         detail = candidate.detail
@@ -337,18 +337,9 @@ def normalize_title(title: str) -> str:
     return re.sub(r"[^a-z0-9가-힣 _\-]", "", title).strip()
 
 
-def heuristic_score(*, title: str, query: str, view_count: int, publish_time: str) -> float:
-    """제목과 검색어의 유사도, 조회수, 최신성의 가중 평균을 0~10으로 계산한다.
-
-    Args:
-        title: 영상 제목
-        query: 검색어
-        view_count: 조회수
-        publish_time: 게시 시각 (ISO 8601)
-    Returns:
-        점수 (0~10)
-    """
-    similarity = fuzz.token_set_ratio(title, query) / 100.0
+def _heuristic_points(title: str, view_count: int, publish_time: str, queries: List[str]) -> float:
+    # 제목과 가장 비슷한 검색어 기준 유사도, 조회수, 최신성의 가중 평균을 0~10으로 계산
+    similarity = max(fuzz.token_set_ratio(title, query) for query in queries) / 100.0
     views = min(1.0, math.log10(view_count + 1) / 6.0) if view_count > 0 else 0.0
     try:
         recency = max(0.0, min(1.0, (int(publish_time[:4]) - 2015) / 10.0))
@@ -356,7 +347,3 @@ def heuristic_score(*, title: str, query: str, view_count: int, publish_time: st
         recency = 0.5
     raw = WEIGHT_TITLE_MATCH * similarity + WEIGHT_VIEWS * views + WEIGHT_RECENCY * recency
     return max(0.0, min(10.0, raw * 10.0))
-
-
-def _best_heuristic(title: str, view_count: int, publish_time: str, queries: List[str]) -> float:
-    return max(heuristic_score(title=title, query=q, view_count=view_count, publish_time=publish_time) for q in queries)

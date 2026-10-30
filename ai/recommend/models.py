@@ -85,3 +85,14 @@ def one_line(text: str) -> str:
         줄바꿈 없는 텍스트
     """
     return text.replace("\n", " ").replace("\r", " ")
+
+
+def to_prompt_line(text: str) -> str:
+    """프롬프트에 넣을 텍스트의 줄바꿈과 큰따옴표를 바꾼다. 프롬프트의 JSON 응답 예시가 깨지지 않게 한다.
+
+    Args:
+        text: 원문
+    Returns:
+        줄바꿈은 공백, 큰따옴표는 작은따옴표로 바꾸고 앞뒤 공백을 지운 텍스트
+    """
+    return text.replace("\n", " ").replace('"', "'").strip()

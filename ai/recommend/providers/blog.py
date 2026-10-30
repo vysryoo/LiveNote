@@ -98,7 +98,7 @@ Rate the relevance on a scale of 0-10 and provide a brief reason in {language}.
 **JSON Response:**"""
 
 
-def _clean(text: str) -> str:
+def _strip_html(text: str) -> str:
     return html.unescape(TAG_PATTERN.sub("", text or "")).strip()
 
 
@@ -149,9 +149,9 @@ class NaverBlogClient:
             return []
         return [
             {
-                "title": _clean(item.get("title", "")),
+                "title": _strip_html(item.get("title", "")),
                 "link": item.get("link", ""),
-                "snippet": _clean(item.get("description", "")),
+                "snippet": _strip_html(item.get("description", "")),
                 "displayLink": item.get("bloggername", "") or item.get("bloggerlink", ""),
             }
             for item in items

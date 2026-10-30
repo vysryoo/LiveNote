@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from core.config import Settings
 from rag.service import SummaryItem
 
-from ..dependencies import Services, get_services, get_settings
+from ..dependencies import Services, get_app_settings, get_services
 from ..utils import NonBlankStr, build_collection_id
 
 router = APIRouter(prefix="/rag", tags=["RAG"])
@@ -42,7 +42,7 @@ async def upsert_pdf(
     file: UploadFile = File(..., description="업로드할 PDF 파일"),
     base_metadata: str | None = Form(None, description="PDF 전체에 적용할 메타데이터(JSON)"),
     services: Services = Depends(get_services),
-    settings: Settings = Depends(get_settings),
+    settings: Settings = Depends(get_app_settings),
 ):
     """PDF 문서를 업서트"""
     if file.content_type != "application/pdf":
@@ -98,7 +98,7 @@ async def upsert_pdf(
 async def upsert_text(
     request: TextUpsertRequest,
     services: Services = Depends(get_services),
-    settings: Settings = Depends(get_settings),
+    settings: Settings = Depends(get_app_settings),
 ):
     """텍스트 요약본 업서트"""
     collection_id = build_collection_id(settings.rag.collection_prefix, request.lecture_id)

@@ -21,7 +21,7 @@ class Services:
     summary: Any
 
 
-async def get_settings(request: Request) -> Settings:
+async def get_app_settings(request: Request) -> Settings:
     """앱 설정을 돌려준다."""
     return request.app.state.settings
 

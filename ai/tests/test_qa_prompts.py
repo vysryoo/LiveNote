@@ -50,7 +50,7 @@ async def test_qa_prompts(test_context, internal_api_key, llm_calls, with_contex
         "sectionSummary": SUMMARY,
         "questionTypes": ["CONCEPT", "APPLICATION", "COMPARISON", "ADVANCED"],
     }
-    test_context.settings.qa.qa_top_k = 4
+    test_context.settings.qa.max_question_types = 4
     if with_context:
         test_context.rag.retrieve_result = [
             RAGChunk(id="c1", text="스택(Stack): push, pop 연산", score=0.71, metadata={}),

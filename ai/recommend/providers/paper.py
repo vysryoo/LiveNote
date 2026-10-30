@@ -19,7 +19,7 @@ from core.llm import ModelPurpose
 from core.schemas import ResourceType
 
 from ..context import previous_text, rag_text
-from ..models import LLMScore, RecContext, Recommendation, Score
+from ..models import LLMScore, RecContext, Recommendation, Score, to_prompt_line
 from ..pipeline import Provider
 
 logger = logging.getLogger(__name__)
@@ -189,10 +189,10 @@ class PaperProvider(Provider[Dict[str, Any]]):
 
     async def llm_score(self, candidate: Dict[str, Any], context: RecContext, queries: List[str]) -> Score:
         prompt = SCORE_PROMPT.format(
-            section_summary=_clean(context.summary),
+            section_summary=to_prompt_line(context.summary),
             keywords=", ".join(queries),
-            title=_clean(candidate.get("title", "")),
-            abstract=_clean(candidate.get("abstract", ""))[:ABSTRACT_MAX_LENGTH],
+            title=to_prompt_line(candidate.get("title", "")),
+            abstract=to_prompt_line(candidate.get("abstract", ""))[:ABSTRACT_MAX_LENGTH],
             year=candidate.get("year", "N/A"),
             cited_by_count=candidate.get("cited_by_count", 0),
             language=self.language,
@@ -279,8 +279,3 @@ def _rerank(papers: List[Dict[str, Any]], tokens: List[str]) -> List[Dict[str, A
         return sum((3 if t in title else 0) + (1 if t in abstract else 0) for t in lowered)
 
     return sorted(papers, key=lambda p: (match_score(p), p.get("relevance_score", 0)), reverse=True)
-
-
-def _clean(text: str) -> str:
-    # 프롬프트의 JSON 예시가 깨지지 않도록 줄바꿈과 큰따옴표를 바꿈
-    return text.replace("\n", " ").replace('"', "'").strip()

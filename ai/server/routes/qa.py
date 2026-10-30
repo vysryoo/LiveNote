@@ -17,7 +17,7 @@ from core.schemas import QnAType
 from core.timing import RequestTimer
 from qa.models import PreviousQA, QARequest
 
-from ..dependencies import Services, get_services, get_settings
+from ..dependencies import Services, get_app_settings, get_services
 from ..utils import CamelModel, NonBlankStr, build_collection_id
 
 router = APIRouter(prefix="/qa", tags=["QA"])
@@ -52,7 +52,7 @@ class QAGenerateRequest(CamelModel):
 async def generate_qa(
     request: QAGenerateRequest,
     services: Services = Depends(get_services),
-    settings: Settings = Depends(get_settings),
+    settings: Settings = Depends(get_app_settings),
 ):
     """질문 유형별 QA를 생성하며 생성 과정을 SSE로 응답한다.
 
@@ -88,7 +88,7 @@ async def generate_qa(
     timer.mark("retrieved", chunks=len(rag_chunks))
 
     requested_types = request.question_types if request.question_types is not None else settings.qa.question_types
-    question_types: List[QnAType] = list(requested_types)[: settings.qa.qa_top_k]
+    question_types: List[QnAType] = list(requested_types)[: settings.qa.max_question_types]
     if not question_types:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
