@@ -19,6 +19,7 @@ import httpx
 from rapidfuzz import fuzz
 
 from core import llm
+from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
 
@@ -149,17 +150,20 @@ class YouTubeClient:
             transport: httpx 전송 계층. 테스트에서 가짜 응답을 넣을 때 사용
         """
         self.api_key = api_key
-        self._transport = transport
+        self.http_client = httpx.AsyncClient(timeout=TIMEOUT_SEC, transport=transport)
 
     def _auth_headers(self) -> Dict[str, str]:
         # 키를 URL 쿼리에 넣으면 요청 실패 시 오류 메시지와 로그에 URL째 남으므로 헤더로 보냄
         return {"X-Goog-Api-Key": self.api_key}
 
     async def _get(self, path: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        async with httpx.AsyncClient(timeout=TIMEOUT_SEC, transport=self._transport) as client:
-            response = await client.get(f"{self.BASE}/{path}", params=params, headers=self._auth_headers())
-            response.raise_for_status()
-            return response.json()
+        response = await get_with_retry(self.http_client, f"{self.BASE}/{path}", params=params, headers=self._auth_headers())
+        response.raise_for_status()
+        return response.json()
+
+    async def close(self) -> None:
+        """HTTP 연결을 닫는다."""
+        await self.http_client.aclose()
 
     async def search_videos(self, q: str, lang: str, max_results: int = 8) -> List[YouTubeSearchItem]:
         """영상을 검색한다.
@@ -227,6 +231,9 @@ class VideoProvider(Provider[VideoCandidate]):
         super().__init__(top_k, verify, min_score, language)
         self.yt_lang = yt_lang
         self.api = api
+
+    async def close(self) -> None:
+        await self.api.close()
 
     async def build_queries(self, context: RecContext) -> List[str]:
         prompt = QUERY_PROMPT.format(

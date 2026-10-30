@@ -78,3 +78,22 @@ async def test_search_shortening_drops_last_word_until_results():
 
     assert results == [{"title": "결과"}]
     assert api.queries == ["벅 컨버터 전압초평형 듀티비", "벅 컨버터 전압초평형", "벅 컨버터"]
+
+
+async def test_search_retries_after_429(monkeypatch):
+    from core import http
+
+    async def no_sleep(seconds):
+        return None
+
+    monkeypatch.setattr(http.asyncio, "sleep", no_sleep)
+    statuses = [429, 200]
+
+    def handler(request):
+        status = statuses.pop(0)
+        return httpx.Response(status, json={"items": [{"title": "글", "link": "https://blog.naver.com/a/1"}]} if status == 200 else {})
+
+    results = await _client(handler).search("스택")
+
+    assert [r["title"] for r in results] == ["글"]
+    assert statuses == []

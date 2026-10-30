@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 from core import llm
+from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
 
@@ -83,11 +84,17 @@ class OpenAlexClient:
 
     BASE_URL = "https://api.openalex.org"
 
-    def __init__(self) -> None:
+    def __init__(self, transport: Optional[httpx.AsyncBaseTransport] = None) -> None:
+        """클라이언트를 만든다.
+
+        Args:
+            transport: httpx 전송 계층. 테스트에서 가짜 응답을 넣을 때 사용
+        """
         self.http_client = httpx.AsyncClient(
             timeout=TIMEOUT_SEC,
             limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
             http2=True,
+            transport=transport,
         )
 
     async def search_papers(self, query: Dict[str, Any], exclude_ids: Optional[List[str]] = None, sort_by: str = "relevance") -> List[Dict]:
@@ -115,7 +122,7 @@ class OpenAlexClient:
             "per_page": PER_PAGE * 2 if sort_by == "hybrid" else PER_PAGE,
         }
         try:
-            response = await self.http_client.get(f"{self.BASE_URL}/works", params=params)
+            response = await get_with_retry(self.http_client, f"{self.BASE_URL}/works", params=params)
             response.raise_for_status()
             works = response.json().get("results", [])
         except httpx.HTTPError as exc:

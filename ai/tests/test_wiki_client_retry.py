@@ -3,8 +3,9 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from recommend.providers import wiki as wiki_client
-from recommend.providers.wiki import WikiClient, retry_wait_seconds
+from core import http
+from core.http import retry_wait_seconds
+from recommend.providers.wiki import WikiClient
 
 pytestmark = pytest.mark.anyio("asyncio")
 
@@ -18,7 +19,7 @@ def waits(monkeypatch):
     async def fake_sleep(seconds):
         recorded.append(seconds)
 
-    monkeypatch.setattr(wiki_client.asyncio, "sleep", fake_sleep)
+    monkeypatch.setattr(http.asyncio, "sleep", fake_sleep)
     return recorded
 
 
@@ -48,7 +49,7 @@ async def test_search_gives_up_after_max_retries(waits):
     client, calls = _client([429])
 
     assert await client.search_pages("Buck converter", lang="en") == []
-    assert len(calls) == wiki_client.MAX_RETRIES + 1
+    assert len(calls) == http.MAX_RETRIES + 1
 
 
 async def test_other_errors_are_not_retried(waits):

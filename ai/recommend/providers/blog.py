@@ -20,6 +20,7 @@ from urllib.parse import urlparse
 import httpx
 
 from core import llm
+from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
 
@@ -119,9 +120,12 @@ class NaverBlogClient:
         """
         if not client_id or not client_secret:
             raise ValueError("NAVER_CLIENT_ID, NAVER_CLIENT_SECRET이 설정되지 않음")
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.transport = transport
+        self.headers = {"X-NCP-APIGW-API-KEY-ID": client_id, "X-NCP-APIGW-API-KEY": client_secret}
+        self.http_client = httpx.AsyncClient(timeout=TIMEOUT_SEC, transport=transport)
+
+    async def close(self) -> None:
+        """HTTP 연결을 닫는다."""
+        await self.http_client.aclose()
 
     async def search(self, query: str, lang: str = "ko", num: int = 10) -> List[Dict[str, Any]]:
         """블로그 글을 검색한다.
@@ -134,10 +138,8 @@ class NaverBlogClient:
             {"title", "link", "snippet", "displayLink"} 목록. 실패하면 빈 목록
         """
         params = {"query": query, "display": min(num, self.MAX_DISPLAY), "sort": "sim"}
-        headers = {"X-NCP-APIGW-API-KEY-ID": self.client_id, "X-NCP-APIGW-API-KEY": self.client_secret}
         try:
-            async with httpx.AsyncClient(timeout=TIMEOUT_SEC, transport=self.transport) as client:
-                response = await client.get(self.BASE_URL, params=params, headers=headers)
+            response = await get_with_retry(self.http_client, self.BASE_URL, params=params, headers=self.headers)
             if response.status_code != 200:
                 logger.error("네이버 블로그 검색 오류 (%d): %s", response.status_code, response.text[:200])
                 return []
@@ -166,6 +168,9 @@ class BlogProvider(Provider[Dict[str, Any]]):
         super().__init__(top_k, verify, min_score, language)
         self.search_lang = search_lang
         self.api = api
+
+    async def close(self) -> None:
+        await self.api.close()
 
     async def build_queries(self, context: RecContext) -> List[str]:
         context_text = ""

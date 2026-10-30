@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional, Sequence
 import httpx
 
 from core import llm
+from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
 
@@ -37,11 +38,8 @@ TIMEOUT_SEC = 15
 MAX_TOKENS_QUERY = 100
 MAX_TOKENS_SCORE = 80
 
-# 위키백과는 요청이 몰리면 429로 거절하므로 프로세스 전체 동시 요청 수를 제한하고, 거절되면 기다렸다 다시 시도함
+# 위키백과는 요청이 몰리면 429로 거절하므로 프로세스 전체 동시 요청 수를 제한함
 MAX_CONCURRENT_REQUESTS = 4
-MAX_RETRIES = 3
-RETRY_STATUSES = {429, 503}
-MAX_RETRY_WAIT_SEC = 10.0
 _semaphores: Dict[int, asyncio.Semaphore] = {}
 
 KEYWORD_PROMPT = f"""Extract {KEYWORD_MIN}-{KEYWORD_MAX} Wikipedia search keywords from this lecture summary and related context.
@@ -92,20 +90,6 @@ def _semaphore() -> asyncio.Semaphore:
     return _semaphores[loop_id]
 
 
-def retry_wait_seconds(response: httpx.Response, attempt: int) -> float:
-    """다시 시도하기 전 기다릴 시간을 정한다. Retry-After(초)가 있으면 따르고, 없으면 1·2·4초로 늘린다.
-
-    Args:
-        response: 거절 응답
-        attempt: 지금까지 시도 횟수 (1부터)
-    Returns:
-        대기 시간(초). 최대 10초
-    """
-    header = response.headers.get("Retry-After", "")
-    wait = float(header) if header.replace(".", "", 1).isdigit() else 2.0 ** (attempt - 1)
-    return min(wait, MAX_RETRY_WAIT_SEC)
-
-
 class WikiClient:
     """위키백과 검색·문서 조회 클라이언트."""
 
@@ -118,11 +102,18 @@ class WikiClient:
             user_agent: 위키백과 API 정책상 연락처를 담은 User-Agent
             transport: httpx 전송 계층. 테스트에서 가짜 응답을 넣을 때 사용
         """
-        self.user_agent = user_agent
-        self._transport = transport
+        self.http_client = httpx.AsyncClient(
+            timeout=TIMEOUT_SEC,
+            headers={"User-Agent": user_agent, "Accept": "application/json"},
+            transport=transport,
+        )
+
+    async def close(self) -> None:
+        """HTTP 연결을 닫는다."""
+        await self.http_client.aclose()
 
     async def _get_json(self, lang: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """위키백과 API를 호출한다. 429·503이면 기다렸다가 최대 3번 다시 시도한다.
+        """위키백과 API를 호출한다. 429·503이면 기다렸다가 다시 시도한다 (core.http).
 
         Args:
             lang: 위키백과 언어판 (en/ko)
@@ -132,22 +123,9 @@ class WikiClient:
         Raises:
             httpx.HTTPStatusError: 재시도 후에도 실패하거나 다른 오류 상태인 경우
         """
-        url = self.BASE_URL.format(lang=lang)
-        async with httpx.AsyncClient(
-            timeout=TIMEOUT_SEC,
-            headers={"User-Agent": self.user_agent, "Accept": "application/json"},
-            transport=self._transport,
-        ) as client:
-            for attempt in range(1, MAX_RETRIES + 2):
-                async with _semaphore():
-                    response = await client.get(url, params=params)
-                if response.status_code not in RETRY_STATUSES or attempt > MAX_RETRIES:
-                    response.raise_for_status()
-                    return response.json()
-                wait = retry_wait_seconds(response, attempt)
-                logger.warning("위키백과 %d, %.1f초 후 재시도 (%d/%d)", response.status_code, wait, attempt, MAX_RETRIES)
-                await asyncio.sleep(wait)
-        raise RuntimeError("unreachable")
+        response = await get_with_retry(self.http_client, self.BASE_URL.format(lang=lang), params=params, limiter=_semaphore())
+        response.raise_for_status()
+        return response.json()
 
     async def search_pages(self, keyword: str, lang: str = "en", limit: int = 6) -> List[Dict[str, Any]]:
         """키워드로 문서를 검색한다.
@@ -225,6 +203,9 @@ class WikiProvider(Provider[Dict[str, Any]]):
         self.wiki_lang = wiki_lang
         self.fallback_to_ko = fallback_to_ko
         self.api = api
+
+    async def close(self) -> None:
+        await self.api.close()
 
     async def build_queries(self, context: RecContext) -> List[str]:
         prompt = KEYWORD_PROMPT.format(
