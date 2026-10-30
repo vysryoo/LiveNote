@@ -38,7 +38,7 @@ class AiRequestServiceTest {
     @Mock QnaStreamService qnaStreamService;
 
     @Test
-    void requestResources_buildsPreviousAndExcludes() {
+    void requestResourcesWithType_buildsPreviousAndExcludes() {
         AiHistoryProperties props = new AiHistoryProperties();
         props.setPreviousSummaryCount(2);
         props.setPreviousResourceSections(2);
@@ -63,11 +63,11 @@ class AiRequestServiceTest {
                 ragClient, summaryService, resourceService, qnaService, lectureService, props, streamGateway, qnaStreamService
         );
 
-        service.requestResources(1L, 3);
+        service.requestResourcesWithType(1L, 3, "paper");
 
         ArgumentCaptor<AiRequestPayloads.ResourceRecommendPayload> captor =
                 ArgumentCaptor.forClass(AiRequestPayloads.ResourceRecommendPayload.class);
-        verify(ragClient).requestResourceRecommendation(captor.capture(), isNull());
+        verify(ragClient).requestResourceRecommendation(captor.capture(), eq(List.of("PAPER")));
         var payload = captor.getValue();
 
         assertThat(payload.getPreviousSummaries()).hasSize(2);
@@ -79,7 +79,7 @@ class AiRequestServiceTest {
     }
 
     @Test
-    void requestQna_usesSubjectAndPreviousQa() {
+    void requestQnaWithType_usesSubjectAndPreviousQa() {
         AiHistoryProperties props = new AiHistoryProperties();
         props.setPreviousQaSections(2);
 
@@ -96,11 +96,11 @@ class AiRequestServiceTest {
                 ragClient, summaryService, resourceService, qnaService, lectureService, props, streamGateway, qnaStreamService
         );
 
-        service.requestQna(7L, 4);
+        service.requestQnaWithType(7L, 4, "concept");
 
         ArgumentCaptor<AiRequestPayloads.QnaGeneratePayload> captor =
                 ArgumentCaptor.forClass(AiRequestPayloads.QnaGeneratePayload.class);
-        verify(qnaStreamService).generate(captor.capture(), isNull());
+        verify(qnaStreamService).generate(captor.capture(), eq(List.of("CONCEPT")));
         var payload = captor.getValue();
 
         assertThat(payload.getSubject()).isEqualTo("math");

@@ -3,7 +3,6 @@ package com.capstone.livenote.application.ai.service;
 import com.capstone.livenote.application.ai.config.AiHistoryProperties;
 import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.application.ai.dto.AiRequestPayloads;
-import com.capstone.livenote.application.ai.dto.CardStatusDto;
 import com.capstone.livenote.application.ws.StreamGateway;
 import com.capstone.livenote.domain.lecture.entity.Lecture;
 import com.capstone.livenote.domain.lecture.service.LectureService;
@@ -40,107 +39,6 @@ public class AiRequestService {
     private final AiHistoryProperties historyProperties;
     private final StreamGateway streamGateway;
     private final QnaStreamService qnaStreamService;
-
-    public CardStatusDto getCardsStatus(Long lectureId, Integer sectionIndex) {
-        int qCursor = CardIdHelper.CARD_INDEX_OFFSET;
-        var qnaItems = new java.util.ArrayList<CardStatusDto.CardItem>();
-        for (var q : qnaService.byLectureAndSection(lectureId, sectionIndex)) {
-            int cardIndex = q.getCardId() != null
-                    ? CardIdHelper.extractCardIndex(q.getCardId(), qCursor)
-                    : qCursor;
-            String cardId = q.getCardId() != null
-                    ? q.getCardId()
-                    : CardIdHelper.buildCardId("qna", lectureId, sectionIndex, cardIndex);
-            qCursor = Math.max(qCursor, cardIndex + 1);
-
-            qnaItems.add(CardStatusDto.CardItem.builder()
-                    .cardId(cardId)
-                    .cardIndex(cardIndex)
-                    .type("qna")
-                    .isComplete(true)
-                    .data(com.capstone.livenote.domain.qna.dto.QnaResponseDto.from(q))
-                    .build());
-        }
-
-        int rCursor = CardIdHelper.CARD_INDEX_OFFSET;
-        var resourceItems = new java.util.ArrayList<CardStatusDto.CardItem>();
-        for (var r : resourceService.findByLectureAndSectionOrdered(lectureId, sectionIndex)) {
-            int cardIndex = r.getCardId() != null
-                    ? CardIdHelper.extractCardIndex(r.getCardId(), rCursor)
-                    : rCursor;
-            String cardId = r.getCardId() != null
-                    ? r.getCardId()
-                    : CardIdHelper.buildCardId("resource", lectureId, sectionIndex, cardIndex);
-            rCursor = Math.max(rCursor, cardIndex + 1);
-
-            resourceItems.add(CardStatusDto.CardItem.builder()
-                    .cardId(cardId)
-                    .cardIndex(cardIndex)
-                    .type("resource")
-                    .isComplete(true)
-                    .data(com.capstone.livenote.domain.resource.dto.ResourceResponseDto.from(r))
-                    .build());
-        }
-
-        return new CardStatusDto(qnaItems, resourceItems);
-    }
-
-    // 수동 요청
-    public void requestResources(Long lectureId, Integer sectionIndex) {
-        if (resourceService.findBySectionRange(lectureId, sectionIndex, sectionIndex).size() >= 3) {
-            log.info("⏭️ [AI Request] Resources skipped (already >=3): lectureId={} section={}", lectureId, sectionIndex);
-            // 최신 상태를 프론트로 재전송하여 UI를 동기화
-            var existing = resourceService.findBySectionRange(lectureId, sectionIndex, sectionIndex).stream()
-                    .map(com.capstone.livenote.domain.resource.dto.ResourceResponseDto::from)
-                    .toList();
-            streamGateway.sendResources(lectureId, sectionIndex, existing);
-            return;
-        }
-        Summary summary = findSummaryWithRetry(lectureId, sectionIndex);
-        if (summary == null) {
-            log.warn("⏭️ [AI Request] Resources skipped after retry (summary not found): lectureId={} section={}", lectureId, sectionIndex);
-            return;
-        }
-
-        ResourceRecommendPayload payload = buildResourcePayload(
-                lectureId,
-                summary.getId(),
-                sectionIndex,
-                summary.getText()
-        );
-        log.info("🔄 [AI Request] Resource recommendation (Manual): lectureId={} section={}", lectureId, sectionIndex);
-
-        ragClient.requestResourceRecommendation(payload, null);
-    }
-
-
-    // 수동 요
-    public void requestQna(Long lectureId, Integer sectionIndex) {
-        if (qnaService.byLectureAndSection(lectureId, sectionIndex).size() >= 3) {
-            log.info("⏭️ [AI Request] QnA skipped (already >=3): lectureId={} section={}", lectureId, sectionIndex);
-            var existing = qnaService.byLectureAndSection(lectureId, sectionIndex).stream()
-                    .map(com.capstone.livenote.domain.qna.dto.QnaResponseDto::from)
-                    .toList();
-            streamGateway.sendQna(lectureId, sectionIndex, existing);
-            return;
-        }
-        Summary summary = findSummaryWithRetry(lectureId, sectionIndex);
-        if (summary == null) {
-            log.warn("⏭️ [AI Request] QnA skipped after retry (summary not found): lectureId={} section={}", lectureId, sectionIndex);
-            return;
-        }
-        Lecture lecture = lectureService.get(lectureId);
-
-        var payload = buildQnaPayload(
-                lecture,
-                summary.getId(),
-                sectionIndex,
-                summary.getText()
-        );
-        log.info("🔄 [AI Request] QnA generation (Manual): lectureId={} section={}", lectureId, sectionIndex);
-
-        qnaStreamService.generate(payload, null);
-    }
 
     // 프론트 start-qna-stream → 특정 타입 한 건 요청
     public void requestQnaWithType(Long lectureId, Integer sectionIndex, String qnaType) {
