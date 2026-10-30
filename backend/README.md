@@ -154,19 +154,13 @@ REDIS_PORT=6379
 backend/
 ├── src/main/java/com/capstone/livenote/
 │   ├── LivenoteApplication.java    # 메인 엔트리 포인트
-│   ├── application/                 # 애플리케이션 계층
-│   │   ├── ai/                      # AI 서버 연동 (요청, 콜백, QnA SSE 중계, 섹션 집계)
-│   │   ├── test/                    # 개발용 API (dev 프로필 전용)
-│   │   └── ws/                      # 녹음 WebSocket, STOMP 전송
-│   ├── domain/                      # 도메인 계층
-│   │   ├── lecture/                 # 강의 엔티티/레포지토리
-│   │   ├── transcript/              # 전사 관리
-│   │   ├── summary/                 # 요약 관리
-│   │   ├── qna/                     # QA 관리
-│   │   ├── resource/                # 추천 자료 관리
-│   │   ├── bookmark/                # 북마크 관리
-│   │   └── user/                    # 사용자/인증
-│   └── global/                      # 전역 설정, 예외 처리, 보안(JWT·STOMP 인증·내부 키), Redis 잠금
+│   ├── user/                        # 회원가입, 로그인, 토큰 갱신, 내 정보
+│   ├── lecture/                     # 강의 생성·목록·상세·종료·삭제, 북마크
+│   ├── recording/                   # 녹음 WebSocket, OpenAI 전사 세션, 전사 저장, 섹션 집계
+│   ├── summary/                     # 요약 저장과 요약 콜백 처리
+│   ├── card/                        # QnA·추천 자료 카드 생성 요청, QnA SSE 중계, 자료 콜백 처리
+│   ├── ai/                          # AI 서버 클라이언트, 콜백 컨트롤러, 요청·콜백 형식
+│   └── global/                      # 설정, 예외 처리, 보안(JWT·STOMP 인증·내부 키), Redis 키·잠금, STOMP 전송
 ├── src/main/resources/
 │   ├── application.yml              # 애플리케이션 설정
 │   ├── db/migration/                # Flyway 스키마 마이그레이션
@@ -174,6 +168,13 @@ backend/
 ├── build.gradle                     # Gradle 빌드 설정
 └── gradlew                          # Gradle 래퍼
 ```
+
+패키지는 기능별로 나뉘고, 엔티티·리포지토리·서비스·컨트롤러·DTO가 같은 패키지에 있습니다. 처음 읽을 때는 데이터가 흐르는 순서를 따라가면 됩니다.
+
+1. `recording/RealtimeTranscriptionWebSocketHandler`: 녹음 연결을 받고 `OpenAiTranscriptionSession`이 OpenAI와 주고받음
+2. `recording/TranscriptService`, `SectionAggregationService`: 전사를 저장하고 15초·30초마다 AI 서버에 요약 요청
+3. `summary/SummaryCallbackService`: 요약 콜백을 저장하고, 부분 요약이면 `card/CardRequestService`로 카드 생성 요청
+4. `card/QnaStreamService`, `ResourceCallbackService`: QnA 스트림과 자료 콜백을 저장하고 `global/stomp/StreamGateway`로 화면에 전송
 
 ---
 
@@ -200,8 +201,8 @@ backend/
 
 ### 섹션 집계
 
-- **15초 PARTIAL**: 15초 경계마다 부분 요약 요청
-- **30초 FINAL**: 30초 경계마다 최종 요약 + RAG 업서트 + 자료/QA 트리거
+- **15초 PARTIAL**: 15초 경계마다 부분 요약 요청. 부분 요약 콜백을 받으면 QnA 2개(개념·응용)와 자료 2종(위키·블로그) 자동 생성 요청
+- **30초 FINAL**: 30초 경계마다 최종 요약 요청. 최종 요약 콜백을 받으면 저장 후 RAG 업서트
 - **상태 저장**: 강의별 현재 섹션과 시각 보정값은 Redis에 저장해 서버 여러 대와 재시작 후에도 이어짐. Redis에 없으면 DB의 마지막 섹션에서 다시 만듦
 - **동시 처리**: 같은 강의의 전사, 같은 섹션의 카드 콜백은 Redis 잠금으로 한 번에 하나씩 처리
 
@@ -228,7 +229,7 @@ backend/
 
 ## API 엔드포인트
 
-`/api/auth/**`와 AI 콜백을 제외한 모든 API는 `Authorization: Bearer {접근 토큰}`이 필요합니다.
+`/api/auth/**`와 AI 콜백을 제외한 모든 API는 `Authorization: Bearer {접근 토큰}`이 필요합니다. 토큰이 없거나 만료되면 401로 응답하고, 프론트엔드는 401을 받으면 토큰을 갱신해 다시 요청합니다.
 
 ### 인증
 
@@ -253,10 +254,8 @@ backend/
 |------|--------|------|
 | `/api/lectures` | GET | 강의 목록 최신순 조회 `?page=0&size=20` (size 최대 100) → `{items, total, hasNext}` |
 | `/api/lectures` | POST | 강의 생성. JSON `{title, subject, sttLanguage}` 또는 multipart(`title`, `subject`, `sttLanguage`, `files`: PDF) |
-| `/api/lectures/{id}` | GET | 강의 조회 |
 | `/api/lectures/{id}/detail` | GET | 강의 상세 (전사, 요약, QnA, 자료, 북마크) |
 | `/api/lectures/{id}/title` | PATCH | 제목 변경 `{title}` |
-| `/api/lectures/{id}/pdf` | POST | 강의 자료 PDF 업로드 (multipart `file`, RAG 업서트) |
 | `/api/lectures/{id}/end` | POST | 강의 종료 `{title}` (선택. 비어 있으면 기존 제목 유지) |
 | `/api/lectures/{id}` | DELETE | 강의 삭제 |
 
@@ -264,20 +263,19 @@ backend/
 
 | 경로 | 메서드 | 설명 |
 |------|--------|------|
-| `/api/bookmarks` | GET | 북마크 목록 `?lectureId&sectionIndex` (sectionIndex 선택) |
-| `/api/bookmarks` | POST | 북마크 추가 `{lectureId, sectionIndex, targetType, targetId}` (targetType: `resource` 또는 `qna`) |
-| `/api/bookmarks/{id}` | DELETE | 북마크 삭제 |
+| `/api/bookmarks` | POST | 북마크 추가 `{lectureId, sectionIndex, targetType, targetId}` (targetType: `resource` 또는 `qna`). 본인 강의가 아니거나 대상이 그 강의에 없으면 404 |
+| `/api/bookmarks/{id}` | DELETE | 북마크 삭제. 본인 북마크가 아니면 404 |
 
-### AI 생성 요청
+북마크 목록은 강의 상세(`/detail`)의 `bookmarks`로 받습니다.
+
+### 추가 카드 요청
 
 | 경로 | 메서드 | 설명 |
 |------|--------|------|
-| `/api/ai/generate-summary` | POST | 요약 수동 생성 `?lectureId&sectionIndex&phase` (phase 기본 FINAL) |
-| `/api/ai/generate-resources` | POST | 자료 추천 수동 생성 `?lectureId&sectionIndex` |
-| `/api/ai/generate-qna` | POST | QnA 수동 생성 `?lectureId&sectionIndex` |
-| `/api/start-qna-stream` | POST | 분할 화면 추가 카드: QnA 한 유형 생성 `?lectureId&sectionIndex&cardIndex&qnaType` |
-| `/api/start-resources-stream` | POST | 분할 화면 추가 카드: 자료 한 유형 추천 `?lectureId&sectionIndex&cardIndex&resourceType` |
-| `/api/cards-status` | GET | 섹션의 카드 생성 상태 `?lectureId&sectionIndex` |
+| `/api/start-qna-stream` | POST | 분할 화면 추가 카드: QnA 한 유형 생성 `?lectureId&sectionIndex&qnaType` → `{ok, data:null}` |
+| `/api/start-resources-stream` | POST | 분할 화면 추가 카드: 자료 한 유형 추천 `?lectureId&sectionIndex&resourceType` → `{ok, data:null}` |
+
+카드 번호는 서버가 정하고 생성 결과는 STOMP로 전달합니다. 요청에 `cardIndex`를 붙여도 무시합니다.
 
 ### AI 콜백
 
@@ -287,14 +285,6 @@ AI 서버 전용입니다. 로그인 토큰 대신 `X-Internal-Api-Key` 헤더�
 |------|--------|------|
 | `/api/ai/callback?type=summary` | POST | 요약 결과 수신 |
 | `/api/ai/callback?type=resources` | POST | 자료 추천 결과 수신 |
-
-### 개발용 (`dev` 프로필에서만 등록)
-
-| 경로 | 메서드 | 설명 |
-|------|--------|------|
-| `/api/dev/ws/lectures/{id}/transcript` | POST | STOMP 전사 메시지 시험 전송 |
-| `/api/dev/ws/lectures/{id}/summary` | POST | STOMP 요약 메시지 시험 전송 |
-| `/test/{id}/simulate` | POST | 30초 분량 전사 저장 시뮬레이션 |
 
 ### WebSocket/STOMP
 
