@@ -1,6 +1,5 @@
 package com.capstone.livenote.domain.lecture.controller;
 
-import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.domain.lecture.dto.CreateLectureRequestDto;
 import com.capstone.livenote.domain.lecture.dto.EndLectureRequest;
 import com.capstone.livenote.domain.lecture.dto.LecturePageDto;
@@ -35,7 +34,6 @@ public class LectureController {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final LectureService lectureService;
-    private final RagClient ragClient;
 
     // 강의 조회
     @Operation(summary = "현재 사용자의 강의 목록을 최신순으로 페이지 단위 조회")
@@ -57,8 +55,7 @@ public class LectureController {
     @GetMapping("/{lectureId}/detail")
     public ApiResponse<SessionDetailResponse> getDetail(@AuthenticationPrincipal Long userId,
                                                         @PathVariable Long lectureId){
-        lectureService.getOwned(lectureId, userId);
-        var detail = lectureService.getSessionDetail(lectureId);
+        var detail = lectureService.getSessionDetail(lectureId, userId);
         return ApiResponse.ok(detail);
     }
 
@@ -93,11 +90,7 @@ public class LectureController {
         }
 
         var req = new CreateLectureRequestDto(title, subject, sttLanguage);
-        var lecture = lectureService.create(userId, req);
-
-        // RAG 업서트 수행
-        String collectionId = ragClient.upsertPdf(lecture.getId(), pdf, null);
-        lectureService.updateCollectionId(lecture.getId(), collectionId);
+        var lecture = lectureService.createWithPdf(userId, req, pdf);
 
         return ApiResponse.ok(LectureResponseDto.from(lecture));
     }
@@ -111,16 +104,14 @@ public class LectureController {
             @PathVariable Long lectureId,
             @RequestBody(required = false) EndLectureRequest request
     ) {
-        lectureService.getOwned(lectureId, userId);
-        var lecture = lectureService.endLecture(lectureId, request == null ? null : request.title());
+        var lecture = lectureService.endLecture(lectureId, userId, request == null ? null : request.title());
         return ApiResponse.ok(LectureResponseDto.from(lecture));
     }
 
     @Operation(summary = "특정 강의와 관련 데이터를 삭제")
     @DeleteMapping("/{lectureId}")
     public ApiResponse<Void> delete(@AuthenticationPrincipal Long userId, @PathVariable Long lectureId){
-        lectureService.getOwned(lectureId, userId);
-        lectureService.delete(lectureId);
+        lectureService.delete(lectureId, userId);
         return ApiResponse.ok();
     }
 
@@ -131,8 +122,7 @@ public class LectureController {
             @PathVariable Long lectureId,
             @RequestBody UpdateLectureTitleRequest req
     ) {
-        lectureService.getOwned(lectureId, userId);
-        var updated = lectureService.updateLectureTitle(lectureId, req.getTitle());
+        var updated = lectureService.updateLectureTitle(lectureId, userId, req.getTitle());
         return ApiResponse.ok(LectureResponseDto.from(updated));
     }
 

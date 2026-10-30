@@ -1,5 +1,6 @@
 package com.capstone.livenote.domain.lecture.service;
 
+import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.domain.bookmark.dto.BookmarkResponseDto;
 import com.capstone.livenote.domain.bookmark.entity.Bookmark;
 import com.capstone.livenote.domain.bookmark.repository.BookmarkRepository;
@@ -22,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.stream.Collectors;
 
@@ -35,6 +37,7 @@ public class LectureService {
     private final ResourceRepository resourceRepository;
     private final QnaRepository qnaRepository;
     private final BookmarkRepository bookmarkRepository;
+    private final RagClient ragClient;
 
     @Transactional
     public Lecture create(Long userId, CreateLectureRequestDto req){
@@ -51,6 +54,23 @@ public class LectureService {
         Lecture saved = lectureRepo.save(lec);
         log.info("✅ [DB WRITE] Lecture created: id={} title={}", saved.getId(), saved.getTitle());
         return saved;
+    }
+
+    /**
+     * 강의를 만들고 강의 자료 PDF를 AI 서버의 검색 저장소에 올린다.
+     *
+     * 강의 저장과 PDF 업로드는 한 트랜잭션으로 묶지 않는다. 업로드가 실패해도 이미 저장한 강의는 남는다.
+     *
+     * @param userId 강의를 만드는 사용자 ID
+     * @param req 강의 정보
+     * @param pdf 강의 자료 PDF
+     * @return 만든 강의. 업로드한 자료의 컬렉션 ID가 저장됨
+     * @throws RuntimeException AI 서버 업로드에 실패한 경우
+     */
+    public Lecture createWithPdf(Long userId, CreateLectureRequestDto req, MultipartFile pdf) {
+        Lecture lecture = create(userId, req);
+        lecture.setCollectionId(ragClient.upsertPdf(lecture.getId(), pdf, null));
+        return lectureRepo.save(lecture);
     }
 
     /**
@@ -84,26 +104,33 @@ public class LectureService {
         return lecture;
     }
 
+    /**
+     * 요청한 사용자 본인의 강의를 삭제한다.
+     *
+     * @param lectureId 강의 ID
+     * @param userId 요청한 사용자 ID
+     * @throws EntityNotFoundException 강의가 없거나 다른 사용자의 강의인 경우
+     */
     @Transactional
-    public void delete(Long id){
-        log.info("🗑️ [DB DELETE] Deleting lecture: lectureId={}", id);
-        lectureRepo.deleteById(id);
-        log.info("✅ [DB DELETE] Lecture deleted: lectureId={}", id);
+    public void delete(Long lectureId, Long userId){
+        log.info("🗑️ [DB DELETE] Deleting lecture: lectureId={}", lectureId);
+        lectureRepo.delete(getOwned(lectureId, userId));
+        log.info("✅ [DB DELETE] Lecture deleted: lectureId={}", lectureId);
     }
 
     /**
      * 강의를 종료 상태로 바꾸고, 제목이 주어지면 함께 저장한다.
      *
      * @param id 강의 ID
+     * @param userId 요청한 사용자 ID
      * @param title 저장할 제목. null이거나 공백뿐이면 기존 제목 유지
      * @return 종료된 강의
-     * @throws EntityNotFoundException 강의가 없는 경우
+     * @throws EntityNotFoundException 강의가 없거나 다른 사용자의 강의인 경우
      */
     @Transactional
-    public Lecture endLecture(Long id, String title) {
+    public Lecture endLecture(Long id, Long userId, String title) {
         log.info("💾 [DB WRITE] Ending lecture: lectureId={}", id);
-        Lecture lecture = lectureRepo.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("lecture"));
+        Lecture lecture = getOwned(id, userId);
         if (title != null && !title.isBlank()) {
             lecture.setTitle(title.trim());
         }
@@ -114,21 +141,35 @@ public class LectureService {
         return lecture;
     }
 
+    /**
+     * 요청한 사용자 본인의 강의 제목을 바꾼다.
+     *
+     * @param lectureId 강의 ID
+     * @param userId 요청한 사용자 ID
+     * @param title 새 제목
+     * @return 제목을 바꾼 강의
+     * @throws EntityNotFoundException 강의가 없거나 다른 사용자의 강의인 경우
+     */
     @Transactional
-    public Lecture updateLectureTitle(Long lectureId, String title) {
-        Lecture lecture = lectureRepo.findById(lectureId)
-                .orElseThrow(() -> new EntityNotFoundException("lecture"));
+    public Lecture updateLectureTitle(Long lectureId, Long userId, String title) {
+        Lecture lecture = getOwned(lectureId, userId);
         lecture.setTitle(title);
         return lectureRepo.save(lecture);
     }
 
-    // 강의 상세 정보 조회 (transcripts, summaries, resources, qna, bookmarks 포함)
+    /**
+     * 요청한 사용자 본인 강의의 전사, 요약, 자료, QnA, 북마크를 한 번에 조회한다.
+     *
+     * @param lectureId 강의 ID
+     * @param userId 요청한 사용자 ID
+     * @return 강의 상세
+     * @throws EntityNotFoundException 강의가 없거나 다른 사용자의 강의인 경우
+     */
     @Transactional(readOnly = true)
-    public SessionDetailResponse getSessionDetail(Long lectureId) {
+    public SessionDetailResponse getSessionDetail(Long lectureId, Long userId) {
         log.info("📂 [DB READ] Fetching session detail: lectureId={}", lectureId);
         
-        Lecture lecture = lectureRepo.findById(lectureId)
-                .orElseThrow(() -> new EntityNotFoundException("lecture"));
+        Lecture lecture = getOwned(lectureId, userId);
         
         var transcripts = transcriptRepository.findByLectureIdOrderByStartSecAsc(lectureId)
                 .stream()
@@ -152,7 +193,7 @@ public class LectureService {
                 .map(QnaResponseDto::from)
                 .collect(Collectors.toList());
 
-        var bookmarks = bookmarkRepository.findByUserIdAndLectureId(lecture.getUserId(), lectureId, Pageable.unpaged())
+        var bookmarks = bookmarkRepository.findByUserIdAndLectureId(userId, lectureId, Pageable.unpaged())
                 .stream()
                 .sorted((b1, b2) -> Integer.compare(b1.getSectionIndex(), b2.getSectionIndex()))
                 .map(bm -> {
@@ -180,11 +221,4 @@ public class LectureService {
         return SessionDetailResponse.from(lecture, transcripts, summaries, resources, qnas, bookmarks);
     }
 
-
-    @Transactional
-    public void updateCollectionId(Long lectureId, String collectionId) {
-        Lecture lecture = get(lectureId); // 기존 get 메서드 활용
-        lecture.setCollectionId(collectionId);
-        // 더티 체킹으로 자동 저장
-    }
 }

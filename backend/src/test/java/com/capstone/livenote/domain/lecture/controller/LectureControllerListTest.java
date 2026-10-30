@@ -1,6 +1,5 @@
 package com.capstone.livenote.domain.lecture.controller;
 
-import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.domain.lecture.entity.Lecture;
 import com.capstone.livenote.domain.lecture.service.LectureService;
 import org.junit.jupiter.api.AfterEach;
@@ -34,13 +33,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class LectureControllerListTest {
 
     @Mock LectureService lectureService;
-    @Mock RagClient ragClient;
 
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders.standaloneSetup(new LectureController(lectureService, ragClient))
+        mvc = MockMvcBuilders.standaloneSetup(new LectureController(lectureService))
                 .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .build();
         SecurityContextHolder.getContext().setAuthentication(

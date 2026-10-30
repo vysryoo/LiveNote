@@ -1,6 +1,8 @@
 package com.capstone.livenote.domain.lecture.service;
 
+import com.capstone.livenote.application.ai.client.RagClient;
 import com.capstone.livenote.domain.bookmark.repository.BookmarkRepository;
+import com.capstone.livenote.domain.lecture.dto.CreateLectureRequestDto;
 import com.capstone.livenote.domain.lecture.entity.Lecture;
 import com.capstone.livenote.domain.lecture.repository.LectureRepository;
 import com.capstone.livenote.domain.qna.repository.QnaRepository;
@@ -13,12 +15,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class LectureServiceTest {
@@ -29,6 +33,7 @@ class LectureServiceTest {
     @Mock ResourceRepository resourceRepository;
     @Mock QnaRepository qnaRepository;
     @Mock BookmarkRepository bookmarkRepository;
+    @Mock RagClient ragClient;
 
     @InjectMocks
     LectureService service;
@@ -53,9 +58,9 @@ class LectureServiceTest {
     @Test
     void endLecture_savesTitleAndCompletes() {
         Lecture lecture = Lecture.builder().id(4L).userId(1L).title("old").status(Lecture.Status.RECORDING).build();
-        when(lectureRepo.findById(4L)).thenReturn(Optional.of(lecture));
+        when(lectureRepo.findByIdAndUserId(4L, 1L)).thenReturn(Optional.of(lecture));
 
-        Lecture ended = service.endLecture(4L, "  자료구조 3주차 ");
+        Lecture ended = service.endLecture(4L, 1L, "  자료구조 3주차 ");
 
         assertThat(ended.getTitle()).isEqualTo("자료구조 3주차");
         assertThat(ended.getStatus()).isEqualTo(Lecture.Status.COMPLETED);
@@ -65,9 +70,50 @@ class LectureServiceTest {
     @Test
     void endLecture_withoutTitleKeepsExistingTitle() {
         Lecture lecture = Lecture.builder().id(4L).userId(1L).title("old").status(Lecture.Status.RECORDING).build();
-        when(lectureRepo.findById(4L)).thenReturn(Optional.of(lecture));
+        when(lectureRepo.findByIdAndUserId(4L, 1L)).thenReturn(Optional.of(lecture));
 
-        assertThat(service.endLecture(4L, null).getTitle()).isEqualTo("old");
-        assertThat(service.endLecture(4L, "   ").getTitle()).isEqualTo("old");
+        assertThat(service.endLecture(4L, 1L, null).getTitle()).isEqualTo("old");
+        assertThat(service.endLecture(4L, 1L, "   ").getTitle()).isEqualTo("old");
+    }
+
+    @Test
+    void endLecture_throwsNotFoundForOtherUsersLecture() {
+        when(lectureRepo.findByIdAndUserId(4L, 2L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.endLecture(4L, 2L, "제목"))
+                .isInstanceOf(EntityNotFoundException.class);
+        verify(lectureRepo, never()).save(any());
+    }
+
+    @Test
+    void createWithPdf_savesCollectionIdOfUploadedPdf() {
+        var pdf = new MockMultipartFile("files", "slides.pdf", "application/pdf", new byte[]{1});
+        when(lectureRepo.save(any())).thenAnswer(invocation -> {
+            Lecture lecture = invocation.getArgument(0);
+            if (lecture.getId() == null) lecture.setId(9L);
+            return lecture;
+        });
+        when(ragClient.upsertPdf(9L, pdf, null)).thenReturn("lecture_9");
+
+        Lecture created = service.createWithPdf(1L, new CreateLectureRequestDto("제목", "과목", "ko"), pdf);
+
+        assertThat(created.getCollectionId()).isEqualTo("lecture_9");
+        assertThat(created.getUserId()).isEqualTo(1L);
+    }
+
+    @Test
+    void createWithPdf_keepsLectureWhenUploadFails() {
+        var pdf = new MockMultipartFile("files", "slides.pdf", "application/pdf", new byte[]{1});
+        when(lectureRepo.save(any())).thenAnswer(invocation -> {
+            Lecture lecture = invocation.getArgument(0);
+            lecture.setId(9L);
+            return lecture;
+        });
+        when(ragClient.upsertPdf(9L, pdf, null)).thenThrow(new RuntimeException("RAG Upsert Failed"));
+
+        assertThatThrownBy(() -> service.createWithPdf(1L, new CreateLectureRequestDto("제목", "과목", "ko"), pdf))
+                .isInstanceOf(RuntimeException.class);
+        // 강의는 업로드 전에 저장되어 남고, 컬렉션 ID 저장은 일어나지 않음
+        verify(lectureRepo, times(1)).save(any());
     }
 }
