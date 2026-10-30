@@ -35,7 +35,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -107,10 +106,10 @@ class QnaStreamServiceTest {
 
         String cardId = "qna_1_5_2";
         InOrder order = inOrder(streamGateway);
-        order.verify(streamGateway).sendStreamToken(LECTURE, "qna_stream", cardId, "", false, null, "재시도 패턴?", null);
-        order.verify(streamGateway).sendStreamToken(LECTURE, "qna_stream", cardId, "exponential ", false, null, "재시도 패턴?", null);
-        order.verify(streamGateway).sendStreamToken(LECTURE, "qna_stream", cardId, "backoff", false, null, "재시도 패턴?", null);
-        order.verify(streamGateway).sendStreamToken(eq(LECTURE), eq("qna_stream"), eq(cardId), isNull(), eq(true), any(QnaResponseDto.class), isNull(), isNull());
+        order.verify(streamGateway).sendStreamToken(LECTURE, "qna_stream", cardId, "", "재시도 패턴?");
+        order.verify(streamGateway).sendStreamToken(LECTURE, "qna_stream", cardId, "exponential ", "재시도 패턴?");
+        order.verify(streamGateway).sendStreamToken(LECTURE, "qna_stream", cardId, "backoff", "재시도 패턴?");
+        order.verify(streamGateway).sendStreamComplete(eq(LECTURE), eq("qna_stream"), eq(cardId), any(QnaResponseDto.class));
         order.verify(streamGateway).sendQna(eq(LECTURE), eq(SECTION), any());
 
         assertThat(stored).hasSize(1);
@@ -156,7 +155,7 @@ class QnaStreamServiceTest {
 
         assertThat(stored).hasSize(1);
         ArgumentCaptor<QnaResponseDto> data = ArgumentCaptor.forClass(QnaResponseDto.class);
-        verify(streamGateway).sendStreamToken(eq(LECTURE), eq("qna_stream"), eq("qna_1_5_3"), isNull(), eq(true), data.capture(), isNull(), isNull());
+        verify(streamGateway).sendStreamComplete(eq(LECTURE), eq("qna_stream"), eq("qna_1_5_3"), data.capture());
         assertThat(data.getValue().getCardId()).isEqualTo("qna_1_5_2");
     }
 
@@ -196,7 +195,7 @@ class QnaStreamServiceTest {
     @Test
     void failureWhileSendingCompletedCardNotifiesFailure() {
         doThrow(new IllegalStateException("broker down")).when(streamGateway)
-                .sendStreamToken(eq(LECTURE), eq("qna_stream"), anyString(), isNull(), eq(true), any(), isNull(), isNull());
+                .sendStreamComplete(eq(LECTURE), eq("qna_stream"), anyString(), any());
 
         relay(
                 sse("start", "{\"item\":0,\"type\":\"CONCEPT\"}"),

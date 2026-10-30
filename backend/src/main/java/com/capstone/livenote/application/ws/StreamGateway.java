@@ -37,34 +37,20 @@ public class StreamGateway {
                 ));
     }
 
-    // Summary 엔티티를 받는 오버로드 메서드 (SummaryCallbackService용)
+    /**
+     * 요약을 전송한다.
+     *
+     * @param summary 요약. 부분 요약은 저장하지 않아 ID가 없을 수 있음
+     */
     public void sendSummary(Summary summary) {
-        sendSummary(
-                summary.getLectureId(),
-                summary.getSectionIndex(),
-                summary.getText(),
-                summary.getPhase() != null ? summary.getPhase().name().toLowerCase() : "final"
-        );
-    }
-
-    // 파라미터로 받는 메서드 (SectionAggregationService용)
-    public void sendSummary(Long lectureId, Integer sectionIndex, String text, String phase) {
-        String destination = lectureTopic(lectureId, "summary." + sectionIndex);
-
-        Map<String, Object> payload = Map.of(
+        tmpl.convertAndSend(lectureTopic(summary.getLectureId(), "summary"), Map.of(
                 "type", "summary",
-                "lectureId", lectureId,
-                "sectionIndex", sectionIndex,
-                "text", text != null ? text : "",
-                "phase", phase != null ? phase : "final"
-        );
-
-        tmpl.convertAndSend(destination, payload);
-        // Also send to the non-section-specific summary topic so clients
-        // that subscribe to `/topic/lectures.{lectureId}.summary` receive updates.
-        tmpl.convertAndSend(lectureTopic(lectureId, "summary"), payload);
+                "lectureId", summary.getLectureId(),
+                "sectionIndex", summary.getSectionIndex(),
+                "text", summary.getText() != null ? summary.getText() : "",
+                "phase", summary.getPhase() != null ? summary.getPhase().name().toLowerCase() : "final"
+        ));
     }
-
 
     // resource 실시간 전송
     public void sendResources(Long lectureId, Integer sectionIndex, List<ResourceResponseDto> items) {
@@ -112,28 +98,41 @@ public class StreamGateway {
         );
     }
 
-    // 스트리밍 토큰 전송 메소드
-    public void sendStreamToken(Long lectureId, String type, String cardId, String token, boolean isComplete, Object data, String title, String resourceType) {
+    /**
+     * 생성 중인 카드에 새로 생긴 글자 조각을 전송한다.
+     *
+     * @param lectureId 강의 ID
+     * @param type 카드 종류. {@code qna_stream} 또는 {@code resource_stream}
+     * @param cardId 카드 ID
+     * @param token 새로 생긴 글자 조각
+     * @param title 카드 제목. QnA는 질문. 없으면 null이며 메시지에서 빠짐
+     */
+    public void sendStreamToken(Long lectureId, String type, String cardId, String token, String title) {
         Map<String, Object> payload = new HashMap<>();
-        payload.put("type", type);         // "qna_stream" or "resource_stream"
+        payload.put("type", type);
         payload.put("cardId", cardId);
-        payload.put("isComplete", isComplete);
-
-        if (isComplete) {
-            payload.put("data", data); // 완료 시엔 최종 데이터 객체 포함
-        } else {
-            payload.put("token", token); // 진행 중일 땐 글자 토큰
-
-            //
-            if (title != null) {
-                payload.put("title", title);
-            }
-            if (resourceType != null) {
-                payload.put("resourceType", resourceType);
-            }
+        payload.put("isComplete", false);
+        payload.put("token", token);
+        if (title != null) {
+            payload.put("title", title);
         }
+        tmpl.convertAndSend(lectureTopic(lectureId, "stream"), payload);
+    }
 
-        // 스트리밍 전용 토픽 경로로 전송
+    /**
+     * 생성이 끝난 카드를 전송한다.
+     *
+     * @param lectureId 강의 ID
+     * @param type 카드 종류. {@code qna_stream} 또는 {@code resource_stream}
+     * @param cardId 카드 ID
+     * @param data 저장된 카드
+     */
+    public void sendStreamComplete(Long lectureId, String type, String cardId, Object data) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("type", type);
+        payload.put("cardId", cardId);
+        payload.put("isComplete", true);
+        payload.put("data", data);
         tmpl.convertAndSend(lectureTopic(lectureId, "stream"), payload);
     }
 }

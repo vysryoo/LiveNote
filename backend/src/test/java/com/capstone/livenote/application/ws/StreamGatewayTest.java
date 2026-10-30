@@ -47,15 +47,13 @@ class StreamGatewayTest {
     }
 
     @Test
-    void summary_sentToSectionAndLectureTopics() {
+    void summary() {
         Summary summary = Summary.builder().lectureId(1L).sectionIndex(2).text("요약").phase(SummaryPhase.PARTIAL).build();
 
         gateway.sendSummary(summary);
 
-        Map<String, Object> expected = Map.of(
-                "type", "summary", "lectureId", 1L, "sectionIndex", 2, "text", "요약", "phase", "partial");
-        verify(template).convertAndSend("/topic/lectures.1.summary.2", (Object) expected);
-        verify(template).convertAndSend("/topic/lectures.1.summary", (Object) expected);
+        assertThat(captureSent("/topic/lectures.1.summary")).isEqualTo(Map.of(
+                "type", "summary", "lectureId", 1L, "sectionIndex", 2, "text", "요약", "phase", "partial"));
     }
 
     @Test
@@ -90,7 +88,7 @@ class StreamGatewayTest {
 
     @Test
     void streamToken_inProgress() {
-        gateway.sendStreamToken(1L, "qna_stream", "qna_1_2_2", "토큰", false, null, "질문", null);
+        gateway.sendStreamToken(1L, "qna_stream", "qna_1_2_2", "토큰", "질문");
 
         assertThat(captureSent("/topic/lectures.1.stream")).isEqualTo(Map.of(
                 "type", "qna_stream", "cardId", "qna_1_2_2", "isComplete", false, "token", "토큰", "title", "질문"));
@@ -100,7 +98,7 @@ class StreamGatewayTest {
     void streamToken_complete() {
         Object data = new ResourceResponseDto();
 
-        gateway.sendStreamToken(1L, "resource_stream", "resource_1_2_2", null, true, data, null, null);
+        gateway.sendStreamComplete(1L, "resource_stream", "resource_1_2_2", data);
 
         assertThat(captureSent("/topic/lectures.1.stream")).isEqualTo(Map.of(
                 "type", "resource_stream", "cardId", "resource_1_2_2", "isComplete", true, "data", data));

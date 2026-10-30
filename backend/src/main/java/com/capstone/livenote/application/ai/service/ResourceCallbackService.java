@@ -90,16 +90,7 @@ public class ResourceCallbackService {
             signature.add(sig);
 
             // 완성된 카드를 즉시 전송. 글자가 써지는 연출은 프론트엔드가 담당
-            streamGateway.sendStreamToken(
-                    dto.getLectureId(),
-                    "resource_stream",
-                    cardId,
-                    null,
-                    true,
-                    ResourceResponseDto.from(saved),
-                    null,
-                    null
-            );
+            streamGateway.sendStreamComplete(dto.getLectureId(), "resource_stream", cardId, ResourceResponseDto.from(saved));
         }
 
         // 2. 전체 조회

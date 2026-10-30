@@ -131,8 +131,8 @@ public class QnaStreamService {
                 case "done" -> {
                     Card card = cards.get(item);
                     Qna saved = saveCard(card, data.path("question").asText(), data.path("answer").asText());
-                    streamGateway.sendStreamToken(payload.getLectureId(), "qna_stream", card.cardId,
-                            null, true, QnaResponseDto.from(saved), null, null);
+                    streamGateway.sendStreamComplete(payload.getLectureId(), "qna_stream", card.cardId,
+                            QnaResponseDto.from(saved));
                     card.finished = true;
                     streamGateway.sendQna(payload.getLectureId(), payload.getSectionIndex(), findSectionQna());
                     mark("item_done_sent", item);
@@ -177,8 +177,7 @@ public class QnaStreamService {
         }
 
         private void sendToken(Card card, String token) {
-            streamGateway.sendStreamToken(payload.getLectureId(), "qna_stream", card.cardId,
-                    token, false, null, card.question, null);
+            streamGateway.sendStreamToken(payload.getLectureId(), "qna_stream", card.cardId, token, card.question);
         }
 
         private void notifyFailure() {
