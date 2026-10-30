@@ -18,10 +18,13 @@ export type LiveTranscript = {
 export type SessionState = {
   streamingCards: Record<string, StreamingCard>;
   liveTranscripts: Record<number, LiveTranscript>;
+  // `/section` 메시지로 받은 현재 섹션 번호. 화면에 쓰는 값은 resolveCurrentSection으로 구함
+  announcedSection: number;
 };
 
 export type SessionAction =
   | { type: "LIVE_TRANSCRIPT_RECEIVED"; sectionIndex: number; content: string; isFinal: boolean }
+  | { type: "SECTION_ANNOUNCED"; sectionIndex: number }
   | {
       type: "STREAM_TOKEN";
       cardId: string;
@@ -38,6 +41,7 @@ export type SessionAction =
 export const initialSessionState: SessionState = {
   streamingCards: {},
   liveTranscripts: {},
+  announcedSection: 0,
 };
 
 function mergeLiveTranscript(
@@ -52,7 +56,7 @@ function mergeLiveTranscript(
 }
 
 /**
- * 녹음 중 실시간 전사와 생성 중인 스트리밍 카드를 관리한다.
+ * 녹음 중 실시간 전사, 생성 중인 스트리밍 카드, 서버가 알린 현재 섹션 번호를 관리한다.
  *
  * 서버에 완성본이 없는 데이터만 다룬다. 완성된 카드를 Query 캐시로 옮기는 일은 호출부가 수행한다.
  *
@@ -74,6 +78,9 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           ),
         },
       };
+
+    case "SECTION_ANNOUNCED":
+      return { ...state, announcedSection: action.sectionIndex };
 
     case "STREAM_TOKEN": {
       const existing = state.streamingCards[action.cardId];

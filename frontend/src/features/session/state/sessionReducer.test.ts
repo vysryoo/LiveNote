@@ -59,6 +59,15 @@ describe("LIVE_TRANSCRIPT_RECEIVED", () => {
   });
 });
 
+describe("SECTION_ANNOUNCED", () => {
+  it("받은 섹션 번호로 바꾸고 다른 상태는 유지", () => {
+    const before = reduce([transcript(0, "문장", true)]);
+    const state = sessionReducer(before, { type: "SECTION_ANNOUNCED", sectionIndex: 2 });
+    expect(state.announcedSection).toBe(2);
+    expect(state.liveTranscripts).toBe(before.liveTranscripts);
+  });
+});
+
 describe("STREAM_TOKEN", () => {
   it("첫 토큰으로 카드를 만들고 이후 토큰을 이어 붙임", () => {
     const state = reduce([token("qna_7_1_2", "질"), token("qna_7_1_2", "문")]);

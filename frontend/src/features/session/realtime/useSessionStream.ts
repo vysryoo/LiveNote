@@ -96,7 +96,7 @@ export function useSessionStream({ lectureId, dispatch, onStreamError }: UseSess
       subscribe("resources", resourceListMessageSchema, (m) =>
         applyResourceList(queryClient, lectureId, m),
       );
-      subscribe("section", sectionMessageSchema, (m) => applySection(queryClient, lectureId, m));
+      subscribe("section", sectionMessageSchema, (m) => applySection(dispatch, m));
       subscribe("transcripts", transcriptMessageSchema, (m) =>
         applyTranscript(queryClient, lectureId, m),
       );

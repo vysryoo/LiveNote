@@ -1,4 +1,4 @@
-import type { Summary, Transcript } from "./api/schemas";
+import type { SessionDetail, Summary, Transcript } from "./api/schemas";
 import type { LiveTranscript } from "./state/sessionReducer";
 
 export type SectionView = {
@@ -134,4 +134,25 @@ export function toPaneStatus(
   if (query.isPending) return "loading";
   if (query.isError) return "error";
   return hasRecordingData ? "ready" : "notStarted";
+}
+
+/**
+ * 녹음 중인 현재 섹션 번호를 구한다.
+ *
+ * `/section` 메시지는 섹션이 바뀔 때만 오므로 새로고침 직후에는 받은 번호가 없다. 저장된 데이터의 마지막 섹션과
+ * 비교해 큰 값을 쓰므로, 받은 번호가 없어도 새 섹션의 첫 전사가 저장되면 그 섹션을 따라간다.
+ *
+ * @param announcedSection `/section` 메시지로 받은 번호. 받은 적이 없으면 0
+ * @param detail 강의 상세. 받기 전이면 `undefined`
+ * @returns 현재 섹션 번호
+ */
+export function resolveCurrentSection(
+  announcedSection: number,
+  detail: Pick<SessionDetail, "transcripts" | "summaries"> | undefined,
+): number {
+  if (!detail) return announcedSection;
+  const savedIndexes = [...detail.transcripts, ...detail.summaries].map(
+    (item) => item.sectionIndex,
+  );
+  return Math.max(announcedSection, ...savedIndexes);
 }

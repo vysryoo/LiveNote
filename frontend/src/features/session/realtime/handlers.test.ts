@@ -78,9 +78,10 @@ describe("applyQnaList", () => {
 });
 
 describe("applySection", () => {
-  it("현재 섹션 번호를 기록", () => {
-    applySection(queryClient, LECTURE_ID, { sectionIndex: 3 });
-    expect(queryClient.getQueryData(sessionKeys.currentSection(LECTURE_ID))).toBe(3);
+  it("받은 섹션 번호를 reducer에 전달", () => {
+    const dispatch = vi.fn();
+    applySection(dispatch, { sectionIndex: 3 });
+    expect(dispatch).toHaveBeenCalledWith({ type: "SECTION_ANNOUNCED", sectionIndex: 3 });
   });
 });
 

@@ -5,6 +5,7 @@ import {
   estimateServerSeconds,
   findLatestFinalSection,
   mergeTranscriptLines,
+  resolveCurrentSection,
   toPaneStatus,
 } from "./sectionViews";
 
@@ -143,5 +144,34 @@ describe("toPaneStatus", () => {
   it("조회가 끝나면 데이터 여부로 표시 중과 시작 전을 구분", () => {
     expect(toPaneStatus({ isPending: false, isError: false }, true)).toBe("ready");
     expect(toPaneStatus({ isPending: false, isError: false }, false)).toBe("notStarted");
+  });
+});
+
+describe("resolveCurrentSection", () => {
+  const savedUpTo = (sectionIndex: number) => ({
+    transcripts: [transcript(sectionIndex, "마지막 전사")],
+    summaries: [summary(0, "요약", "final")],
+  });
+
+  it("상세를 받기 전이면 받은 번호", () => {
+    expect(resolveCurrentSection(2, undefined)).toBe(2);
+  });
+
+  it("최종 요약 요청 직후 받은 다음 섹션 번호를 저장 데이터보다 우선", () => {
+    expect(resolveCurrentSection(4, savedUpTo(3))).toBe(4);
+  });
+
+  it("받은 번호가 없으면(새로고침 직후) 저장된 마지막 섹션", () => {
+    expect(resolveCurrentSection(0, savedUpTo(3))).toBe(3);
+  });
+
+  it("받은 번호가 없어도 새 섹션의 첫 전사가 저장되면 그 섹션으로 따라감", () => {
+    const detail = savedUpTo(3);
+    detail.transcripts.push(transcript(4, "새 섹션 첫 전사"));
+    expect(resolveCurrentSection(0, detail)).toBe(4);
+  });
+
+  it("저장 데이터가 없으면 받은 번호, 받은 적도 없으면 0", () => {
+    expect(resolveCurrentSection(0, { transcripts: [], summaries: [] })).toBe(0);
   });
 });

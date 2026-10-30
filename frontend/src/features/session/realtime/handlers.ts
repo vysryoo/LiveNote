@@ -87,14 +87,13 @@ export function applyResourceList(
 }
 
 /**
- * `/section` 메시지로 현재 섹션 번호를 기록한다. 현재 섹션의 유일한 쓰기 지점이다.
+ * `/section` 메시지로 받은 현재 섹션 번호를 세션 reducer에 기록한다.
  *
- * @param queryClient Query 캐시
- * @param lectureId 강의 ID
+ * @param dispatch 세션 reducer의 dispatch
  * @param message 섹션 메시지
  */
-export function applySection(queryClient: QueryClient, lectureId: number, message: SectionMessage) {
-  queryClient.setQueryData(sessionKeys.currentSection(lectureId), message.sectionIndex);
+export function applySection(dispatch: Dispatch, message: SectionMessage) {
+  dispatch({ type: "SECTION_ANNOUNCED", sectionIndex: message.sectionIndex });
 }
 
 /**

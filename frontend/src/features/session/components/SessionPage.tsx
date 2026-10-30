@@ -8,9 +8,14 @@ import { useElapsedSeconds } from "../hooks/useElapsedSeconds";
 import { useExtendedCards } from "../hooks/useExtendedCards";
 import { useLeaveSession } from "../hooks/useLeaveSession";
 import { useSectionSelection } from "../hooks/useSectionSelection";
-import { useCurrentSection, useSessionDetail } from "../hooks/useSessionDetail";
+import { useSessionDetail } from "../hooks/useSessionDetail";
 import { useSessionStream } from "../realtime/useSessionStream";
-import { buildSectionViews, estimateServerSeconds, toPaneStatus } from "../sectionViews";
+import {
+  buildSectionViews,
+  estimateServerSeconds,
+  resolveCurrentSection,
+  toPaneStatus,
+} from "../sectionViews";
 import { initialSessionState, selectStreamingCards, sessionReducer } from "../state/sessionReducer";
 import { EndSessionDialog } from "./EndSessionDialog";
 import { LecturePane } from "./LecturePane";
@@ -28,8 +33,8 @@ export function SessionPage() {
 function SessionView({ lectureId }: { lectureId: number }) {
   const { t } = useTranslation();
   const detailQuery = useSessionDetail(lectureId);
-  const currentSection = useCurrentSection(lectureId);
   const [liveState, dispatch] = useReducer(sessionReducer, initialSessionState);
+  const currentSection = resolveCurrentSection(liveState.announcedSection, detailQuery.data);
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
   const scrollViewportRef = useRef<HTMLDivElement>(null);
 
