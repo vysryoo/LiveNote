@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { z } from "zod";
+import { AppHeader } from "@/shared/components/AppHeader";
 import { LANGUAGE_CODES, LANGUAGE_LABELS } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -90,19 +91,17 @@ function SettingsForm({ user }: { user: User }) {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-white/80 backdrop-blur-sm shadow-lg">
-        <div className="px-[3%] py-[0.4%]" style={{ fontSize: "clamp(14px, 1.2vw, 18px)" }}>
-          <button
-            type="button"
-            onClick={goToLectures}
-            className="flex items-center text-muted-foreground hover:text-foreground"
-            style={{ gap: "0.5em" }}
-          >
-            <ArrowLeft style={{ width: "1.2em", height: "1.2em" }} />
-            {t("settings.back")}
-          </button>
-        </div>
-      </header>
+      <AppHeader>
+        <button
+          type="button"
+          onClick={goToLectures}
+          className="flex items-center text-muted-foreground hover:text-foreground"
+          style={{ gap: "0.5em" }}
+        >
+          <ArrowLeft style={{ width: "1.2em", height: "1.2em" }} />
+          {t("settings.back")}
+        </button>
+      </AppHeader>
 
       <main className="max-w-[1400px] mx-auto px-6 py-12">
         <div className="max-w-2xl mx-auto">

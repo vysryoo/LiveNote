@@ -6,12 +6,12 @@ import { Trans, useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { z } from "zod";
-import logoImage from "@/assets/logo.png";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { toAuthErrorKey } from "../api/errors";
 import { useSignup } from "../hooks/useAuthMutations";
+import { AppLogo } from "@/shared/components/AppHeader";
 import { FieldError } from "@/shared/components/FieldError";
 
 const signupSchema = z
@@ -73,7 +73,7 @@ export function SignupPage() {
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8">
           <div className="flex items-center mb-8 py-[0.4%]">
-            <img src={logoImage} alt="LiveNote" style={{ height: "3em" }} />
+            <AppLogo />
           </div>
 
           <div className="mb-8">

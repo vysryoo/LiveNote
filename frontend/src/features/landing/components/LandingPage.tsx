@@ -3,8 +3,8 @@ import { useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import ctaBackground from "@/assets/ctaBackground.webp";
-import logoImage from "@/assets/logo.png";
 import { LoginDialog } from "@/features/auth/components/LoginDialog";
+import { AppHeader, AppLogo } from "@/shared/components/AppHeader";
 import { Button } from "@/shared/ui/button";
 import { DemoVideoModal } from "./DemoVideoModal";
 import { GradientText } from "./GradientText";
@@ -20,38 +20,35 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm shadow-lg">
-        <div className="px-[3%] py-[0.4%]" style={{ fontSize: "clamp(14px, 1.2vw, 18px)" }}>
-          <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <img src={logoImage} alt="LiveNote" style={{ height: "3em" }} />
-            </div>
+      <AppHeader>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center">
+            <AppLogo />
+          </div>
 
-            <div className="flex" style={{ gap: "0.8em" }}>
-              <Button
-                variant="ghost"
-                className="hover:bg-[#EEF2FF]"
-                onClick={openLogin}
-                style={{
-                  background: "linear-gradient(135deg, #639BEE, #3B72DD)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                {t("login.login")}
-              </Button>
-              <Button
-                className="bg-gradient-to-r from-[#639BEE] via-[#3B72DD] to-[#4D82E0] hover:from-[#5B60A2] hover:to-[#63A4FF] text-white rounded-lg px-6 shadow-md hover:shadow-lg transition-all"
-                onClick={goToSignup}
-              >
-                {t("signup.title")}
-              </Button>
-            </div>
+          <div className="flex" style={{ gap: "0.8em" }}>
+            <Button
+              variant="ghost"
+              className="hover:bg-[#EEF2FF]"
+              onClick={openLogin}
+              style={{
+                background: "linear-gradient(135deg, #639BEE, #3B72DD)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              {t("login.login")}
+            </Button>
+            <Button
+              className="bg-gradient-to-r from-[#639BEE] via-[#3B72DD] to-[#4D82E0] hover:from-[#5B60A2] hover:to-[#63A4FF] text-white rounded-lg px-6 shadow-md hover:shadow-lg transition-all"
+              onClick={goToSignup}
+            >
+              {t("signup.title")}
+            </Button>
           </div>
         </div>
-      </header>
+      </AppHeader>
 
       {/* Hero Section with Wave Background Container */}
       <section className="relative">
