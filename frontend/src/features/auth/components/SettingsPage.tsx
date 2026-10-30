@@ -89,7 +89,7 @@ function SettingsForm({ user }: { user: User }) {
   });
 
   return (
-    <div className="min-h-screen bg-background bg-wave-pattern-bottom">
+    <div className="min-h-screen bg-background">
       <header className="border-b bg-white/80 backdrop-blur-sm shadow-lg">
         <div className="px-[3%] py-[0.4%]" style={{ fontSize: "clamp(14px, 1.2vw, 18px)" }}>
           <button

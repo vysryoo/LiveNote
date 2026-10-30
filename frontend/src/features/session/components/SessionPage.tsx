@@ -193,7 +193,7 @@ function SessionView({ lectureId }: { lectureId: number }) {
         onLogoutClick={() => requestLeave("logout")}
       />
 
-      <div className="flex-1 overflow-hidden flex safe-scroll">
+      <div className="flex-1 overflow-hidden flex">
         <LecturePane
           status={status}
           sections={sections}

@@ -33,7 +33,7 @@ export function LecturePane({
       className={`${isSplit ? "w-1/3" : "w-full"} overflow-hidden p-6 transition-all duration-300`}
     >
       <div ref={scrollViewportRef} className="h-full overflow-y-auto">
-        <div className="space-y-6 safe-scroll">
+        <div className="space-y-6">
           {status === "error" && (
             <div className="bg-red-50 text-red-600 border border-red-200 rounded-lg p-4 text-sm">
               {t("session.fetchError")}

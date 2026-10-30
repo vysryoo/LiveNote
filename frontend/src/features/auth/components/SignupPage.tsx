@@ -60,7 +60,7 @@ export function SignupPage() {
   const goToLanding = () => navigate("/");
 
   return (
-    <div className="min-h-screen bg-[#F6F9FC] bg-wave-pattern-bottom flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#F6F9FC] flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <button
           type="button"
