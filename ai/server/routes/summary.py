@@ -13,6 +13,7 @@ from pydantic import Field, HttpUrl, field_validator
 from core.config import Settings
 from core.tasks import run_in_background
 from core.timing import RequestTimer
+from summary.service import SHORT_TRANSCRIPT_MESSAGE
 
 from ..callback import post_callback
 from ..dependencies import Services, get_app_settings, get_services
@@ -78,7 +79,7 @@ async def generate_summary(
         )
         payload = _build_callback_payload(
             request,
-            settings.summary.short_transcript_message,
+            SHORT_TRANSCRIPT_MESSAGE,
             status="TOO_SHORT",
         )
 
