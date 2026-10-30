@@ -5,14 +5,18 @@ from __future__ import annotations
 
 import logging
 import os
+from functools import lru_cache
 from typing import List, Optional
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import Runnable
 from pydantic import Field, HttpUrl, validator
 
-from core.llm import ModelPurpose, complete
+from core.llm import ModelPurpose, build_chat_model
 from core.tasks import run_in_background
 from core.timing import RequestTimer
 
@@ -111,13 +115,27 @@ async def generate_summary(
     return {"status": "accepted"}
 
 
+@lru_cache(maxsize=4)
+def build_summary_chain(max_tokens: int) -> Runnable:
+    """요약 체인(프롬프트 | 모델 | 문자열)을 만든다. 같은 설정이면 만든 체인을 재사용한다.
+
+    시스템 프롬프트와 전사는 템플릿 변수로 넣어, 본문의 중괄호가 템플릿 문법으로 해석되지 않게 한다.
+
+    Args:
+        max_tokens: 최대 출력 토큰
+    Returns:
+        {"system_prompt", "transcript"}를 받아 요약 문자열을 돌려주는 체인
+    """
+    prompt = ChatPromptTemplate.from_messages([("system", "{system_prompt}"), ("user", "{transcript}")])
+    return prompt | build_chat_model(ModelPurpose.SUMMARY, max_tokens) | StrOutputParser()
+
+
 async def _generate_summary_text(transcript_text: str, settings: AppSettings) -> str:
-    """공통 LLM 계층으로 요약 생성"""
-    return await complete(
-        ModelPurpose.SUMMARY,
-        [("system", settings.summary.system_prompt), ("user", transcript_text)],
-        max_tokens=settings.summary.max_tokens,
+    """요약 체인으로 요약 생성"""
+    summary = await build_summary_chain(settings.summary.max_tokens).ainvoke(
+        {"system_prompt": settings.summary.system_prompt, "transcript": transcript_text}
     )
+    return summary.strip()
 
 
 async def _post_summary_callback(callback_url: str, payload: dict):

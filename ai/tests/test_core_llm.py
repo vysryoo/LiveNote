@@ -98,3 +98,27 @@ async def test_complete_and_stream_use_purpose_model_and_log_usage(monkeypatch):
     logged = [r for r in collector.records if r["event"] == "llm"]
     assert [r["purpose"] for r in logged] == ["query", "qa"]
     assert all(r["elapsed_ms"] is not None for r in logged)
+
+
+async def test_summary_chain_passes_braces_in_transcript_as_text(monkeypatch):
+    from langchain_core.language_models.fake_chat_models import FakeListChatModel
+
+    from server.routes import summary
+
+    seen = []
+
+    class RecordingModel(FakeListChatModel):
+        async def _agenerate(self, messages, *args, **kwargs):
+            seen.append(messages)
+            return await super()._agenerate(messages, *args, **kwargs)
+
+    summary.build_summary_chain.cache_clear()
+    monkeypatch.setattr(summary, "build_chat_model", lambda purpose, max_tokens: RecordingModel(responses=["  요약 결과  "]))
+    settings = summary.AppSettings()
+
+    result = await summary._generate_summary_text("집합 {a, b}를 정의한다", settings)
+    summary.build_summary_chain.cache_clear()
+
+    assert result == "요약 결과"
+    assert seen[0][0].content == settings.summary.system_prompt
+    assert seen[0][1].content == "집합 {a, b}를 정의한다"
