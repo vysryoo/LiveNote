@@ -20,7 +20,7 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class StreamGateway {
-    private final SimpMessagingTemplate tmpl;
+    private final SimpMessagingTemplate messagingTemplate;
 
     // RabbitMQ STOMP는 /topic/ 뒤에 '/'를 허용하지 않아 '.'으로 구분함
     private static String lectureTopic(Long lectureId, String name) {
@@ -35,7 +35,7 @@ public class StreamGateway {
      * @param isFinal 확정된 문장인지 여부
      */
     public void sendTranscript(Long lectureId, TranscriptResponseDto dto, boolean isFinal) {
-        tmpl.convertAndSend(lectureTopic(lectureId, "transcripts"),
+        messagingTemplate.convertAndSend(lectureTopic(lectureId, "transcripts"),
                 Map.of(
                         "type", "transcript",
                         "lectureId", lectureId,
@@ -53,7 +53,7 @@ public class StreamGateway {
      * @param summary 요약. 부분 요약은 저장하지 않아 ID가 없을 수 있음
      */
     public void sendSummary(Summary summary) {
-        tmpl.convertAndSend(lectureTopic(summary.getLectureId(), "summary"), Map.of(
+        messagingTemplate.convertAndSend(lectureTopic(summary.getLectureId(), "summary"), Map.of(
                 "type", "summary",
                 "lectureId", summary.getLectureId(),
                 "sectionIndex", summary.getSectionIndex(),
@@ -70,7 +70,7 @@ public class StreamGateway {
      * @param items 섹션의 자료 카드 전체
      */
     public void sendResources(Long lectureId, Integer sectionIndex, List<ResourceResponseDto> items) {
-        tmpl.convertAndSend(
+        messagingTemplate.convertAndSend(
                 lectureTopic(lectureId, "resources"),
                 Map.of(
                         "type", "resources",
@@ -90,7 +90,7 @@ public class StreamGateway {
      * @param items 섹션의 QnA 카드 전체
      */
     public void sendQna(Long lectureId, Integer sectionIndex, List<QnaResponseDto> items) {
-        tmpl.convertAndSend(
+        messagingTemplate.convertAndSend(
                 lectureTopic(lectureId, "qna"),
                 Map.of(
                         "type", "qna",
@@ -108,7 +108,7 @@ public class StreamGateway {
      * @param error 화면에 보낼 오류 메시지
      */
     public void sendError(Long lectureId, String error) {
-        tmpl.convertAndSend(lectureTopic(lectureId, "error"),
+        messagingTemplate.convertAndSend(lectureTopic(lectureId, "error"),
                 Map.of("type", "error", "message", error));
     }
 
@@ -119,7 +119,7 @@ public class StreamGateway {
      * @param sectionIndex 새 섹션 번호
      */
     public void sendSection(Long lectureId, int sectionIndex) {
-        tmpl.convertAndSend(
+        messagingTemplate.convertAndSend(
                 lectureTopic(lectureId, "section"),
                 Map.of(
                         "type", "section",
@@ -148,7 +148,7 @@ public class StreamGateway {
         if (title != null) {
             payload.put("title", title);
         }
-        tmpl.convertAndSend(lectureTopic(lectureId, "stream"), payload);
+        messagingTemplate.convertAndSend(lectureTopic(lectureId, "stream"), payload);
     }
 
     /**
@@ -165,6 +165,6 @@ public class StreamGateway {
         payload.put("cardId", cardId);
         payload.put("isComplete", true);
         payload.put("data", data);
-        tmpl.convertAndSend(lectureTopic(lectureId, "stream"), payload);
+        messagingTemplate.convertAndSend(lectureTopic(lectureId, "stream"), payload);
     }
 }

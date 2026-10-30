@@ -1,9 +1,9 @@
 package com.capstone.livenote.ai;
 
+import com.capstone.livenote.global.security.InternalApiKey;
 import com.capstone.livenote.summary.Summary;
 import com.capstone.livenote.summary.SummaryPhase;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.capstone.livenote.global.security.InternalApiKey;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -103,16 +103,16 @@ public class AiServerClient {
         body.put("section_index", payload.sectionIndex());
         body.put("section_summary", payload.sectionSummary());
 
-        List<Map<String, Object>> prev = payload.previousSummaries().stream()
-                .map(s -> {
-                    Map<String, Object> m = new HashMap<>();
-                    m.put("section_index", s.sectionIndex());
-                    m.put("section_id", s.sectionIndex() + 1);
-                    m.put("summary", s.summary());
-                    return m;
+        List<Map<String, Object>> previousSummaries = payload.previousSummaries().stream()
+                .map(summary -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("section_index", summary.sectionIndex());
+                    item.put("section_id", summary.sectionIndex() + 1);
+                    item.put("summary", summary.summary());
+                    return item;
                 })
                 .toList();
-        body.put("previous_summaries", prev);
+        body.put("previous_summaries", previousSummaries);
 
         body.put("yt_exclude", payload.ytExclude());
         body.put("wiki_exclude", payload.wikiExclude());

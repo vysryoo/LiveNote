@@ -52,7 +52,7 @@ public class TranscriptService {
         log.info("[TranscriptService] Saving transcript: lectureId={} startSec={} endSec={} sectionIndex={}",
                 lectureId, adjustedStart, adjustedEnd, sectionIndex);
 
-        Transcript t = transcriptRepository.save(
+        Transcript saved = transcriptRepository.save(
                 Transcript.builder()
                         .lectureId(lectureId)
                         .sectionIndex(sectionIndex)
@@ -62,7 +62,7 @@ public class TranscriptService {
                         .build()
         );
 
-        TranscriptResponseDto dto = TranscriptResponseDto.from(t);
+        TranscriptResponseDto dto = TranscriptResponseDto.from(saved);
         streamGateway.sendTranscript(lectureId, dto, true);
 
         try {

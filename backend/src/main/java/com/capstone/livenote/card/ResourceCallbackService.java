@@ -1,18 +1,18 @@
 package com.capstone.livenote.card;
 
 import com.capstone.livenote.ai.ResourceCallbackDto;
+import com.capstone.livenote.global.redis.RedisKeys;
+import com.capstone.livenote.global.redis.RedisLock;
 import com.capstone.livenote.global.stomp.StreamGateway;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.capstone.livenote.global.redis.RedisKeys;
-import com.capstone.livenote.global.redis.RedisLock;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
-import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**

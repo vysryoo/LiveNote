@@ -24,7 +24,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class LectureServiceTest {
 
-    @Mock LectureRepository lectureRepo;
+    @Mock LectureRepository lectureRepository;
     @Mock TranscriptRepository transcriptRepository;
     @Mock SummaryRepository summaryRepository;
     @Mock ResourceRepository resourceRepository;
@@ -38,7 +38,7 @@ class LectureServiceTest {
     @Test
     void getOwned_returnsLectureOfRequester() {
         Lecture lecture = Lecture.builder().id(7L).userId(1L).title("자료구조").build();
-        when(lectureRepo.findByIdAndUserId(7L, 1L)).thenReturn(Optional.of(lecture));
+        when(lectureRepository.findByIdAndUserId(7L, 1L)).thenReturn(Optional.of(lecture));
 
         assertThat(service.getOwned(7L, 1L)).isSameAs(lecture);
     }
@@ -46,7 +46,7 @@ class LectureServiceTest {
     @Test
     void getOwned_throwsNotFoundForOtherUsersLecture() {
         // 다른 사용자의 강의는 저장소 조건(id, userId)에 걸리지 않아 없는 강의와 같은 결과가 됨
-        when(lectureRepo.findByIdAndUserId(7L, 2L)).thenReturn(Optional.empty());
+        when(lectureRepository.findByIdAndUserId(7L, 2L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getOwned(7L, 2L))
                 .isInstanceOf(EntityNotFoundException.class);
@@ -55,7 +55,7 @@ class LectureServiceTest {
     @Test
     void endLecture_savesTitleAndCompletes() {
         Lecture lecture = Lecture.builder().id(4L).userId(1L).title("old").status(Lecture.Status.RECORDING).build();
-        when(lectureRepo.findByIdAndUserId(4L, 1L)).thenReturn(Optional.of(lecture));
+        when(lectureRepository.findByIdAndUserId(4L, 1L)).thenReturn(Optional.of(lecture));
 
         Lecture ended = service.endLecture(4L, 1L, "  자료구조 3주차 ");
 
@@ -67,7 +67,7 @@ class LectureServiceTest {
     @Test
     void endLecture_withoutTitleKeepsExistingTitle() {
         Lecture lecture = Lecture.builder().id(4L).userId(1L).title("old").status(Lecture.Status.RECORDING).build();
-        when(lectureRepo.findByIdAndUserId(4L, 1L)).thenReturn(Optional.of(lecture));
+        when(lectureRepository.findByIdAndUserId(4L, 1L)).thenReturn(Optional.of(lecture));
 
         assertThat(service.endLecture(4L, 1L, null).getTitle()).isEqualTo("old");
         assertThat(service.endLecture(4L, 1L, "   ").getTitle()).isEqualTo("old");
@@ -75,11 +75,11 @@ class LectureServiceTest {
 
     @Test
     void endLecture_throwsNotFoundForOtherUsersLecture() {
-        when(lectureRepo.findByIdAndUserId(4L, 2L)).thenReturn(Optional.empty());
+        when(lectureRepository.findByIdAndUserId(4L, 2L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.endLecture(4L, 2L, "제목"))
                 .isInstanceOf(EntityNotFoundException.class);
-        verify(lectureRepo, never()).save(any());
+        verify(lectureRepository, never()).save(any());
     }
 
     @Test
@@ -87,7 +87,7 @@ class LectureServiceTest {
         Lecture lecture = Lecture.builder().id(4L).userId(1L).title("강의").status(Lecture.Status.RECORDING).build();
         Bookmark bookmark = Bookmark.builder().id(3L).userId(1L).lectureId(4L).sectionIndex(0)
                 .targetType(Bookmark.TargetType.QNA).targetId(9L).build();
-        when(lectureRepo.findByIdAndUserId(4L, 1L)).thenReturn(Optional.of(lecture));
+        when(lectureRepository.findByIdAndUserId(4L, 1L)).thenReturn(Optional.of(lecture));
         when(bookmarkRepository.findByUserIdAndLectureIdOrderBySectionIndexAscIdAsc(1L, 4L)).thenReturn(List.of(bookmark));
 
         SessionDetailResponse detail = service.getSessionDetail(4L, 1L);
@@ -100,7 +100,7 @@ class LectureServiceTest {
     @Test
     void createWithPdf_savesCollectionIdOfUploadedPdf() {
         var pdf = new MockMultipartFile("files", "slides.pdf", "application/pdf", new byte[]{1});
-        when(lectureRepo.save(any())).thenAnswer(invocation -> {
+        when(lectureRepository.save(any())).thenAnswer(invocation -> {
             Lecture lecture = invocation.getArgument(0);
             if (lecture.getId() == null) lecture.setId(9L);
             return lecture;
@@ -116,7 +116,7 @@ class LectureServiceTest {
     @Test
     void createWithPdf_keepsLectureWhenUploadFails() {
         var pdf = new MockMultipartFile("files", "slides.pdf", "application/pdf", new byte[]{1});
-        when(lectureRepo.save(any())).thenAnswer(invocation -> {
+        when(lectureRepository.save(any())).thenAnswer(invocation -> {
             Lecture lecture = invocation.getArgument(0);
             lecture.setId(9L);
             return lecture;
@@ -126,6 +126,6 @@ class LectureServiceTest {
         assertThatThrownBy(() -> service.createWithPdf(1L, new CreateLectureRequestDto("제목", "과목", "ko"), pdf))
                 .isInstanceOf(RuntimeException.class);
         // 강의는 업로드 전에 저장되어 남고, 컬렉션 ID 저장은 일어나지 않음
-        verify(lectureRepo, times(1)).save(any());
+        verify(lectureRepository, times(1)).save(any());
     }
 }

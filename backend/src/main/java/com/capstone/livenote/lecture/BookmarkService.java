@@ -67,10 +67,10 @@ public class BookmarkService {
     @Transactional
     public void deleteBookmark(Long userId, Long bookmarkId) {
         // 다른 사용자의 북마크도 없는 북마크와 같은 응답으로 처리해 존재 여부를 드러내지 않음
-        Bookmark b = bookmarkRepository.findByIdAndUserId(bookmarkId, userId)
+        Bookmark bookmark = bookmarkRepository.findByIdAndUserId(bookmarkId, userId)
                 .orElseThrow(() -> new EntityNotFoundException("bookmark"));
 
-        bookmarkRepository.delete(b);
+        bookmarkRepository.delete(bookmark);
     }
 
     private boolean isTargetInLecture(Bookmark.TargetType type, Long targetId, Long lectureId) {

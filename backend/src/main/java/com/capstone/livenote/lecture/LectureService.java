@@ -29,7 +29,7 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 @Slf4j
 public class LectureService {
-    private final LectureRepository lectureRepo;
+    private final LectureRepository lectureRepository;
     private final TranscriptRepository transcriptRepository;
     private final SummaryRepository summaryRepository;
     private final ResourceRepository resourceRepository;
@@ -46,7 +46,7 @@ public class LectureService {
      */
     @Transactional
     public Lecture create(Long userId, CreateLectureRequestDto req){
-        Lecture lec = Lecture.builder()
+        Lecture lecture = Lecture.builder()
                 .userId(userId)
                 .title(req.title())
                 .subject(req.subject())
@@ -54,7 +54,7 @@ public class LectureService {
                 .status(Lecture.Status.RECORDING)
                 .build();
 
-        Lecture saved = lectureRepo.save(lec);
+        Lecture saved = lectureRepository.save(lecture);
         log.info("Lecture created: id={} userId={}", saved.getId(), userId);
         return saved;
     }
@@ -73,7 +73,7 @@ public class LectureService {
     public Lecture createWithPdf(Long userId, CreateLectureRequestDto req, MultipartFile pdf) {
         Lecture lecture = create(userId, req);
         lecture.setCollectionId(aiServerClient.upsertPdf(lecture.getId(), pdf));
-        return lectureRepo.save(lecture);
+        return lectureRepository.save(lecture);
     }
 
     /**
@@ -87,7 +87,7 @@ public class LectureService {
      */
     @Transactional(readOnly = true)
     public Lecture getOwned(Long lectureId, Long userId) {
-        return lectureRepo.findByIdAndUserId(lectureId, userId)
+        return lectureRepository.findByIdAndUserId(lectureId, userId)
                 .orElseThrow(() -> new EntityNotFoundException("lecture"));
     }
 
@@ -100,7 +100,7 @@ public class LectureService {
      */
     @Transactional(readOnly = true)
     public Page<Lecture> list(Long userId, Pageable pageable){
-        return lectureRepo.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        return lectureRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
     }
 
     /**
@@ -112,7 +112,7 @@ public class LectureService {
      */
     @Transactional(readOnly = true)
     public Lecture get(Long id){
-        return lectureRepo.findById(id)
+        return lectureRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("lecture"));
     }
 
@@ -125,7 +125,7 @@ public class LectureService {
      */
     @Transactional
     public void delete(Long lectureId, Long userId){
-        lectureRepo.delete(getOwned(lectureId, userId));
+        lectureRepository.delete(getOwned(lectureId, userId));
         log.info("Lecture deleted: id={}", lectureId);
     }
 
@@ -146,7 +146,7 @@ public class LectureService {
         }
         lecture.setStatus(Lecture.Status.COMPLETED);
         lecture.setEndAt(LocalDateTime.now());
-        lectureRepo.save(lecture);
+        lectureRepository.save(lecture);
         log.info("Lecture ended: id={}", id);
         return lecture;
     }
@@ -164,7 +164,7 @@ public class LectureService {
     public Lecture updateLectureTitle(Long lectureId, Long userId, String title) {
         Lecture lecture = getOwned(lectureId, userId);
         lecture.setTitle(title);
-        return lectureRepo.save(lecture);
+        return lectureRepository.save(lecture);
     }
 
     /**
