@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   initialSessionState,
   sessionReducer,
-  toLiveTranscriptText,
   type SessionAction,
   type SessionState,
 } from "./sessionReducer";
@@ -28,14 +27,14 @@ function token(cardId: string, text: string, extra: Partial<SessionAction> = {})
 }
 
 describe("LIVE_TRANSCRIPT_RECEIVED", () => {
-  it("확정 문장을 순서대로 줄바꿈으로 이음", () => {
+  it("확정 문장을 순서대로 쌓음", () => {
     const state = reduce([transcript(0, "첫 문장", true), transcript(0, "둘째 문장", true)]);
-    expect(toLiveTranscriptText(state.liveTranscripts[0])).toBe("첫 문장\n둘째 문장");
+    expect(state.liveTranscripts[0]).toEqual({ lines: ["첫 문장", "둘째 문장"], pending: null });
   });
 
   it("진행 중 문장은 다음 진행 중 문장으로 교체", () => {
     const state = reduce([transcript(0, "안", false), transcript(0, "안녕", false)]);
-    expect(toLiveTranscriptText(state.liveTranscripts[0])).toBe("안녕");
+    expect(state.liveTranscripts[0]).toEqual({ lines: [], pending: "안녕" });
   });
 
   it("확정 문장이 오면 진행 중 문장을 대체하고 중복 줄을 남기지 않음", () => {
@@ -44,18 +43,18 @@ describe("LIVE_TRANSCRIPT_RECEIVED", () => {
       transcript(0, "안녕", false),
       transcript(0, "안녕하세요", true),
     ]);
-    expect(toLiveTranscriptText(state.liveTranscripts[0])).toBe("첫 문장\n안녕하세요");
+    expect(state.liveTranscripts[0]).toEqual({ lines: ["첫 문장", "안녕하세요"], pending: null });
   });
 
   it("확정 문장 뒤의 진행 중 문장은 확정 문장을 덮지 않음", () => {
     const state = reduce([transcript(0, "첫 문장", true), transcript(0, "둘", false)]);
-    expect(toLiveTranscriptText(state.liveTranscripts[0])).toBe("첫 문장\n둘");
+    expect(state.liveTranscripts[0]).toEqual({ lines: ["첫 문장"], pending: "둘" });
   });
 
   it("섹션별로 따로 쌓음", () => {
     const state = reduce([transcript(0, "영", true), transcript(1, "일", true)]);
-    expect(toLiveTranscriptText(state.liveTranscripts[0])).toBe("영");
-    expect(toLiveTranscriptText(state.liveTranscripts[1])).toBe("일");
+    expect(state.liveTranscripts[0]).toEqual({ lines: ["영"], pending: null });
+    expect(state.liveTranscripts[1]).toEqual({ lines: ["일"], pending: null });
   });
 });
 
@@ -108,7 +107,7 @@ describe("STREAMS_FAILED", () => {
       { type: "STREAMS_FAILED" },
     ]);
     expect(state.streamingCards).toEqual({});
-    expect(toLiveTranscriptText(state.liveTranscripts[0])).toBe("문장");
+    expect(state.liveTranscripts[0]).toEqual({ lines: ["문장"], pending: null });
   });
 });
 

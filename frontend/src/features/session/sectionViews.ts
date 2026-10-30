@@ -5,7 +5,6 @@ export type SectionView = {
   sectionIndex: number;
   transcriptText: string;
   summaryText: string;
-  isFinalSummary: boolean;
   isCurrent: boolean;
   isSelected: boolean;
   isClickable: boolean;
@@ -81,7 +80,6 @@ export function buildSectionViews(input: {
           "\n",
         ),
         summaryText,
-        isFinalSummary,
         isCurrent: input.isRecording && sectionIndex === input.currentSection,
         isSelected: sectionIndex === input.selectedSectionIndex,
         // 확정 요약만 분할 화면을 열 수 있고, 오토 모드 중에는 자동 선택만 허용
