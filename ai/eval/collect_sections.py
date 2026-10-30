@@ -16,6 +16,7 @@
 
 사용:
     python -m eval.collect_sections eng-1 eng-2 ...
+    python -m eval.collect_sections eng-2 --output sections_gpt-transcribe.json   (기존 sections.json 보존)
 """
 from __future__ import annotations
 
@@ -153,13 +154,14 @@ async def _fetch_detail(session, token: str, backend_lecture_id: int) -> dict:
         return (await res.json())["data"]
 
 
-async def collect(lecture_id: str) -> dict:
+async def collect(lecture_id: str, output_name: str = "sections.json") -> dict:
     """강의 하나의 녹음을 서비스에 넣고 섹션별 전사·요약을 저장한다.
 
     Args:
         lecture_id: 강의ID (예: eng-1). inbox/{강의ID}/에 audio.wav, material.pdf, meta.json이 있어야 함
+        output_name: inbox/{강의ID}/ 아래에 저장할 파일 이름
     Returns:
-        저장한 sections.json 내용
+        저장한 내용
     Raises:
         RuntimeError: 계정 환경변수가 없는 경우
         aiohttp.ClientResponseError: 백엔드 요청이 실패한 경우
@@ -209,12 +211,12 @@ async def collect(lecture_id: str) -> dict:
         ],
         "sections": sections,
     }
-    (lecture_dir / "sections.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    (lecture_dir / output_name).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     return result
 
 
-async def _collect_all(lecture_ids: List[str]) -> None:
-    results = await asyncio.gather(*[collect(lecture_id) for lecture_id in lecture_ids], return_exceptions=True)
+async def _collect_all(lecture_ids: List[str], output_name: str) -> None:
+    results = await asyncio.gather(*[collect(lecture_id, output_name) for lecture_id in lecture_ids], return_exceptions=True)
     for lecture_id, result in zip(lecture_ids, results):
         if isinstance(result, Exception):
             print(f"{lecture_id}: 실패 {type(result).__name__}: {result}")
@@ -225,8 +227,9 @@ async def _collect_all(lecture_ids: List[str]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="평가 데이터 수집 (실제 서비스 경로)")
     parser.add_argument("lecture_ids", nargs="+", help="강의ID (예: eng-1)")
+    parser.add_argument("--output", default="sections.json", help="저장 파일 이름 (기본 sections.json)")
     args = parser.parse_args()
-    asyncio.run(_collect_all(args.lecture_ids))
+    asyncio.run(_collect_all(args.lecture_ids, args.output))
 
 
 if __name__ == "__main__":
