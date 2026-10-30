@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import type { Bookmark, QnA, Resource } from "../api/schemas";
@@ -66,8 +66,6 @@ export function SplitPane({
   onToggleAutoMode,
 }: SplitPaneProps) {
   const { t } = useTranslation();
-  const resourceListRef = useScrollToBottomOnGrow(streamingResources.length);
-  const qnaListRef = useScrollToBottomOnGrow(streamingQna.length);
   // 화면을 열 때 이미 있던 자료 카드는 바로 보여 주고, 그 뒤 도착한 카드에만 글자 연출을 적용.
   // QnA는 생성 중 카드로 실제 글자가 흘러 들어오므로 완성 후 다시 연출하지 않음
   const [initialResourceIds] = useState(() => new Set(resources.map((r) => r.id)));
@@ -76,11 +74,9 @@ export function SplitPane({
     ? resources.filter((r) => isBookmarked("resource", r.id))
     : resources;
   const visibleQna = showBookmarkedOnly ? qna.filter((q) => isBookmarked("qna", q.id)) : qna;
-  const showResourceHint =
-    !showBookmarkedOnly &&
-    (resources.length === 0 || (isGenerating && streamingResources.length === 0));
-  const showQnaHint =
-    !showBookmarkedOnly && (qna.length === 0 || (isGenerating && streamingQna.length === 0));
+  // 북마크만 보는 중이 아니고, 카드가 하나도 없거나 생성 요청 중인데 아직 생성 중 카드가 없을 때 안내
+  const shouldShowHint = (savedCount: number, streamingCount: number) =>
+    !showBookmarkedOnly && (savedCount === 0 || (isGenerating && streamingCount === 0));
 
   return (
     <div className="flex-1 p-2 flex items-center justify-center">
@@ -116,70 +112,92 @@ export function SplitPane({
         </div>
 
         <div className="flex-1 flex overflow-hidden bg-white">
-          <div className="w-1/2 border-r p-[12px] flex flex-col bg-[#f9fafb]">
-            <h3 className="mb-2 text-[16px]">&nbsp;{t("session.resources")}</h3>
-            <ScrollArea className="flex-1 h-0">
-              <div ref={resourceListRef} className="flex flex-col gap-3 p-[0px]">
-                {orderCards(visibleResources, streamingResources).map((entry) => {
-                  if (entry.kind === "streaming") {
-                    return <StreamingCardView key={entry.key} card={entry.card} />;
-                  }
-                  const resource = entry.item;
-                  return (
-                    <ResourceCard
-                      key={entry.key}
-                      resource={resource}
-                      bookmarked={isBookmarked("resource", resource.id)}
-                      animate={!initialResourceIds.has(resource.id)}
-                      onToggleBookmark={() =>
-                        onToggleBookmark({
-                          targetType: "resource",
-                          targetId: resource.id,
-                          sectionIndex: resource.sectionIndex,
-                        })
-                      }
-                    />
-                  );
-                })}
-                {showResourceHint && (
-                  <LoadingHint id="grad-resources" text={t("session.findingResources")} />
-                )}
-              </div>
-            </ScrollArea>
-          </div>
-
-          <div className="w-1/2 p-[12px] flex flex-col bg-[#f9fafb]">
-            <h3 className="mb-2 text-[16px]">&nbsp;{t("session.ai")}</h3>
-            <ScrollArea className="flex-1 h-0">
-              <div ref={qnaListRef} className="flex flex-col gap-3 p-[0px]">
-                {orderCards(visibleQna, streamingQna).map((entry) => {
-                  if (entry.kind === "streaming") {
-                    return <StreamingCardView key={entry.key} card={entry.card} />;
-                  }
-                  const item = entry.item;
-                  return (
-                    <QnaCard
-                      key={entry.key}
-                      qna={item}
-                      bookmarked={isBookmarked("qna", item.id)}
-                      onToggleBookmark={() =>
-                        onToggleBookmark({
-                          targetType: "qna",
-                          targetId: item.id,
-                          sectionIndex: item.sectionIndex,
-                        })
-                      }
-                    />
-                  );
-                })}
-                {showQnaHint && (
-                  <LoadingHint id="grad-ai" text={t("session.generatingQuestions")} />
-                )}
-              </div>
-            </ScrollArea>
-          </div>
+          <CardColumn
+            title={t("session.resources")}
+            withDivider
+            saved={visibleResources}
+            streaming={streamingResources}
+            hint={
+              shouldShowHint(resources.length, streamingResources.length) && (
+                <LoadingHint id="grad-resources" text={t("session.findingResources")} />
+              )
+            }
+            renderSaved={(resource) => (
+              <ResourceCard
+                resource={resource}
+                bookmarked={isBookmarked("resource", resource.id)}
+                animate={!initialResourceIds.has(resource.id)}
+                onToggleBookmark={() =>
+                  onToggleBookmark({
+                    targetType: "resource",
+                    targetId: resource.id,
+                    sectionIndex: resource.sectionIndex,
+                  })
+                }
+              />
+            )}
+          />
+          <CardColumn
+            title={t("session.ai")}
+            saved={visibleQna}
+            streaming={streamingQna}
+            hint={
+              shouldShowHint(qna.length, streamingQna.length) && (
+                <LoadingHint id="grad-ai" text={t("session.generatingQuestions")} />
+              )
+            }
+            renderSaved={(item) => (
+              <QnaCard
+                qna={item}
+                bookmarked={isBookmarked("qna", item.id)}
+                onToggleBookmark={() =>
+                  onToggleBookmark({
+                    targetType: "qna",
+                    targetId: item.id,
+                    sectionIndex: item.sectionIndex,
+                  })
+                }
+              />
+            )}
+          />
         </div>
       </div>
+    </div>
+  );
+}
+
+// 저장된 카드와 생성 중인 카드를 카드 번호 순으로 그리는 한 열
+function CardColumn<T extends { id: number; cardId?: string | null }>({
+  title,
+  withDivider = false,
+  saved,
+  streaming,
+  hint,
+  renderSaved,
+}: {
+  title: string;
+  withDivider?: boolean;
+  saved: T[];
+  streaming: StreamingCard[];
+  hint: ReactNode;
+  renderSaved: (item: T) => ReactNode;
+}) {
+  const listRef = useScrollToBottomOnGrow(streaming.length);
+  return (
+    <div className={`w-1/2 ${withDivider ? "border-r " : ""}p-[12px] flex flex-col bg-[#f9fafb]`}>
+      <h3 className="mb-2 text-[16px]">&nbsp;{title}</h3>
+      <ScrollArea className="flex-1 h-0">
+        <div ref={listRef} className="flex flex-col gap-3 p-[0px]">
+          {orderCards(saved, streaming).map((entry) =>
+            entry.kind === "streaming" ? (
+              <StreamingCardView key={entry.key} card={entry.card} />
+            ) : (
+              <Fragment key={entry.key}>{renderSaved(entry.item)}</Fragment>
+            ),
+          )}
+          {hint}
+        </div>
+      </ScrollArea>
     </div>
   );
 }
