@@ -83,3 +83,13 @@ ai/
 | `eval.transcription_cer` | 전사 글자 오류율 |
 
 평가 데이터는 `eval.prepare_data`, `eval.collect_sections`로 만듭니다. 채점은 `gpt-6.1-terra`의 이진 판정이고, 결과는 `eval/results/`에 있습니다.
+
+현재 설정 기준 결과 (보고서 이름은 `실험_측정대상_데이터`, 데이터는 `dev` 또는 `test`)
+
+| 측정 | 보고서 | 결과 |
+| --- | --- | --- |
+| 강의 자료 검색 Precision@4 | `E2_retrieval_test` | 88.5% (133섹션) |
+| QnA Precision@4 | `E14_qna_test` | 88.8% (60섹션) |
+| 추천 자료 Precision@4 | `E14_resource_test` | 87.5% (30섹션) |
+| QnA 스트리밍 응답 시간 | `L_after` | 질문 표시 중앙값 1,613ms, 전체 완료 중앙값 2,753ms |
+| 전사 글자 오류율 | `T_transcription` | 2.92% (`gpt-transcribe`) |
