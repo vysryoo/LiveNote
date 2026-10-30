@@ -18,6 +18,8 @@ from core.schemas import QnAType, RAGChunk, ResourceType
 from qa.models import QAEvent
 from recommend.models import RecContext, Recommendation
 from server.app import create_app
+from server.dependencies import Services
+from summary.service import SummaryService
 
 
 class StubRAGService:
@@ -104,6 +106,12 @@ class TestContext:
     rec: StubRecommendService = field(default_factory=StubRecommendService)
     settings: Settings = field(default_factory=Settings)
 
+    def services(self, **overrides: Any) -> Services:
+        """스텁 서비스 묶음을 만든다. 요약은 실제 서비스(LLM 호출은 테스트에서 바꿔 끼움)."""
+        fields = dict(rag=self.rag, qa=self.qa, rec=self.rec, summary=SummaryService(self.settings.summary))
+        fields.update(overrides)
+        return Services(**fields)
+
 
 @pytest.fixture
 def test_context() -> TestContext:
@@ -120,12 +128,7 @@ def test_context() -> TestContext:
 
 @pytest.fixture
 def fastapi_app(test_context: TestContext) -> FastAPI:
-    return create_app(
-        test_context.settings,
-        rag_service=test_context.rag,
-        qa_service=test_context.qa,
-        rec_service=test_context.rec,
-    )
+    return create_app(test_context.settings, services=test_context.services())
 
 
 TEST_INTERNAL_API_KEY = "test-internal-key"
@@ -179,7 +182,7 @@ def callback_recorder(monkeypatch):
             captured.append({"url": url, "json": json, "headers": headers})
             return type("Resp", (), {"status_code": 200})
 
-    monkeypatch.setattr("server.routes.rec.httpx.AsyncClient", _RecorderClient)
+    monkeypatch.setattr("server.callback.httpx.AsyncClient", _RecorderClient)
     return captured
 
 

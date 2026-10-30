@@ -25,7 +25,7 @@ async def verify_internal_api_key(
     Raises:
         HTTPException: 키가 없거나 다른 경우(401). 서버에 키가 설정되지 않았어도 모두 거부함
     """
-    expected = request.app.state.app_settings.internal_api_key
+    expected = request.app.state.settings.internal_api_key
     # 키 설정이 빠진 채 실행돼도 열린 상태가 되지 않도록 모든 요청을 거부
     if not expected or not x_internal_api_key or not secrets.compare_digest(
         x_internal_api_key, expected

@@ -34,12 +34,7 @@ def llm_calls(monkeypatch) -> List[Dict[str, Any]]:
 
 
 async def _generate(test_context, internal_api_key, body: Dict[str, Any]) -> None:
-    app = create_app(
-        test_context.settings,
-        rag_service=test_context.rag,
-        qa_service=QAService(),
-        rec_service=test_context.rec,
-    )
+    app = create_app(test_context.settings, services=test_context.services(qa=QAService()))
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://testserver", headers={"X-Internal-Api-Key": internal_api_key}
     ) as client:

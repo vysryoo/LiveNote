@@ -132,7 +132,8 @@ async def test_complete_json_requests_schema_and_returns_model(clear_llm_env):
 async def test_summary_chain_passes_braces_in_transcript_as_text(monkeypatch):
     from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
-    from server.routes import summary
+    from summary import service
+    from summary.service import SummaryService
 
     seen = []
 
@@ -141,12 +142,12 @@ async def test_summary_chain_passes_braces_in_transcript_as_text(monkeypatch):
             seen.append(messages)
             return await super()._agenerate(messages, *args, **kwargs)
 
-    summary.build_summary_chain.cache_clear()
-    monkeypatch.setattr(summary, "build_chat_model", lambda purpose, max_tokens: RecordingModel(responses=["  요약 결과  "]))
+    service.build_summary_chain.cache_clear()
+    monkeypatch.setattr(service, "build_chat_model", lambda purpose, max_tokens: RecordingModel(responses=["  요약 결과  "]))
     settings = Settings()
 
-    result = await summary._generate_summary_text("집합 {a, b}를 정의한다", settings)
-    summary.build_summary_chain.cache_clear()
+    result = await SummaryService(settings.summary).summarize("집합 {a, b}를 정의한다")
+    service.build_summary_chain.cache_clear()
 
     assert result == "요약 결과"
     assert seen[0][0].content == settings.summary.system_prompt

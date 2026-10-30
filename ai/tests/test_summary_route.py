@@ -12,12 +12,12 @@ TRANSCRIPT = ["스택은 마지막에 넣은 원소를 먼저 꺼내는 구조�
 
 @pytest.fixture
 def summary_model(monkeypatch):
-    from server.routes import summary
+    from summary import service
 
-    summary.build_summary_chain.cache_clear()
-    monkeypatch.setattr(summary, "build_chat_model", lambda purpose, max_tokens: FakeListChatModel(responses=["  스택과 큐 비교  "]))
+    service.build_summary_chain.cache_clear()
+    monkeypatch.setattr(service, "build_chat_model", lambda purpose, max_tokens: FakeListChatModel(responses=["  스택과 큐 비교  "]))
     yield
-    summary.build_summary_chain.cache_clear()
+    service.build_summary_chain.cache_clear()
 
 
 async def test_summary_is_sent_to_callback_with_section_times(async_client, callback_recorder, summary_model, internal_api_key):

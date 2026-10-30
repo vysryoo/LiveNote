@@ -10,15 +10,15 @@ from typing import AsyncIterator, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
-from pydantic import Field, validator
+from pydantic import Field
 
 from core.config import Settings
 from core.schemas import QnAType
 from core.timing import RequestTimer
 from qa.models import PreviousQA, QARequest
 
-from ..dependencies import get_qa_service, get_rag_service, get_settings
-from ..utils import CamelModel, build_collection_id
+from ..dependencies import Services, get_services, get_settings
+from ..utils import CamelModel, NonBlankStr, build_collection_id
 
 router = APIRouter(prefix="/qa", tags=["QA"])
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ class QAGenerateRequest(CamelModel):
     lecture_id: int = Field(..., ge=1, description="강의 ID")
     summary_id: Optional[int] = Field(default=None, description="요약 ID")
     section_index: int = Field(..., ge=0, description="섹션 인덱스(0-base)")
-    section_summary: str = Field(..., min_length=10, description="섹션 요약")
+    section_summary: NonBlankStr = Field(..., min_length=10, description="섹션 요약")
     subject: Optional[str] = Field(default=None, description="선택 과목 정보")
     question_types: Optional[List[QnAType]] = Field(
         default=None,
@@ -47,18 +47,11 @@ class QAGenerateRequest(CamelModel):
         description="중복 방지를 위한 이전 QA 목록"
     )
 
-    @validator("section_summary")
-    def validate_section_summary(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("section_summary는 비어 있을 수 없습니다.")
-        return value
-
 
 @router.post("/generate")
 async def generate_qa(
     request: QAGenerateRequest,
-    rag_service=Depends(get_rag_service),
-    qa_service=Depends(get_qa_service),
+    services: Services = Depends(get_services),
     settings: Settings = Depends(get_settings),
 ):
     """질문 유형별 QA를 생성하며 생성 과정을 SSE로 응답한다.
@@ -76,7 +69,7 @@ async def generate_qa(
     collection_id = build_collection_id(settings.rag.collection_prefix, str(request.lecture_id))
 
     def _retrieve():
-        return rag_service.retrieve_context(
+        return services.rag.retrieve_context(
             collection_id=collection_id,
             query=request.section_summary,
             section_index=request.section_index,
@@ -112,7 +105,7 @@ async def generate_qa(
     )
 
     async def events() -> AsyncIterator[str]:
-        async for event in qa_service.stream_questions(qa_request):
+        async for event in services.qa.stream_questions(qa_request):
             item = event.data["item"]
             if event.name == "start":
                 timer.mark("item_start", item=item, type=event.data["type"])

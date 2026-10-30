@@ -136,3 +136,10 @@ async def test_qa_generate_handles_rag_failure(async_client, test_context, monke
     response = await async_client.post("/qa/generate", json=payload)
     assert response.status_code == 400
     assert "RAG" in response.json()["detail"]
+
+
+@pytest.mark.anyio("asyncio")
+async def test_qa_generate_rejects_blank_summary(async_client):
+    payload = {"lecture_id": 1, "section_index": 0, "section_summary": " " * 12}
+    response = await async_client.post("/qa/generate", json=payload)
+    assert response.status_code == 422

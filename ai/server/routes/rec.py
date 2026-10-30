@@ -7,9 +7,8 @@ import asyncio
 import logging
 from typing import List, Optional
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import Field, HttpUrl, validator
+from pydantic import Field, HttpUrl
 
 from core.config import Settings
 from core.schemas import PreviousSummary as ProviderPreviousSummary, ResourceType
@@ -18,9 +17,9 @@ from core.timing import RequestTimer
 from recommend.graph import run_recommendations
 from recommend.models import RecContext
 
-from ..dependencies import get_rag_service, get_rec_service, get_settings
-from ..security import internal_auth_headers
-from ..utils import CamelModel, build_collection_id
+from ..callback import post_callback
+from ..dependencies import Services, get_services, get_settings
+from ..utils import CamelModel, NonBlankStr, build_collection_id
 
 router = APIRouter(prefix="/rec", tags=["REC"])
 logger = logging.getLogger(__name__)
@@ -40,7 +39,7 @@ class RECRequest(CamelModel):
     lecture_id: int = Field(..., ge=1, description="강의 ID")
     summary_id: Optional[int] = Field(default=None, description="요약 ID")
     section_index: int = Field(..., ge=0, description="섹션 인덱스(0-base)")
-    section_summary: str = Field(..., min_length=10, description="섹션 요약")
+    section_summary: NonBlankStr = Field(..., min_length=10, description="섹션 요약")
     callback_url: HttpUrl = Field(..., description="콜백 URL")
     previous_summaries: List[PreviousSummary] = Field(default_factory=list, description="이전 요약")
     yt_exclude: List[str] = Field(default_factory=list, description="제외할 유튜브 제목")
@@ -52,18 +51,11 @@ class RECRequest(CamelModel):
         description="요청 리소스 유형 (미지정 시 모든 유형)"
     )
 
-    @validator("section_summary")
-    def validate_section_summary(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("section_summary는 비어 있을 수 없습니다.")
-        return value
-
 
 @router.post("/recommend", status_code=status.HTTP_202_ACCEPTED)
 async def recommend_resources(
     request: RECRequest,
-    rag_service=Depends(get_rag_service),
-    rec_service=Depends(get_rec_service),
+    services: Services = Depends(get_services),
     settings: Settings = Depends(get_settings),
 ):
     """자료 종류별 추천을 시작하고 바로 응답한다. 종류마다 끝나는 대로 콜백으로 결과를 보낸다."""
@@ -72,7 +64,7 @@ async def recommend_resources(
     collection_id = build_collection_id(settings.rag.collection_prefix, str(request.lecture_id))
 
     def _retrieve():
-        return rag_service.retrieve_context(
+        return services.rag.retrieve_context(
             collection_id=collection_id,
             query=request.section_summary,
             section_index=request.section_index,
@@ -115,7 +107,7 @@ async def recommend_resources(
 
     async def provider_task(res_type: ResourceType):
         try:
-            resources = [r.to_resource() for r in await rec_service.recommend(res_type, context)]
+            resources = [r.to_resource() for r in await services.rec.recommend(res_type, context)]
             logger.info(
                 "추천 결과: %s %d개 (%s)",
                 res_type.value,
@@ -162,16 +154,12 @@ def _select_resource_types(resource_types: Optional[List[ResourceType]]) -> List
     return normalized
 
 
-async def post_resources_callback(request: RECRequest, resources: List[dict], settings: Settings):
-    """콜백 URL로 추천 자료 전송"""
+async def post_resources_callback(request: RECRequest, resources: List[dict], settings: Settings) -> None:
+    """자료 종류 하나의 추천 결과를 콜백으로 보낸다."""
     payload = {
         "lectureId": request.lecture_id,
         "summaryId": request.summary_id,
         "sectionIndex": request.section_index,
         "resources": resources,
     }
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            await client.post(str(request.callback_url), json=payload, headers=internal_auth_headers(settings))
-    except Exception as exc:  # pragma: no cover - 네트워크 예외
-        logger.exception("콜백 전송 실패: %s", exc)
+    await post_callback(str(request.callback_url), payload, settings)
