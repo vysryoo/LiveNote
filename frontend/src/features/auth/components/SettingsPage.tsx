@@ -6,11 +6,11 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { z } from "zod";
 import { AppHeader } from "@/shared/components/AppHeader";
-import { LANGUAGE_CODES, LANGUAGE_LABELS } from "@/shared/i18n";
+import { LanguageSelect } from "@/shared/components/LanguageSelect";
+import { LANGUAGE_CODES } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { toAuthErrorKey } from "../api/errors";
 import type { User } from "../api/schemas";
 import { useUpdateSettings } from "../hooks/useAuthMutations";
@@ -114,18 +114,7 @@ function SettingsForm({ user }: { user: User }) {
                 control={form.control}
                 name="language"
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LANGUAGE_CODES.map((code) => (
-                        <SelectItem key={code} value={code}>
-                          {LANGUAGE_LABELS[code]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <LanguageSelect value={field.value} onChange={field.onChange} />
                 )}
               />
             </div>

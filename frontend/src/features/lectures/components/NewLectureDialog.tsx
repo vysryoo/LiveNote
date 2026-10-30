@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { FieldError } from "@/shared/components/FieldError";
 import { FormError } from "@/shared/components/FormError";
-import { isLanguageCode, LANGUAGE_CODES, LANGUAGE_LABELS } from "@/shared/i18n";
+import { LanguageSelect } from "@/shared/components/LanguageSelect";
+import { isLanguageCode, LANGUAGE_CODES } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   Dialog,
@@ -89,18 +90,7 @@ export function NewLectureDialog({ open, onOpenChange }: NewLectureDialogProps) 
               control={form.control}
               name="sttLanguage"
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGE_CODES.map((code) => (
-                      <SelectItem key={code} value={code}>
-                        {LANGUAGE_LABELS[code]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <LanguageSelect value={field.value} onChange={field.onChange} />
               )}
             />
           </div>
