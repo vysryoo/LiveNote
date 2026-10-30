@@ -87,6 +87,15 @@ public class AiServerClient {
                 .bodyToFlux(SSE_OF_STRING);
     }
 
+    /**
+     * AI 서버에 자료 추천을 요청한다. 추천 결과는 자료 콜백({@code type=resources})으로 도착한다.
+     *
+     * AI 서버가 요청을 받을 때까지 기다린다. 섹션 번호는 {@code section_index}와 1부터 세는 {@code section_id}로 함께 보낸다.
+     *
+     * @param payload 자료 추천 요청 본문
+     * @param targetTypes 추천할 자료 유형. null이거나 비어 있으면 AI 서버 설정값 사용
+     * @throws WebClientResponseException AI 서버가 오류 상태 코드로 응답한 경우. 연결 실패 등 다른 오류도 예외로 던짐
+     */
     public void requestResourceRecommendation(AiRequestPayloads.ResourceRecommendPayload payload, List<String> targetTypes) {
         Map<String, Object> body = new HashMap<>();
 
@@ -124,6 +133,19 @@ public class AiServerClient {
     }
 
 
+    /**
+     * AI 서버에 섹션 요약을 요청한다. 요약 결과는 요약 콜백({@code type=summary})으로 도착한다.
+     *
+     * AI 서버가 요청을 받을 때까지 기다린다.
+     *
+     * @param lectureId 강의 ID
+     * @param sectionIndex 섹션 번호
+     * @param startSec 섹션 첫 전사의 시작 시각(초)
+     * @param endSec 섹션 마지막 전사의 끝 시각(초)
+     * @param phase 부분 요약 또는 최종 요약
+     * @param transcript 섹션 전사를 공백으로 이어 붙인 본문
+     * @throws WebClientResponseException AI 서버가 오류 상태 코드로 응답한 경우. 연결 실패 등 다른 오류도 예외로 던짐
+     */
     public void requestSummaryGeneration(Long lectureId, int sectionIndex, int startSec, int endSec,
                                          SummaryPhase phase, String transcript) {
         Map<String, Object> body = new HashMap<>();
@@ -140,6 +162,14 @@ public class AiServerClient {
         post("/summary/generate", body);
     }
 
+    /**
+     * 저장한 최종 요약을 AI 서버의 RAG 저장소에 넣는다.
+     *
+     * @param lectureId 강의 ID
+     * @param summary 저장한 요약
+     * @throws IllegalArgumentException summary가 null인 경우
+     * @throws WebClientResponseException AI 서버가 오류 상태 코드로 응답한 경우. 연결 실패 등 다른 오류도 예외로 던짐
+     */
     public void upsertSummaryText(Long lectureId, Summary summary) {
         Assert.notNull(summary, "summary is required");
 
@@ -170,6 +200,14 @@ public class AiServerClient {
     }
 
 
+    /**
+     * 강의 자료 PDF를 AI 서버의 RAG 저장소에 올리고 컬렉션 ID를 받는다.
+     *
+     * @param lectureId 강의 ID
+     * @param pdfFile 올릴 PDF
+     * @return AI 서버가 돌려준 컬렉션 ID
+     * @throws RuntimeException 업로드에 실패했거나 응답에 컬렉션 ID가 없는 경우
+     */
     public String upsertPdf(Long lectureId, MultipartFile pdfFile) {
         MultipartBodyBuilder builder = new MultipartBodyBuilder();
         builder.part("lecture_id", lectureId.toString());

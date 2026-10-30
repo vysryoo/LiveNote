@@ -10,6 +10,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * AI 서버의 요약 콜백을 처리한다.
+ *
+ * 부분 요약은 화면 전송과 자동 카드 요청에, 최종 요약은 저장, 화면 전송, RAG 업서트에 쓴다.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -23,6 +28,14 @@ public class SummaryCallbackService {
     private final AiServerClient aiServerClient;
     private final AiAutoCardProperties autoCardProperties;
 
+    /**
+     * 요약 콜백 한 건을 처리한다.
+     *
+     * 전사가 너무 짧다는 응답({@code status=TOO_SHORT})이면 오류 토픽으로 알리고 끝낸다.
+     * RAG 업서트와 자동 카드 요청이 실패하면 로그로만 남긴다.
+     *
+     * @param dto 요약 콜백 본문
+     */
     @Transactional
     public void handleSummaryCallback(SummaryCallbackDto dto) {
         log.info("[Callback] Summary received: lectureId={} section={} type={}",

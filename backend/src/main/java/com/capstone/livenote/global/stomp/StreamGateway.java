@@ -12,6 +12,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 강의별 STOMP 토픽 {@code /topic/lectures.{lectureId}.{name}}으로 실시간 메시지를 보낸다.
+ *
+ * 메시지는 RabbitMQ를 거쳐 그 강의를 구독한 모든 브라우저에 전달된다.
+ */
 @Component
 @RequiredArgsConstructor
 public class StreamGateway {
@@ -22,7 +27,13 @@ public class StreamGateway {
         return "/topic/lectures." + lectureId + "." + name;
     }
 
-    // 실시간 전사 전송
+    /**
+     * 전사 한 문장을 {@code transcripts} 토픽으로 보낸다.
+     *
+     * @param lectureId 강의 ID
+     * @param dto 저장한 전사
+     * @param isFinal 확정된 문장인지 여부
+     */
     public void sendTranscript(Long lectureId, TranscriptResponseDto dto, boolean isFinal) {
         tmpl.convertAndSend(lectureTopic(lectureId, "transcripts"),
                 Map.of(
@@ -51,7 +62,13 @@ public class StreamGateway {
         ));
     }
 
-    // resource 실시간 전송
+    /**
+     * 섹션의 자료 카드 전체 목록을 {@code resources} 토픽으로 보낸다.
+     *
+     * @param lectureId 강의 ID
+     * @param sectionIndex 섹션 번호
+     * @param items 섹션의 자료 카드 전체
+     */
     public void sendResources(Long lectureId, Integer sectionIndex, List<ResourceResponseDto> items) {
         tmpl.convertAndSend(
                 lectureTopic(lectureId, "resources"),
@@ -65,7 +82,13 @@ public class StreamGateway {
     }
 
 
-    // qna 실시간 전송
+    /**
+     * 섹션의 QnA 카드 전체 목록을 {@code qna} 토픽으로 보낸다.
+     *
+     * @param lectureId 강의 ID
+     * @param sectionIndex 섹션 번호
+     * @param items 섹션의 QnA 카드 전체
+     */
     public void sendQna(Long lectureId, Integer sectionIndex, List<QnaResponseDto> items) {
         tmpl.convertAndSend(
                 lectureTopic(lectureId, "qna"),
@@ -78,13 +101,23 @@ public class StreamGateway {
         );
     }
 
-    // error 전송
+    /**
+     * 오류 메시지를 {@code error} 토픽으로 보낸다.
+     *
+     * @param lectureId 강의 ID
+     * @param error 화면에 보낼 오류 메시지
+     */
     public void sendError(Long lectureId, String error) {
         tmpl.convertAndSend(lectureTopic(lectureId, "error"),
                 Map.of("type", "error", "message", error));
     }
 
-    // 섹션 상태 전송
+    /**
+     * 다음 전사부터 속할 섹션 번호를 {@code section} 토픽으로 알린다.
+     *
+     * @param lectureId 강의 ID
+     * @param sectionIndex 새 섹션 번호
+     */
     public void sendSection(Long lectureId, int sectionIndex) {
         tmpl.convertAndSend(
                 lectureTopic(lectureId, "section"),

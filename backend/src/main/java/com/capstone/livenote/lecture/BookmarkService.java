@@ -7,6 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+/**
+ * 북마크의 생성과 삭제를 맡는다. 북마크 목록은 강의 상세 조회에 함께 담긴다.
+ */
 @Service
 @RequiredArgsConstructor
 public class BookmarkService {
@@ -16,7 +19,15 @@ public class BookmarkService {
     private final ResourceRepository resourceRepository;
     private final LectureService lectureService;
 
-    // 북마크 생성
+    /**
+     * 사용자 본인 강의의 QnA나 자료 카드에 북마크를 단다.
+     *
+     * @param req 북마크 정보
+     * @param userId 요청한 사용자 ID
+     * @return 저장한 북마크
+     * @throws IllegalArgumentException 대상 종류가 없거나 이미 북마크한 카드인 경우
+     * @throws EntityNotFoundException 강의가 없거나 다른 사용자의 강의인 경우, 또는 카드가 그 강의에 없는 경우
+     */
     @Transactional
     public Bookmark createBookmark(CreateBookmarkRequestDto req, Long userId) {
         Bookmark.TargetType type = req.targetType();
@@ -46,7 +57,13 @@ public class BookmarkService {
         return bookmarkRepository.save(bookmark);
     }
 
-    // 북마크 삭제
+    /**
+     * 사용자 본인의 북마크를 삭제한다.
+     *
+     * @param userId 요청한 사용자 ID
+     * @param bookmarkId 북마크 ID
+     * @throws EntityNotFoundException 북마크가 없거나 다른 사용자의 북마크인 경우
+     */
     @Transactional
     public void deleteBookmark(Long userId, Long bookmarkId) {
         // 다른 사용자의 북마크도 없는 북마크와 같은 응답으로 처리해 존재 여부를 드러내지 않음

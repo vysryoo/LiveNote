@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
-// STT 저장, 섹션/요약 트리거만
+/**
+ * 녹음에서 확정된 전사를 저장하고, 섹션 배정과 요약 요청으로 이어지게 한다.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j

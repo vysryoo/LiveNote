@@ -15,18 +15,35 @@ import java.util.Optional;
 
 import static com.capstone.livenote.recording.SectionAggregationService.SECTION_SEC;
 
-
+/**
+ * 섹션 요약의 조회와 최종 요약 저장을 맡는다. 부분 요약은 저장하지 않는다.
+ */
 @Service
 @RequiredArgsConstructor
 public class SummaryService {
 
     private final SummaryRepository summaryRepository;
 
+    /**
+     * 섹션의 저장된 요약을 조회한다.
+     *
+     * @param lectureId 강의 ID
+     * @param sectionIndex 섹션 번호
+     * @return 요약. 아직 최종 요약이 저장되지 않았으면 비어 있음
+     */
     @Transactional(readOnly = true)
     public Optional<Summary> findByLectureAndSection(Long lectureId, Integer sectionIndex) {
         return summaryRepository.findByLectureIdAndSectionIndex(lectureId, sectionIndex);
     }
 
+    /**
+     * 현재 섹션보다 앞선 최종 요약을 가까운 섹션부터 조회한다.
+     *
+     * @param lectureId 강의 ID
+     * @param sectionIndex 현재 섹션 번호
+     * @param limit 최대 개수. 0 이하면 빈 목록
+     * @return 최종 요약 목록. 섹션 번호가 큰 것부터
+     */
     @Transactional(readOnly = true)
     public List<Summary> findPreviousSummaries(Long lectureId, Integer sectionIndex, int limit) {
         if (limit <= 0) {
@@ -45,6 +62,15 @@ public class SummaryService {
         );
     }
 
+    /**
+     * AI 서버가 보낸 요약을 섹션의 요약으로 저장한다. 이미 있으면 덮어쓴다.
+     *
+     * 콜백에 시각이 없으면 섹션 번호와 섹션 길이(30초)로 채운다.
+     *
+     * @param dto 요약 콜백 본문
+     * @return 저장한 요약
+     * @throws IllegalStateException unique 제약 위반이 났는데 다시 조회해도 요약이 없는 경우
+     */
     @Transactional(noRollbackFor = DataIntegrityViolationException.class)
     public Summary upsertFromCallback(SummaryCallbackDto dto) {
         int startSec = dto.startSec() != null ? dto.startSec() : dto.sectionIndex() * SECTION_SEC;

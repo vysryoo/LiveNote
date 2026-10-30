@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * AI 서버의 자료 추천 콜백을 받아 자료 카드를 저장하고 실시간으로 보낸다.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j

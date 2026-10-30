@@ -21,6 +21,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
+/**
+ * 강의의 생성, 조회, 종료, 삭제와 강의 상세 조회를 맡는다.
+ *
+ * 사용자 요청을 처리할 때는 소유자를 확인하는 {@link #getOwned}로 강의를 찾는다.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -33,6 +38,13 @@ public class LectureService {
     private final BookmarkRepository bookmarkRepository;
     private final AiServerClient aiServerClient;
 
+    /**
+     * 녹음 중 상태의 강의를 만든다.
+     *
+     * @param userId 강의를 만드는 사용자 ID
+     * @param req 강의 정보
+     * @return 저장한 강의
+     */
     @Transactional
     public Lecture create(Long userId, CreateLectureRequestDto req){
         Lecture lec = Lecture.builder()
@@ -80,10 +92,25 @@ public class LectureService {
                 .orElseThrow(() -> new EntityNotFoundException("lecture"));
     }
 
+    /**
+     * 사용자의 강의를 최근에 만든 순서로 조회한다.
+     *
+     * @param userId 사용자 ID
+     * @param pageable 페이지 번호와 크기
+     * @return 강의 한 페이지
+     */
     @Transactional(readOnly = true)
     public Page<Lecture> list(Long userId, Pageable pageable){
         return lectureRepo.findByUserIdOrderByCreatedAtDesc(userId, pageable);
     }
+
+    /**
+     * 강의를 조회한다. 소유자를 확인하지 않으므로 사용자 요청에는 {@link #getOwned}를 쓴다.
+     *
+     * @param id 강의 ID
+     * @return 강의
+     * @throws EntityNotFoundException 강의가 없는 경우
+     */
     @Transactional(readOnly = true)
     public Lecture get(Long id){
         return lectureRepo.findById(id)

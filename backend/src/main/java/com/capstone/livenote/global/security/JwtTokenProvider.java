@@ -11,6 +11,9 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.Optional;
 
+/**
+ * 접근 토큰(JWT)을 발급하고 검증한다.
+ */
 @Component
 @Slf4j
 public class JwtTokenProvider {
@@ -29,6 +32,12 @@ public class JwtTokenProvider {
         this.validityInMilliseconds = validityInMilliseconds;
     }
 
+    /**
+     * 사용자 ID를 담은 접근 토큰을 발급한다. 유효 시간은 {@code app.jwt.expiration}(ms) 설정을 따른다.
+     *
+     * @param userId 사용자 ID
+     * @return 서명한 접근 토큰
+     */
     public String createToken(Long userId) {
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);
