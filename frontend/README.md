@@ -41,21 +41,27 @@ src/
 ├── app/                # 라우터, 로그인 확인, 전역 프로바이더
 ├── features/
 │   ├── auth/           # 로그인, 회원가입, 설정
-│   ├── landing/        # 랜딩 페이지
+│   ├── landing/        # 랜딩 페이지 (구역별 컴포넌트)
 │   ├── lectures/       # 강의 목록, 생성, 이름 변경, 삭제, 종료
 │   └── session/        # 강의 화면
 │       ├── audio/      # 마이크 녹음 (PCM16 24kHz)
-│       ├── realtime/   # STOMP 구독과 메시지 처리 함수
-│       └── state/      # 실시간 상태 reducer (전사, 생성 중 카드)
+│       └── realtime/   # STOMP 구독과 메시지 처리 함수
 ├── shared/
-│   ├── ui/             # shadcn/ui 컴포넌트
-│   ├── components/     # 기능 공용 컴포넌트
+│   ├── components/     # 기능 공용 컴포넌트 (헤더, 사용자 메뉴, 언어 선택, 폼 오류)
+│   ├── ui/             # shadcn/ui 컴포넌트 (사용하는 것만 보관)
 │   ├── lib/            # HTTP 클라이언트, 로그인 토큰 저장
 │   └── i18n/           # i18next 설정, 언어별 번역 (ko, en, ja, zh)
-└── styles/             # 글로벌 스타일
+└── styles/             # 글로벌 스타일, 브랜드 그라데이션 유틸리티
 ```
 
-각 기능 폴더는 `api/`(요청), `hooks/`(TanStack Query 훅), `components/`(화면)로 나눕니다.
+각 기능 폴더는 다음과 같이 나눕니다.
+
+| 폴더 | 내용 |
+| --- | --- |
+| `api/` | 백엔드 요청과 zod 응답 스키마 |
+| `hooks/` | TanStack Query 훅, 화면 흐름 훅 |
+| `components/` | 화면 |
+| `lib/` | 화면 없는 계산과 상태 (예: 세션 reducer, 섹션 목록 계산). 테스트를 같은 폴더에 둠 |
 
 ---
 
