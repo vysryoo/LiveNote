@@ -9,6 +9,8 @@ dependencies = [
     "uvicorn[standard]==0.30.6",
     "python-multipart==0.0.9",
     "pydantic==2.9.0",
+    # 환경변수·.env 설정 (core/config.py)
+    "pydantic-settings==2.15.0",
     "python-dotenv==1.0.1",
     # HTTP (OpenAlex 클라이언트가 HTTP/2 사용)
     "httpx[http2]==0.27.2",
