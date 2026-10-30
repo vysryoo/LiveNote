@@ -19,7 +19,7 @@ from typing import Any, AsyncIterator, Dict, List, Optional, Sequence, Tuple
 from uuid import UUID
 
 from langchain_core.callbacks import AsyncCallbackHandler
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import LLMResult
 from langchain_openai import ChatOpenAI
 
@@ -50,7 +50,7 @@ class ModelSettings:
     reasoning_effort: Optional[str]
 
 
-# 스트리밍(QA)은 첫 글자 시간을 줄이기 위해 추론을 끔. 값은 스트리밍 측정(L)에서 다시 정함
+# QA는 질문 표시 중앙값이 none 1670ms, low 3345ms(eval/results/L_none.md, L_low.md)라 추론을 끔
 DEFAULT_REASONING_EFFORT = {
     ModelPurpose.SUMMARY: "none",
     ModelPurpose.QA: "none",
@@ -58,6 +58,7 @@ DEFAULT_REASONING_EFFORT = {
     ModelPurpose.VERIFY: "none",
 }
 
+# ("system" 또는 "user", 내용). LangChain 채팅 모델이 그대로 받음
 Message = Tuple[str, str]
 
 
@@ -154,27 +155,6 @@ def build_chat_model(purpose: ModelPurpose, max_tokens: Optional[int] = None) ->
     return ChatOpenAI(**kwargs)
 
 
-def to_messages(messages: Sequence[Message]) -> List[BaseMessage]:
-    """(역할, 내용) 목록을 LangChain 메시지로 바꾼다.
-
-    Args:
-        messages: ('system' 또는 'user', 내용) 목록
-    Returns:
-        LangChain 메시지 목록
-    Raises:
-        ValueError: 지원하지 않는 역할인 경우
-    """
-    converted: List[BaseMessage] = []
-    for role, content in messages:
-        if role == "system":
-            converted.append(SystemMessage(content))
-        elif role == "user":
-            converted.append(HumanMessage(content))
-        else:
-            raise ValueError(f"지원하지 않는 역할: {role}")
-    return converted
-
-
 async def complete(
     purpose: ModelPurpose,
     messages: Sequence[Message],
@@ -195,7 +175,7 @@ async def complete(
     """
     model = build_chat_model(purpose, max_tokens)
     runnable = model.bind(response_format={"type": "json_object"}) if json_mode else model
-    result: AIMessage = await runnable.ainvoke(to_messages(messages))
+    result: AIMessage = await runnable.ainvoke(list(messages))
     return str(result.content or "").strip()
 
 
@@ -216,6 +196,6 @@ async def stream(
         openai.APIError: OpenAI 호출 실패. 이미 돌려준 조각은 취소되지 않음
     """
     model = build_chat_model(purpose, max_tokens)
-    async for chunk in model.astream(to_messages(messages)):
+    async for chunk in model.astream(list(messages)):
         if chunk.content:
             yield str(chunk.content)
