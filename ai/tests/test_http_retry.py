@@ -40,7 +40,7 @@ async def test_search_retries_after_429_and_respects_retry_after(waits):
 
     results = await client.search_pages("Buck converter", lang="en", limit=3)
 
-    assert [r["title"] for r in results] == ["Buck converter"]
+    assert [r.title for r in results] == ["Buck converter"]
     assert len(calls) == 3
     assert waits == [3.0, 3.0]
 

@@ -16,6 +16,7 @@ from core.schemas import PreviousSummary, RAGChunk, ResourceType
 from recommend.models import RecContext
 from recommend.pipeline import recommend
 from recommend.providers.paper import Paper
+from recommend.providers.wiki import WikiPage, WikiSearchHit
 from tests.snapshots import assert_snapshot
 
 pytestmark = pytest.mark.anyio("asyncio")
@@ -154,18 +155,21 @@ class FakeWikiApi:
 
     async def search_pages(self, keyword, lang="en", limit=6):
         self.calls.append(["search", keyword, lang, limit])
-        return [dict(page) for page in WIKI_SEARCH.get((keyword, lang), [])]
+        return [
+            WikiSearchHit(page_id=hit["pageid"], title=hit["title"], snippet=hit["snippet"])
+            for hit in WIKI_SEARCH.get((keyword, lang), [])
+        ]
 
     async def get_page_extract(self, page_id, lang="en"):
         self.calls.append(["extract", page_id, lang])
         page = WIKI_PAGES[page_id]
-        return {
-            "title": page["title"],
-            "extract": page["extract"],
-            "url": f"https://{lang}.wikipedia.org/?curid={page_id}",
-            "pageid": page_id,
-            "disambiguation": page.get("disambiguation", False),
-        }
+        return WikiPage(
+            page_id=page_id,
+            title=page["title"],
+            extract=page["extract"],
+            url=f"https://{lang}.wikipedia.org/?curid={page_id}",
+            disambiguation=page.get("disambiguation", False),
+        )
 
 
 def wiki_llm(prompt: str) -> str:
