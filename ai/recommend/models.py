@@ -34,14 +34,17 @@ class RecContext:
 
 @dataclass(frozen=True)
 class Score:
-    """후보 하나의 관련도 점수와 이유."""
+    """후보 하나의 관련도 점수와 이유. LLM 검증과 휴리스틱이 공통으로 돌려준다."""
 
     score: float
     reason: str
 
 
 class LLMScore(BaseModel):
-    """LLM 검증 응답 형식."""
+    """LLM 검증 응답 형식 (구조화 출력 스키마).
+
+    클래스 이름이 스키마 이름으로 OpenAI 요청에 함께 전송되므로, Score와 필드가 같아도 합치지 않는다.
+    """
 
     score: float
     reason: str
