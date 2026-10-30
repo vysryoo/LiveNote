@@ -47,3 +47,4 @@ venv/
 # --- 로컬 전용 문서·스크립트 ---
 HANDOFF.md
 frontend/deploy.sh
+REFACTOR_DESIGN*.md
