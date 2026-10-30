@@ -21,10 +21,5 @@ public class ResourceService {
         }
         return repo.findByLectureIdAndSectionIndexBetweenOrderByIdAsc(lectureId, startSection, endSection);
     }
-
-    @Transactional(readOnly = true)
-    public List<Resource> findByLectureAndSectionOrdered(Long lectureId, Integer sectionIndex) {
-        return repo.findByLectureIdAndSectionIndexOrderByIdAsc(lectureId, sectionIndex);
-    }
 }
 

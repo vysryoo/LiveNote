@@ -122,15 +122,6 @@ public class ResourceCallbackService {
         return objectMapper.valueToTree(value);
     }
 
-    private String preview(String description, String title) {
-        String source = (description != null && !description.isBlank()) ? description : title;
-        if (source == null || source.isBlank()) {
-            return "";
-        }
-        String trimmed = source.trim();
-        return trimmed.length() <= 30 ? trimmed : trimmed.substring(0, 30);
-    }
-
     private String sig(String title, String url) {
         return (title == null ? "" : title.trim()) + "|" + (url == null ? "" : url.trim());
     }

@@ -21,38 +21,6 @@ public class SummaryService {
 
     private final SummaryRepository summaryRepository;
 
-    @Transactional
-    public Summary createSectionSummary(Long lectureId,
-                                        Integer sectionIndex,
-                                        String text) {
-
-        int startSec = sectionIndex * 30;
-        int endSec = startSec + 30;
-
-        Summary summary = summaryRepository
-                .findByLectureIdAndSectionIndex(lectureId, sectionIndex)
-                .orElse(null);
-
-        if (summary == null) {
-            // 없으면 새로 생성
-            summary = Summary.builder()
-                    .lectureId(lectureId)
-                    .sectionIndex(sectionIndex)
-                    .startSec(startSec)
-                    .endSec(endSec)
-                    .text(text)
-                    .phase(SummaryPhase.FINAL)
-                    .build();
-        } else {
-            // 있으면 덮어쓰기
-            summary.setStartSec(startSec);
-            summary.setEndSec(endSec);
-            summary.setText(text);
-        }
-        return summaryRepository.save(summary);
-
-    }
-
     @Transactional(readOnly = true)
     public Optional<Summary> findByLectureAndSection(Long lectureId, Integer sectionIndex) {
         return summaryRepository.findByLectureIdAndSectionIndex(lectureId, sectionIndex);
@@ -74,11 +42,6 @@ public class SummaryService {
                 SummaryPhase.FINAL,
                 pageable
         );
-    }
-
-    @Transactional(readOnly = true)
-    public boolean existsByLectureAndSection(Long lectureId, Integer sectionIndex) {
-        return summaryRepository.existsByLectureIdAndSectionIndex(lectureId, sectionIndex);
     }
 
     // 해당 섹션의 요약이 DB에 존재하는지 확인

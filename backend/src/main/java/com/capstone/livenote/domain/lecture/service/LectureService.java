@@ -91,13 +91,6 @@ public class LectureService {
         log.info("✅ [DB DELETE] Lecture deleted: lectureId={}", id);
     }
 
-    @Transactional
-    public void startRecording(Long id) {
-        log.info("💾 [DB WRITE] Starting recording: lectureId={}", id);
-        lectureRepo.updateStatus(id, Lecture.Status.RECORDING);
-        log.info("✅ [DB WRITE] Recording started: lectureId={}", id);
-    }
-
     /**
      * 강의를 종료 상태로 바꾸고, 제목이 주어지면 함께 저장한다.
      *

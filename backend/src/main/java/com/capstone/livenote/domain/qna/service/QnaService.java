@@ -25,8 +25,4 @@ public class QnaService {
         );
     }
 
-    public Qna save(Qna qna) {
-        return repo.save(qna);
-    }
-
 }

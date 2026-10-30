@@ -7,13 +7,11 @@ import com.capstone.livenote.domain.transcript.entity.Transcript;
 import com.capstone.livenote.domain.transcript.repository.TranscriptRepository;
 import com.capstone.livenote.domain.transcript.service.RecordingStateStore.TimeOffset;
 import com.capstone.livenote.global.redis.RedisLock;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.context.annotation.Lazy;
 
-import java.util.List;
 import java.util.Optional;
 
 // STT 저장, 섹션/요약 트리거만
@@ -125,21 +123,4 @@ public class TranscriptService {
         return base;
     }
 
-
-    // 특정 섹션의 텍스트를 모두 합쳐서 반환 (요약 생성용)
-    @Transactional(readOnly = true)
-    public String getCombinedText(Long lectureId, Integer sectionIndex) {
-        // 섹션 인덱스로 조회 (repository 메서드 추가 필요)
-        List<Transcript> transcripts = transcriptRepository.findByLectureIdAndSectionIndexOrderByStartSecAsc(lectureId, sectionIndex);
-
-        if (transcripts.isEmpty()) {
-            return "";
-        }
-
-        StringBuilder sb = new StringBuilder();
-        for (Transcript t : transcripts) {
-            sb.append(t.getText()).append(" ");
-        }
-        return sb.toString().trim();
-    }
 }

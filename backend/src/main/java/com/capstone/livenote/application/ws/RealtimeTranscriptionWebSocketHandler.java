@@ -67,9 +67,6 @@ public class RealtimeTranscriptionWebSocketHandler extends AbstractWebSocketHand
     @Value("${app.openai.realtime.transcription-model:gpt-transcribe}")
     private String transcriptionModel;
 
-    @Value("${app.callback-base-url:http://localhost:8080}")
-    private String callbackBaseUrl;
-
     private final Map<String, SessionContext> contexts = new ConcurrentHashMap<>();
 
     @Override

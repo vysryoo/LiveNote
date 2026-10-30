@@ -14,22 +14,11 @@ public interface SummaryRepository extends JpaRepository<Summary, Long> {
 
     List<Summary> findByLectureIdOrderBySectionIndexAsc(Long lectureId);
 
-    List<Summary> findByLectureIdAndSectionIndexGreaterThanOrderBySectionIndexAsc(
-            Long lectureId, Integer sinceSection);
-
-    List<Summary> findByLectureIdAndSectionIndexLessThanOrderBySectionIndexDesc(
-            Long lectureId,
-            Integer sectionIndex,
-            org.springframework.data.domain.Pageable pageable
-    );
-
     List<Summary> findByLectureIdAndSectionIndexLessThanAndPhaseOrderBySectionIndexDesc(
             Long lectureId,
             Integer sectionIndex,
             SummaryPhase phase,
             org.springframework.data.domain.Pageable pageable
     );
-
-    boolean existsByLectureIdAndSectionIndex(Long lectureId, Integer sectionIndex);
 
 }
