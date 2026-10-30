@@ -28,6 +28,7 @@
   --font-weight-normal: 400;
   --ring: #639bee;
   --radius: 0.5rem;
+  --brand-gradient: linear-gradient(135deg, #639bee, #5b60a2, #83eaf1, #63a4ff, #3b72dd, #4d82e0);
 }
 
 @theme inline {
@@ -130,9 +131,7 @@
   input:focus,
   textarea:focus {
     box-shadow: none;
-    background-image:
-      linear-gradient(#fff, #fff),
-      linear-gradient(135deg, #639bee, #5b60a2, #83eaf1, #63a4ff, #3b72dd, #4d82e0);
+    background-image: linear-gradient(#fff, #fff), var(--brand-gradient);
     background-origin: border-box;
     background-clip: padding-box, border-box;
     border: 2px solid transparent;
@@ -142,6 +141,18 @@
 
 html {
   font-size: var(--font-size);
+}
+
+/* 브랜드 그라데이션. border-brand-gradient는 흰 배경 위에 그라데이션 테두리를 그림 */
+@utility bg-brand-gradient {
+  background-image: var(--brand-gradient);
+}
+
+@utility border-brand-gradient {
+  border: 2px solid transparent;
+  background-image: linear-gradient(#fff, #fff), var(--brand-gradient);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
 }
 
 @keyframes fadeInUp {

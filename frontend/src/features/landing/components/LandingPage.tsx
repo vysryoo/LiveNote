@@ -139,16 +139,7 @@ export function LandingPage() {
                     </div>
 
                     {/* 실시간 요약 컴포넌트 */}
-                    <div
-                      className="rounded-lg p-6 bg-white hover:bg-muted cursor-pointer transition-all"
-                      style={{
-                        border: "2px solid transparent",
-                        backgroundImage:
-                          "linear-gradient(white, white), linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
-                        backgroundOrigin: "border-box",
-                        backgroundClip: "padding-box, border-box",
-                      }}
-                    >
+                    <div className="rounded-lg p-6 bg-white hover:bg-muted cursor-pointer transition-all border-brand-gradient">
                       <h4 className="mb-4">{t("session.header.summary")}</h4>
                       <p className="text-sm text-muted-foreground">{t("landing.mock.summary")}</p>
                     </div>
@@ -216,13 +207,7 @@ export function LandingPage() {
                 </p>
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div
-                    className="rounded-xl p-5"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
-                    }}
-                  >
+                  <div className="rounded-xl p-5 bg-brand-gradient">
                     <div className="flex items-center mb-3">
                       <GraduationCap className="w-8 h-8 text-white" />
                     </div>
@@ -437,8 +422,7 @@ export function LandingPage() {
                     highlight: (
                       <span
                         style={{
-                          background:
-                            "linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
+                          background: "var(--brand-gradient)",
                           WebkitBackgroundClip: "text",
                           WebkitTextFillColor: "transparent",
                           backgroundClip: "text",
@@ -455,13 +439,7 @@ export function LandingPage() {
                 {/* Step 1 */}
                 <div className="relative">
                   <div className="flex flex-col items-center">
-                    <div
-                      className="w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
-                      }}
-                    >
+                    <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg bg-brand-gradient">
                       <span className="text-white text-4xl font-bold">1</span>
                     </div>
                     <h4 className="text-xl font-bold text-[#1F2937] mb-3">
@@ -478,13 +456,7 @@ export function LandingPage() {
                 {/* Step 2 */}
                 <div className="relative">
                   <div className="flex flex-col items-center">
-                    <div
-                      className="w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
-                      }}
-                    >
+                    <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg bg-brand-gradient">
                       <span className="text-white text-4xl font-bold">2</span>
                     </div>
                     <h4 className="text-xl font-bold text-[#1F2937] mb-3">
@@ -501,13 +473,7 @@ export function LandingPage() {
                 {/* Step 3 */}
                 <div>
                   <div className="flex flex-col items-center">
-                    <div
-                      className="w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, #639BEE, #5B60A2, #83EAF1, #63A4FF, #3B72DD, #4D82E0)",
-                      }}
-                    >
+                    <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg bg-brand-gradient">
                       <span className="text-white text-4xl font-bold">3</span>
                     </div>
                     <h4 className="text-xl font-bold text-[#1F2937] mb-3">
