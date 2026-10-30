@@ -113,7 +113,7 @@ public class QnaStreamService {
             switch (String.valueOf(event.event())) {
                 case "start" -> {
                     int cardIndex = reserveCardIndex(payload.getLectureId(), payload.getSectionIndex());
-                    String cardId = CardIdHelper.buildCardId("qna", payload.getLectureId(), payload.getSectionIndex(), cardIndex);
+                    String cardId = CardIds.build("qna", payload.getLectureId(), payload.getSectionIndex(), cardIndex);
                     cards.put(item, new Card(cardId, data.path("type").asText()));
                 }
                 case "question" -> {
@@ -191,9 +191,9 @@ public class QnaStreamService {
                         // 같은 질문·답변이 이미 있으면 새로 저장하지 않고 기존 카드를 완료 데이터로 사용
                         List<Qna> existing = qnaRepository.findByLectureIdAndSectionIndexOrderByIdAsc(
                                 payload.getLectureId(), payload.getSectionIndex());
-                        String signature = sig(question, answer);
+                        String signature = CardIds.signature(question, answer);
                         for (Qna qna : existing) {
-                            if (sig(qna.getQuestion(), qna.getAnswer()).equals(signature)) {
+                            if (CardIds.signature(qna.getQuestion(), qna.getAnswer()).equals(signature)) {
                                 return qna;
                             }
                         }
@@ -203,7 +203,7 @@ public class QnaStreamService {
                                 .summaryId(summaryId == null || summaryId == 0L ? null : summaryId)
                                 .sectionIndex(payload.getSectionIndex())
                                 .cardId(card.cardId)
-                                .type(resolveType(card.type))
+                                .type(Qna.Type.from(card.type))
                                 .question(question)
                                 .answer(answer)
                                 .build());
@@ -225,7 +225,8 @@ public class QnaStreamService {
         return redisLock.call(lockKey(lectureId, sectionIndex), () -> {
             List<Qna> existing = qnaRepository.findByLectureIdAndSectionIndexOrderByIdAsc(lectureId, sectionIndex);
             String reserved = redis.opsForValue().get(reservationKey);
-            int next = Math.max(nextCursor(existing), reserved == null ? 0 : Integer.parseInt(reserved));
+            int next = Math.max(CardIds.nextIndex(existing.stream().map(Qna::getCardId).toList()),
+                    reserved == null ? 0 : Integer.parseInt(reserved));
             redis.opsForValue().set(reservationKey, String.valueOf(next + 1), RESERVATION_TTL);
             return next;
         });
@@ -241,30 +242,5 @@ public class QnaStreamService {
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("invalid QnA stream event data", e);
         }
-    }
-
-    private Qna.Type resolveType(String raw) {
-        if (raw == null) {
-            return Qna.Type.CONCEPT;
-        }
-        return switch (raw.trim().toUpperCase()) {
-            case "APPLICATION", "응용" -> Qna.Type.APPLICATION;
-            case "ADVANCED", "심화" -> Qna.Type.ADVANCED;
-            case "COMPARISON", "비교" -> Qna.Type.COMPARISON;
-            case "CONCEPT", "개념" -> Qna.Type.CONCEPT;
-            default -> Qna.Type.CONCEPT;
-        };
-    }
-
-    private static String sig(String question, String answer) {
-        return (question == null ? "" : question.trim()) + "|" + (answer == null ? "" : answer.trim());
-    }
-
-    private static int nextCursor(List<Qna> existing) {
-        int maxIdx = existing.stream()
-                .mapToInt(q -> CardIdHelper.extractCardIndex(q.getCardId(), CardIdHelper.CARD_INDEX_OFFSET - 1))
-                .max()
-                .orElse(CardIdHelper.CARD_INDEX_OFFSET - 1);
-        return maxIdx + 1;
     }
 }

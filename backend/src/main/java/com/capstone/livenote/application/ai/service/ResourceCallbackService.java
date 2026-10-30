@@ -57,17 +57,17 @@ public class ResourceCallbackService {
         );
 
         Set<String> signature = new HashSet<>();
-        existing.forEach(r -> signature.add(sig(r.getTitle(), r.getUrl())));
+        existing.forEach(r -> signature.add(CardIds.signature(r.getTitle(), r.getUrl())));
 
-        int cursor = nextCursor(existing);
+        int cursor = CardIds.nextIndex(existing.stream().map(Resource::getCardId).toList());
 
         for (var item : dto.getResources()) {
-            String sig = sig(item.getTitle(), item.getUrl());
+            String sig = CardIds.signature(item.getTitle(), item.getUrl());
             if (signature.contains(sig)) {
                 log.debug("Skipping duplicate resource for lecture {} section {}: {}", dto.getLectureId(), dto.getSectionIndex(), item.getTitle());
                 continue;
             }
-            String cardId = CardIdHelper.buildCardId("resource", dto.getLectureId(), dto.getSectionIndex(), cursor++);
+            String cardId = CardIds.build("resource", dto.getLectureId(), dto.getSectionIndex(), cursor++);
             if (resourceRepository.existsByLectureIdAndSectionIndexAndCardId(dto.getLectureId(), dto.getSectionIndex(), cardId)) {
                 continue;
             }
@@ -120,17 +120,5 @@ public class ResourceCallbackService {
             return null;
         }
         return objectMapper.valueToTree(value);
-    }
-
-    private String sig(String title, String url) {
-        return (title == null ? "" : title.trim()) + "|" + (url == null ? "" : url.trim());
-    }
-
-    private int nextCursor(List<Resource> existing) {
-        int maxIdx = existing.stream()
-                .mapToInt(r -> CardIdHelper.extractCardIndex(r.getCardId(), CardIdHelper.CARD_INDEX_OFFSET - 1))
-                .max()
-                .orElse(CardIdHelper.CARD_INDEX_OFFSET - 1);
-        return maxIdx + 1;
     }
 }
