@@ -370,7 +370,7 @@ data: {"total":2,"duration_ms":5128}
 - 콜백: 각 QA가 생성되는 순서대로 `qnaList`에 1개씩 담아 여러 번 전송됩니다. 최종 전체 목록 콜백은 보내지 않습니다.
 
 ### 참고
-- 질문 유형은 `server/config.py`의 `QASettings.question_types`에서 설정 (기본: 개념/응용/심화)
+- 질문 유형 기본값은 `core/config.py`의 `QASettings.question_types` (CONCEPT, APPLICATION, COMPARISON, ADVANCED)
 - 생성되는 질문 수는 `qa_top_k` 설정으로 조정 가능 (기본: 3개)
 - RAG 검색에 사용되는 청크 수는 `RAGSettings.qa_retrieve_top_k`로 조정 (기본: 2개)
 - 비동기 처리로 여러 질문을 동시에 생성하므로 순차 생성보다 빠릅니다
@@ -453,12 +453,13 @@ POST /summary/generate
   "startSec": 150,
   "endSec": 180,
   "text": "요약된 내용이 여기에 들어갑니다.",
-  "phase": "FINAL"
+  "phase": "FINAL",
+  "status": "COMPLETED"
 }
 ```
 
 ### 주의 사항
-- `OPENAI_API_KEY` 미설정 시 500 오류
+- 공백을 뺀 전사가 10자 이하면 요약하지 않고 `{"status":"skipped","reason":"too_short"}`로 응답하며, 안내 문구를 `status: "TOO_SHORT"`로 콜백
 - `callback_url`이 없으면 400 오류
 - 긴 전사는 문자열로 보내는 것을 권장하나 문장 배열도 허용 (줄바꿈으로 합쳐 요약)
 - `start_sec`/`end_sec`를 생략하면 섹션 인덱스 기준 30초 단위로 기본값 설정
@@ -466,7 +467,7 @@ POST /summary/generate
 - 현재 콜백에서는 STOMP 푸시를 수행하지 않습니다 (백엔드 후처리 필요)
 
 ### 참고
-- OpenAI 모델/프롬프트/토큰 제한은 `server/config.py`의 `SummarySettings`로 조정 가능 (`SUMMARY_CALLBACK_URL` 환경변수도 지원)
+- 프롬프트·토큰 제한은 `core/config.py`의 `SummarySettings`로 조정 가능. 모델은 `LLM_SUMMARY_MODEL` 환경변수 (`SUMMARY_CALLBACK_URL` 환경변수도 지원)
 - 콜백 URL에는 `type=summary` 쿼리가 자동으로 추가되어 `/api/ai/callback?type=summary`와 호환됩니다
 
 ---
@@ -658,7 +659,8 @@ POST {callback_url}
 ### 주의 사항
  - `lecture_id`에 해당하는 컬렉션이 없으면 HTTP 404 오류 발생
  - `previous_summaries`의 `section_index`는 0 이상이어야 하며, 일반적으로 현재 `section_index`보다 작아야 합니다
- - Provider별 API 키가 없거나 할당량 초과 시 해당 Provider의 추천은 콜백 `resources`에 포함되지 않고 서버 로그에만 기록됩니다
+ - 할당량 초과 등으로 Provider 검색이 실패하면 해당 Provider의 추천은 콜백 `resources`에 포함되지 않고 서버 로그에만 기록됩니다. API 키가 비어 있으면 서버가 시작되지 않습니다
+ - LLM 검증 호출이 실패한 후보는 `resources`에서 빠집니다
  - 4개 Provider가 모두 실패한 경우에도 콜백이 0개 또는 `resources: []` 형태로 도착할 수 있습니다
  - exclude 배열에 너무 많은 항목이 있으면 추천 결과가 적어질 수 있습니다
  - `resource_types`에 존재하지 않는 Enum 값이 들어오면 HTTP 422
@@ -666,7 +668,7 @@ POST {callback_url}
 
 ### 참고
 - 4개 Provider(OpenAlex, Wiki, YouTube, 네이버 블로그)는 동시에 실행되며 콜백 도착 순서는 보장되지 않습니다
-- Provider별 `top_k`, `verify`, `min_score` 등은 `server/config.py`에서 조정 가능
+- 자료 종류별 `top_k`, `verify`, `min_score` 등은 `core/config.py`의 `RECSettings`(`paper`, `wiki`, `video`, `blog`)에서 조정 가능
 - RAG 검색에 사용되는 청크 수는 `RAGSettings.rec_retrieve_top_k`로 조정 (기본: 3개)
 
 ---

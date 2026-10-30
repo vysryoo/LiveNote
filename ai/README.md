@@ -43,12 +43,15 @@ LiveNote AI 게이트웨이는 다음과 같은 기능을 제공합니다.
 FastAPI (server/)
  ├─ RAG 라우터     → rag (분할: page | recursive | semantic, Chroma 저장)
  ├─ QA 라우터      → 강의 자료·이전 요약 검색 → qa 그래프 (질문 유형별 동시 생성, SSE)
- ├─ REC 라우터     → 강의 자료·이전 요약 검색 → 추천 그래프 (openalex / wiki / youtube / blog 동시 실행, 종류별 콜백)
- └─ Summary 라우터 → 요약 체인 (프롬프트 | 모델 | 문자열) → 콜백
+ ├─ REC 라우터     → 강의 자료·이전 요약 검색 → 추천 그래프 (논문 / 위키 / 영상 / 블로그 동시 실행, 종류별 콜백)
+ └─ Summary 라우터 → summary 서비스 (프롬프트 | 모델 | 문자열) → 콜백
 ```
 
-- **LLM 호출**: 모든 모듈이 `core/llm.py`(LangChain `ChatOpenAI`)를 거침. 용도별 모델·추론 강도는 환경변수로 지정하고, 호출마다 토큰 사용량을 JSON 로그로 남김
-- **그래프**: QnA(`qa/qakit/graph.py`)와 추천(`server/rec_graph.py`)은 LangGraph `Send`로 항목을 동시에 실행. 한 항목이 실패해도 나머지는 계속 진행
+- **설정**: `core/config.py`의 설정 클래스 하나가 서버 시작 시 환경변수와 `ai/.env`를 한 번 읽음. 같은 키는 환경변수가 우선
+- **LLM 호출**: 모든 모듈이 `core/llm.py`(LangChain `ChatOpenAI`)를 거침. 용도별 모델·추론 강도는 설정으로 지정하고, 호출마다 토큰 사용량을 JSON 로그로 남김. JSON 응답은 구조화 출력(`complete_json`)으로 받음
+- **그래프**: QnA(`qa/graph.py`)와 추천(`recommend/graph.py`)은 LangGraph `Send`로 항목을 동시에 실행. 한 항목이 실패해도 나머지는 계속 진행
+- **추천 공통 흐름**: `recommend/pipeline.py`가 검색어 생성 → 후보 검색 → 점수(LLM 검증 또는 휴리스틱) → `min_score`·`top_k`를 맡고, 자료 종류별 공급자(`recommend/providers/`)는 검색 API·프롬프트·휴리스틱만 구현. LLM 검증이 실패한 후보는 결과에서 뺌
+- **외부 API**: 검색 API 클라이언트는 상주 연결을 쓰고, 429·503 응답은 `core/http.py`가 기다렸다가 최대 3번 다시 시도
 - **강의 자료 분할**: 기본 `semantic`(이웃 문장 임베딩 거리가 크게 벌어지는 곳에서 자르고 문장 1개를 겹침). `RAG_CHUNK_STRATEGY`로 변경
 - **검색**: 강의 자료 조각과 이전 섹션 요약을 따로 검색해 합침. 직전 3개 섹션 요약은 백엔드가 직접 보내므로 검색에서 제외
 - **QnA 출제 범위**: 강의 자료에는 아직 설명하지 않은 내용도 있어, 현재 섹션에서 말한 내용만 근거로 출제하도록 제한
@@ -61,14 +64,12 @@ FastAPI (server/)
 
 | 경로 | 설명 |
 |------|------|
-| `server/` | FastAPI 앱, 라우터, 설정, 추천 그래프 |
-| `core/` | 공통 LLM 계층, 공통 모델, 백그라운드 작업, 시간 기록 |
+| `server/` | FastAPI 앱, 라우터, 서비스 주입(`Services`), 내부 인증, 콜백 전송 |
+| `core/` | 설정, LLM 호출, 외부 API 재시도, 로깅, 공용 모델, 백그라운드 작업, 시간 기록 |
 | `rag/` | 강의 자료 분할·저장·검색 |
-| `qa/` | QnA 프롬프트와 생성 그래프 |
-| `openalex/` | 논문 추천 |
-| `wiki/` | 위키백과 추천 |
-| `youtube/` | 유튜브 추천 |
-| `blog/` | 블로그 추천 (네이버 블로그 검색) |
+| `qa/` | QnA 프롬프트, 생성 그래프, 스트림 파서 |
+| `recommend/` | 자료 추천 공통 흐름, 추천 그래프, 공급자(`providers/`: 논문 OpenAlex, 위키백과, 영상 YouTube, 블로그 네이버) |
+| `summary/` | 섹션 요약 |
 | `eval/` | 정확도(Precision@k)·응답 시간·전사 오류율 측정 도구와 보고서(`eval/results/`) |
 | `tests/` | 단위·통합 테스트 (외부 API 호출 없음) |
 | `setup.sh` | 환경 구축 스크립트 (`uv sync`, `.env` 준비) |
@@ -125,11 +126,12 @@ YOUTUBE_API_KEY="AIzaSy...." # Google Cloud Console에서 YouTube Data API v3 �
 NAVER_CLIENT_ID="..." # 네이버 클라우드 콘솔의 NAVER API HUB에서 블로그 검색 Application 등록 후 인증 정보 확인
 NAVER_CLIENT_SECRET="..."
 WIKIKIT_USER_AGENT="WikiKit/1.0 (+https://example.com; contact: you@example.com)"
-ANONYMIZED_TELEMETRY="False"
-CHROMA_TELEMETRY_ENABLED="False"
-RAG_PERSIST_DIR="server_storage/chroma_data_real" #chroma db 위치 지정
+RAG_PERSIST_DIR="server_storage/chroma_data_real" #chroma db 위치 지정. 상대 경로는 ai/ 기준
 INTERNAL_API_KEY="..." # 백엔드 env.properties와 같은 값. /health를 제외한 모든 API와 콜백이 X-Internal-Api-Key 헤더로 이 값을 확인하며, 비어 있으면 모든 요청을 거부
 ```
+
+- `OPENAI_API_KEY`, `INTERNAL_API_KEY`, `YOUTUBE_API_KEY`, `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET` 중 하나라도 비어 있으면 서버가 시작 단계에서 멈춤
+- 같은 이름의 셸 환경변수가 있으면 `.env` 값보다 우선함
 
 선택 설정 (없으면 기본값 사용):
 
@@ -143,6 +145,10 @@ INTERNAL_API_KEY="..." # 백엔드 env.properties와 같은 값. /health를 제�
 | `RAG_SEMANTIC_PERCENTILE` | 95 | `semantic` 경계 기준 백분위수. 높을수록 경계가 적음 |
 | `RAG_SEMANTIC_OVERLAP_SENTENCES` | 1 | `semantic` 조각 앞에 붙이는 이전 조각 문장 수 |
 | `RAG_SEMANTIC_MIN_TOKENS` / `RAG_SEMANTIC_MAX_TOKENS` | 40 / 200 | `semantic` 조각 최소·최대 토큰 |
+| `RAG_UPLOAD_DIR` | `server_storage/uploads` | 업로드한 PDF 저장 위치 (상대 경로는 `ai/` 기준) |
+| `RAG_EMBEDDING_MODEL` | `text-embedding-3-large` | 임베딩 모델 |
+| `RAG_OPENAI_API_KEY` | - | 임베딩에만 다른 OpenAI 키를 쓸 때 |
+| `SUMMARY_CALLBACK_URL` | - | 요약 요청에 콜백 URL이 없을 때 쓸 기본값 |
 
 ---
 
@@ -455,13 +461,14 @@ POST /summary/generate
   "startSec": 150,
   "endSec": 180,
   "text": "요약된 내용이 여기에 들어갑니다.",
-  "phase": "FINAL"
+  "phase": "FINAL",
+  "status": "COMPLETED"
 }
 ```
 
 #### 주의 사항
 
-- `OPENAI_API_KEY` 미설정 시 500 오류
+- 공백을 뺀 전사가 10자 이하면 요약하지 않고 `{"status":"skipped","reason":"too_short"}`로 응답하며, 안내 문구를 `status: "TOO_SHORT"`로 콜백함
 - `callback_url`이 없으면 400 오류
 - 콜백 URL에는 `type=summary` 쿼리가 자동 추가됨
 
@@ -502,7 +509,7 @@ uv run pytest
 
 - QA·REC 검색 대상 컬렉션이 없으면 오류 대신 빈 검색 결과로 처리하고 섹션 요약만으로 생성함. 컬렉션은 첫 확정 요약을 업서트할 때 생김
 
-- 서버는 시작할 때 `ai/.env`를 읽고 같은 이름의 셸 환경변수를 덮어씀. 저장 경로(`RAG_PERSIST_DIR`) 등을 바꾸려면 `.env` 값을 고쳐야 함
+- 서버는 시작할 때 셸 환경변수와 `ai/.env`를 읽고, 같은 키는 셸 환경변수가 우선함. 측정 등에서 저장 경로(`RAG_PERSIST_DIR`)만 바꿀 때는 셸에서 지정하면 됨
 
 ---
 
