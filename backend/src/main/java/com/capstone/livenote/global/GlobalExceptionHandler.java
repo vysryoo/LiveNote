@@ -3,6 +3,7 @@ package com.capstone.livenote.global;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
@@ -32,6 +33,12 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> err(Exception e){
+        // 지원하지 않는 메서드, 빠진 파라미터 등 요청 형식 오류는 Spring이 정한 상태 코드(405, 400 등)로 응답
+        if (e instanceof ErrorResponse errorResponse) {
+            String detail = errorResponse.getBody().getDetail();
+            return ResponseEntity.status(errorResponse.getStatusCode())
+                    .body(ApiResponse.fail(detail != null ? detail : errorResponse.getStatusCode().toString()));
+        }
         return ResponseEntity.status(500).body(ApiResponse.fail("server error"));
     }
 }

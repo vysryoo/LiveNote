@@ -3,6 +3,8 @@ package com.capstone.livenote.global;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -16,6 +18,14 @@ class GlobalExceptionHandlerTest {
         var response = handler.noResource(new NoResourceFoundException(HttpMethod.GET, "api/qna"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void requestErrors_keepFrameworkStatus() {
+        assertThat(handler.err(new HttpRequestMethodNotSupportedException("GET")).getStatusCode())
+                .isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+        assertThat(handler.err(new MissingServletRequestParameterException("lectureId", "Long")).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Test
