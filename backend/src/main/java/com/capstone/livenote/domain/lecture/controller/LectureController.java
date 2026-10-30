@@ -15,8 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 
 import org.springframework.http.MediaType;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,30 +37,17 @@ public class LectureController {
     private final LectureService lectureService;
     private final RagClient ragClient;
 
-    private Long currentUserId(){
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "not authenticated");
-        }
-        
-        String userIdStr = authentication.getName();
-        try {
-            return Long.parseLong(userIdStr);
-        } catch (NumberFormatException e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "invalid user id");
-        }
-    }
-
     // 강의 조회
     @Operation(summary = "현재 사용자의 강의 목록을 최신순으로 페이지 단위 조회")
     @GetMapping
     public ApiResponse<LecturePageDto> list(
+            @AuthenticationPrincipal Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
         // 한 번에 너무 많이 요청하지 못하도록 페이지 크기를 제한
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
-        var result = lectureService.list(currentUserId(), PageRequest.of(Math.max(page, 0), safeSize));
+        var result = lectureService.list(userId, PageRequest.of(Math.max(page, 0), safeSize));
         var items = result.stream().map(LectureResponseDto::from).toList();
         return ApiResponse.ok(new LecturePageDto(items, result.getTotalElements(), result.hasNext()));
     }
@@ -69,8 +55,9 @@ public class LectureController {
     // 강의 상세 정보 조회 (transcripts, summaries, resources, qna, bookmarks 포함)
     @Operation(summary = "강의의 모든 상세 정보 조회 (transcripts, summaries, resources, qna, bookmarks 포함)")
     @GetMapping("/{lectureId}/detail")
-    public ApiResponse<SessionDetailResponse> getDetail(@PathVariable Long lectureId){
-        lectureService.getOwned(lectureId, currentUserId());
+    public ApiResponse<SessionDetailResponse> getDetail(@AuthenticationPrincipal Long userId,
+                                                        @PathVariable Long lectureId){
+        lectureService.getOwned(lectureId, userId);
         var detail = lectureService.getSessionDetail(lectureId);
         return ApiResponse.ok(detail);
     }
@@ -78,14 +65,16 @@ public class LectureController {
     // 강의 생성
     @Operation(summary = "새로운 강의를 생성")
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ApiResponse<LectureResponseDto> create(@RequestBody CreateLectureRequestDto req){
-        var l = lectureService.create(currentUserId(), req);
+    public ApiResponse<LectureResponseDto> create(@AuthenticationPrincipal Long userId,
+                                                  @RequestBody CreateLectureRequestDto req){
+        var l = lectureService.create(userId, req);
         return ApiResponse.ok(LectureResponseDto.from(l));
     }
 
     @Operation(summary = "새로운 강의를 생성 (PDF 업로드 포함)")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<LectureResponseDto> createWithPdf(
+            @AuthenticationPrincipal Long userId,
             @RequestPart("title") String title,
             @RequestPart("subject") String subject,
             @RequestPart("sttLanguage") String sttLanguage,
@@ -104,7 +93,7 @@ public class LectureController {
         }
 
         var req = new CreateLectureRequestDto(title, subject, sttLanguage);
-        var lecture = lectureService.create(currentUserId(), req);
+        var lecture = lectureService.create(userId, req);
 
         // RAG 업서트 수행
         String collectionId = ragClient.upsertPdf(lecture.getId(), pdf, null);
@@ -118,18 +107,19 @@ public class LectureController {
     @Operation(summary = "녹음을 종료하고 강의 상태를 완료로 변경")
     @PostMapping("/{lectureId}/end")
     public ApiResponse<LectureResponseDto> endLecture(
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long lectureId,
             @RequestBody(required = false) EndLectureRequest request
     ) {
-        lectureService.getOwned(lectureId, currentUserId());
+        lectureService.getOwned(lectureId, userId);
         var lecture = lectureService.endLecture(lectureId, request == null ? null : request.title());
         return ApiResponse.ok(LectureResponseDto.from(lecture));
     }
 
     @Operation(summary = "특정 강의와 관련 데이터를 삭제")
     @DeleteMapping("/{lectureId}")
-    public ApiResponse<Void> delete(@PathVariable Long lectureId){
-        lectureService.getOwned(lectureId, currentUserId());
+    public ApiResponse<Void> delete(@AuthenticationPrincipal Long userId, @PathVariable Long lectureId){
+        lectureService.getOwned(lectureId, userId);
         lectureService.delete(lectureId);
         return ApiResponse.ok();
     }
@@ -137,10 +127,11 @@ public class LectureController {
     @Operation(summary = "강의 제목 수정")
     @PatchMapping("/{lectureId}/title")
     public ApiResponse<LectureResponseDto> updateTitle(
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long lectureId,
             @RequestBody UpdateLectureTitleRequest req
     ) {
-        lectureService.getOwned(lectureId, currentUserId());
+        lectureService.getOwned(lectureId, userId);
         var updated = lectureService.updateLectureTitle(lectureId, req.getTitle());
         return ApiResponse.ok(LectureResponseDto.from(updated));
     }

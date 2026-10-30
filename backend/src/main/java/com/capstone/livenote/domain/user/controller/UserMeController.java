@@ -6,8 +6,7 @@ import com.capstone.livenote.domain.user.service.UserService;
 import com.capstone.livenote.global.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,20 +26,7 @@ public class UserMeController {
     private final UserService userService;
 
     @GetMapping("/me")
-    public ApiResponse<?> me() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "not authenticated");
-        }
-        
-        String userIdStr = authentication.getName();
-        Long userId;
-        try {
-            userId = Long.parseLong(userIdStr);
-        } catch (NumberFormatException e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "invalid user id");
-        }
-
+    public ApiResponse<?> me(@AuthenticationPrincipal Long userId) {
         User user = userService.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "user not found"));
 
@@ -54,22 +40,14 @@ public class UserMeController {
     }
 
     @PatchMapping("/me/language")
-    public ApiResponse<UserViewDto> setLanguage(@RequestBody SetLanguageRequest req) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "not authenticated");
-        }
-        Long userId = Long.parseLong(authentication.getName());
+    public ApiResponse<UserViewDto> setLanguage(@AuthenticationPrincipal Long userId,
+                                                @RequestBody SetLanguageRequest req) {
         return ApiResponse.ok(userService.setLanguage(userId, req.getLanguage()));
     }
 
     @PatchMapping("/me/password")
-    public ApiResponse<UserViewDto> setPassword(@RequestBody SetPasswordRequest req) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "not authenticated");
-        }
-        Long userId = Long.parseLong(authentication.getName());
+    public ApiResponse<UserViewDto> setPassword(@AuthenticationPrincipal Long userId,
+                                                @RequestBody SetPasswordRequest req) {
         return ApiResponse.ok(userService.changePassword(userId, req.getCurrentPassword(), req.getNewPassword()));
     }
 }
