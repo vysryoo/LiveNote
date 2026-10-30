@@ -23,6 +23,7 @@ from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
 
+from ..context import previous_text, rag_text
 from ..models import LLMScore, RecContext, Recommendation, Score, one_line
 from ..pipeline import Provider
 
@@ -47,8 +48,10 @@ Settings:
 - Video language preference: {yt_lang}
 
 Additional context (reference only):
-- Previous: {previous_summaries}
-- RAG: {rag_context}
+Previous sections:
+{previous_summaries}
+Lecture materials:
+{rag_context}
 
 Return JSON:
 {{
@@ -255,8 +258,8 @@ class VideoProvider(Provider[VideoCandidate]):
             lecture_summary=context.summary,
             query_language=self.yt_lang or self.language or "en",
             yt_lang=self.yt_lang,
-            previous_summaries=[s.model_dump() for s in context.previous_summaries],
-            rag_context=[c.model_dump() for c in context.rag_chunks],
+            previous_summaries=previous_text(context),
+            rag_context=rag_text(context),
         )
         result = await llm.complete_json(ModelPurpose.QUERY, [("user", prompt)], VideoQueries, max_tokens=MAX_TOKENS_QUERY)
         queries = list(dict.fromkeys(q.strip() for q in result.queries if q.strip()))[:QUERY_MAX]

@@ -51,7 +51,7 @@
       "messages": [
         [
           "user",
-          "Extract 2-3 Wikipedia search keywords from this lecture summary and related context.\n\nLecture Summary:\n스택은 마지막에 넣은 원소를 먼저 꺼내는 LIFO 자료구조이고, 큐와 비교해 설명함\n\nRecent Sections:\n[2] 연결 리스트의 노드와 포인터 구조\n[3] 연결 리스트 삽입과 삭제의 시간 복잡도\n\nRAG Context:\n스택(Stack): push, pop 연산. 함수 호출 스택 예시 (score≈0.71)\n큐(Queue): enqueue, dequeue. 프린터 대기열 예시 (score≈0.64)\n\nRules:\n- Use en terms (en → English, ko → 한국어)\n- Return keywords in en\n- Focus on core concepts and technical terms.\n- Focus on Lecture Summary. Rag Context, Recent Sections are just for reference only\n- Keep keywords simple and searchable\n\nOutput (JSON only):\n{\n  \"keywords\": [\"keyword1\", \"keyword2\"]\n}\n"
+          "Extract 2-3 Wikipedia search keywords from this lecture summary and related context.\n\nLecture Summary:\n스택은 마지막에 넣은 원소를 먼저 꺼내는 LIFO 자료구조이고, 큐와 비교해 설명함\n\nRecent Sections:\nSection 1: 자료구조 수업 소개와 배열 복습\nSection 2: 연결 리스트의 노드와 포인터 구조\nSection 3: 연결 리스트 삽입과 삭제의 시간 복잡도\n\nRAG Context:\n- 스택(Stack): push, pop 연산. 함수 호출 스택 예시\n- 큐(Queue): enqueue, dequeue. 프린터 대기열 예시\n- 섹션 1 요약: 자료구조 수업 소개\n\nRules:\n- Use en terms (en → English, ko → 한국어)\n- Return keywords in en\n- Focus on core concepts and technical terms.\n- Focus on Lecture Summary. Rag Context, Recent Sections are just for reference only\n- Keep keywords simple and searchable\n\nOutput (JSON only):\n{\n  \"keywords\": [\"keyword1\", \"keyword2\"]\n}\n"
         ]
       ],
       "purpose": "query"

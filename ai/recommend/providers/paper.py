@@ -18,6 +18,7 @@ from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
 
+from ..context import previous_text, rag_text
 from ..models import LLMScore, RecContext, Recommendation, Score
 from ..pipeline import Provider
 
@@ -171,9 +172,9 @@ class PaperProvider(Provider[Dict[str, Any]]):
         self.api = api or OpenAlexClient()
 
     async def build_queries(self, context: RecContext) -> List[str]:
-        prev_text = "\n".join(f"섹션 {ps.section_id}: {ps.summary}" for ps in context.previous_summaries) or "(없음)"
-        rag_text = "\n".join(f"[{rc.score:.2f}] {rc.text[:100]}..." for rc in context.rag_chunks[:3]) or "(없음)"
-        prompt = QUERY_PROMPT.format(section_summary=context.summary, previous_summaries=prev_text, rag_context=rag_text)
+        prompt = QUERY_PROMPT.format(
+            section_summary=context.summary, previous_summaries=previous_text(context), rag_context=rag_text(context)
+        )
         try:
             query = await llm.complete_json(ModelPurpose.QUERY, [("user", prompt)], PaperQuery, max_tokens=MAX_TOKENS_QUERY)
         except Exception:

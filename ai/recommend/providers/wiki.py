@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from textwrap import shorten
 from typing import Any, Dict, List, Optional, Sequence
 
 import httpx
@@ -20,6 +19,7 @@ from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
 
+from ..context import previous_text, rag_text
 from ..models import LLMScore, RecContext, Recommendation, Score, one_line
 from ..pipeline import Provider
 
@@ -216,8 +216,8 @@ class WikiProvider(Provider[Dict[str, Any]]):
         prompt = KEYWORD_PROMPT.format(
             lecture_summary=context.summary,
             search_language=self.wiki_lang,
-            previous_summaries=_previous_text(context),
-            rag_context=_rag_text(context),
+            previous_summaries=previous_text(context),
+            rag_context=rag_text(context),
         )
         try:
             result = await llm.complete_json(ModelPurpose.QUERY, [("user", prompt)], WikiKeywords, max_tokens=MAX_TOKENS_QUERY)
@@ -303,16 +303,6 @@ class WikiProvider(Provider[Dict[str, Any]]):
             reason=one_line(score.reason),
             detail=detail,
         )
-
-
-def _previous_text(context: RecContext) -> str:
-    lines = [f"[{ps.section_id}] " + shorten(ps.summary, width=120, placeholder="…") for ps in context.previous_summaries[-2:]]
-    return "\n".join(lines) or "None"
-
-
-def _rag_text(context: RecContext) -> str:
-    lines = [f"{shorten(c.text, width=120, placeholder='…')} (score≈{c.score:.2f})" for c in context.rag_chunks[:2] if c.text]
-    return "\n".join(lines) or "None"
 
 
 def _deduplicate(pages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

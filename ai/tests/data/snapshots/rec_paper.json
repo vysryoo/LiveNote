@@ -20,7 +20,7 @@
       "messages": [
         [
           "user",
-          "You are to produce terse technical search tokens for OpenAlex.\n\nCurrent section summary:\n스택은 마지막에 넣은 원소를 먼저 꺼내는 LIFO 자료구조이고, 큐와 비교해 설명함\n\nPrevious sections context:\n섹션 1: 자료구조 수업 소개와 배열 복습\n섹션 2: 연결 리스트의 노드와 포인터 구조\n섹션 3: 연결 리스트 삽입과 삭제의 시간 복잡도\n\nRAG context:\n[0.71] 스택(Stack): push, pop 연산. 함수 호출 스택 예시...\n[0.64] 큐(Queue): enqueue, dequeue. 프린터 대기열 예시...\n[0.52] 섹션 1 요약: 자료구조 수업 소개...\n\nReturn a JSON with 2~3 technical English tokens suitable for academic paper search:\n{\n  \"tokens\": [\"term1\", \"term2\", ...]\n}\n\nRules:\n- Extract core concepts and technical terms from all provided context\n- Use precise academic terminology\n- Expand abbreviations where needed\n- Include field-specific keywords\n- Keep it concise (2-3 tokens max)\n"
+          "You are to produce terse technical search tokens for OpenAlex.\n\nCurrent section summary:\n스택은 마지막에 넣은 원소를 먼저 꺼내는 LIFO 자료구조이고, 큐와 비교해 설명함\n\nPrevious sections context:\nSection 1: 자료구조 수업 소개와 배열 복습\nSection 2: 연결 리스트의 노드와 포인터 구조\nSection 3: 연결 리스트 삽입과 삭제의 시간 복잡도\n\nRAG context:\n- 스택(Stack): push, pop 연산. 함수 호출 스택 예시\n- 큐(Queue): enqueue, dequeue. 프린터 대기열 예시\n- 섹션 1 요약: 자료구조 수업 소개\n\nReturn a JSON with 2~3 technical English tokens suitable for academic paper search:\n{\n  \"tokens\": [\"term1\", \"term2\", ...]\n}\n\nRules:\n- Extract core concepts and technical terms from all provided context\n- Use precise academic terminology\n- Expand abbreviations where needed\n- Include field-specific keywords\n- Keep it concise (2-3 tokens max)\n"
         ]
       ],
       "purpose": "query"

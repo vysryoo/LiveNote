@@ -47,7 +47,7 @@
       "messages": [
         [
           "user",
-          "You are an expert search query generator for academic content.\n\nGenerate 1 specific search queries in ko for the given lecture topic.\n\n**Guidelines:**\n- Use short technical phrases (2-4 words). Naver blog search returns few results for long queries\n- Include specific concepts, technologies, or methodologies\n- Create queries optimized for Google search to find high-quality results\n- Return ONLY the queries, one per line\n\n**Lecture Summary:**\n스택은 마지막에 넣은 원소를 먼저 꺼내는 LIFO 자료구조이고, 큐와 비교해 설명함\n\n**Previous Context:**\nSection 1: 자료구조 수업 소개와 배열 복습\nSection 2: 연결 리스트의 노드와 포인터 구조\nSection 3: 연결 리스트 삽입과 삭제의 시간 복잡도\n\n**Related Materials:**\n스택(Stack): push, pop 연산. 함수 호출 스택 예시\n큐(Queue): enqueue, dequeue. 프린터 대기열 예시\n섹션 1 요약: 자료구조 수업 소개\n\n\n**Search Queries:**"
+          "You are an expert search query generator for academic content.\n\nGenerate 1 specific search queries in ko for the given lecture topic.\n\n**Guidelines:**\n- Use short technical phrases (2-4 words). Naver blog search returns few results for long queries\n- Include specific concepts, technologies, or methodologies\n- Create queries optimized for Google search to find high-quality results\n- Return ONLY the queries, one per line\n\n**Lecture Summary:**\n스택은 마지막에 넣은 원소를 먼저 꺼내는 LIFO 자료구조이고, 큐와 비교해 설명함\n\n**Previous Context:**\nSection 1: 자료구조 수업 소개와 배열 복습\nSection 2: 연결 리스트의 노드와 포인터 구조\nSection 3: 연결 리스트 삽입과 삭제의 시간 복잡도\n\n**Related Materials:**\n- 스택(Stack): push, pop 연산. 함수 호출 스택 예시\n- 큐(Queue): enqueue, dequeue. 프린터 대기열 예시\n- 섹션 1 요약: 자료구조 수업 소개\n\n\n**Search Queries:**"
         ]
       ],
       "purpose": "query"

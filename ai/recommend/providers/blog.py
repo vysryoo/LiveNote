@@ -23,6 +23,7 @@ from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
 
+from ..context import previous_text, rag_text
 from ..models import LLMScore, RecContext, Recommendation, Score, one_line
 from ..pipeline import Provider
 
@@ -175,8 +176,7 @@ class BlogProvider(Provider[Dict[str, Any]]):
         context_text = ""
         if context.previous_summaries or context.rag_chunks:
             context_text = KEYWORD_CONTEXT_TEMPLATE.format(
-                previous_summaries="\n".join(f"Section {s.section_id}: {s.summary}" for s in context.previous_summaries[:3]) or "None",
-                rag_context="\n".join(c.text[:200] for c in context.rag_chunks[:3]) or "None",
+                previous_summaries=previous_text(context), rag_context=rag_text(context)
             )
         prompt = KEYWORD_PROMPT.format(
             keyword_min=KEYWORD_MIN,
