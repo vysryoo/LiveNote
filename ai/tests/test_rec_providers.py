@@ -10,10 +10,14 @@ from typing import Any, Callable, Dict, List
 
 import pytest
 
+from core.config import BlogSettings, PaperSettings, VideoSettings, WikiSettings
 from core.llm import ModelPurpose
 from core.schemas import PreviousSummary, RAGChunk, ResourceType
 from recommend.models import RecContext
 from recommend.pipeline import recommend
+from recommend.providers.blog import BlogPost
+from recommend.providers.paper import Paper
+from recommend.providers.wiki import WikiPage, WikiSearchHit
 from tests.snapshots import assert_snapshot
 
 pytestmark = pytest.mark.anyio("asyncio")
@@ -90,9 +94,9 @@ class FakeOpenAlexApi:
     def __init__(self) -> None:
         self.calls: List[Dict[str, Any]] = []
 
-    async def search_papers(self, query, exclude_ids=None, sort_by="relevance"):
-        self.calls.append({"query": query, "exclude_ids": exclude_ids, "sort_by": sort_by})
-        return [dict(paper) for paper in PAPERS]
+    async def search_papers(self, tokens, year_from, exclude_ids=None, sort_by="relevance"):
+        self.calls.append({"tokens": tokens, "year_from": year_from, "exclude_ids": exclude_ids, "sort_by": sort_by})
+        return [Paper(**paper) for paper in PAPERS]
 
 
 def paper_llm(prompt: str) -> str:
@@ -114,7 +118,9 @@ async def test_paper_provider(monkeypatch):
 
     llm = install_llm(monkeypatch, paper_llm)
     api = FakeOpenAlexApi()
-    provider = PaperProvider(top_k=3, verify=True, min_score=5.0, language="ko", year_from=1960, sort_by="hybrid", api=api)
+    provider = PaperProvider(
+        PaperSettings(top_k=3, verify=True, min_score=5.0, language="ko", year_from=1960, sort_by="hybrid"), api=api
+    )
 
     results = await run(provider, context(ResourceType.PAPER, ["W9"]))
 
@@ -150,18 +156,21 @@ class FakeWikiApi:
 
     async def search_pages(self, keyword, lang="en", limit=6):
         self.calls.append(["search", keyword, lang, limit])
-        return [dict(page) for page in WIKI_SEARCH.get((keyword, lang), [])]
+        return [
+            WikiSearchHit(page_id=hit["pageid"], title=hit["title"], snippet=hit["snippet"])
+            for hit in WIKI_SEARCH.get((keyword, lang), [])
+        ]
 
     async def get_page_extract(self, page_id, lang="en"):
         self.calls.append(["extract", page_id, lang])
         page = WIKI_PAGES[page_id]
-        return {
-            "title": page["title"],
-            "extract": page["extract"],
-            "url": f"https://{lang}.wikipedia.org/?curid={page_id}",
-            "pageid": page_id,
-            "disambiguation": page.get("disambiguation", False),
-        }
+        return WikiPage(
+            page_id=page_id,
+            title=page["title"],
+            extract=page["extract"],
+            url=f"https://{lang}.wikipedia.org/?curid={page_id}",
+            disambiguation=page.get("disambiguation", False),
+        )
 
 
 def wiki_llm(prompt: str) -> str:
@@ -183,7 +192,10 @@ async def test_wiki_provider(monkeypatch, verify):
     llm = install_llm(monkeypatch, wiki_llm)
     api = FakeWikiApi()
     provider = WikiProvider(
-        top_k=3 if verify else 2, verify=verify, min_score=5.0, language="ko", wiki_lang="en", fallback_to_ko=True, api=api
+        WikiSettings(
+            top_k=3 if verify else 2, verify=verify, min_score=5.0, language="ko", search_lang="en", fallback_to_other_lang=True
+        ),
+        api=api,
     )
 
     results = await run(provider, context(ResourceType.WIKI, ["Queue (abstract data type)"]))
@@ -263,7 +275,7 @@ async def test_video_provider(monkeypatch):
 
     llm = install_llm(monkeypatch, video_llm)
     api = FakeYouTubeApi()
-    provider = VideoProvider(top_k=2, verify=True, min_score=7.0, language="ko", yt_lang="en", api=api)
+    provider = VideoProvider(VideoSettings(top_k=2, verify=True, min_score=7.0, language="ko", search_lang="en"), api=api)
 
     results = await run(provider, context(ResourceType.VIDEO, ["Stack vs Queue | CS101"]))
 
@@ -277,11 +289,11 @@ async def test_video_provider(monkeypatch):
 # 블로그
 
 BLOG_RESULTS = [
-    {"title": "스택과 큐 차이 정리", "link": "https://blog.naver.com/a/1", "snippet": "스택 큐 차이를 예제로", "displayLink": "a"},
-    {"title": "스택과 큐 차이 정리 (복사)", "link": "https://www.blog.naver.com/a/1", "snippet": "중복 글", "displayLink": "a"},
-    {"title": "자료구조 일기", "link": "https://blog.naver.com/b/2", "snippet": "오늘 공부함", "displayLink": "b"},
-    {"title": "이미 본 글", "link": "https://blog.naver.com/c/3", "snippet": "스택", "displayLink": "c"},
-    {"title": "큐 구현하기", "link": "https://blog.naver.com/d/4", "snippet": "큐 구현", "displayLink": "d"},
+    BlogPost(title="스택과 큐 차이 정리", url="https://blog.naver.com/a/1", snippet="스택 큐 차이를 예제로", blogger="a"),
+    BlogPost(title="스택과 큐 차이 정리 (복사)", url="https://www.blog.naver.com/a/1", snippet="중복 글", blogger="a"),
+    BlogPost(title="자료구조 일기", url="https://blog.naver.com/b/2", snippet="오늘 공부함", blogger="b"),
+    BlogPost(title="이미 본 글", url="https://blog.naver.com/c/3", snippet="스택", blogger="c"),
+    BlogPost(title="큐 구현하기", url="https://blog.naver.com/d/4", snippet="큐 구현", blogger="d"),
 ]
 
 
@@ -289,9 +301,9 @@ class FakeNaverApi:
     def __init__(self) -> None:
         self.calls: List[Any] = []
 
-    async def search(self, query, lang="ko", num=10):
-        self.calls.append([query, lang, num])
-        return [dict(result) for result in BLOG_RESULTS] if query == "스택 큐 차이" else []
+    async def search(self, query, num=10):
+        self.calls.append([query, num])
+        return list(BLOG_RESULTS) if query == "스택 큐 차이" else []
 
 
 def blog_llm(prompt: str) -> str:
@@ -311,7 +323,7 @@ async def test_blog_provider(monkeypatch):
 
     llm = install_llm(monkeypatch, blog_llm)
     api = FakeNaverApi()
-    provider = BlogProvider(top_k=2, verify=True, min_score=3.0, language="ko", search_lang="ko", api=api)
+    provider = BlogProvider(BlogSettings(top_k=2, verify=True, min_score=3.0, language="ko", search_lang="ko"), api=api)
 
     results = await run(provider, context(ResourceType.BLOG, ["https://blog.naver.com/c/3"]))
 

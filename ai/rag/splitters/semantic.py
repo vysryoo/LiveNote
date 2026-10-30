@@ -16,7 +16,6 @@ from dataclasses import dataclass
 from typing import List, Sequence
 
 import numpy as np
-from langchain_text_splitters import TextSplitter
 
 from .base import Chunk, ChunkSettings, PageText, count_tokens, normalize
 
@@ -166,76 +165,40 @@ def fit_sizes(groups: List[List[int]], tokens: Sequence[int], min_tokens: int, m
     return fitted
 
 
-class SemanticSplitter(TextSplitter):
-    """이웃 문장 묶음의 임베딩 거리로 주제 전환 지점을 찾아 자르는 분할기."""
-
-    def __init__(self, embeddings, settings: ChunkSettings, **kwargs) -> None:
-        """분할기를 만든다.
-
-        Args:
-            embeddings: LangChain Embeddings (embed_documents 제공)
-            settings: semantic_* 기준값
-            **kwargs: TextSplitter 기본 인자
-        """
-        super().__init__(**kwargs)
-        self._embeddings = embeddings
-        self._settings = settings
-
-    def split_text(self, text: str) -> List[str]:
-        """텍스트 하나를 조각 텍스트 목록으로 나눈다.
-
-        Args:
-            text: 원문
-        Returns:
-            조각 텍스트 목록
-        """
-        return [chunk.text for chunk in self.split_pages([PageText(page=0, text=text)])]
-
-    def split_pages(self, pages: Sequence[PageText]) -> List[Chunk]:
-        """쪽 원문 목록을 조각으로 나누고 쪽 범위를 기록한다.
-
-        Args:
-            pages: 쪽 원문 목록
-        Returns:
-            조각 목록
-        """
-        sentences = split_sentences(pages)
-        if not sentences:
-            return []
-        texts = [s.text for s in sentences]
-        windows = [" ".join(texts[max(i - 1, 0):i + 2]) for i in range(len(texts))]
-        vectors = self._embeddings.embed_documents(windows) if len(windows) > 1 else []
-        cuts = breakpoints(cosine_distances(vectors), self._settings.semantic_percentile) if vectors else []
-        groups = fit_sizes(
-            group_by_breakpoints(len(sentences), cuts),
-            [count_tokens(t) for t in texts],
-            self._settings.semantic_min_tokens,
-            self._settings.semantic_max_tokens,
-        )
-        overlap = self._settings.semantic_overlap_sentences
-        chunks: List[Chunk] = []
-        for number, group in enumerate(groups):
-            prefix = []
-            if overlap and number > 0:
-                prefix = groups[number - 1][-overlap:]
-            body = " ".join(texts[i] for i in prefix + group)
-            chunks.append(Chunk(
-                text=body,
-                page_start=sentences[group[0]].page,
-                page_end=sentences[group[-1]].page,
-                index=number,
-            ))
-        return chunks
-
-
 def split_semantic(pages: List[PageText], settings: ChunkSettings, embeddings) -> List[Chunk]:
-    """의미 단위로 분할한다.
+    """의미 단위로 분할한다. 단계는 모듈 설명의 1~5와 같다.
 
     Args:
         pages: 쪽 원문 목록
         settings: semantic_* 기준값
-        embeddings: LangChain Embeddings
+        embeddings: LangChain Embeddings (embed_documents 제공)
     Returns:
-        조각 목록
+        조각 목록. 쪽 범위는 조각의 첫 문장과 마지막 문장이 있는 쪽
     """
-    return SemanticSplitter(embeddings, settings).split_pages(pages)
+    sentences = split_sentences(pages)
+    if not sentences:
+        return []
+    texts = [s.text for s in sentences]
+    windows = [" ".join(texts[max(i - 1, 0):i + 2]) for i in range(len(texts))]
+    vectors = embeddings.embed_documents(windows) if len(windows) > 1 else []
+    cuts = breakpoints(cosine_distances(vectors), settings.semantic_percentile) if vectors else []
+    groups = fit_sizes(
+        group_by_breakpoints(len(sentences), cuts),
+        [count_tokens(t) for t in texts],
+        settings.semantic_min_tokens,
+        settings.semantic_max_tokens,
+    )
+    overlap = settings.semantic_overlap_sentences
+    chunks: List[Chunk] = []
+    for number, group in enumerate(groups):
+        prefix = []
+        if overlap and number > 0:
+            prefix = groups[number - 1][-overlap:]
+        body = " ".join(texts[i] for i in prefix + group)
+        chunks.append(Chunk(
+            text=body,
+            page_start=sentences[group[0]].page,
+            page_end=sentences[group[-1]].page,
+            index=number,
+        ))
+    return chunks

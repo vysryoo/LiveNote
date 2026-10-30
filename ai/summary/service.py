@@ -12,6 +12,17 @@ from langchain_core.runnables import Runnable
 from core.config import SummarySettings
 from core.llm import ModelPurpose, build_chat_model
 
+SYSTEM_PROMPT = (
+    "당신은 강의 내용을 간결하게 요약하는 비서입니다. "
+    "아래에서 제공하는 전사 텍스트는 하나의 섹션(약 30초 분량)에 해당하며, "
+    "반드시 해당 섹션의 내용만 이용해서 요약하세요. "
+    "다른 섹션이나 이전/이후 내용은 절대 추측하거나 언급하지 마세요. "
+    "주어진 섹션을 한국어로 1~2문장 정도로 핵심만 요약해 주세요. "
+    "수식과 기호는 LaTeX 문법 없이 일반 텍스트로 쓰세요."
+)
+# 전사가 너무 짧아 요약하지 않을 때 요약 대신 콜백으로 보내는 안내 문구
+SHORT_TRANSCRIPT_MESSAGE = "요약을 생성하기에 강의가 너무 짧습니다."
+
 
 @lru_cache(maxsize=4)
 def build_summary_chain(max_tokens: int) -> Runnable:
@@ -35,7 +46,7 @@ class SummaryService:
         """서비스를 만든다.
 
         Args:
-            settings: 요약 설정 (프롬프트, 최대 토큰, 최소 전사 길이)
+            settings: 요약 설정 (최대 토큰, 최소 전사 길이)
         """
         self.settings = settings
 
@@ -60,6 +71,6 @@ class SummaryService:
             openai.APIError: OpenAI 호출 실패
         """
         summary = await build_summary_chain(self.settings.max_tokens).ainvoke(
-            {"system_prompt": self.settings.system_prompt, "transcript": transcript}
+            {"system_prompt": SYSTEM_PROMPT, "transcript": transcript}
         )
         return summary.strip()

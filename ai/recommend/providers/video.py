@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from rapidfuzz import fuzz
 
 from core import llm
+from core.config import VideoSettings
 from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
@@ -243,9 +244,9 @@ class VideoProvider(Provider[VideoCandidate]):
     resource_type = ResourceType.VIDEO
     verify_concurrency = 20
 
-    def __init__(self, top_k: int, verify: bool, min_score: float, language: str, yt_lang: str, api: YouTubeClient) -> None:
-        super().__init__(top_k, verify, min_score, language)
-        self.yt_lang = yt_lang
+    def __init__(self, settings: VideoSettings, api: YouTubeClient) -> None:
+        super().__init__(settings)
+        self.search_lang = settings.search_lang
         self.api = api
 
     async def close(self) -> None:
@@ -254,10 +255,9 @@ class VideoProvider(Provider[VideoCandidate]):
     async def build_queries(self, context: RecContext) -> List[str]:
         prompt = QUERY_PROMPT.format(
             query_min=QUERY_MIN,
-            query_max=QUERY_MAX,
             lecture_summary=context.summary,
-            query_language=self.yt_lang or self.language or "en",
-            yt_lang=self.yt_lang,
+            query_language=self.search_lang or self.language or "en",
+            yt_lang=self.search_lang,
             previous_summaries=previous_text(context),
             rag_context=rag_text(context),
         )
@@ -266,7 +266,7 @@ class VideoProvider(Provider[VideoCandidate]):
         return queries or [context.summary[:60]]
 
     async def find_candidates(self, queries: List[str], context: RecContext, search_round: Optional[str]) -> List[VideoCandidate]:
-        searches = await asyncio.gather(*[self.api.search_videos(q=q, lang=self.yt_lang, max_results=MAX_SEARCH_RESULTS) for q in queries])
+        searches = await asyncio.gather(*[self.api.search_videos(q=q, lang=self.search_lang, max_results=MAX_SEARCH_RESULTS) for q in queries])
         excluded = {normalize_title(t) for t in context.excluded(self.resource_type)}
         seen, items = set(), []
         for item in (item for result in searches for item in result):
@@ -304,15 +304,15 @@ class VideoProvider(Provider[VideoCandidate]):
     def heuristic_score(self, candidate: VideoCandidate, context: RecContext, queries: List[str]) -> Score:
         detail = candidate.detail
         if detail is None:
-            return Score(_best_heuristic(candidate.item.title, 0, candidate.item.publish_time, queries), "Heuristic")
-        return Score(round(_best_heuristic(detail.title, detail.view_count, detail.publish_time, queries), 2), "Heuristic")
+            return Score(_heuristic_points(candidate.item.title, 0, candidate.item.publish_time, queries), "Heuristic")
+        return Score(round(_heuristic_points(detail.title, detail.view_count, detail.publish_time, queries), 2), "Heuristic")
 
     def to_recommendation(self, candidate: VideoCandidate, score: Score) -> Recommendation:
         detail = candidate.detail
         if detail is None:
-            url, title, lang = f"https://www.youtube.com/watch?v={candidate.item.video_id}", candidate.item.title, self.yt_lang
+            url, title, lang = f"https://www.youtube.com/watch?v={candidate.item.video_id}", candidate.item.title, self.search_lang
         else:
-            url, title, lang = detail.url(), detail.title, detail.default_lang or self.yt_lang
+            url, title, lang = detail.url(), detail.title, detail.default_lang or self.search_lang
         info = {"url": url, "title": one_line(title), "extract": one_line(candidate.extract), "lang": lang}
         return Recommendation(
             type=self.resource_type,
@@ -337,18 +337,9 @@ def normalize_title(title: str) -> str:
     return re.sub(r"[^a-z0-9가-힣 _\-]", "", title).strip()
 
 
-def heuristic_score(*, title: str, query: str, view_count: int, publish_time: str) -> float:
-    """제목과 검색어의 유사도, 조회수, 최신성의 가중 평균을 0~10으로 계산한다.
-
-    Args:
-        title: 영상 제목
-        query: 검색어
-        view_count: 조회수
-        publish_time: 게시 시각 (ISO 8601)
-    Returns:
-        점수 (0~10)
-    """
-    similarity = fuzz.token_set_ratio(title, query) / 100.0
+def _heuristic_points(title: str, view_count: int, publish_time: str, queries: List[str]) -> float:
+    # 제목과 가장 비슷한 검색어 기준 유사도, 조회수, 최신성의 가중 평균을 0~10으로 계산
+    similarity = max(fuzz.token_set_ratio(title, query) for query in queries) / 100.0
     views = min(1.0, math.log10(view_count + 1) / 6.0) if view_count > 0 else 0.0
     try:
         recency = max(0.0, min(1.0, (int(publish_time[:4]) - 2015) / 10.0))
@@ -356,7 +347,3 @@ def heuristic_score(*, title: str, query: str, view_count: int, publish_time: st
         recency = 0.5
     raw = WEIGHT_TITLE_MATCH * similarity + WEIGHT_VIEWS * views + WEIGHT_RECENCY * recency
     return max(0.0, min(10.0, raw * 10.0))
-
-
-def _best_heuristic(title: str, view_count: int, publish_time: str, queries: List[str]) -> float:
-    return max(heuristic_score(title=title, query=q, view_count=view_count, publish_time=publish_time) for q in queries)

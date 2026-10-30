@@ -13,10 +13,11 @@ from pydantic import Field, HttpUrl, field_validator
 from core.config import Settings
 from core.tasks import run_in_background
 from core.timing import RequestTimer
+from summary.service import SHORT_TRANSCRIPT_MESSAGE
 
 from ..callback import post_callback
-from ..dependencies import Services, get_services, get_settings
-from ..utils import CamelModel
+from ..dependencies import Services, get_app_settings, get_services
+from ..models import CamelModel
 
 router = APIRouter(prefix="/summary", tags=["SUMMARY"])
 logger = logging.getLogger(__name__)
@@ -59,20 +60,17 @@ class SummaryGenerateRequest(CamelModel):
 async def generate_summary(
     request: SummaryGenerateRequest,
     services: Services = Depends(get_services),
-    settings: Settings = Depends(get_settings),
+    settings: Settings = Depends(get_app_settings),
 ):
-    """요약 생성 콜백 엔드포인트"""
+    """요약 생성을 시작하고 바로 응답한다. 요약 결과는 콜백으로 보낸다.
+
+    전사가 너무 짧으면 요약하지 않고 안내 문구를 TOO_SHORT 상태로 콜백한다.
+    """
     timer = RequestTimer(
         "summary", lecture_id=request.lecture_id, section_index=request.section_index, phase=request.phase
     )
     timer.mark("received")
     transcript_text = _to_transcript_text(request.transcript)
-    if not transcript_text:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="전사 내용이 비어 있습니다.",
-        )
-
     callback_url = _resolve_callback_url(request.callback_url, settings)
 
     if services.summary.is_too_short(transcript_text):
@@ -82,32 +80,43 @@ async def generate_summary(
             request.section_index,
             len(transcript_text.strip()),
         )
-        payload = _build_callback_payload(
-            request,
-            settings.summary.short_transcript_message,
-            status="TOO_SHORT",
+        payload = _build_callback_payload(request, SHORT_TRANSCRIPT_MESSAGE, status="TOO_SHORT")
+        run_in_background(
+            _send_too_short_notice(callback_url, payload, settings, timer),
+            name=f"summary-skip-{request.lecture_id}-{request.section_index}",
         )
-
-        async def send_skip():
-            await post_callback(callback_url, payload, settings)
-            timer.mark("skipped_callback_sent")
-
-        run_in_background(send_skip(), name=f"summary-skip-{request.lecture_id}-{request.section_index}")
         return {"status": "skipped", "reason": "too_short"}
 
-    async def run_and_callback():
-        try:
-            summary_text = await services.summary.summarize(transcript_text)
-            timer.mark("generated", summary_chars=len(summary_text))
-            payload = _build_callback_payload(request, summary_text, status="COMPLETED")
-            await post_callback(callback_url, payload, settings)
-            timer.mark("callback_sent")
-        except Exception as exc:  # pragma: no cover - 네트워크/외부 API 예외
-            timer.mark("failed")
-            logger.exception("요약 생성 실패: %s", exc)
-
-    run_in_background(run_and_callback(), name=f"summary-{request.lecture_id}-{request.section_index}")
+    run_in_background(
+        _summarize_and_send(request, transcript_text, callback_url, services, settings, timer),
+        name=f"summary-{request.lecture_id}-{request.section_index}",
+    )
     return {"status": "accepted"}
+
+
+async def _send_too_short_notice(callback_url: str, payload: dict, settings: Settings, timer: RequestTimer) -> None:
+    await post_callback(callback_url, payload, settings)
+    timer.mark("skipped_callback_sent")
+
+
+async def _summarize_and_send(
+    request: SummaryGenerateRequest,
+    transcript_text: str,
+    callback_url: str,
+    services: Services,
+    settings: Settings,
+    timer: RequestTimer,
+) -> None:
+    # 요약에 실패하면 콜백을 보내지 않고 로그만 남김
+    try:
+        summary_text = await services.summary.summarize(transcript_text)
+        timer.mark("generated", summary_chars=len(summary_text))
+        payload = _build_callback_payload(request, summary_text, status="COMPLETED")
+        await post_callback(callback_url, payload, settings)
+        timer.mark("callback_sent")
+    except Exception as exc:
+        timer.mark("failed")
+        logger.exception("요약 생성 실패: %s", exc)
 
 
 def _build_callback_payload(request: SummaryGenerateRequest, summary_text: str, status: str | None = None) -> dict:

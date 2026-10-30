@@ -27,21 +27,10 @@ def build_providers(settings: Settings) -> Dict[ResourceType, Provider]:
     """
     rec = settings.rec
     return {
-        ResourceType.PAPER: PaperProvider(
-            rec.paper.top_k, rec.paper.verify, rec.paper.min_score, rec.paper.language,
-            year_from=rec.paper.year_from, sort_by=rec.paper.sort_by,
-        ),
-        ResourceType.WIKI: WikiProvider(
-            rec.wiki.top_k, rec.wiki.verify, rec.wiki.min_score, rec.wiki.language,
-            wiki_lang=rec.wiki.wiki_lang, fallback_to_ko=rec.wiki.fallback_to_ko,
-            api=WikiClient(settings.wikikit_user_agent),
-        ),
-        ResourceType.VIDEO: VideoProvider(
-            rec.video.top_k, rec.video.verify, rec.video.min_score, rec.video.language,
-            yt_lang=rec.video.yt_lang, api=YouTubeClient(settings.youtube_api_key),
-        ),
+        ResourceType.PAPER: PaperProvider(rec.paper),
+        ResourceType.WIKI: WikiProvider(rec.wiki, api=WikiClient(settings.wikikit_user_agent)),
+        ResourceType.VIDEO: VideoProvider(rec.video, api=YouTubeClient(settings.youtube_api_key)),
         ResourceType.BLOG: BlogProvider(
-            rec.blog.top_k, rec.blog.verify, rec.blog.min_score, rec.blog.language,
-            search_lang=rec.blog.search_lang, api=NaverBlogClient(settings.naver_client_id, settings.naver_client_secret),
+            rec.blog, api=NaverBlogClient(settings.naver_client_id, settings.naver_client_secret)
         ),
     }

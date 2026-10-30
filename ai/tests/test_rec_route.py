@@ -167,3 +167,43 @@ async def test_rec_recommend_requires_rag(async_client, test_context, monkeypatc
     response = await async_client.post("/rec/recommend", json=payload)
     assert response.status_code == 400
     assert "RAG" in response.json()["detail"]
+
+
+async def test_rec_recommend_retrieves_context_for_current_section(async_client, test_context, callback_recorder):
+    payload = {
+        "lecture_id": 7,
+        "section_index": 5,
+        "section_summary": "알고리즘 복잡도 분석",
+        "callback_url": "http://example.com/rec",
+        "resource_types": [ResourceType.WIKI.value],
+    }
+    await async_client.post("/rec/recommend", json=payload)
+    await asyncio.sleep(0.05)
+
+    assert test_context.rag.retrieve_calls == [{
+        "collection_id": "test_7",
+        "query": "알고리즘 복잡도 분석",
+        "section_index": 5,
+        "top_k": 3,
+        "summary_top_k": 1,
+        "recent_window": 3,
+    }]
+
+
+async def test_rec_recommend_sends_empty_resources_when_provider_fails(async_client, test_context, callback_recorder):
+    test_context.rec.failures[ResourceType.PAPER] = RuntimeError("OpenAlex down")
+    payload = {
+        "lecture_id": 4,
+        "summary_id": 13,
+        "section_index": 3,
+        "section_summary": "알고리즘 복잡도 분석",
+        "callback_url": "http://example.com/rec",
+        "resource_types": [ResourceType.PAPER.value],
+    }
+    await async_client.post("/rec/recommend", json=payload)
+    await asyncio.sleep(0.05)
+
+    assert [(item["url"], item["json"]) for item in callback_recorder] == [(
+        "http://example.com/rec",
+        {"lectureId": 4, "summaryId": 13, "sectionIndex": 3, "resources": []},
+    )]

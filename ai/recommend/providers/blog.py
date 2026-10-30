@@ -13,12 +13,14 @@ import asyncio
 import html
 import logging
 import re
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import List, Optional
 from urllib.parse import urlparse
 
 import httpx
 
 from core import llm
+from core.config import BlogSettings
 from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
@@ -30,7 +32,6 @@ from ..pipeline import Provider
 logger = logging.getLogger(__name__)
 
 KEYWORD_MIN = 1
-KEYWORD_MAX = 2
 # 동시에 검색할 키워드 수, 검색 한 번에 받을 결과 수
 FANOUT = 1
 SEARCH_LIMIT = 10
@@ -98,7 +99,18 @@ Rate the relevance on a scale of 0-10 and provide a brief reason in {language}.
 **JSON Response:**"""
 
 
-def _clean(text: str) -> str:
+@dataclass(frozen=True)
+class BlogPost:
+    """검색 결과 블로그 글."""
+
+    title: str
+    url: str
+    snippet: str
+    # 블로거 이름. 없으면 블로그 주소
+    blogger: str
+
+
+def _strip_html(text: str) -> str:
     return html.unescape(TAG_PATTERN.sub("", text or "")).strip()
 
 
@@ -127,15 +139,14 @@ class NaverBlogClient:
         """HTTP 연결을 닫는다."""
         await self.http_client.aclose()
 
-    async def search(self, query: str, lang: str = "ko", num: int = 10) -> List[Dict[str, Any]]:
+    async def search(self, query: str, num: int = 10) -> List[BlogPost]:
         """블로그 글을 검색한다.
 
         Args:
             query: 검색어
-            lang: 호출부 호환용. 네이버 블로그 검색은 언어 지정을 지원하지 않아 사용하지 않음
             num: 결과 개수 (최대 100)
         Returns:
-            {"title", "link", "snippet", "displayLink"} 목록. 실패하면 빈 목록
+            검색 결과 목록. 제목과 요약의 HTML 태그는 지움. 실패하면 빈 목록
         """
         params = {"query": query, "display": min(num, self.MAX_DISPLAY), "sort": "sim"}
         try:
@@ -148,25 +159,25 @@ class NaverBlogClient:
             logger.error("네이버 블로그 검색 실패: %s", exc)
             return []
         return [
-            {
-                "title": _clean(item.get("title", "")),
-                "link": item.get("link", ""),
-                "snippet": _clean(item.get("description", "")),
-                "displayLink": item.get("bloggername", "") or item.get("bloggerlink", ""),
-            }
+            BlogPost(
+                title=_strip_html(item.get("title", "")),
+                url=item.get("link", ""),
+                snippet=_strip_html(item.get("description", "")),
+                blogger=item.get("bloggername", "") or item.get("bloggerlink", ""),
+            )
             for item in items
         ]
 
 
-class BlogProvider(Provider[Dict[str, Any]]):
+class BlogProvider(Provider[BlogPost]):
     """네이버 블로그 글 추천."""
 
     resource_type = ResourceType.BLOG
     verify_concurrency = 15
 
-    def __init__(self, top_k: int, verify: bool, min_score: float, language: str, search_lang: str, api: NaverBlogClient) -> None:
-        super().__init__(top_k, verify, min_score, language)
-        self.search_lang = search_lang
+    def __init__(self, settings: BlogSettings, api: NaverBlogClient) -> None:
+        super().__init__(settings)
+        self.search_lang = settings.search_lang
         self.api = api
 
     async def close(self) -> None:
@@ -180,7 +191,6 @@ class BlogProvider(Provider[Dict[str, Any]]):
             )
         prompt = KEYWORD_PROMPT.format(
             keyword_min=KEYWORD_MIN,
-            keyword_max=KEYWORD_MAX,
             language=self.search_lang,
             lecture_summary=context.summary,
             context=context_text,
@@ -193,14 +203,14 @@ class BlogProvider(Provider[Dict[str, Any]]):
         keywords = [line.strip() for line in content.split("\n") if line.strip() and not line.strip().startswith("#")]
         return keywords[:FANOUT]
 
-    async def find_candidates(self, queries: List[str], context: RecContext, search_round: Optional[str]) -> List[Dict[str, Any]]:
+    async def find_candidates(self, queries: List[str], context: RecContext, search_round: Optional[str]) -> List[BlogPost]:
         searches = await asyncio.gather(*[self.search_shortening(keyword) for keyword in queries[:FANOUT]])
-        results = [result for found in searches for result in found]
+        posts = [post for found in searches for post in found]
         excluded = {_url_key(url) for url in context.excluded(self.resource_type)}
-        results = [r for r in _deduplicate(results) if _url_key(r.get("link", "")) not in excluded]
-        return _rerank(results, queries)[:CARD_LIMIT]
+        posts = [post for post in _deduplicate(posts) if _url_key(post.url) not in excluded]
+        return _rerank(posts, queries)[:CARD_LIMIT]
 
-    async def search_shortening(self, keyword: str) -> List[Dict[str, Any]]:
+    async def search_shortening(self, keyword: str) -> List[BlogPost]:
         """결과가 없으면 마지막 단어를 하나씩 빼며 다시 검색한다.
 
         네이버 블로그 검색은 모든 단어가 들어간 글만 찾아, 전문 용어가 많은 키워드는 결과가 없을 수 있음.
@@ -212,39 +222,39 @@ class BlogProvider(Provider[Dict[str, Any]]):
         """
         words = keyword.split()
         while words:
-            results = await self.api.search(query=" ".join(words), lang=self.search_lang, num=SEARCH_LIMIT)
+            results = await self.api.search(query=" ".join(words), num=SEARCH_LIMIT)
             if results or len(words) == 1:
                 return results
             words = words[:-1]
         return []
 
-    async def llm_score(self, candidate: Dict[str, Any], context: RecContext, queries: List[str]) -> Score:
+    async def llm_score(self, candidate: BlogPost, context: RecContext, queries: List[str]) -> Score:
         prompt = SCORE_PROMPT.format(
             lecture_summary=context.summary,
-            title=candidate.get("title", ""),
-            snippet=candidate.get("snippet", ""),
-            url=candidate.get("link", ""),
+            title=candidate.title,
+            snippet=candidate.snippet,
+            url=candidate.url,
             language=self.language,
         )
         result = await llm.complete_json(ModelPurpose.VERIFY, [("user", prompt)], LLMScore, max_tokens=MAX_TOKENS_SCORE)
         return Score(result.score, result.reason)
 
-    def heuristic_score(self, candidate: Dict[str, Any], context: RecContext, queries: List[str]) -> Score:
-        title, snippet = candidate.get("title", "").lower(), candidate.get("snippet", "").lower()
+    def heuristic_score(self, candidate: BlogPost, context: RecContext, queries: List[str]) -> Score:
+        title, snippet = candidate.title.lower(), candidate.snippet.lower()
         per_match = 10.0 / len(queries)
         title_score = min(sum(per_match for q in queries if q.lower() in title), 10.0)
         snippet_score = min(sum(per_match for q in queries if q.lower() in snippet), 10.0)
-        domain = candidate.get("displayLink", "").lower()
+        domain = candidate.blogger.lower()
         domain_score = 10.0 if any(trusted in domain for trusted in TRUSTED_DOMAINS) else 5.0
         score = title_score * WEIGHT_TITLE_MATCH + snippet_score * WEIGHT_SNIPPET_MATCH + domain_score * WEIGHT_DOMAIN_TRUST
         return Score(round(score, 2), "Heuristic")
 
-    def to_recommendation(self, candidate: Dict[str, Any], score: Score) -> Recommendation:
+    def to_recommendation(self, candidate: BlogPost, score: Score) -> Recommendation:
         detail = {
-            "url": candidate.get("link", ""),
-            "title": one_line(candidate.get("title", "")),
-            "snippet": one_line(candidate.get("snippet", "")[:300]),
-            "display_link": candidate.get("displayLink", ""),
+            "url": candidate.url,
+            "title": one_line(candidate.title),
+            "snippet": one_line(candidate.snippet[:300]),
+            "display_link": candidate.blogger,
             "lang": self.language,
         }
         return Recommendation(
@@ -264,21 +274,20 @@ def _url_key(url: str) -> str:
     return f"{parsed.netloc.replace('www.', '')}{parsed.path}"
 
 
-def _deduplicate(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _deduplicate(posts: List[BlogPost]) -> List[BlogPost]:
     seen, unique = set(), []
-    for result in results:
-        url = result.get("link", "")
-        if url and _url_key(url) not in seen:
-            seen.add(_url_key(url))
-            unique.append(result)
+    for post in posts:
+        if post.url and _url_key(post.url) not in seen:
+            seen.add(_url_key(post.url))
+            unique.append(post)
     return unique
 
 
-def _rerank(results: List[Dict[str, Any]], keywords: List[str]) -> List[Dict[str, Any]]:
+def _rerank(posts: List[BlogPost], keywords: List[str]) -> List[BlogPost]:
     lowered = [k.lower() for k in keywords]
 
-    def match_score(result: Dict[str, Any]) -> float:
-        title, snippet = result.get("title", "").lower(), result.get("snippet", "").lower()
+    def match_score(post: BlogPost) -> float:
+        title, snippet = post.title.lower(), post.snippet.lower()
         return sum((2.0 if k in title else 0.0) + (1.0 if k in snippet else 0.0) for k in lowered)
 
-    return sorted(results, key=match_score, reverse=True)
+    return sorted(posts, key=match_score, reverse=True)

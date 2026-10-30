@@ -9,18 +9,20 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from dataclasses import dataclass, replace
 from typing import Any, Dict, List, Optional, Sequence
 
 import httpx
 from pydantic import BaseModel
 
 from core import llm
+from core.config import WikiSettings
 from core.http import get_with_retry
 from core.llm import ModelPurpose
 from core.schemas import ResourceType
 
 from ..context import previous_text, rag_text
-from ..models import LLMScore, RecContext, Recommendation, Score, one_line
+from ..models import LLMScore, RecContext, Recommendation, Score, one_line, to_prompt_line
 from ..pipeline import Provider
 
 logger = logging.getLogger(__name__)
@@ -87,6 +89,28 @@ class WikiKeywords(BaseModel):
     keywords: List[str]
 
 
+@dataclass(frozen=True)
+class WikiSearchHit:
+    """검색 결과 문서."""
+
+    page_id: int
+    title: str
+    # 검색어 일치 부분. 위키백과가 HTML 태그를 붙여 돌려줌
+    snippet: str
+
+
+@dataclass(frozen=True)
+class WikiPage:
+    """점수를 매길 문서. snippet은 이 문서를 찾은 검색 결과의 일치 부분이다."""
+
+    page_id: int
+    title: str
+    extract: str
+    url: str
+    disambiguation: bool
+    snippet: str = ""
+
+
 def _semaphore() -> asyncio.Semaphore:
     # 세마포어는 이벤트 루프에 묶이므로 루프마다 따로 만듦
     loop_id = id(asyncio.get_running_loop())
@@ -132,7 +156,7 @@ class WikiClient:
         response.raise_for_status()
         return response.json()
 
-    async def search_pages(self, keyword: str, lang: str = "en", limit: int = 6) -> List[Dict[str, Any]]:
+    async def search_pages(self, keyword: str, lang: str = "en", limit: int = 6) -> List[WikiSearchHit]:
         """키워드로 문서를 검색한다.
 
         Args:
@@ -140,7 +164,7 @@ class WikiClient:
             lang: 언어판 (en/ko)
             limit: 결과 개수
         Returns:
-            [{"title", "pageid", "snippet"}, ...]. 실패하면 빈 목록
+            검색 결과 목록. 실패하면 빈 목록
         """
         params = {
             "action": "query",
@@ -152,19 +176,23 @@ class WikiClient:
             "uselang": lang,
         }
         try:
-            return (await self._get_json(lang, params)).get("query", {}).get("search", [])
+            hits = (await self._get_json(lang, params)).get("query", {}).get("search", [])
+            return [
+                WikiSearchHit(page_id=hit.get("pageid"), title=hit.get("title", ""), snippet=hit.get("snippet", ""))
+                for hit in hits
+            ]
         except Exception as exc:
             logger.error("위키백과 검색 실패 (keyword=%r, lang=%s): %s", keyword, lang, exc)
             return []
 
-    async def get_page_extract(self, page_id: int, lang: str = "en") -> Optional[Dict[str, Any]]:
+    async def get_page_extract(self, page_id: int, lang: str = "en") -> Optional[WikiPage]:
         """문서 도입부를 조회한다.
 
         Args:
             page_id: 문서 ID
             lang: 언어판 (en/ko)
         Returns:
-            {"title", "extract", "url", "pageid", "disambiguation"}. 문서가 없거나 실패하면 None
+            문서 도입부 (snippet은 빈 값). 문서가 없거나 실패하면 None
         """
         params = {
             "action": "query",
@@ -186,27 +214,25 @@ class WikiClient:
             return None
         if not page or page.get("missing"):
             return None
-        return {
-            "title": page.get("title", ""),
-            "extract": page.get("extract", ""),
-            "url": page.get("fullurl", f"https://{lang}.wikipedia.org/?curid={page_id}"),
-            "pageid": page_id,
-            "disambiguation": "disambiguation" in page.get("pageprops", {}),
-        }
+        return WikiPage(
+            page_id=page_id,
+            title=page.get("title", ""),
+            extract=page.get("extract", ""),
+            url=page.get("fullurl", f"https://{lang}.wikipedia.org/?curid={page_id}"),
+            disambiguation="disambiguation" in page.get("pageprops", {}),
+        )
 
 
-class WikiProvider(Provider[Dict[str, Any]]):
+class WikiProvider(Provider[WikiPage]):
     """위키백과 문서 추천."""
 
     resource_type = ResourceType.WIKI
     verify_concurrency = 10
 
-    def __init__(
-        self, top_k: int, verify: bool, min_score: float, language: str, wiki_lang: str, fallback_to_ko: bool, api: WikiClient
-    ) -> None:
-        super().__init__(top_k, verify, min_score, language)
-        self.wiki_lang = wiki_lang
-        self.fallback_to_ko = fallback_to_ko
+    def __init__(self, settings: WikiSettings, api: WikiClient) -> None:
+        super().__init__(settings)
+        self.search_lang = settings.search_lang
+        self.fallback_to_other_lang = settings.fallback_to_other_lang
         self.api = api
 
     async def close(self) -> None:
@@ -215,7 +241,7 @@ class WikiProvider(Provider[Dict[str, Any]]):
     async def build_queries(self, context: RecContext) -> List[str]:
         prompt = KEYWORD_PROMPT.format(
             lecture_summary=context.summary,
-            search_language=self.wiki_lang,
+            search_language=self.search_lang,
             previous_summaries=previous_text(context),
             rag_context=rag_text(context),
         )
@@ -227,21 +253,21 @@ class WikiProvider(Provider[Dict[str, Any]]):
             return context.summary.split()[:3]
 
     def search_rounds(self) -> Sequence[Optional[str]]:
-        if not self.fallback_to_ko:
-            return [self.wiki_lang]
-        return [self.wiki_lang, "ko" if self.wiki_lang == "en" else "en"]
+        if not self.fallback_to_other_lang:
+            return [self.search_lang]
+        return [self.search_lang, "ko" if self.search_lang == "en" else "en"]
 
-    async def find_candidates(self, queries: List[str], context: RecContext, search_round: Optional[str]) -> List[Dict[str, Any]]:
-        lang = search_round or self.wiki_lang
+    async def find_candidates(self, queries: List[str], context: RecContext, search_round: Optional[str]) -> List[WikiPage]:
+        lang = search_round or self.search_lang
         searches = await asyncio.gather(
             *[self.api.search_pages(keyword, lang, SEARCH_LIMIT) for keyword in queries[:FANOUT]], return_exceptions=True
         )
-        pages = [page for result in searches if not isinstance(result, Exception) for page in result]
+        hits = [hit for result in searches if not isinstance(result, Exception) for hit in result]
         excluded = {title.lower() for title in context.excluded(self.resource_type)}
-        pages = [p for p in _deduplicate(pages) if p.get("title", "").lower() not in excluded]
-        return await self.fetch_details(_rerank(pages, queries), lang)
+        hits = [hit for hit in _deduplicate(hits) if hit.title.lower() not in excluded]
+        return await self.fetch_details(_rerank(hits, queries), lang)
 
-    async def fetch_details(self, search_results: List[Dict[str, Any]], lang: str) -> List[Dict[str, Any]]:
+    async def fetch_details(self, search_results: List[WikiSearchHit], lang: str) -> List[WikiPage]:
         """검색 결과마다 문서 도입부를 동시에 조회한다. 동음이의어 문서는 다른 문서 목록일 뿐이라 뺀다.
 
         Args:
@@ -252,20 +278,22 @@ class WikiProvider(Provider[Dict[str, Any]]):
         """
         semaphore = asyncio.Semaphore(DETAIL_CONCURRENCY)
 
-        async def fetch(result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        async def fetch(hit: WikiSearchHit) -> Optional[WikiPage]:
             async with semaphore:
-                page = await self.api.get_page_extract(result.get("pageid"), lang)
-            if not page or page.get("disambiguation"):
+                page = await self.api.get_page_extract(hit.page_id, lang)
+            if not page or page.disambiguation:
                 return None
-            return {**page, "snippet": result.get("snippet", "")}
+            return replace(page, snippet=hit.snippet)
 
-        pages = await asyncio.gather(*[fetch(r) for r in search_results], return_exceptions=True)
-        return [p for p in pages if isinstance(p, dict)]
+        pages = await asyncio.gather(*[fetch(hit) for hit in search_results], return_exceptions=True)
+        return [p for p in pages if isinstance(p, WikiPage)]
 
-    async def llm_score(self, candidate: Dict[str, Any], context: RecContext, queries: List[str]) -> Score:
-        extract = candidate.get("extract", "")[:300].replace("\n", " ").replace('"', "'").strip()
+    async def llm_score(self, candidate: WikiPage, context: RecContext, queries: List[str]) -> Score:
         prompt = SCORE_PROMPT.format(
-            lecture_summary=context.summary, title=candidate.get("title", ""), extract=extract, language=self.language
+            lecture_summary=context.summary,
+            title=candidate.title,
+            extract=to_prompt_line(candidate.extract[:300]),
+            language=self.language,
         )
         result = await llm.complete_json(
             ModelPurpose.VERIFY,
@@ -275,9 +303,9 @@ class WikiProvider(Provider[Dict[str, Any]]):
         )
         return Score(result.score, result.reason)
 
-    def heuristic_score(self, candidate: Dict[str, Any], context: RecContext, queries: List[str]) -> Score:
-        title = candidate.get("title", "").lower()
-        extract = candidate.get("extract", "").lower()
+    def heuristic_score(self, candidate: WikiPage, context: RecContext, queries: List[str]) -> Score:
+        title = candidate.title.lower()
+        extract = candidate.extract.lower()
         score = 5.0
         for keyword in (q.lower() for q in queries):
             if keyword in title:
@@ -286,13 +314,13 @@ class WikiProvider(Provider[Dict[str, Any]]):
                 score += 0.5
         return Score(min(score, 10.0), "Heuristic")
 
-    def to_recommendation(self, candidate: Dict[str, Any], score: Score) -> Recommendation:
+    def to_recommendation(self, candidate: WikiPage, score: Score) -> Recommendation:
         detail = {
-            "url": candidate.get("url", ""),
-            "title": one_line(candidate.get("title", "")),
-            "extract": one_line(candidate.get("extract", "")),
-            "lang": self.wiki_lang,
-            "page_id": candidate.get("pageid", 0),
+            "url": candidate.url,
+            "title": one_line(candidate.title),
+            "extract": one_line(candidate.extract),
+            "lang": self.search_lang,
+            "page_id": candidate.page_id,
         }
         return Recommendation(
             type=self.resource_type,
@@ -305,21 +333,21 @@ class WikiProvider(Provider[Dict[str, Any]]):
         )
 
 
-def _deduplicate(pages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _deduplicate(hits: List[WikiSearchHit]) -> List[WikiSearchHit]:
     seen, unique = set(), []
-    for page in pages:
-        title = page.get("title", "").lower().strip()
+    for hit in hits:
+        title = hit.title.lower().strip()
         if title and title not in seen:
             seen.add(title)
-            unique.append(page)
+            unique.append(hit)
     return unique
 
 
-def _rerank(pages: List[Dict[str, Any]], keywords: List[str]) -> List[Dict[str, Any]]:
+def _rerank(hits: List[WikiSearchHit], keywords: List[str]) -> List[WikiSearchHit]:
     lowered = [k.lower() for k in keywords]
 
-    def match_score(page: Dict[str, Any]) -> float:
-        title, snippet = page.get("title", "").lower(), page.get("snippet", "").lower()
+    def match_score(hit: WikiSearchHit) -> float:
+        title, snippet = hit.title.lower(), hit.snippet.lower()
         return sum(2.0 if k in title else 0.5 if k in snippet else 0.0 for k in lowered)
 
-    return sorted(pages, key=match_score, reverse=True)
+    return sorted(hits, key=match_score, reverse=True)
