@@ -1,5 +1,6 @@
 package com.capstone.livenote.domain.user.dto;
 
+import com.capstone.livenote.domain.user.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,4 +16,14 @@ public class UserViewDto {
     private String name;
     private String email;
     private String uiLanguage;
+
+    public static UserViewDto from(User user) {
+        return new UserViewDto(
+                user.getId(),
+                user.getLoginId(),
+                user.getName(),
+                user.getEmail(),
+                user.getUiLanguage()
+        );
+    }
 }

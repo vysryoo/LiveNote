@@ -30,13 +30,7 @@ public class UserMeController {
         User user = userService.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "user not found"));
 
-        return ApiResponse.ok(new UserViewDto(
-                user.getId(),
-                user.getLoginId(),
-                user.getName(),
-                user.getEmail(),
-                user.getUiLanguage()
-        ));
+        return ApiResponse.ok(UserViewDto.from(user));
     }
 
     @PatchMapping("/me/language")

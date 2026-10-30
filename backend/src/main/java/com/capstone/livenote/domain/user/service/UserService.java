@@ -51,16 +51,7 @@ public class UserService {
         
         String token = jwtTokenProvider.createToken(saved.getId());
 
-        return new AuthResponseDto(
-                token,
-                new UserViewDto(
-                        saved.getId(),
-                        saved.getLoginId(),
-                        saved.getName(),
-                        saved.getEmail(),
-                        saved.getUiLanguage()
-                )
-        );
+        return new AuthResponseDto(token, UserViewDto.from(saved));
     }
 
     @Transactional
@@ -81,16 +72,7 @@ public class UserService {
         log.info("✅ [DB READ] User logged in: id={} loginId={}", user.getId(), user.getLoginId());
         String token = jwtTokenProvider.createToken(user.getId());
 
-        return new AuthResponseDto(
-                token,
-                new UserViewDto(
-                        user.getId(),
-                        user.getLoginId(),
-                        user.getName(),
-                        user.getEmail(),
-                        user.getUiLanguage()
-                )
-        );
+        return new AuthResponseDto(token, UserViewDto.from(user));
     }
 
     @Transactional
@@ -112,13 +94,7 @@ public class UserService {
         user.setUiLanguage(language != null ? language : "ko");
         userRepository.save(user);
         log.info("💾 [DB WRITE] Language updated: userId={} lang={}", userId, user.getUiLanguage());
-        return new UserViewDto(
-                user.getId(),
-                user.getLoginId(),
-                user.getName(),
-                user.getEmail(),
-                user.getUiLanguage()
-        );
+        return UserViewDto.from(user);
     }
 
     @Transactional
@@ -134,12 +110,6 @@ public class UserService {
         user.setPassword(encoder.encode(newPassword));
         userRepository.save(user);
         log.info("💾 [DB WRITE] Password updated: userId={}", userId);
-        return new UserViewDto(
-                user.getId(),
-                user.getLoginId(),
-                user.getName(),
-                user.getEmail(),
-                user.getUiLanguage()
-        );
+        return UserViewDto.from(user);
     }
 }
