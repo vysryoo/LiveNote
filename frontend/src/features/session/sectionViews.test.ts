@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Summary, Transcript } from "./api/schemas";
-import { buildSectionViews, mergeTranscriptLines } from "./sectionViews";
+import {
+  buildSectionViews,
+  estimateServerSeconds,
+  findLatestFinalSection,
+  mergeTranscriptLines,
+  toPaneStatus,
+} from "./sectionViews";
 
 function transcript(sectionIndex: number, text: string): Transcript {
   return { sectionIndex, startSec: 0, endSec: 0, text };
@@ -90,5 +96,52 @@ describe("buildSectionViews", () => {
       summaries: [summary(0, "a", "final"), summary(1, "b", "final")],
     });
     expect(views.map((v) => v.isSelected)).toEqual([false, true]);
+  });
+});
+
+describe("findLatestFinalSection", () => {
+  it("확정 요약 중 가장 최근 섹션", () => {
+    expect(
+      findLatestFinalSection([
+        summary(0, "a", "final"),
+        summary(2, "c", "final"),
+        summary(3, "d", "partial"),
+      ]),
+    ).toBe(2);
+  });
+
+  it("내용이 빈 확정 요약은 제외하고, 없으면 null", () => {
+    expect(findLatestFinalSection([summary(0, "  ", "final"), summary(1, "b", "partial")])).toBe(
+      null,
+    );
+  });
+});
+
+describe("estimateServerSeconds", () => {
+  it("현재 섹션 시작 시각과 저장된 전사 끝 시각 중 큰 값", () => {
+    expect(
+      estimateServerSeconds(2, [{ sectionIndex: 1, startSec: 31, endSec: 50, text: "a" }]),
+    ).toBe(60);
+    expect(
+      estimateServerSeconds(1, [{ sectionIndex: 1, startSec: 31, endSec: 50, text: "a" }]),
+    ).toBe(50);
+  });
+
+  it("끝 시각이 없는 전사는 0으로 취급", () => {
+    expect(
+      estimateServerSeconds(0, [{ sectionIndex: 0, startSec: 0, endSec: null, text: "a" }]),
+    ).toBe(0);
+  });
+});
+
+describe("toPaneStatus", () => {
+  it("조회 중이면 로딩, 실패면 오류가 데이터 여부보다 우선", () => {
+    expect(toPaneStatus({ isPending: true, isError: false }, true)).toBe("loading");
+    expect(toPaneStatus({ isPending: false, isError: true }, true)).toBe("error");
+  });
+
+  it("조회가 끝나면 데이터 여부로 표시 중과 시작 전을 구분", () => {
+    expect(toPaneStatus({ isPending: false, isError: false }, true)).toBe("ready");
+    expect(toPaneStatus({ isPending: false, isError: false }, false)).toBe("notStarted");
   });
 });

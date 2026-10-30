@@ -87,3 +87,51 @@ export function buildSectionViews(input: {
       };
     });
 }
+
+// 백엔드가 섹션을 30초 단위로 나눔 (SectionAggregationService.SECTION_SEC)
+const SECTION_SECONDS = 30;
+
+export type PaneStatus = "loading" | "error" | "notStarted" | "ready";
+
+/**
+ * 확정 요약이 있는 가장 최근 섹션을 찾는다. 오토 모드가 이 섹션을 자동으로 선택한다.
+ *
+ * @param summaries 저장된 요약
+ * @returns 섹션 번호. 확정 요약이 없으면 `null`
+ */
+export function findLatestFinalSection(summaries: Summary[]): number | null {
+  const indexes = summaries
+    .filter((s) => s.phase === "final" && s.text.trim())
+    .map((s) => s.sectionIndex);
+  return indexes.length ? Math.max(...indexes) : null;
+}
+
+/**
+ * 서버 데이터로 확인된 녹음 경과 시간을 구한다.
+ *
+ * @param currentSection 현재 섹션 번호. 섹션 시작 시각까지는 지났다고 봄
+ * @param transcripts 저장된 전사
+ * @returns 현재 섹션 시작 시각과 저장된 전사의 마지막 끝 시각 중 큰 값(초)
+ */
+export function estimateServerSeconds(currentSection: number, transcripts: Transcript[]): number {
+  return Math.max(
+    currentSection * SECTION_SECONDS,
+    ...transcripts.map((transcript) => transcript.endSec ?? 0),
+  );
+}
+
+/**
+ * 세션 화면 왼쪽 목록에 무엇을 보여 줄지 정한다.
+ *
+ * @param query 강의 상세 조회 상태
+ * @param hasRecordingData 녹음 중이거나 표시할 섹션·카드가 하나라도 있는지
+ * @returns 로딩, 오류, 녹음 시작 전, 표시 중 하나
+ */
+export function toPaneStatus(
+  query: { isPending: boolean; isError: boolean },
+  hasRecordingData: boolean,
+): PaneStatus {
+  if (query.isPending) return "loading";
+  if (query.isError) return "error";
+  return hasRecordingData ? "ready" : "notStarted";
+}

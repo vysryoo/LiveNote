@@ -1,10 +1,10 @@
 import type { RefObject } from "react";
 import { useTranslation } from "react-i18next";
-import type { SectionView } from "../sectionViews";
+import type { PaneStatus, SectionView } from "../sectionViews";
 import { SectionCard } from "./SectionCard";
 
 type LecturePaneProps = {
-  status: "loading" | "error" | "notStarted" | "ready";
+  status: PaneStatus;
   sections: SectionView[];
   isSplit: boolean;
   scrollViewportRef: RefObject<HTMLDivElement | null>;

@@ -1,27 +1,22 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useReducer, useRef, useState } from "react";
+import { useLayoutEffect, useReducer, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Navigate, useNavigate, useParams } from "react-router";
+import { Navigate, useParams } from "react-router";
 import { toast } from "sonner";
-import { useLogout } from "@/features/auth/hooks/useLogout";
-import { useEndLecture } from "@/features/lectures/hooks/useLectureMutations";
 import { RecordingError, useAudioRecording } from "../audio/useAudioRecording";
 import { useBookmarks } from "../hooks/useBookmarks";
 import { useElapsedSeconds } from "../hooks/useElapsedSeconds";
 import { useExtendedCards } from "../hooks/useExtendedCards";
+import { useLeaveSession } from "../hooks/useLeaveSession";
+import { useSectionSelection } from "../hooks/useSectionSelection";
 import { useCurrentSection, useSessionDetail } from "../hooks/useSessionDetail";
 import { useSessionStream } from "../realtime/useSessionStream";
-import { buildSectionViews } from "../sectionViews";
+import { buildSectionViews, estimateServerSeconds, toPaneStatus } from "../sectionViews";
 import { initialSessionState, selectStreamingCards, sessionReducer } from "../state/sessionReducer";
 import { EndSessionDialog } from "./EndSessionDialog";
 import { LecturePane } from "./LecturePane";
 import { RecordingControl } from "./RecordingControl";
 import { SessionHeader } from "./SessionHeader";
 import { SplitPane } from "./SplitPane";
-
-const SECTION_SECONDS = 30;
-
-// 세션을 떠나는 동작은 모두 종료 대화창을 거친 뒤 실행
-type LeaveAction = "end" | "home" | "settings" | "logout";
 
 export function SessionPage() {
   const lectureId = Number(useParams().lectureId);
@@ -32,16 +27,10 @@ export function SessionPage() {
 
 function SessionView({ lectureId }: { lectureId: number }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const logout = useLogout();
-  const endMutation = useEndLecture();
   const detailQuery = useSessionDetail(lectureId);
   const currentSection = useCurrentSection(lectureId);
   const [liveState, dispatch] = useReducer(sessionReducer, initialSessionState);
-  const [manualSection, setManualSection] = useState<number | null>(null);
-  const [autoMode, setAutoMode] = useState(false);
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
-  const [leaveAction, setLeaveAction] = useState<LeaveAction | null>(null);
   const scrollViewportRef = useRef<HTMLDivElement>(null);
 
   useSessionStream({
@@ -74,28 +63,13 @@ function SessionView({ lectureId }: { lectureId: number }) {
   const summaries = detail?.summaries ?? [];
   const extendedCards = useExtendedCards(lectureId);
   const bookmarks = useBookmarks(lectureId, detail?.bookmarks ?? []);
+  const selection = useSectionSelection(summaries, extendedCards.request);
+  const leave = useLeaveSession(lectureId, recording.stop);
+  const { selectedSection } = selection;
 
-  // 오토 모드에서는 확정 요약이 있는 가장 최근 섹션을 자동으로 선택
-  const finalSectionIndexes = summaries
-    .filter((s) => s.phase === "final" && s.text.trim())
-    .map((s) => s.sectionIndex);
-  const latestFinalSection = finalSectionIndexes.length ? Math.max(...finalSectionIndexes) : null;
-  const selectedSection = autoMode ? (latestFinalSection ?? manualSection) : manualSection;
-
-  const requestCardsForAutoSelection = useEffectEvent((sectionIndex: number) =>
-    extendedCards.request(sectionIndex),
-  );
-  useEffect(() => {
-    if (autoMode && latestFinalSection !== null) requestCardsForAutoSelection(latestFinalSection);
-  }, [autoMode, latestFinalSection]);
-
-  const serverSeconds = Math.max(
-    currentSection * SECTION_SECONDS,
-    ...transcripts.map((transcript) => transcript.endSec ?? 0),
-  );
   const elapsedSeconds = useElapsedSeconds(
     recording.isRecording && recording.isAudioActive,
-    serverSeconds,
+    estimateServerSeconds(currentSection, transcripts),
   );
 
   const sections = buildSectionViews({
@@ -105,7 +79,7 @@ function SessionView({ lectureId }: { lectureId: number }) {
     currentSection,
     isRecording: recording.isRecording,
     selectedSectionIndex: selectedSection,
-    autoMode,
+    autoMode: selection.autoMode,
   });
 
   // 새 섹션이 시작되면 왼쪽 목록을 맨 아래로 내려 현재 섹션을 보여 줌
@@ -125,49 +99,14 @@ function SessionView({ lectureId }: { lectureId: number }) {
     }
   };
 
-  const selectSection = (sectionIndex: number) => {
-    if (sectionIndex === selectedSection) {
-      setManualSection(null);
-      return;
-    }
-    setManualSection(sectionIndex);
-    extendedCards.request(sectionIndex);
-  };
-
-  const closeSplit = () => {
-    setManualSection(null);
-    setAutoMode(false);
-  };
-
-  const requestLeave = (action: LeaveAction) => {
-    recording.stop();
-    setLeaveAction(action);
-  };
-
-  const saveAndEnd = async (title: string) => {
-    await endMutation.mutateAsync({ lectureId, title });
-    const action = leaveAction;
-    setLeaveAction(null);
-    toast.success(t("lectures.toast.ended"));
-    if (action === "settings") navigate("/settings");
-    else if (action === "logout") logout();
-    else navigate("/lectures");
-  };
-
   const streamingCards = selectStreamingCards(liveState, selectedSection);
-
-  const hasRecordingData =
+  const status = toPaneStatus(
+    detailQuery,
     recording.isRecording ||
-    sections.length > 0 ||
-    (detail?.qna.length ?? 0) > 0 ||
-    (detail?.resources.length ?? 0) > 0;
-  const status = detailQuery.isPending
-    ? "loading"
-    : detailQuery.isError
-      ? "error"
-      : hasRecordingData
-        ? "ready"
-        : "notStarted";
+      sections.length > 0 ||
+      (detail?.qna.length ?? 0) > 0 ||
+      (detail?.resources.length ?? 0) > 0,
+  );
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -179,12 +118,12 @@ function SessionView({ lectureId }: { lectureId: number }) {
             elapsedSeconds={elapsedSeconds}
             onStart={() => void startRecording()}
             onPause={recording.stop}
-            onEnd={() => requestLeave("end")}
+            onEnd={() => leave.request("end")}
           />
         }
-        onLogoClick={() => requestLeave("home")}
-        onSettingsClick={() => requestLeave("settings")}
-        onLogoutClick={() => requestLeave("logout")}
+        onLogoClick={() => leave.request("home")}
+        onSettingsClick={() => leave.request("settings")}
+        onLogoutClick={() => leave.request("logout")}
       />
 
       <div className="flex-1 overflow-hidden flex">
@@ -193,7 +132,7 @@ function SessionView({ lectureId }: { lectureId: number }) {
           sections={sections}
           isSplit={selectedSection !== null}
           scrollViewportRef={scrollViewportRef}
-          onSummaryClick={selectSection}
+          onSummaryClick={selection.select}
         />
         {selectedSection !== null && (
           <SplitPane
@@ -204,21 +143,21 @@ function SessionView({ lectureId }: { lectureId: number }) {
             streamingQna={streamingCards.qna}
             isGenerating={extendedCards.pendingSectionIndex === selectedSection}
             showBookmarkedOnly={showBookmarkedOnly}
-            autoMode={autoMode}
+            autoMode={selection.autoMode}
             isBookmarked={bookmarks.isBookmarked}
             onToggleBookmark={bookmarks.toggle}
-            onClose={closeSplit}
+            onClose={selection.close}
             onToggleBookmarkedOnly={() => setShowBookmarkedOnly((value) => !value)}
-            onToggleAutoMode={() => setAutoMode((value) => !value)}
+            onToggleAutoMode={selection.toggleAutoMode}
           />
         )}
       </div>
 
       <EndSessionDialog
-        open={leaveAction !== null}
+        open={leave.isConfirming}
         defaultTitle={detail?.title ?? ""}
-        onCancel={() => setLeaveAction(null)}
-        onSaveAndEnd={saveAndEnd}
+        onCancel={leave.cancel}
+        onSaveAndEnd={leave.saveAndEnd}
       />
     </div>
   );
