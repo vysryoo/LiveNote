@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import Field, HttpUrl, validator
 
 from core.schemas import PreviousSummary as ProviderPreviousSummary
+from core.tasks import run_in_background
 from core.timing import RequestTimer
 from openalex.openalexkit.models import OpenAlexRequest, OpenAlexResponse
 from wiki.wikikit.models import WikiRequest, WikiResponse
@@ -208,7 +209,7 @@ async def recommend_resources(
 
     for res_type in selected_resource_types:
         task_coro = providers[res_type]()
-        asyncio.create_task(provider_task(res_type, task_coro))
+        run_in_background(provider_task(res_type, task_coro), name=f"rec-{res_type.value}-{request.lecture_id}")
 
     return {"status": "accepted", "collection_id": collection_id}
 

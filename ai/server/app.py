@@ -14,9 +14,14 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
 
 from fastapi import Depends, FastAPI
 
+from core import tasks as background_tasks
+
 from .config import AppSettings
 from .routes import qa_router, rag_router, rec_router, summary_router
 from .security import verify_internal_api_key
+
+# 요약 생성(수 초)과 추천 콜백이 끝날 만큼의 시간
+BACKGROUND_SHUTDOWN_TIMEOUT_SEC = 30.0
 
 
 def _ensure_service(service: Any, factory_path: str):
@@ -65,6 +70,8 @@ def create_app(
         try:
             yield
         finally:
+            # 요청에 먼저 응답한 요약·추천 콜백이 끝나도록 잠시 기다림
+            await background_tasks.shutdown(timeout_sec=BACKGROUND_SHUTDOWN_TIMEOUT_SEC)
             if _openalex_owned and hasattr(_openalex, "close"):
                 await _openalex.close()
     

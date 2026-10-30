@@ -3,7 +3,6 @@
 """
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 from typing import List, Optional
@@ -14,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import Field, HttpUrl, validator
 
 from core.llm import ModelPurpose, complete
+from core.tasks import run_in_background
 from core.timing import RequestTimer
 
 from ..config import AppSettings
@@ -93,7 +93,7 @@ async def generate_summary(
             await _post_summary_callback(callback_url, payload)
             timer.mark("skipped_callback_sent")
 
-        asyncio.create_task(send_skip())
+        run_in_background(send_skip(), name=f"summary-skip-{request.lecture_id}-{request.section_index}")
         return {"status": "skipped", "reason": "too_short"}
 
     async def run_and_callback():
@@ -107,7 +107,7 @@ async def generate_summary(
             timer.mark("failed")
             logger.exception("요약 생성 실패: %s", exc)
 
-    asyncio.create_task(run_and_callback())
+    run_in_background(run_and_callback(), name=f"summary-{request.lecture_id}-{request.section_index}")
     return {"status": "accepted"}
 
 
