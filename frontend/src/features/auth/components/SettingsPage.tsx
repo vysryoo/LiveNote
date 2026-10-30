@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ParseKeys } from "i18next";
 import { ArrowLeft } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -17,6 +16,7 @@ import type { User } from "../api/schemas";
 import { useUpdateSettings } from "../hooks/useAuthMutations";
 import { useMe } from "../hooks/useMe";
 import { FieldError } from "@/shared/components/FieldError";
+import { FormError } from "@/shared/components/FormError";
 
 const settingsSchema = z
   .object({
@@ -167,11 +167,10 @@ function SettingsForm({ user }: { user: User }) {
                   <FieldError messageKey={errors.confirmPassword?.message} />
                 </div>
 
-                {errors.root?.message && (
-                  <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
-                    {t(errors.root.message as ParseKeys)}
-                  </div>
-                )}
+                <FormError
+                  messageKey={errors.root?.message}
+                  className="bg-red-50 text-red-600 p-3 rounded-lg text-sm"
+                />
               </div>
             </div>
 

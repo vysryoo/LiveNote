@@ -1,9 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ParseKeys } from "i18next";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { FieldError } from "@/shared/components/FieldError";
+import { FormError } from "@/shared/components/FormError";
 import { Button } from "@/shared/ui/button";
 import {
   Dialog,
@@ -73,11 +73,7 @@ export function EndSessionDialog({
               />
               <FieldError messageKey={errors.title?.message} />
             </div>
-            {errors.root?.message && (
-              <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-md p-2">
-                {t(errors.root.message as ParseKeys)}
-              </div>
-            )}
+            <FormError messageKey={errors.root?.message} />
           </div>
           <DialogFooter className="gap-2 sm:gap-0 pt-4">
             <Button type="button" variant="outline" onClick={onCancel}>

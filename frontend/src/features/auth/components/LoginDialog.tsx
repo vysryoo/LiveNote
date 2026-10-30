@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ParseKeys } from "i18next";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
@@ -18,6 +17,7 @@ import { Label } from "@/shared/ui/label";
 import { toAuthErrorKey } from "../api/errors";
 import { useLogin } from "../hooks/useAuthMutations";
 import { FieldError } from "@/shared/components/FieldError";
+import { FormError } from "@/shared/components/FormError";
 
 const loginSchema = z.object({
   loginId: z.string().min(1, "validation.required"),
@@ -84,11 +84,7 @@ export function LoginDialog({ open, onOpenChange, onSignupClick }: LoginDialogPr
             />
             <FieldError messageKey={errors.password?.message} />
           </div>
-          {errors.root?.message && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-md p-2">
-              {t(errors.root.message as ParseKeys)}
-            </div>
-          )}
+          <FormError messageKey={errors.root?.message} />
           <Button type="submit" variant="brand" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? `${t("login.login")}...` : t("login.login")}
           </Button>

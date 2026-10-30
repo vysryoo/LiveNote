@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ParseKeys } from "i18next";
 import { ArrowLeft } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Trans, useTranslation } from "react-i18next";
@@ -13,6 +12,7 @@ import { toAuthErrorKey } from "../api/errors";
 import { useSignup } from "../hooks/useAuthMutations";
 import { AppLogo } from "@/shared/components/AppHeader";
 import { FieldError } from "@/shared/components/FieldError";
+import { FormError } from "@/shared/components/FormError";
 
 const signupSchema = z
   .object({
@@ -159,11 +159,10 @@ export function SignupPage() {
               <FieldError messageKey={errors.email?.message} />
             </div>
 
-            {errors.root?.message && (
-              <div className="bg-[#FF4D4D]/10 border border-[#FF4D4D]/20 text-[#FF4D4D] p-3 rounded-lg text-sm">
-                {t(errors.root.message as ParseKeys)}
-              </div>
-            )}
+            <FormError
+              messageKey={errors.root?.message}
+              className="bg-[#FF4D4D]/10 border border-[#FF4D4D]/20 text-[#FF4D4D] p-3 rounded-lg text-sm"
+            />
 
             <Button
               type="submit"
