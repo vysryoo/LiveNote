@@ -1,17 +1,18 @@
 """
 Google 모듈 설정
 """
-import os
 from typing import Optional
+
+from core.config import get_settings
 
 
 class GoogleConfig:
     """Google 모듈 설정"""
     
     # API 키. 블로그 검색은 네이버 블로그 검색 API 사용
-    NAVER_CLIENT_ID: str = os.getenv("NAVER_CLIENT_ID", "")
-    NAVER_CLIENT_SECRET: str = os.getenv("NAVER_CLIENT_SECRET", "")
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    NAVER_CLIENT_ID: str = get_settings().naver_client_id
+    NAVER_CLIENT_SECRET: str = get_settings().naver_client_secret
+    OPENAI_API_KEY: str = get_settings().openai_api_key
     
     # 검색 설정
     DEFAULT_TOP_K: int = 5

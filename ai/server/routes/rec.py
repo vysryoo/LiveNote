@@ -11,7 +11,8 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import Field, HttpUrl, validator
 
-from core.schemas import PreviousSummary as ProviderPreviousSummary
+from core.config import Settings
+from core.schemas import PreviousSummary as ProviderPreviousSummary, ResourceType
 from core.tasks import run_in_background
 from core.timing import RequestTimer
 from openalex.openalexkit.models import OpenAlexRequest, OpenAlexResponse
@@ -19,7 +20,6 @@ from wiki.wikikit.models import WikiRequest, WikiResponse
 from youtube.youtubekit.models import YouTubeRequest, YouTubeResponse
 from blog.blogkit.models import GoogleRequest, GoogleResponse
 
-from ..config import AppSettings
 from ..dependencies import (
     get_openalex_service,
     get_rag_service,
@@ -28,7 +28,6 @@ from ..dependencies import (
     get_youtube_service,
     get_google_service,
 )
-from ..models import ResourceType
 from ..rec_graph import run_recommendations
 from ..security import internal_auth_headers
 from ..utils import (
@@ -82,7 +81,7 @@ async def recommend_resources(
     wiki_service=Depends(get_wiki_service),
     youtube_service=Depends(get_youtube_service),
     google_service=Depends(get_google_service),
-    settings: AppSettings = Depends(get_settings),
+    settings: Settings = Depends(get_settings),
 ):
     """논문/위키/유튜브/구글 추천 콜백 엔드포인트"""
     timer = RequestTimer("rec", lecture_id=request.lecture_id, section_index=request.section_index)
@@ -201,12 +200,12 @@ async def recommend_resources(
                 ", ".join(titles[:5]) if titles else "none",
             )
             timer.mark("provider_done", resource_type=res_type.value, count=len(mapped))
-            await post_resources_callback(request, mapped)
+            await post_resources_callback(request, mapped, settings)
             timer.mark("provider_callback_sent", resource_type=res_type.value)
         except Exception as exc:  # pragma: no cover - 외부 서비스 예외
             timer.mark("provider_failed", resource_type=res_type.value)
             logger.exception("REC provider %s 실패: %s", res_type.value, exc)
-            await post_resources_callback(request, [])
+            await post_resources_callback(request, [], settings)
 
     # 자료 종류별 추천은 그래프가 동시에 실행하고, 각각 끝나는 대로 콜백을 보냄
     run_in_background(
@@ -302,7 +301,7 @@ def map_resources(res_type: ResourceType, result: List) -> List[dict]:
     return mapped
 
 
-async def post_resources_callback(request: RECRequest, resources: List[dict]):
+async def post_resources_callback(request: RECRequest, resources: List[dict], settings: Settings):
     """콜백 URL로 추천 자료 전송"""
     payload = {
         "lectureId": request.lecture_id,
@@ -312,6 +311,6 @@ async def post_resources_callback(request: RECRequest, resources: List[dict]):
     }
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            await client.post(str(request.callback_url), json=payload, headers=internal_auth_headers())
+            await client.post(str(request.callback_url), json=payload, headers=internal_auth_headers(settings))
     except Exception as exc:  # pragma: no cover - 네트워크 예외
         logger.exception("콜백 전송 실패: %s", exc)

@@ -12,12 +12,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import Field, validator
 
+from core.config import Settings
+from core.schemas import QnAType
 from core.timing import RequestTimer
 from qa.qakit.models import QARequest, PreviousQA
 
-from ..config import AppSettings
 from ..dependencies import get_qa_service, get_rag_service, get_settings
-from ..models import QnAType
 from ..utils import CamelModel, build_collection_id, to_qa_rag_context
 
 router = APIRouter(prefix="/qa", tags=["QA"])
@@ -68,7 +68,7 @@ async def generate_qa(
     request: QAGenerateRequest,
     rag_service=Depends(get_rag_service),
     qa_service=Depends(get_qa_service),
-    settings: AppSettings = Depends(get_settings),
+    settings: Settings = Depends(get_settings),
 ):
     """질문 유형별 QA를 생성하며 생성 과정을 SSE로 응답한다.
 

@@ -4,14 +4,13 @@ LLM 호출 공통 계층
 모든 OpenAI 채팅 호출을 LangChain ChatOpenAI로 일원화한다.
 용도(요약, QnA, 검색어 생성, 후보 검증)별 모델과 추론 강도를 한곳에서 정하고, 호출마다 소요 시간과 토큰 사용량을 로그로 남긴다.
 
-환경변수로 덮어쓰기:
+설정(core.config)으로 덮어쓰기:
     LLM_MODEL: 모든 용도의 모델
     LLM_{용도}_MODEL, LLM_{용도}_REASONING_EFFORT: 용도별 모델, 추론 강도 (용도: SUMMARY, QA, QUERY, VERIFY)
 """
 from __future__ import annotations
 
 import json
-import os
 import time
 from dataclasses import dataclass
 from enum import Enum
@@ -23,6 +22,7 @@ from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import LLMResult
 from langchain_openai import ChatOpenAI
 
+from core.config import Settings, get_settings
 from core.timing import logger as timing_logger
 
 DEFAULT_MODEL = "gpt-6-luna"
@@ -62,17 +62,18 @@ DEFAULT_REASONING_EFFORT = {
 Message = Tuple[str, str]
 
 
-def model_settings(purpose: ModelPurpose) -> ModelSettings:
-    """용도의 모델 설정을 환경변수와 기본값으로 정한다.
+def model_settings(purpose: ModelPurpose, settings: Optional[Settings] = None) -> ModelSettings:
+    """용도의 모델 설정을 설정값과 기본값으로 정한다.
 
     Args:
         purpose: 호출 용도
+        settings: 서버 설정. None이면 get_settings()
     Returns:
         모델 설정. 추론 모델이 아니면 reasoning_effort는 None
     """
-    prefix = f"LLM_{purpose.name}"
-    model = os.getenv(f"{prefix}_MODEL") or os.getenv("LLM_MODEL") or DEFAULT_MODEL
-    effort = os.getenv(f"{prefix}_REASONING_EFFORT") or DEFAULT_REASONING_EFFORT[purpose]
+    settings = settings or get_settings()
+    model = getattr(settings, f"llm_{purpose.value}_model") or settings.llm_model or DEFAULT_MODEL
+    effort = getattr(settings, f"llm_{purpose.value}_reasoning_effort") or DEFAULT_REASONING_EFFORT[purpose]
     if not model.startswith(REASONING_MODEL_PREFIXES):
         effort = None
     return ModelSettings(model=model, reasoning_effort=effort)
@@ -143,6 +144,7 @@ def build_chat_model(purpose: ModelPurpose, max_tokens: Optional[int] = None) ->
     settings = model_settings(purpose)
     kwargs: Dict[str, Any] = {
         "model": settings.model,
+        "api_key": get_settings().openai_api_key or None,
         "timeout": DEFAULT_TIMEOUT_SEC,
         "max_retries": DEFAULT_MAX_RETRIES,
         "stream_usage": True,

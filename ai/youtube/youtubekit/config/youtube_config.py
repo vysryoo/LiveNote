@@ -2,20 +2,18 @@
 YouTube 모듈 설정
 """
 import os
-from dotenv import load_dotenv
 
-# .env 파일 로드
-load_dotenv()
+from core.config import get_settings
 
 
 class YouTubeConfig:
     """YouTube 모듈 설정"""
     
     # ━━━ OpenAI API ━━━
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_API_KEY: str = get_settings().openai_api_key
     
     # ━━━ YouTube Data API v3 ━━━
-    YOUTUBE_API_KEY: str = os.getenv("YOUTUBE_API_KEY") or os.getenv("KEY", "")
+    YOUTUBE_API_KEY: str = get_settings().youtube_api_key
     TIMEOUT: int = 10  # HTTP 타임아웃 (초)
     
     # ━━━ 기본값 ━━━

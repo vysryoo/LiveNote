@@ -1,24 +1,18 @@
 """
 Wikipedia module configuration
 """
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from core.config import get_settings
 
 
 class WikiConfig:
     """Wikipedia 모듈 설정"""
     
     # ━━━ OpenAI API ━━━
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_API_KEY: str = get_settings().openai_api_key
     
     # ━━━ Wikipedia API ━━━
     TIMEOUT: int = 15  # HTTP 타임아웃 (초)
-    USER_AGENT: str = os.getenv(
-        "WIKIKIT_USER_AGENT",
-        "WikiKit/0.1 (+https://github.com/nongman25; contact: wook252wook@gmail.com)",
-    )
+    USER_AGENT: str = get_settings().wikikit_user_agent
     
     # ━━━ 기본값 ━━━
     DEFAULT_LANGUAGE: str = "en"

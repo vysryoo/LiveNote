@@ -14,9 +14,9 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.append(str(ROOT_DIR))
 
+from core.config import Settings, get_settings
+from core.schemas import QnAType
 from server.app import create_app
-from server.config import AppSettings
-from server.models import QnAType
 
 
 @dataclass
@@ -254,7 +254,7 @@ class TestContext:
     wiki: StubWikiService = field(default_factory=StubWikiService)
     youtube: StubYouTubeService = field(default_factory=StubYouTubeService)
     google: StubGoogleService = field(default_factory=StubGoogleService)
-    settings: AppSettings = field(default_factory=AppSettings)
+    settings: Settings = field(default_factory=Settings)
 
 
 @pytest.fixture
@@ -299,9 +299,18 @@ TEST_INTERNAL_API_KEY = "test-internal-key"
 
 
 @pytest.fixture(autouse=True)
-def internal_api_key(monkeypatch):
-    """모든 테스트에서 백엔드와 공유하는 내부 키를 설정"""
+def isolated_settings(monkeypatch):
+    """ai/.env를 읽지 않고, 백엔드와 공유하는 내부 키와 OpenAI 키를 테스트 값으로 둔다."""
+    monkeypatch.setitem(Settings.model_config, "env_file", None)
     monkeypatch.setenv("INTERNAL_API_KEY", TEST_INTERNAL_API_KEY)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
+@pytest.fixture
+def internal_api_key(isolated_settings):
     return TEST_INTERNAL_API_KEY
 
 

@@ -7,7 +7,7 @@ import pytest
 
 pytestmark = pytest.mark.anyio("asyncio")
 
-from server.models import ResourceType
+from core.schemas import ResourceType
 from tests.conftest import (
     GoogleResponse,
     GoogleSearchResult,

@@ -4,19 +4,13 @@ FastAPI 애플리케이션 생성
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from pathlib import Path
 from typing import Any
-
-from dotenv import load_dotenv
-
-# Ensure .env is loaded even if the working directory differs (override stale env)
-load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
 
 from fastapi import Depends, FastAPI
 
 from core import tasks as background_tasks
+from core.config import Settings, get_settings
 
-from .config import AppSettings
 from .routes import qa_router, rag_router, rec_router, summary_router
 from .security import verify_internal_api_key
 
@@ -35,8 +29,19 @@ def _ensure_service(service: Any, factory_path: str):
     return factory()
 
 
+def _create_rag_service(settings: Settings):
+    from rag.ragkit.config import RAGConfig
+    from rag.ragkit.service import RAGService
+
+    return RAGService(RAGConfig(
+        persist_dir=str(settings.rag_persist_dir),
+        embedding_model=settings.rag_embedding_model,
+        openai_api_key=settings.rag_openai_api_key or settings.openai_api_key,
+    ))
+
+
 def create_app(
-    settings: AppSettings | None = None,
+    settings: Settings | None = None,
     *,
     rag_service=None,
     qa_service=None,
@@ -46,10 +51,10 @@ def create_app(
     google_service=None,
 ) -> FastAPI:
     """FastAPI 앱 생성"""
-    base_settings = settings or AppSettings()
+    base_settings = settings or get_settings()
     
     # 서비스 인스턴스를 한 번만 준비해 재사용
-    _rag = _ensure_service(rag_service, "rag.ragkit.service.RAGService")
+    _rag = rag_service if rag_service is not None else _create_rag_service(base_settings)
     _qa = _ensure_service(qa_service, "qa.qakit.service.QAService")
     _openalex = _ensure_service(openalex_service, "openalex.openalexkit.service.OpenAlexService")
     _wiki = _ensure_service(wiki_service, "wiki.wikikit.service.WikiService")
@@ -59,6 +64,8 @@ def create_app(
     
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        # 키가 빠진 채 요청을 받기 시작하지 않도록 서버 시작 단계에서 멈춤
+        base_settings.check_required()
         app.state.app_settings = base_settings
         app.state.rag_service = _rag
         app.state.qa_service = _qa

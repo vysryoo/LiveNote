@@ -11,8 +11,7 @@ from typing import Any, Callable, Dict, List
 import pytest
 
 from core.llm import ModelPurpose
-from core.schemas import PreviousSummary, RAGChunk
-from server.models import ResourceType
+from core.schemas import PreviousSummary, RAGChunk, ResourceType
 from server.routes.rec import map_resources
 from tests.snapshots import assert_snapshot
 

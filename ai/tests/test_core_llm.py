@@ -9,6 +9,7 @@ from langchain_core.messages import AIMessage
 from langchain_core.outputs import ChatGeneration, LLMResult
 
 from core import llm
+from core.config import Settings
 from core.llm import ModelPurpose, model_settings, usage_from_result
 from core.timing import logger as timing_logger
 
@@ -41,8 +42,10 @@ def test_model_settings_env_override_and_drop_effort_for_non_reasoning_model(cle
     monkeypatch.setenv("LLM_QA_REASONING_EFFORT", "low")
     monkeypatch.setenv("LLM_VERIFY_MODEL", "gpt-4o")
 
-    assert model_settings(ModelPurpose.QA).reasoning_effort == "low"
-    assert model_settings(ModelPurpose.VERIFY) == llm.ModelSettings(model="gpt-4o", reasoning_effort=None)
+    settings = Settings()
+
+    assert model_settings(ModelPurpose.QA, settings).reasoning_effort == "low"
+    assert model_settings(ModelPurpose.VERIFY, settings) == llm.ModelSettings(model="gpt-4o", reasoning_effort=None)
 
 
 def test_build_chat_model_sends_effort_and_token_limit(clear_llm_env):
@@ -109,7 +112,7 @@ async def test_summary_chain_passes_braces_in_transcript_as_text(monkeypatch):
 
     summary.build_summary_chain.cache_clear()
     monkeypatch.setattr(summary, "build_chat_model", lambda purpose, max_tokens: RecordingModel(responses=["  요약 결과  "]))
-    settings = summary.AppSettings()
+    settings = Settings()
 
     result = await summary._generate_summary_text("집합 {a, b}를 정의한다", settings)
     summary.build_summary_chain.cache_clear()

@@ -1,18 +1,14 @@
 """
 OpenAlex 모듈 설정
 """
-import os
-from dotenv import load_dotenv
-
-# .env 파일 로드
-load_dotenv()
+from core.config import get_settings
 
 
 class OpenAlexConfig:
     """OpenAlex 모듈 설정"""
     
     # ━━━ OpenAI API ━━━
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_API_KEY: str = get_settings().openai_api_key
     
     # ━━━ OpenAlex API ━━━
     TIMEOUT: int = 15  # HTTP 타임아웃 (초) - 20→15 (25% 감소)

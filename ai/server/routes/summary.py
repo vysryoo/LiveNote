@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from functools import lru_cache
 from typing import List, Optional
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
@@ -16,11 +15,11 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import Runnable
 from pydantic import Field, HttpUrl, validator
 
+from core.config import Settings
 from core.llm import ModelPurpose, build_chat_model
 from core.tasks import run_in_background
 from core.timing import RequestTimer
 
-from ..config import AppSettings
 from ..dependencies import get_settings
 from ..security import internal_auth_headers
 from ..utils import CamelModel
@@ -63,7 +62,7 @@ class SummaryGenerateRequest(CamelModel):
 @router.post("/generate", status_code=status.HTTP_202_ACCEPTED)
 async def generate_summary(
     request: SummaryGenerateRequest,
-    settings: AppSettings = Depends(get_settings),
+    settings: Settings = Depends(get_settings),
 ):
     """요약 생성 콜백 엔드포인트"""
     timer = RequestTimer(
@@ -77,7 +76,6 @@ async def generate_summary(
             detail="전사 내용이 비어 있습니다.",
         )
 
-    _check_api_key()
     callback_url = _resolve_callback_url(request.callback_url, settings)
 
     if _is_too_short(transcript_text, settings.summary.min_transcript_length):
@@ -94,7 +92,7 @@ async def generate_summary(
         )
 
         async def send_skip():
-            await _post_summary_callback(callback_url, payload)
+            await _post_summary_callback(callback_url, payload, settings)
             timer.mark("skipped_callback_sent")
 
         run_in_background(send_skip(), name=f"summary-skip-{request.lecture_id}-{request.section_index}")
@@ -105,7 +103,7 @@ async def generate_summary(
             summary_text = await _generate_summary_text(transcript_text, settings)
             timer.mark("generated", summary_chars=len(summary_text))
             payload = _build_callback_payload(request, summary_text, status="COMPLETED")
-            await _post_summary_callback(callback_url, payload)
+            await _post_summary_callback(callback_url, payload, settings)
             timer.mark("callback_sent")
         except Exception as exc:  # pragma: no cover - 네트워크/외부 API 예외
             timer.mark("failed")
@@ -130,7 +128,7 @@ def build_summary_chain(max_tokens: int) -> Runnable:
     return prompt | build_chat_model(ModelPurpose.SUMMARY, max_tokens) | StrOutputParser()
 
 
-async def _generate_summary_text(transcript_text: str, settings: AppSettings) -> str:
+async def _generate_summary_text(transcript_text: str, settings: Settings) -> str:
     """요약 체인으로 요약 생성"""
     summary = await build_summary_chain(settings.summary.max_tokens).ainvoke(
         {"system_prompt": settings.summary.system_prompt, "transcript": transcript_text}
@@ -138,11 +136,11 @@ async def _generate_summary_text(transcript_text: str, settings: AppSettings) ->
     return summary.strip()
 
 
-async def _post_summary_callback(callback_url: str, payload: dict):
+async def _post_summary_callback(callback_url: str, payload: dict, settings: Settings):
     """콜백 URL로 요약 결과 전송"""
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            await client.post(callback_url, json=payload, headers=internal_auth_headers())
+            await client.post(callback_url, json=payload, headers=internal_auth_headers(settings))
     except Exception as exc:  # pragma: no cover - 네트워크 예외
         logger.exception("요약 콜백 전송 실패: %s", exc)
 
@@ -166,10 +164,9 @@ def _build_callback_payload(request: SummaryGenerateRequest, summary_text: str, 
     return payload
 
 
-def _resolve_callback_url(explicit_url: Optional[HttpUrl], settings: AppSettings) -> str:
+def _resolve_callback_url(explicit_url: Optional[HttpUrl], settings: Settings) -> str:
     """요청/설정 기반으로 콜백 URL 결정 후 type=summary 보장"""
-    env_fallback = os.getenv("SUMMARY_CALLBACK_URL")
-    target = explicit_url or settings.summary.callback_url or env_fallback
+    target = explicit_url or settings.summary.callback_url or settings.summary_callback_url
     if not target:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -185,23 +182,6 @@ def _ensure_summary_type(url: str) -> str:
     query_params.setdefault("type", "summary")
     new_query = urlencode(query_params)
     return urlunparse(parsed._replace(query=new_query))
-
-
-def _check_api_key() -> None:
-    """요약 작업을 띄우기 전에 OpenAI API 키가 설정되어 있는지 확인"""
-    api_key = (os.getenv("OPENAI_API_KEY") or "").strip()
-    if not api_key:
-        logger.error("OPENAI_API_KEY가 설정되지 않았습니다 (.env 로드 실패 가능).")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="OPENAI_API_KEY가 설정되지 않았습니다.",
-        )
-    if len(api_key) < 20:
-        logger.error("OPENAI_API_KEY가 비정상적으로 짧습니다 (len=%d). .env 내용을 확인하세요.", len(api_key))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="OPENAI_API_KEY가 올바르지 않습니다. (.env 확인 후 서버를 재시작하세요.)",
-        )
 
 
 def _to_transcript_text(transcript: List[str] | str) -> str:

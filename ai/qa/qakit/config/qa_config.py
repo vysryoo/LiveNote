@@ -2,14 +2,14 @@
 QA 생성 설정
 """
 
-import os
+from core.config import get_settings
 
 
 class QAConfig:
     """QA 생성 관련 설정"""
     
     # OpenAI API
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_API_KEY: str = get_settings().openai_api_key
 
     # 최대 출력 토큰. 모델과 추론 강도는 core.llm의 QA 용도 설정을 따름
     QA_MAX_TOKENS: int = 500

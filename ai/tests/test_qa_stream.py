@@ -7,7 +7,7 @@ import pytest
 
 pytestmark = pytest.mark.anyio("asyncio")
 
-from server.models import QnAType
+from core.schemas import QnAType
 from tests.conftest import StubRetrievedChunk
 
 

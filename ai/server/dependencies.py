@@ -5,9 +5,10 @@ from __future__ import annotations
 
 from fastapi import Request
 
-from .config import AppSettings
+from core.config import Settings
 
-async def get_settings(request: Request) -> AppSettings:
+
+async def get_settings(request: Request) -> Settings:
     """앱 설정 조회"""
     return request.app.state.app_settings
 

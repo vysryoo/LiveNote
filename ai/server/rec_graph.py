@@ -15,7 +15,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
-from .models import ResourceType
+from core.schemas import ResourceType
 
 logger = logging.getLogger(__name__)
 

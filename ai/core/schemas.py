@@ -1,13 +1,32 @@
 """
-모듈 공통 입력 모델
+모듈 공통 모델
 
-QA·추천 모듈이 함께 쓰는 RAG 검색 결과와 이전 섹션 요약 형식.
+QA·추천 모듈과 서버가 함께 쓰는 유형 Enum, RAG 검색 결과, 이전 섹션 요약 형식.
 """
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
+
+
+class QnAType(str, Enum):
+    """QnA 질문 유형."""
+
+    CONCEPT = "CONCEPT"
+    APPLICATION = "APPLICATION"
+    ADVANCED = "ADVANCED"
+    COMPARISON = "COMPARISON"
+
+
+class ResourceType(str, Enum):
+    """추천 자료 유형."""
+
+    PAPER = "PAPER"  # OpenAlex
+    WIKI = "WIKI"  # Wikipedia
+    VIDEO = "VIDEO"  # YouTube
+    BLOG = "BLOG"  # 네이버 블로그
 
 
 class RAGChunk(BaseModel):
