@@ -1,23 +1,14 @@
 from __future__ import annotations
 
 import asyncio
-from typing import List, Tuple
+from typing import List
 
 import pytest
 
-pytestmark = pytest.mark.anyio("asyncio")
-
 from core.schemas import RAGChunk, ResourceType
-from tests.conftest import (
-    GoogleResponse,
-    GoogleSearchResult,
-    OpenAlexResponse,
-    PaperInfo,
-    WikiPageInfo,
-    WikiResponse,
-    YouTubeResponse,
-    YouTubeVideoInfo,
-)
+from recommend.models import Recommendation
+
+pytestmark = pytest.mark.anyio("asyncio")
 
 
 def prepare_chunks() -> List[RAGChunk]:
@@ -27,78 +18,27 @@ def prepare_chunks() -> List[RAGChunk]:
     ]
 
 
-def build_default_responses() -> Tuple[list, list, list, list]:
-    openalex_items = [
-        OpenAlexResponse(
-            lecture_id="lec",
-            section_id=1,
-            paper_info=PaperInfo(
-                url="http://example.com/paper1",
-                title="Paper 1",
-                abstract="Abstract 1",
-                year=2024,
-                cited_by_count=100,
-                authors=["Alice"],
-            ),
-            reason="LLM 검증",
-            score=7.5,
-        )
-    ]
-    wiki_items = [
-        WikiResponse(
-            lecture_id="lec",
-            section_id=1,
-            page_info=WikiPageInfo(
-                url="http://example.com/wiki1",
-                title="Wiki 1",
-                extract="Extract 1",
-                lang="en",
-                page_id=1,
-            ),
-            reason="관련 키워드",
-            score=6.8,
-        )
-    ]
-    yt_items = [
-        YouTubeResponse(
-            lecture_id="lec",
-            section_id=1,
-            video_info=YouTubeVideoInfo(
-                url="http://youtu.be/1",
-                title="Video 1",
-                extract="Extract 1",
-                lang="en",
-            ),
-            reason="LLM verification",
-            score=7.2,
-        )
-    ]
-    google_items = [
-        GoogleResponse(
-            lecture_id="lec",
-            section_id=1,
-            search_result=GoogleSearchResult(
-                url="http://example.com/blog",
-                title="Blog 1",
-                snippet="Snippet 1",
-                display_link="example.com",
-                lang="en",
-            ),
-            reason="검색 결과",
-            score=6.0,
-        )
-    ]
-    return openalex_items, wiki_items, yt_items, google_items
+def _recommendation(resource_type: ResourceType) -> Recommendation:
+    name = resource_type.value.lower()
+    return Recommendation(
+        type=resource_type,
+        title=f"{name} 1",
+        url=f"http://example.com/{name}",
+        description=f"{name} 설명",
+        score=7.0,
+        reason="관련 개념",
+        detail={"url": f"http://example.com/{name}"},
+    )
+
+
+def set_default_results(test_context, resource_types=tuple(ResourceType)) -> None:
+    test_context.rec.results = {t: [_recommendation(t)] for t in resource_types}
 
 
 @pytest.mark.anyio("asyncio")
 async def test_rec_recommend_defaults_use_all_providers(async_client, test_context, callback_recorder):
     test_context.rag.retrieve_result = prepare_chunks()
-    oa_items, wiki_items, yt_items, google_items = build_default_responses()
-    test_context.openalex.responses = oa_items
-    test_context.wiki.responses = wiki_items
-    test_context.youtube.responses = yt_items
-    test_context.google.responses = google_items
+    set_default_results(test_context)
 
     payload = {
         "lecture_id": 1,
@@ -106,7 +46,7 @@ async def test_rec_recommend_defaults_use_all_providers(async_client, test_conte
         "section_index": 0,
         "section_summary": "자료구조와 알고리즘을 설명하는 강의",
         "callback_url": "http://example.com/rec",
-        "previous_summaries": [],
+        "previous_summaries": [{"section_index": 0, "summary": "이전 섹션 요약"}],
         "yt_exclude": ["old_video"],
         "wiki_exclude": ["old_wiki"],
         "paper_exclude": ["old_paper"],
@@ -116,28 +56,33 @@ async def test_rec_recommend_defaults_use_all_providers(async_client, test_conte
     assert response.status_code == 202
     await asyncio.sleep(0.05)
 
-    assert test_context.openalex.requests and test_context.wiki.requests
-    assert test_context.youtube.requests and test_context.google.requests
-    assert test_context.openalex.requests[-1].exclude_ids == ["old_paper"]
-    assert test_context.wiki.requests[-1].exclude_titles == ["old_wiki"]
-    assert test_context.youtube.requests[-1].exclude_titles == ["old_video"]
-    assert test_context.google.requests[-1].exclude_urls == ["http://old.example.com"]
+    contexts = dict(test_context.rec.calls)
+    assert set(contexts) == set(ResourceType)
+    context = contexts[ResourceType.PAPER]
+    assert context.summary == "자료구조와 알고리즘을 설명하는 강의"
+    assert context.rag_chunks == prepare_chunks()
+    assert [(p.section_id, p.summary) for p in context.previous_summaries] == [(1, "이전 섹션 요약")]
+    assert context.excludes == {
+        ResourceType.PAPER: ["old_paper"],
+        ResourceType.WIKI: ["old_wiki"],
+        ResourceType.VIDEO: ["old_video"],
+        ResourceType.BLOG: ["http://old.example.com"],
+    }
 
-    types = {item["json"]["resources"][0]["type"] for item in callback_recorder}
-    assert types == {
-        ResourceType.PAPER.value,
-        ResourceType.WIKI.value,
-        ResourceType.VIDEO.value,
-        ResourceType.BLOG.value,
+    callbacks = {item["json"]["resources"][0]["type"]: item["json"] for item in callback_recorder}
+    assert set(callbacks) == {t.value for t in ResourceType}
+    assert callbacks["WIKI"] == {
+        "lectureId": 1,
+        "summaryId": 10,
+        "sectionIndex": 0,
+        "resources": [_recommendation(ResourceType.WIKI).to_resource()],
     }
 
 
 @pytest.mark.anyio("asyncio")
 async def test_rec_recommend_filters_by_resource_types(async_client, test_context, callback_recorder):
     test_context.rag.retrieve_result = prepare_chunks()
-    _, wiki_items, yt_items, _ = build_default_responses()
-    test_context.wiki.responses = wiki_items
-    test_context.youtube.responses = yt_items
+    set_default_results(test_context)
 
     payload = {
         "lecture_id": 2,
@@ -156,11 +101,7 @@ async def test_rec_recommend_filters_by_resource_types(async_client, test_contex
     assert response.status_code == 202
     await asyncio.sleep(0.05)
 
-    assert not test_context.openalex.requests
-    assert not test_context.google.requests
-    assert test_context.wiki.requests and test_context.youtube.requests
-    assert test_context.wiki.requests[-1].exclude_titles == ["skip wiki"]
-    assert test_context.youtube.requests[-1].exclude_titles == ["skip video"]
+    assert {t for t, _ in test_context.rec.calls} == {ResourceType.WIKI, ResourceType.VIDEO}
 
     types = {item["json"]["resources"][0]["type"] for item in callback_recorder}
     assert types == {ResourceType.WIKI.value, ResourceType.VIDEO.value}
@@ -184,13 +125,8 @@ async def test_rec_recommend_rejects_invalid_resource_type(async_client):
 @pytest.mark.anyio("asyncio")
 async def test_rec_recommend_handles_provider_failure(async_client, test_context, callback_recorder, monkeypatch):
     test_context.rag.retrieve_result = prepare_chunks()
-    _, wiki_items, _, _ = build_default_responses()
-    test_context.wiki.responses = wiki_items
-
-    async def failing_openalex(request):
-        raise RuntimeError("OpenAlex down")
-
-    monkeypatch.setattr(test_context.openalex, "recommend_papers", failing_openalex)
+    set_default_results(test_context, [ResourceType.WIKI])
+    test_context.rec.failures[ResourceType.PAPER] = RuntimeError("OpenAlex down")
 
     payload = {
         "lecture_id": 4,

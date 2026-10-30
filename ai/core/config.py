@@ -42,8 +42,8 @@ class QASettings(BaseModel):
     qa_top_k: int = Field(default=4, ge=1, description="QA 생성 개수")
 
 
-class OpenAlexSettings(BaseModel):
-    """논문 추천 설정."""
+class PaperSettings(BaseModel):
+    """논문 추천 설정 (OpenAlex)."""
 
     top_k: int = Field(default=1, ge=1, le=10, description="논문 추천 개수")
     verify: bool = Field(default=True, description="LLM 검증 여부")
@@ -64,8 +64,8 @@ class WikiSettings(BaseModel):
     fallback_to_ko: bool = Field(default=True, description="부족 시 언어 fallback 여부")
 
 
-class YouTubeSettings(BaseModel):
-    """영상 추천 설정."""
+class VideoSettings(BaseModel):
+    """영상 추천 설정 (YouTube)."""
 
     top_k: int = Field(default=1, ge=1, le=10, description="YouTube 추천 개수")
     verify: bool = Field(default=True, description="LLM 검증 여부")
@@ -74,8 +74,8 @@ class YouTubeSettings(BaseModel):
     min_score: float = Field(default=7.0, ge=0.0, le=10.0, description="최소 점수")
 
 
-class GoogleSettings(BaseModel):
-    """블로그 추천 설정."""
+class BlogSettings(BaseModel):
+    """블로그 추천 설정 (네이버 블로그)."""
 
     top_k: int = Field(default=1, ge=1, le=10, description="블로그 추천 개수")
     verify: bool = Field(default=True, description="LLM 검증 여부")
@@ -88,10 +88,10 @@ class GoogleSettings(BaseModel):
 class RECSettings(BaseModel):
     """자료 추천 설정."""
 
-    openalex: OpenAlexSettings = Field(default_factory=OpenAlexSettings)
+    paper: PaperSettings = Field(default_factory=PaperSettings)
     wiki: WikiSettings = Field(default_factory=WikiSettings)
-    youtube: YouTubeSettings = Field(default_factory=YouTubeSettings)
-    google: GoogleSettings = Field(default_factory=GoogleSettings)
+    video: VideoSettings = Field(default_factory=VideoSettings)
+    blog: BlogSettings = Field(default_factory=BlogSettings)
 
 
 class SummarySettings(BaseModel):

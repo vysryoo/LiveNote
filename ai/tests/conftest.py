@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import asyncio
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import pytest
 from fastapi import FastAPI
@@ -15,90 +14,10 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.append(str(ROOT_DIR))
 
 from core.config import Settings, get_settings
-from core.schemas import QnAType, RAGChunk
+from core.schemas import QnAType, RAGChunk, ResourceType
 from qa.models import QAEvent
+from recommend.models import RecContext, Recommendation
 from server.app import create_app
-
-
-@dataclass
-class SimpleModel:
-    """model_dump를 제공하는 단순 베이스"""
-    
-    def model_dump(self) -> Dict[str, Any]:
-        from dataclasses import asdict
-        return asdict(self)
-
-
-@dataclass
-class PaperInfo(SimpleModel):
-    url: str
-    title: str
-    abstract: str
-    year: Optional[int] = None
-    cited_by_count: int = 0
-    authors: List[str] = field(default_factory=list)
-
-
-@dataclass
-class OpenAlexResponse(SimpleModel):
-    lecture_id: str
-    section_id: int
-    paper_info: PaperInfo
-    reason: str
-    score: float
-
-
-@dataclass
-class WikiPageInfo(SimpleModel):
-    url: str
-    title: str
-    extract: str
-    lang: str
-    page_id: int
-
-
-@dataclass
-class WikiResponse(SimpleModel):
-    lecture_id: str
-    section_id: int
-    page_info: WikiPageInfo
-    reason: str
-    score: float
-
-
-@dataclass
-class YouTubeVideoInfo(SimpleModel):
-    url: str
-    title: str
-    extract: str
-    lang: str
-
-
-@dataclass
-class YouTubeResponse(SimpleModel):
-    lecture_id: str
-    section_id: int
-    video_info: YouTubeVideoInfo
-    reason: str
-    score: float
-
-
-@dataclass
-class GoogleSearchResult(SimpleModel):
-    url: str
-    title: str
-    snippet: str
-    display_link: str = ""
-    lang: str = "en"
-
-
-@dataclass
-class GoogleResponse(SimpleModel):
-    lecture_id: str
-    section_id: int
-    search_result: GoogleSearchResult
-    reason: str
-    score: float
 
 
 class StubRAGService:
@@ -158,64 +77,22 @@ class StubQAService:
             yield event
 
 
-class StubOpenAlexService:
-    """OpenAlex 서비스 스텁"""
-    
-    def __init__(self):
-        self.responses: List[OpenAlexResponse] = []
-        self.delay: float = 0.0
-        self.requests: List[OpenAlexResponse] = []
-    
-    async def recommend_papers(self, request):
-        self.requests.append(request)
-        if self.delay:
-            await asyncio.sleep(self.delay)
-        return list(self.responses)
-
-
-class StubWikiService:
-    """Wiki 서비스 스텁"""
-    
-    def __init__(self):
-        self.responses: List[WikiResponse] = []
-        self.delay: float = 0.0
-        self.requests: List[WikiResponse] = []
-    
-    async def recommend_pages(self, request):
-        self.requests.append(request)
-        if self.delay:
-            await asyncio.sleep(self.delay)
-        return list(self.responses)
-
-
-class StubYouTubeService:
-    """YouTube 서비스 스텁"""
-    
-    def __init__(self):
-        self.responses: List[YouTubeResponse] = []
-        self.delay: float = 0.0
-        self.requests: List[Any] = []
-    
-    async def recommend_videos(self, request):
-        self.requests.append(request)
-        if self.delay:
-            await asyncio.sleep(self.delay)
-        return list(self.responses)
-
-
-class StubGoogleService:
-    """Google 서비스 스텁"""
+class StubRecommendService:
+    """자료 추천 서비스 스텁. 자료 종류별로 정해 둔 결과를 돌려주고, failures에 있는 종류는 예외를 낸다."""
 
     def __init__(self):
-        self.responses: List[GoogleResponse] = []
-        self.delay: float = 0.0
-        self.requests: List[Any] = []
+        self.results: Dict[ResourceType, List[Recommendation]] = {}
+        self.failures: Dict[ResourceType, Exception] = {}
+        self.calls: List[Tuple[ResourceType, RecContext]] = []
 
-    async def recommend_results(self, request):
-        self.requests.append(request)
-        if self.delay:
-            await asyncio.sleep(self.delay)
-        return list(self.responses)
+    async def recommend(self, resource_type: ResourceType, context: RecContext) -> List[Recommendation]:
+        self.calls.append((resource_type, context))
+        if resource_type in self.failures:
+            raise self.failures[resource_type]
+        return list(self.results.get(resource_type, []))
+
+    async def close(self) -> None:
+        pass
 
 
 @dataclass
@@ -224,10 +101,7 @@ class TestContext:
     
     rag: StubRAGService = field(default_factory=StubRAGService)
     qa: StubQAService = field(default_factory=StubQAService)
-    openalex: StubOpenAlexService = field(default_factory=StubOpenAlexService)
-    wiki: StubWikiService = field(default_factory=StubWikiService)
-    youtube: StubYouTubeService = field(default_factory=StubYouTubeService)
-    google: StubGoogleService = field(default_factory=StubGoogleService)
+    rec: StubRecommendService = field(default_factory=StubRecommendService)
     settings: Settings = field(default_factory=Settings)
 
 
@@ -241,18 +115,6 @@ def test_context() -> TestContext:
     ctx.settings.qa.language = "ko"
     ctx.settings.qa.question_types = [QnAType.APPLICATION, QnAType.COMPARISON, QnAType.ADVANCED]
     ctx.settings.qa.qa_top_k = 3
-    ctx.settings.rec.openalex.top_k = 2
-    ctx.settings.rec.openalex.verify = True
-    ctx.settings.rec.openalex.min_score = 3.0
-    ctx.settings.rec.openalex.sort_by = "hybrid"
-    ctx.settings.rec.wiki.top_k = 2
-    ctx.settings.rec.wiki.verify = False
-    ctx.settings.rec.wiki.wiki_lang = "en"
-    ctx.settings.rec.wiki.min_score = 3.0
-    ctx.settings.rec.youtube.top_k = 2
-    ctx.settings.rec.youtube.verify = True
-    ctx.settings.rec.youtube.yt_lang = "en"
-    ctx.settings.rec.youtube.min_score = 3.0
     return ctx
 
 
@@ -262,10 +124,7 @@ def fastapi_app(test_context: TestContext) -> FastAPI:
         test_context.settings,
         rag_service=test_context.rag,
         qa_service=test_context.qa,
-        openalex_service=test_context.openalex,
-        wiki_service=test_context.wiki,
-        youtube_service=test_context.youtube,
-        google_service=test_context.google,
+        rec_service=test_context.rec,
     )
 
 

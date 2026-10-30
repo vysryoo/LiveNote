@@ -3,8 +3,8 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from wiki.wikikit.api import wiki_client
-from wiki.wikikit.api.wiki_client import WikiAPIClient, retry_wait_seconds
+from recommend.providers import wiki as wiki_client
+from recommend.providers.wiki import WikiClient, retry_wait_seconds
 
 pytestmark = pytest.mark.anyio("asyncio")
 
@@ -31,7 +31,7 @@ def _client(statuses):
         headers = {"Retry-After": "3"} if status == 429 else {}
         return httpx.Response(status, json=SEARCH_BODY if status == 200 else {}, headers=headers)
 
-    return WikiAPIClient(transport=httpx.MockTransport(handler)), calls
+    return WikiClient("LiveNote-test", transport=httpx.MockTransport(handler)), calls
 
 
 async def test_search_retries_after_429_and_respects_retry_after(waits):

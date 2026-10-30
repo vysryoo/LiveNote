@@ -23,21 +23,6 @@ async def get_qa_service(request: Request):
     return request.app.state.qa_service
 
 
-async def get_openalex_service(request: Request):
-    """OpenAlex 서비스 인스턴스"""
-    return request.app.state.openalex_service
-
-
-async def get_wiki_service(request: Request):
-    """Wikipedia 서비스 인스턴스"""
-    return request.app.state.wiki_service
-
-
-async def get_youtube_service(request: Request):
-    """YouTube 서비스 인스턴스"""
-    return request.app.state.youtube_service
-
-
-async def get_google_service(request: Request):
-    """Google 서비스 인스턴스"""
-    return request.app.state.google_service
+async def get_rec_service(request: Request):
+    """자료 추천 서비스 인스턴스"""
+    return request.app.state.rec_service

@@ -15,20 +15,10 @@ from core.config import Settings
 from core.schemas import PreviousSummary as ProviderPreviousSummary, ResourceType
 from core.tasks import run_in_background
 from core.timing import RequestTimer
-from openalex.openalexkit.models import OpenAlexRequest, OpenAlexResponse
-from wiki.wikikit.models import WikiRequest, WikiResponse
-from youtube.youtubekit.models import YouTubeRequest, YouTubeResponse
-from blog.blogkit.models import GoogleRequest, GoogleResponse
+from recommend.graph import run_recommendations
+from recommend.models import RecContext
 
-from ..dependencies import (
-    get_openalex_service,
-    get_rag_service,
-    get_settings,
-    get_wiki_service,
-    get_youtube_service,
-    get_google_service,
-)
-from ..rec_graph import run_recommendations
+from ..dependencies import get_rag_service, get_rec_service, get_settings
 from ..security import internal_auth_headers
 from ..utils import CamelModel, build_collection_id
 
@@ -56,7 +46,7 @@ class RECRequest(CamelModel):
     yt_exclude: List[str] = Field(default_factory=list, description="제외할 유튜브 제목")
     wiki_exclude: List[str] = Field(default_factory=list, description="제외할 위키 제목")
     paper_exclude: List[str] = Field(default_factory=list, description="제외할 논문 ID")
-    google_exclude: List[str] = Field(default_factory=list, description="제외할 구글 URL")
+    google_exclude: List[str] = Field(default_factory=list, description="제외할 블로그 URL (필드 이름은 백엔드 호환용)")
     resource_types: Optional[List[ResourceType]] = Field(
         default=None,
         description="요청 리소스 유형 (미지정 시 모든 유형)"
@@ -73,18 +63,13 @@ class RECRequest(CamelModel):
 async def recommend_resources(
     request: RECRequest,
     rag_service=Depends(get_rag_service),
-    openalex_service=Depends(get_openalex_service),
-    wiki_service=Depends(get_wiki_service),
-    youtube_service=Depends(get_youtube_service),
-    google_service=Depends(get_google_service),
+    rec_service=Depends(get_rec_service),
     settings: Settings = Depends(get_settings),
 ):
-    """논문/위키/유튜브/구글 추천 콜백 엔드포인트"""
+    """자료 종류별 추천을 시작하고 바로 응답한다. 종류마다 끝나는 대로 콜백으로 결과를 보낸다."""
     timer = RequestTimer("rec", lecture_id=request.lecture_id, section_index=request.section_index)
     timer.mark("received")
-    lecture_id_str = str(request.lecture_id)
-    collection_id = build_collection_id(settings.rag.collection_prefix, lecture_id_str)
-    section_id_for_provider = request.section_index + 1  # 외부 모듈은 1-base
+    collection_id = build_collection_id(settings.rag.collection_prefix, str(request.lecture_id))
 
     def _retrieve():
         return rag_service.retrieve_context(
@@ -112,93 +97,37 @@ async def recommend_resources(
             detail="요청된 리소스 유형이 없습니다."
         )
 
-    previous = [
-        ProviderPreviousSummary(section_id=ps.section_index + 1, summary=ps.summary, timestamp=ps.timestamp)
-        for ps in request.previous_summaries
-    ]
-
-    openalex_request = OpenAlexRequest(
-        lecture_id=lecture_id_str,
-        section_id=section_id_for_provider,
-        section_summary=request.section_summary,
-        language=settings.rec.openalex.language,
-        top_k=settings.rec.openalex.top_k,
-        verify_openalex=settings.rec.openalex.verify,
-        previous_summaries=previous,
-        rag_context=rag_chunks,
-        year_from=settings.rec.openalex.year_from,
-        exclude_ids=request.paper_exclude,
-        sort_by=settings.rec.openalex.sort_by,
-        min_score=settings.rec.openalex.min_score,
+    context = RecContext(
+        summary=request.section_summary,
+        # 추천 프롬프트는 섹션 번호를 1부터 표시
+        previous_summaries=[
+            ProviderPreviousSummary(section_id=ps.section_index + 1, summary=ps.summary, timestamp=ps.timestamp)
+            for ps in request.previous_summaries
+        ],
+        rag_chunks=rag_chunks,
+        excludes={
+            ResourceType.PAPER: request.paper_exclude,
+            ResourceType.WIKI: request.wiki_exclude,
+            ResourceType.VIDEO: request.yt_exclude,
+            ResourceType.BLOG: request.google_exclude,
+        },
     )
-
-    wiki_request = WikiRequest(
-        lecture_id=lecture_id_str,
-        section_id=section_id_for_provider,
-        lecture_summary=request.section_summary,
-        language=settings.rec.wiki.language,
-        top_k=settings.rec.wiki.top_k,
-        verify_wiki=settings.rec.wiki.verify,
-        previous_summaries=previous,
-        rag_context=rag_chunks,
-        wiki_lang=settings.rec.wiki.wiki_lang,
-        fallback_to_ko=settings.rec.wiki.fallback_to_ko,
-        exclude_titles=request.wiki_exclude,
-        min_score=settings.rec.wiki.min_score,
-    )
-
-    youtube_request = YouTubeRequest(
-        lecture_id=lecture_id_str,
-        section_id=section_id_for_provider,
-        lecture_summary=request.section_summary,
-        language=settings.rec.youtube.language,
-        top_k=settings.rec.youtube.top_k,
-        verify_yt=settings.rec.youtube.verify,
-        previous_summaries=previous,
-        rag_context=rag_chunks,
-        yt_lang=settings.rec.youtube.yt_lang,
-        exclude_titles=request.yt_exclude,
-        min_score=settings.rec.youtube.min_score,
-    )
-
-    google_request = GoogleRequest(
-        lecture_id=lecture_id_str,
-        section_id=section_id_for_provider,
-        lecture_summary=request.section_summary,
-        language=settings.rec.google.language,
-        top_k=settings.rec.google.top_k,
-        verify_google=settings.rec.google.verify,
-        previous_summaries=previous,
-        rag_context=rag_chunks,
-        search_lang=settings.rec.google.search_lang,
-        exclude_urls=request.google_exclude,
-        min_score=settings.rec.google.min_score,
-    )
-
-    providers = {
-        ResourceType.PAPER: lambda: openalex_service.recommend_papers(openalex_request),
-        ResourceType.WIKI: lambda: wiki_service.recommend_pages(wiki_request),
-        ResourceType.VIDEO: lambda: youtube_service.recommend_videos(youtube_request),
-        ResourceType.BLOG: lambda: google_service.recommend_results(google_request),
-    }
 
     async def provider_task(res_type: ResourceType):
         try:
-            result = await providers[res_type]()
-            mapped = map_resources(res_type, result)
-            titles = [item.get("title") for item in mapped if item.get("title")]
+            resources = [r.to_resource() for r in await rec_service.recommend(res_type, context)]
             logger.info(
-                "REC provider %s 결과: %s개 (titles: %s)",
+                "추천 결과: %s %d개 (%s)",
                 res_type.value,
-                len(mapped),
-                ", ".join(titles[:5]) if titles else "none",
+                len(resources),
+                ", ".join(r["title"] for r in resources[:5]) or "none",
             )
-            timer.mark("provider_done", resource_type=res_type.value, count=len(mapped))
-            await post_resources_callback(request, mapped, settings)
+            timer.mark("provider_done", resource_type=res_type.value, count=len(resources))
+            await post_resources_callback(request, resources, settings)
             timer.mark("provider_callback_sent", resource_type=res_type.value)
         except Exception as exc:  # pragma: no cover - 외부 서비스 예외
             timer.mark("provider_failed", resource_type=res_type.value)
-            logger.exception("REC provider %s 실패: %s", res_type.value, exc)
+            logger.exception("추천 실패: %s %s", res_type.value, exc)
             await post_resources_callback(request, [], settings)
 
     # 자료 종류별 추천은 그래프가 동시에 실행하고, 각각 끝나는 대로 콜백을 보냄
@@ -231,68 +160,6 @@ def _select_resource_types(resource_types: Optional[List[ResourceType]]) -> List
         if enum_value not in normalized:
             normalized.append(enum_value)
     return normalized
-
-
-def map_resources(res_type: ResourceType, result: List) -> List[dict]:
-    """provider 응답을 콜백용 리소스 포맷으로 변환"""
-    mapped = []
-    if res_type is ResourceType.PAPER:
-        for item in result:  # type: OpenAlexResponse
-            detail = item.paper_info.model_dump()
-            mapped.append(
-                {
-                    "type": ResourceType.PAPER.value,
-                    "title": item.paper_info.title,
-                    "url": item.paper_info.url,
-                    "description": item.paper_info.abstract,
-                    "score": item.score,
-                    "reason": item.reason,
-                    "detail": detail,
-                }
-            )
-    elif res_type is ResourceType.WIKI:
-        for item in result:  # type: WikiResponse
-            detail = item.page_info.model_dump()
-            mapped.append(
-                {
-                    "type": ResourceType.WIKI.value,
-                    "title": item.page_info.title,
-                    "url": item.page_info.url,
-                    "description": item.page_info.extract,
-                    "score": item.score,
-                    "reason": item.reason,
-                    "detail": detail,
-                }
-            )
-    elif res_type is ResourceType.VIDEO:
-        for item in result:  # type: YouTubeResponse
-            detail = item.video_info.model_dump()
-            mapped.append(
-                {
-                    "type": ResourceType.VIDEO.value,
-                    "title": item.video_info.title,
-                    "url": item.video_info.url,
-                    "description": item.video_info.extract,
-                    "score": item.score,
-                    "reason": item.reason,
-                    "detail": detail,
-                }
-            )
-    elif res_type is ResourceType.BLOG:
-        for item in result:  # type: GoogleResponse
-            detail = item.search_result.model_dump()
-            mapped.append(
-                {
-                    "type": ResourceType.BLOG.value,
-                    "title": item.search_result.title,
-                    "url": item.search_result.url,
-                    "description": item.search_result.snippet,
-                    "score": item.score,
-                    "reason": item.reason,
-                    "detail": detail,
-                }
-            )
-    return mapped
 
 
 async def post_resources_callback(request: RECRequest, resources: List[dict], settings: Settings):

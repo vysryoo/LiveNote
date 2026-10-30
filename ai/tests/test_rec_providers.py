@@ -12,7 +12,8 @@ import pytest
 
 from core.llm import ModelPurpose
 from core.schemas import PreviousSummary, RAGChunk, ResourceType
-from server.routes.rec import map_resources
+from recommend.models import RecContext
+from recommend.pipeline import recommend
 from tests.snapshots import assert_snapshot
 
 pytestmark = pytest.mark.anyio("asyncio")
@@ -47,30 +48,22 @@ class FakeLLM:
         return sorted(self.calls, key=lambda call: json.dumps(call, ensure_ascii=False, sort_keys=True))
 
 
-def install_llm(monkeypatch, module: str, handler: Handler) -> FakeLLM:
+def install_llm(monkeypatch, handler: Handler) -> FakeLLM:
     fake = FakeLLM(handler)
-    monkeypatch.setattr(f"{module}.complete", fake.complete)
+    monkeypatch.setattr("core.llm.complete", fake.complete)
     return fake
+
+
+def context(resource_type: ResourceType, excludes: List[str]) -> RecContext:
+    return RecContext(summary=SUMMARY, previous_summaries=PREVIOUS, rag_chunks=RAG, excludes={resource_type: excludes})
+
+
+async def run(provider, ctx: RecContext) -> List[Dict[str, Any]]:
+    return [r.to_resource() for r in await recommend(provider, ctx)]
 
 
 def fail(message: str):
     raise RuntimeError(message)
-
-
-@pytest.fixture(autouse=True)
-def provider_keys(monkeypatch):
-    """공급자 설정이 import 시점에 읽은 키를 테스트 값으로 채운다."""
-    from blog.blogkit.config.google_config import GoogleConfig
-    from openalex.openalexkit.config.openalex_config import OpenAlexConfig
-    from wiki.wikikit.config.wiki_config import WikiConfig
-    from youtube.youtubekit.config.youtube_config import YouTubeConfig
-
-    for config in (OpenAlexConfig, WikiConfig, YouTubeConfig, GoogleConfig):
-        monkeypatch.setattr(config, "OPENAI_API_KEY", "sk-test")
-    monkeypatch.setattr(YouTubeConfig, "YOUTUBE_API_KEY", "yt-test")
-    monkeypatch.setattr(YouTubeConfig, "OFFLINE_MODE", False)
-    monkeypatch.setattr(GoogleConfig, "NAVER_CLIENT_ID", "naver-id")
-    monkeypatch.setattr(GoogleConfig, "NAVER_CLIENT_SECRET", "naver-secret")
 
 
 # 논문
@@ -113,22 +106,16 @@ def paper_llm(prompt: str) -> str:
 
 
 async def test_paper_provider(monkeypatch):
-    from openalex.openalexkit.models import OpenAlexRequest
-    from openalex.openalexkit.service import OpenAlexService
+    from recommend.providers.paper import PaperProvider
 
-    llm = install_llm(monkeypatch, "openalex.openalexkit.llm.openai_client", paper_llm)
-    service = OpenAlexService()
+    llm = install_llm(monkeypatch, paper_llm)
     api = FakeOpenAlexApi()
-    service.api_client = api
-    request = OpenAlexRequest(
-        lecture_id="1", section_id=4, section_summary=SUMMARY, language="ko", top_k=3, verify_openalex=True,
-        previous_summaries=PREVIOUS, rag_context=RAG, year_from=1960, exclude_ids=["W9"], sort_by="hybrid", min_score=5.0,
-    )
+    provider = PaperProvider(top_k=3, verify=True, min_score=5.0, language="ko", year_from=1960, sort_by="hybrid", api=api)
 
-    results = await service.recommend_papers(request)
+    results = await run(provider, context(ResourceType.PAPER, ["W9"]))
 
     assert_snapshot("rec_paper", {
-        "results": map_resources(ResourceType.PAPER, results),
+        "results": results,
         "api_calls": api.calls,
         "llm_calls": llm.sorted_calls(),
     })
@@ -185,31 +172,20 @@ def wiki_llm(prompt: str) -> str:
     raise AssertionError(prompt[:200])
 
 
-def wiki_request(**overrides):
-    from wiki.wikikit.models import WikiRequest
-
-    fields = dict(
-        lecture_id="1", section_id=4, lecture_summary=SUMMARY, language="ko", top_k=2, verify_wiki=False,
-        previous_summaries=PREVIOUS, rag_context=RAG, wiki_lang="en", fallback_to_ko=True,
-        exclude_titles=["Queue (abstract data type)"], min_score=5.0,
-    )
-    fields.update(overrides)
-    return WikiRequest(**fields)
-
-
 @pytest.mark.parametrize("verify", [False, True], ids=["heuristic", "llm"])
 async def test_wiki_provider(monkeypatch, verify):
-    from wiki.wikikit.service import WikiService
+    from recommend.providers.wiki import WikiProvider
 
-    llm = install_llm(monkeypatch, "wiki.wikikit.llm.openai_client", wiki_llm)
-    service = WikiService()
+    llm = install_llm(monkeypatch, wiki_llm)
     api = FakeWikiApi()
-    service.api_client = api
+    provider = WikiProvider(
+        top_k=3 if verify else 2, verify=verify, min_score=5.0, language="ko", wiki_lang="en", fallback_to_ko=True, api=api
+    )
 
-    results = await service.recommend_pages(wiki_request(verify_wiki=verify, top_k=3 if verify else 2))
+    results = await run(provider, context(ResourceType.WIKI, ["Queue (abstract data type)"]))
 
     assert_snapshot(f"rec_wiki_{'llm' if verify else 'heuristic'}", {
-        "results": map_resources(ResourceType.WIKI, results),
+        "results": results,
         "api_calls": sorted(api.calls, key=json.dumps),
         "llm_calls": llm.sorted_calls(),
     })
@@ -218,7 +194,7 @@ async def test_wiki_provider(monkeypatch, verify):
 # 영상
 
 def video_search_items():
-    from youtube.youtubekit.api.youtube_client import YouTubeSearchItem
+    from recommend.providers.video import YouTubeSearchItem
 
     def item(video_id, title):
         return YouTubeSearchItem(video_id=video_id, title=title, description=f"{title} description",
@@ -235,7 +211,7 @@ def video_search_items():
 
 
 def video_details():
-    from youtube.youtubekit.api.youtube_client import YouTubeVideoDetail
+    from recommend.providers.video import YouTubeVideoDetail
 
     def detail(video_id, title, views, lang):
         return YouTubeVideoDetail(video_id=video_id, title=title, description=f"{title}\nfull description",
@@ -279,23 +255,16 @@ def video_llm(prompt: str) -> str:
 
 
 async def test_video_provider(monkeypatch):
-    from youtube.youtubekit.models import YouTubeRequest
-    from youtube.youtubekit.service import YouTubeService
+    from recommend.providers.video import VideoProvider
 
-    llm = install_llm(monkeypatch, "youtube.youtubekit.llm.openai_client", video_llm)
+    llm = install_llm(monkeypatch, video_llm)
     api = FakeYouTubeApi()
-    service = YouTubeService(yt_client=api)
-    service.llm.enabled = True
-    request = YouTubeRequest(
-        lecture_id="1", section_id=4, lecture_summary=SUMMARY, language="ko", top_k=2, verify_yt=True,
-        previous_summaries=PREVIOUS, rag_context=RAG, yt_lang="en", exclude_titles=["Stack vs Queue | CS101"],
-        min_score=7.0,
-    )
+    provider = VideoProvider(top_k=2, verify=True, min_score=7.0, language="ko", yt_lang="en", api=api)
 
-    results = await service.recommend_videos(request)
+    results = await run(provider, context(ResourceType.VIDEO, ["Stack vs Queue | CS101"]))
 
     assert_snapshot("rec_video", {
-        "results": map_resources(ResourceType.VIDEO, results),
+        "results": results,
         "api_calls": api.calls,
         "llm_calls": llm.sorted_calls(),
     })
@@ -334,23 +303,16 @@ def blog_llm(prompt: str) -> str:
 
 
 async def test_blog_provider(monkeypatch):
-    from blog.blogkit.models import GoogleRequest
-    from blog.blogkit.service import GoogleService
+    from recommend.providers.blog import BlogProvider
 
-    llm = install_llm(monkeypatch, "blog.blogkit.llm.openai_client", blog_llm)
-    service = GoogleService()
+    llm = install_llm(monkeypatch, blog_llm)
     api = FakeNaverApi()
-    service.api_client = api
-    request = GoogleRequest(
-        lecture_id="1", section_id=4, lecture_summary=SUMMARY, language="ko", top_k=2, verify_google=True,
-        previous_summaries=PREVIOUS, rag_context=RAG, search_lang="ko", exclude_urls=["https://blog.naver.com/c/3"],
-        min_score=3.0,
-    )
+    provider = BlogProvider(top_k=2, verify=True, min_score=3.0, language="ko", search_lang="ko", api=api)
 
-    results = await service.recommend_results(request)
+    results = await run(provider, context(ResourceType.BLOG, ["https://blog.naver.com/c/3"]))
 
     assert_snapshot("rec_blog", {
-        "results": map_resources(ResourceType.BLOG, results),
+        "results": results,
         "api_calls": api.calls,
         "llm_calls": llm.sorted_calls(),
     })

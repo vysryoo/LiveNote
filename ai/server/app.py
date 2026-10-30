@@ -35,15 +35,18 @@ def _create_rag_service(settings: Settings):
     return RAGService(settings)
 
 
+def _create_rec_service(settings: Settings):
+    from recommend.service import RecommendService
+
+    return RecommendService(settings)
+
+
 def create_app(
     settings: Settings | None = None,
     *,
     rag_service=None,
     qa_service=None,
-    openalex_service=None,
-    wiki_service=None,
-    youtube_service=None,
-    google_service=None,
+    rec_service=None,
 ) -> FastAPI:
     """FastAPI 앱 생성"""
     base_settings = settings or get_settings()
@@ -51,11 +54,8 @@ def create_app(
     # 서비스 인스턴스를 한 번만 준비해 재사용
     _rag = rag_service if rag_service is not None else _create_rag_service(base_settings)
     _qa = _ensure_service(qa_service, "qa.service.QAService")
-    _openalex = _ensure_service(openalex_service, "openalex.openalexkit.service.OpenAlexService")
-    _wiki = _ensure_service(wiki_service, "wiki.wikikit.service.WikiService")
-    _youtube = _ensure_service(youtube_service, "youtube.youtubekit.service.YouTubeService")
-    _google = _ensure_service(google_service, "blog.blogkit.service.GoogleService")
-    _openalex_owned = openalex_service is None
+    _rec = rec_service if rec_service is not None else _create_rec_service(base_settings)
+    _rec_owned = rec_service is None
     
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -64,18 +64,15 @@ def create_app(
         app.state.app_settings = base_settings
         app.state.rag_service = _rag
         app.state.qa_service = _qa
-        app.state.openalex_service = _openalex
-        app.state.wiki_service = _wiki
-        app.state.youtube_service = _youtube
-        app.state.google_service = _google
-        
+        app.state.rec_service = _rec
+
         try:
             yield
         finally:
             # 요청에 먼저 응답한 요약·추천 콜백이 끝나도록 잠시 기다림
             await background_tasks.shutdown(timeout_sec=BACKGROUND_SHUTDOWN_TIMEOUT_SEC)
-            if _openalex_owned and hasattr(_openalex, "close"):
-                await _openalex.close()
+            if _rec_owned:
+                await _rec.close()
     
     app = FastAPI(
         title="LiveNote AI Gateway",
@@ -98,10 +95,7 @@ def create_app(
     app.state.app_settings = base_settings
     app.state.rag_service = _rag
     app.state.qa_service = _qa
-    app.state.openalex_service = _openalex
-    app.state.wiki_service = _wiki
-    app.state.youtube_service = _youtube
-    app.state.google_service = _google
+    app.state.rec_service = _rec
     
     @app.get("/health")
     async def health_check():

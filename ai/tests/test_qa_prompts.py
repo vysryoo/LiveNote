@@ -38,10 +38,7 @@ async def _generate(test_context, internal_api_key, body: Dict[str, Any]) -> Non
         test_context.settings,
         rag_service=test_context.rag,
         qa_service=QAService(),
-        openalex_service=test_context.openalex,
-        wiki_service=test_context.wiki,
-        youtube_service=test_context.youtube,
-        google_service=test_context.google,
+        rec_service=test_context.rec,
     )
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://testserver", headers={"X-Internal-Api-Key": internal_api_key}
