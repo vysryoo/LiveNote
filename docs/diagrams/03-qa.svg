@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="730" viewBox="0 0 1520 730" font-family="Inter, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Segoe UI', Helvetica, Arial, sans-serif">
+<defs><marker id="arrow-ws" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563EB"/></marker>
+<marker id="arrow-stomp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#9333EA"/></marker>
+<marker id="arrow-http" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#059669"/></marker>
+<marker id="arrow-sse" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#EA580C"/></marker>
+<marker id="arrow-jdbc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#64748B"/></marker>
+<marker id="arrow-off" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#C9CED5"/></marker></defs>
+<rect width="1520" height="730" fill="#FFFFFF"/>
+<g opacity="1">
+<rect x="650.0" y="45.0" width="220" height="100" rx="14" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5"/>
+<text x="760" y="91" text-anchor="middle" font-size="21" font-weight="600" fill="#1F2937">OpenAI</text>
+<text x="760" y="115" text-anchor="middle" font-size="13.5" fill="#6B7280">LLM API</text>
+</g>
+<g opacity="1">
+<rect x="170.0" y="285.0" width="220" height="150" rx="14" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5"/>
+<text x="280" y="356" text-anchor="middle" font-size="21" font-weight="600" fill="#1F2937">AI Server</text>
+<text x="280" y="380" text-anchor="middle" font-size="13.5" fill="#6B7280">FastAPI</text>
+</g>
+<g opacity="1">
+<rect x="650.0" y="285.0" width="220" height="150" rx="14" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5"/>
+<text x="760" y="356" text-anchor="middle" font-size="21" font-weight="600" fill="#1F2937">Backend</text>
+<text x="760" y="380" text-anchor="middle" font-size="13.5" fill="#6B7280">Spring Boot</text>
+</g>
+<g opacity="1">
+<rect x="1130.0" y="285.0" width="220" height="150" rx="14" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5"/>
+<text x="1240" y="356" text-anchor="middle" font-size="21" font-weight="600" fill="#1F2937">Browser</text>
+<text x="1240" y="380" text-anchor="middle" font-size="13.5" fill="#6B7280">React</text>
+</g>
+<g opacity="1">
+<rect x="650.0" y="575.0" width="220" height="100" rx="14" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5"/>
+<text x="760" y="621" text-anchor="middle" font-size="21" font-weight="600" fill="#1F2937">DB</text>
+<text x="760" y="645" text-anchor="middle" font-size="13.5" fill="#6B7280">PostgreSQL</text>
+</g>
+<path d="M1124.0,346.0 L876.0,346.0" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow-http)"/>
+<text x="1000.0" y="338.0" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#059669">Query params</tspan><tspan fill="#374151"> · QnA 요청 (수동)</tspan></text>
+<path d="M876.0,390.0 L1124.0,390.0" fill="none" stroke="#9333EA" stroke-width="2.2" marker-end="url(#arrow-stomp)"/>
+<text x="1000.0" y="382.0" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#9333EA">JSON</tspan><tspan fill="#374151"> · QnA 토큰·카드</tspan></text>
+<path d="M720.0,569.0 L720.0,441.0" fill="none" stroke="#64748B" stroke-width="2.2" stroke-dasharray="6 5" marker-end="url(#arrow-jdbc)"/>
+<text x="710.0" y="509.0" text-anchor="end" font-size="12.5"><tspan font-weight="700" fill="#64748B">SQL</tspan><tspan fill="#374151"> · 요약·이전 QnA</tspan></text>
+<path d="M800.0,441.0 L800.0,569.0" fill="none" stroke="#64748B" stroke-width="2.2" stroke-dasharray="6 5" marker-end="url(#arrow-jdbc)"/>
+<text x="810.0" y="509.0" text-anchor="start" font-size="12.5"><tspan font-weight="700" fill="#64748B">SQL</tspan><tspan fill="#374151"> · QnA 카드</tspan></text>
+<path d="M644.0,346.0 L396.0,346.0" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow-http)"/>
+<text x="520.0" y="338.0" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#059669">JSON</tspan><tspan fill="#374151"> · QnA 요청</tspan></text>
+<path d="M396.0,390.0 L644.0,390.0" fill="none" stroke="#EA580C" stroke-width="2.2" marker-end="url(#arrow-sse)"/>
+<text x="520.0" y="382.0" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#EA580C">JSON</tspan><tspan fill="#374151"> · QnA 토큰</tspan></text>
+<path d="M260.0,279.0 L260.0,80.0 L644.0,80.0" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow-http)"/>
+<text x="462.0" y="72.0" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#059669">JSON</tspan><tspan fill="#374151"> · QnA 요청</tspan></text>
+<path d="M644.0,110.0 L300.0,110.0 L300.0,279.0" fill="none" stroke="#EA580C" stroke-width="2.2" marker-end="url(#arrow-sse)"/>
+<text x="482.0" y="130.0" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#EA580C">JSON</tspan><tspan fill="#374151"> · QnA 토큰</tspan></text>
+<line x1="1270" y1="586" x2="1306" y2="586" stroke="#2563EB" stroke-width="3"/>
+<text x="1318" y="591" font-size="13.5" fill="#374151">WebSocket</text>
+<line x1="1270" y1="612" x2="1306" y2="612" stroke="#9333EA" stroke-width="3"/>
+<text x="1318" y="617" font-size="13.5" fill="#374151">WebSocket (STOMP)</text>
+<line x1="1270" y1="638" x2="1306" y2="638" stroke="#059669" stroke-width="3"/>
+<text x="1318" y="643" font-size="13.5" fill="#374151">HTTP</text>
+<line x1="1270" y1="664" x2="1306" y2="664" stroke="#EA580C" stroke-width="3"/>
+<text x="1318" y="669" font-size="13.5" fill="#374151">SSE</text>
+<line x1="1270" y1="690" x2="1306" y2="690" stroke="#64748B" stroke-width="3" stroke-dasharray="6 5"/>
+<text x="1318" y="695" font-size="13.5" fill="#374151">JDBC</text>
+</svg>
