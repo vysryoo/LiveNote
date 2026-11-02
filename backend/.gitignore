@@ -214,3 +214,5 @@ src/main/resources/env.properties
 
 # local db dump (if you export inside backend)
 
+# IDE(VS Code Java) 빌드 출력. 빌드 시 복사된 env.properties가 들어 있음
+bin/
