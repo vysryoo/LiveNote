@@ -1,7 +1,7 @@
 """RAG 서비스: 강의 자료·섹션 요약 저장과 검색.
 
 LangChain Chroma 벡터 저장소와 OpenAI 임베딩을 쓴다.
-강의 자료(PDF)는 설정한 분할 방식(page, recursive, semantic)으로 조각내 저장하고,
+강의 자료(PDF)는 설정한 분할 방식(page, fixed, recursive, semantic)으로 조각내 저장하고,
 조각마다 출처(source_type), 쪽 범위, 순서, 분할 방식을 메타데이터로 남긴다.
 """
 from __future__ import annotations

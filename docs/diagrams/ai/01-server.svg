@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1760" height="980" viewBox="0 0 1760 980" font-family="Inter, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Segoe UI', Helvetica, Arial, sans-serif">
+<defs><marker id="arrow-http" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#059669"/></marker>
+<marker id="arrow-sse" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#EA580C"/></marker>
+<marker id="arrow-inproc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4B5563"/></marker></defs>
+<rect width="1760" height="980" fill="#FFFFFF"/>
+<rect x="380" y="40" width="720" height="900" rx="18" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5"/>
+<text x="404" y="76" font-size="21" font-weight="600" fill="#1F2937">server</text>
+<text x="484" y="76" font-size="13.5" fill="#6B7280">요청 입구 · 내부 키 인증 · 콜백</text>
+<rect x="30" y="270" width="170" height="640" rx="14" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5"/>
+<text x="115.0" y="586.0" text-anchor="middle" font-size="21" font-weight="600" fill="#1F2937">Backend</text>
+<text x="115.0" y="610.0" text-anchor="middle" font-size="13.5" fill="#6B7280">Spring Boot</text>
+<rect x="465" y="245" width="270" height="555" rx="12" fill="none" stroke="#9CA3AF" stroke-width="1.2" stroke-dasharray="6 5"/>
+<text x="479" y="267" font-size="13.5" font-weight="700" fill="#374151">routes<tspan font-weight="400" fill="#6B7280">  엔드포인트 4개</tspan></text>
+<rect x="480" y="95" width="240" height="88" rx="10" fill="#FFFFFF" stroke="#CBD0D6" stroke-width="1.5"/>
+<text x="600.0" y="128.0" text-anchor="middle" font-size="16" font-weight="700" fill="#1F2937">security.py</text>
+<text x="600.0" y="145.0" text-anchor="middle" font-size="13.5" font-weight="700" fill="#374151">verify_internal_api_key()</text>
+<text x="600.0" y="161.0" text-anchor="middle" font-size="12.5" font-weight="400" fill="#6B7280">X-Internal-Api-Key 확인</text>
+<rect x="830" y="95" width="240" height="88" rx="10" fill="#FFFFFF" stroke="#CBD0D6" stroke-width="1.5"/>
+<text x="950.0" y="128.0" text-anchor="middle" font-size="16" font-weight="700" fill="#1F2937">app.py</text>
+<text x="950.0" y="145.0" text-anchor="middle" font-size="13.5" font-weight="700" fill="#374151">create_app()</text>
+<text x="950.0" y="161.0" text-anchor="middle" font-size="12.5" font-weight="400" fill="#6B7280">서비스 생성 · 라우터·인증 등록</text>
+<rect x="480" y="276.0" width="240" height="88" rx="10" fill="#FFFFFF" stroke="#CBD0D6" stroke-width="1.5"/>
+<text x="600.0" y="309.0" text-anchor="middle" font-size="16" font-weight="700" fill="#1F2937">summary.py</text>
+<text x="600.0" y="326.0" text-anchor="middle" font-size="13.5" font-weight="700" fill="#374151">generate_summary()</text>
+<text x="600.0" y="342.0" text-anchor="middle" font-size="12.5" font-weight="400" fill="#6B7280">형식 검사 · 백그라운드 실행</text>
+<rect x="480" y="416.0" width="240" height="88" rx="10" fill="#FFFFFF" stroke="#CBD0D6" stroke-width="1.5"/>
+<text x="600.0" y="449.0" text-anchor="middle" font-size="16" font-weight="700" fill="#1F2937">qa.py</text>
+<text x="600.0" y="466.0" text-anchor="middle" font-size="13.5" font-weight="700" fill="#374151">generate_qa()</text>
+<text x="600.0" y="482.0" text-anchor="middle" font-size="12.5" font-weight="400" fill="#6B7280">질문 유형 선택 · SSE 변환</text>
+<rect x="480" y="556.0" width="240" height="88" rx="10" fill="#FFFFFF" stroke="#CBD0D6" stroke-width="1.5"/>
+<text x="600.0" y="589.0" text-anchor="middle" font-size="16" font-weight="700" fill="#1F2937">rec.py</text>
+<text x="600.0" y="606.0" text-anchor="middle" font-size="13.5" font-weight="700" fill="#374151">recommend_resources()</text>
+<text x="600.0" y="622.0" text-anchor="middle" font-size="12.5" font-weight="400" fill="#6B7280">자료 종류 선택 · 백그라운드 실행</text>
+<rect x="480" y="696.0" width="240" height="88" rx="10" fill="#FFFFFF" stroke="#CBD0D6" stroke-width="1.5"/>
+<text x="600.0" y="729.0" text-anchor="middle" font-size="16" font-weight="700" fill="#1F2937">rag.py</text>
+<text x="600.0" y="746.0" text-anchor="middle" font-size="13.5" font-weight="700" fill="#374151">upsert_pdf() · upsert_text()</text>
+<text x="600.0" y="762.0" text-anchor="middle" font-size="12.5" font-weight="400" fill="#6B7280">PDF 파일 저장 · 색인 요청</text>
+<rect x="830" y="496" width="240" height="88" rx="10" fill="#FFFFFF" stroke="#CBD0D6" stroke-width="1.5"/>
+<text x="950.0" y="529.0" text-anchor="middle" font-size="16" font-weight="700" fill="#1F2937">retrieval.py</text>
+<text x="950.0" y="546.0" text-anchor="middle" font-size="13.5" font-weight="700" fill="#374151">retrieve_section_context()</text>
+<text x="950.0" y="562.0" text-anchor="middle" font-size="12.5" font-weight="400" fill="#6B7280">QA·추천 공통 RAG 검색</text>
+<rect x="830" y="812" width="240" height="88" rx="10" fill="#FFFFFF" stroke="#CBD0D6" stroke-width="1.5"/>
+<text x="950.0" y="845.0" text-anchor="middle" font-size="16" font-weight="700" fill="#1F2937">callback.py</text>
+<text x="950.0" y="862.0" text-anchor="middle" font-size="13.5" font-weight="700" fill="#374151">post_callback()</text>
+<text x="950.0" y="878.0" text-anchor="middle" font-size="12.5" font-weight="400" fill="#6B7280">결과를 백엔드로 POST</text>
+<rect x="1160" y="276.0" width="240" height="88" rx="10" fill="#FFFFFF" stroke="#CBD0D6" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="1280.0" y="309.0" text-anchor="middle" font-size="16" font-weight="700" fill="#1F2937">summary</text>
+<text x="1280.0" y="326.0" text-anchor="middle" font-size="13.5" font-weight="700" fill="#374151">SummaryService.summarize()</text>
+<text x="1280.0" y="342.0" text-anchor="middle" font-size="12.5" font-weight="400" fill="#6B7280">섹션 전사 요약</text>
+<rect x="1160" y="416.0" width="240" height="88" rx="10" fill="#FFFFFF" stroke="#CBD0D6" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="1280.0" y="449.0" text-anchor="middle" font-size="16" font-weight="700" fill="#1F2937">qa</text>
+<text x="1280.0" y="466.0" text-anchor="middle" font-size="13.5" font-weight="700" fill="#374151">QAService.stream_questions()</text>
+<text x="1280.0" y="482.0" text-anchor="middle" font-size="12.5" font-weight="400" fill="#6B7280">유형별 QnA 이벤트</text>
+<rect x="1172" y="544.0" width="240" height="88" rx="10" fill="#FFFFFF" stroke="#CBD0D6" stroke-width="1.2" stroke-dasharray="5 4"/>
+<rect x="1166" y="550.0" width="240" height="88" rx="10" fill="#FFFFFF" stroke="#CBD0D6" stroke-width="1.2" stroke-dasharray="5 4"/>
+<rect x="1160" y="556.0" width="240" height="88" rx="10" fill="#FFFFFF" stroke="#CBD0D6" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="1280.0" y="589.0" text-anchor="middle" font-size="16" font-weight="700" fill="#1F2937">recommend</text>
+<text x="1280.0" y="606.0" text-anchor="middle" font-size="13.5" font-weight="700" fill="#374151">graph.run_recommendations()</text>
+<text x="1280.0" y="622.0" text-anchor="middle" font-size="12.5" font-weight="400" fill="#6B7280">자료 종류별 동시 추천</text>
+<rect x="1160" y="696.0" width="240" height="88" rx="10" fill="#FFFFFF" stroke="#CBD0D6" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="1280.0" y="720.5" text-anchor="middle" font-size="16" font-weight="700" fill="#1F2937">rag</text>
+<text x="1280.0" y="737.5" text-anchor="middle" font-size="13.5" font-weight="700" fill="#374151">RAGService.upsert_*()</text>
+<text x="1280.0" y="754.5" text-anchor="middle" font-size="13.5" font-weight="700" fill="#374151">retrieve_context()</text>
+<text x="1280.0" y="770.5" text-anchor="middle" font-size="12.5" font-weight="400" fill="#6B7280">강의 자료·요약 저장 · 검색</text>
+<path d="M600.0,189.0 L600.0,239.0" fill="none" stroke="#4B5563" stroke-width="1.8" marker-end="url(#arrow-inproc)"/>
+<text x="608.0" y="218.0" text-anchor="start" font-size="12.5" fill="#4B5563">요청마다 먼저 실행 · 실패 시 401</text>
+<path d="M950.0,189.0 L950.0,265.0 L741.0,265.0" fill="none" stroke="#4B5563" stroke-width="1.8" marker-end="url(#arrow-inproc)"/>
+<text x="958.0" y="249" text-anchor="start" font-size="12.5" fill="#4B5563">서비스 주입</text>
+<path d="M206.0,308.0 L474.0,308.0" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow-http)"/>
+<text x="290.0" y="300.0" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#059669">JSON</tspan><tspan fill="#374151"> · 요약 요청</tspan></text>
+<path d="M474.0,332.0 L206.0,332.0" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow-http)"/>
+<text x="290.0" y="348.0" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#059669">JSON</tspan><tspan fill="#374151"> · 접수 (202)</tspan></text>
+<path d="M206.0,448.0 L474.0,448.0" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow-http)"/>
+<text x="290.0" y="440.0" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#059669">JSON</tspan><tspan fill="#374151"> · QnA 요청</tspan></text>
+<path d="M474.0,472.0 L206.0,472.0" fill="none" stroke="#EA580C" stroke-width="2.2" marker-end="url(#arrow-sse)"/>
+<text x="290.0" y="488.0" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#EA580C">JSON</tspan><tspan fill="#374151"> · QnA 토큰</tspan></text>
+<path d="M206.0,588.0 L474.0,588.0" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow-http)"/>
+<text x="290.0" y="580.0" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#059669">JSON</tspan><tspan fill="#374151"> · 추천 요청</tspan></text>
+<path d="M474.0,612.0 L206.0,612.0" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow-http)"/>
+<text x="290.0" y="628.0" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#059669">JSON</tspan><tspan fill="#374151"> · 접수 (202)</tspan></text>
+<path d="M206.0,728.0 L474.0,728.0" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow-http)"/>
+<text x="290.0" y="704.0" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#059669">multipart</tspan><tspan fill="#374151"> · PDF 파일</tspan></text>
+<text x="290.0" y="720.0" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#059669">JSON</tspan><tspan fill="#374151"> · 최종 요약</tspan></text>
+<path d="M474.0,752.0 L206.0,752.0" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow-http)"/>
+<text x="290.0" y="768.0" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#059669">JSON</tspan><tspan fill="#374151"> · 컬렉션 ID</tspan></text>
+<path d="M726.0,320.0 L1154.0,320.0" fill="none" stroke="#4B5563" stroke-width="1.8" marker-end="url(#arrow-inproc)"/>
+<text x="940.0" y="312.0" text-anchor="middle" font-size="12.5" fill="#4B5563">섹션 전사 (백그라운드)</text>
+<path d="M726.0,448.0 L1154.0,448.0" fill="none" stroke="#4B5563" stroke-width="1.8" marker-end="url(#arrow-inproc)" marker-start="url(#arrow-inproc)"/>
+<text x="940.0" y="440.0" text-anchor="middle" font-size="12.5" fill="#4B5563">섹션 요약·질문 유형·자료 조각</text>
+<text x="940.0" y="464.0" text-anchor="middle" font-size="12.5" fill="#4B5563">QnA 이벤트</text>
+<path d="M726.0,628.0 L1154.0,628.0" fill="none" stroke="#4B5563" stroke-width="1.8" marker-end="url(#arrow-inproc)"/>
+<text x="940.0" y="620.0" text-anchor="middle" font-size="12.5" fill="#4B5563">추천 입력 (백그라운드)</text>
+<path d="M726.0,740.0 L1154.0,740.0" fill="none" stroke="#4B5563" stroke-width="1.8" marker-end="url(#arrow-inproc)" marker-start="url(#arrow-inproc)"/>
+<text x="940.0" y="732.0" text-anchor="middle" font-size="12.5" fill="#4B5563">PDF 경로·최종 요약</text>
+<text x="940.0" y="758.0" text-anchor="middle" font-size="12.5" fill="#4B5563">저장 결과</text>
+<path d="M726.0,502.0 L824.0,502.0" fill="none" stroke="#4B5563" stroke-width="1.8" marker-end="url(#arrow-inproc)" marker-start="url(#arrow-inproc)"/>
+<text x="775.0" y="494" text-anchor="middle" font-size="12.5" fill="#4B5563">섹션 요약</text>
+<text x="775.0" y="520" text-anchor="middle" font-size="12.5" fill="#4B5563">자료 조각</text>
+<path d="M726.0,578.0 L824.0,578.0" fill="none" stroke="#4B5563" stroke-width="1.8" marker-end="url(#arrow-inproc)" marker-start="url(#arrow-inproc)"/>
+<text x="775.0" y="570" text-anchor="middle" font-size="12.5" fill="#4B5563">섹션 요약</text>
+<text x="775.0" y="596" text-anchor="middle" font-size="12.5" fill="#4B5563">자료 조각</text>
+<path d="M1076.0,540.0 L1130.0,540.0 L1130.0,718.0 L1154.0,718.0" fill="none" stroke="#4B5563" stroke-width="1.8" marker-end="url(#arrow-inproc)" marker-start="url(#arrow-inproc)"/>
+<text x="1138.0" y="666.0" text-anchor="start" font-size="12.5" fill="#4B5563">검색 질의</text>
+<text x="1138.0" y="682.0" text-anchor="start" font-size="12.5" fill="#4B5563">자료 조각</text>
+<path d="M1406.0,320.0 L1440.0,320.0 L1440.0,886.0 L1076.0,886.0" fill="none" stroke="#4B5563" stroke-width="1.8" marker-end="url(#arrow-inproc)"/>
+<text x="1255.0" y="904" text-anchor="middle" font-size="12.5" fill="#4B5563">요약 결과</text>
+<path d="M1418.0,600.0 L1424.0,600.0 L1424.0,830.0 L1076.0,830.0" fill="none" stroke="#4B5563" stroke-width="1.8" marker-end="url(#arrow-inproc)"/>
+<text x="1247.0" y="822" text-anchor="middle" font-size="12.5" fill="#4B5563">추천 결과 (종류별)</text>
+<path d="M824.0,856.0 L206.0,856.0" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow-http)"/>
+<text x="605.0" y="848.0" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#059669">JSON</tspan><tspan fill="#374151"> · 요약·추천 결과 (짧으면 TOO_SHORT 안내)</tspan></text>
+<line x1="1510" y1="888" x2="1546" y2="888" stroke="#059669" stroke-width="3"/>
+<text x="1558" y="893" font-size="13.5" fill="#374151">HTTP</text>
+<line x1="1510" y1="914" x2="1546" y2="914" stroke="#EA580C" stroke-width="3"/>
+<text x="1558" y="919" font-size="13.5" fill="#374151">SSE</text>
+<line x1="1510" y1="940" x2="1546" y2="940" stroke="#4B5563" stroke-width="3"/>
+<text x="1558" y="945" font-size="13.5" fill="#374151">In-process</text>
+</svg>

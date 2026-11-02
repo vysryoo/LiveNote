@@ -24,7 +24,7 @@ from pathlib import Path
 from urllib.parse import quote
 from typing import Dict, List
 
-from eval.dataset import Section, fixed_sample, lecture_dir, load_sections
+from eval.dataset import SPLITS, Section, fixed_sample, lecture_dir, load_sections
 from eval.judge import judge_rows, judge_settings
 from eval.report import save_raw, summarize, write_report
 
@@ -32,7 +32,8 @@ AI_URL = os.getenv("EVAL_AI_URL", "http://localhost:8003")
 CALLBACK_PORT = int(os.getenv("EVAL_CALLBACK_PORT", "9911"))
 QNA_TYPES = ["CONCEPT", "APPLICATION", "COMPARISON", "ADVANCED"]
 RESOURCE_TYPES = ["PAPER", "WIKI", "VIDEO", "BLOG"]
-ALL_LECTURES = ["eng-1", "eng-2", "eng-3", "nur-1", "nur-2", "nur-3", "art-1", "art-2", "art-3"]
+# 평가용 강의 번호가 이 순서로 정해지므로 새 강의는 끝에만 추가
+ALL_LECTURES = ["eng-1", "eng-2", "eng-3", "nur-1", "nur-2", "nur-3", "art-1", "art-2", "art-3", "law-1", "law-2", "law-3"]
 K = 4
 SECTION_CONCURRENCY = 3
 RESOURCE_TIMEOUT_SEC = 240
@@ -246,7 +247,7 @@ def main() -> None:
     parser.add_argument("--experiment", required=True, help="실험 이름 (예: E0)")
     parser.add_argument("--strategy", required=True, help="AI 서버의 분할 방식 (보고서 기록용)")
     parser.add_argument("--layers", nargs="+", default=["qna", "resource"], choices=["qna", "resource"])
-    parser.add_argument("--split", default="test", choices=["dev", "test"])
+    parser.add_argument("--split", default="test", choices=SPLITS)
     parser.add_argument("--qna-per-field", type=int, default=20)
     parser.add_argument("--resource-per-field", type=int, default=10)
     parser.add_argument("--model", default=os.getenv("EVAL_SERVICE_MODEL", "gpt-6-luna"), help="AI 서버 생성 모델 (보고서 기록용)")

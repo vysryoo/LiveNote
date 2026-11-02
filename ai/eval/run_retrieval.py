@@ -16,7 +16,7 @@ import asyncio
 from pathlib import Path
 from typing import Dict, List
 
-from eval.dataset import Section, lecture_dir, split_sections
+from eval.dataset import SPLITS, Section, lecture_dir, split_sections
 from eval.judge import judge_rows, judge_settings
 from eval.prepare_data import DATA_DIR
 from eval.report import save_raw, summarize, write_report
@@ -88,14 +88,15 @@ def retrieve_rows(experiment: str, chunk_settings, sections: List[Section], k: i
 def main() -> None:
     parser = argparse.ArgumentParser(description="검색 단계 Precision@k 측정")
     parser.add_argument("--experiment", required=True, help="실험 이름 (예: E0)")
-    parser.add_argument("--strategy", required=True, choices=["page", "recursive", "semantic"])
+    parser.add_argument("--strategy", required=True, choices=["page", "fixed", "recursive", "semantic"])
+    parser.add_argument("--chunk-chars", type=int, help="fixed 조각 크기(글자)")
     parser.add_argument("--chunk-tokens", type=int, help="recursive 조각 크기(토큰)")
     parser.add_argument("--chunk-overlap", type=int, help="recursive 겹침(토큰)")
     parser.add_argument("--percentile", type=float, help="semantic 경계 백분위수")
     parser.add_argument("--overlap-sentences", type=int, help="semantic 겹침 문장 수")
     parser.add_argument("--min-tokens", type=int, help="semantic 최소 토큰")
     parser.add_argument("--max-tokens", type=int, help="semantic 최대 토큰")
-    parser.add_argument("--split", default="test", choices=["dev", "test"])
+    parser.add_argument("--split", default="test", choices=SPLITS)
     parser.add_argument("--k", type=int, default=DEFAULT_K)
     parser.add_argument("--lectures", nargs="*", help="일부 강의만 측정 (확인용)")
     parser.add_argument("--max-sections", type=int, help="강의당 섹션 수 제한 (확인용)")
@@ -116,6 +117,7 @@ def main() -> None:
     from rag.splitters import ChunkSettings, count_tokens
 
     overrides = {
+        "chunk_chars": args.chunk_chars,
         "chunk_tokens": args.chunk_tokens,
         "chunk_overlap_tokens": args.chunk_overlap,
         "semantic_percentile": args.percentile,

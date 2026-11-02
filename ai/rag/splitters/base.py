@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from core.config import Settings
 
 TOKEN_ENCODING = "cl100k_base"
-STRATEGIES = ("page", "recursive", "semantic")
+STRATEGIES = ("page", "fixed", "recursive", "semantic")
 
 
 @dataclass(frozen=True)
@@ -38,6 +38,7 @@ class ChunkSettings:
     """분할 방식과 방식별 기준값."""
 
     strategy: str = "semantic"
+    chunk_chars: int = 400
     chunk_tokens: int = 300
     chunk_overlap_tokens: int = 50
     semantic_percentile: float = 95.0
@@ -62,6 +63,7 @@ class ChunkSettings:
         """
         values = {
             "strategy": settings.rag_chunk_strategy,
+            "chunk_chars": settings.rag_chunk_chars,
             "chunk_tokens": settings.rag_chunk_tokens,
             "chunk_overlap_tokens": settings.rag_chunk_overlap_tokens,
             "semantic_percentile": settings.rag_semantic_percentile,

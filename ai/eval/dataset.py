@@ -16,6 +16,8 @@ from eval.prepare_data import DATA_DIR, INBOX_DIR
 SPLITS_PATH = DATA_DIR / "splits.json"
 SAMPLES_PATH = DATA_DIR / "samples.json"
 SAMPLE_SEED = 20261029
+# dev·test는 기존 9강(설정 선택·최종 비교), law는 분할 방식 비교용 "AI와 법" 3강
+SPLITS = ("dev", "test", "law")
 
 
 @dataclass(frozen=True)
@@ -36,10 +38,10 @@ class Section:
 
 
 def lecture_ids(split: str) -> List[str]:
-    """dev 또는 test에 속한 강의ID 목록을 돌려준다.
+    """구분(dev, test, law)에 속한 강의ID 목록을 돌려준다.
 
     Args:
-        split: 'dev' 또는 'test'
+        split: SPLITS 중 하나
     Returns:
         강의ID 목록
     """
@@ -83,10 +85,10 @@ def load_sections(lecture_id: str) -> List[Section]:
 
 
 def split_sections(split: str) -> List[Section]:
-    """dev 또는 test 전체 섹션을 읽는다.
+    """구분에 속한 전체 섹션을 읽는다.
 
     Args:
-        split: 'dev' 또는 'test'
+        split: SPLITS 중 하나
     Returns:
         섹션 목록. 강의 순서, 강의 안에서는 section_index 순서
     """
@@ -119,7 +121,7 @@ def fixed_sample(name: str, split: str, per_field: int) -> List[Section]:
 
     Args:
         name: 표본 이름 (예: 'qna', 'resource')
-        split: 'dev' 또는 'test'
+        split: SPLITS 중 하나
         per_field: 분야당 섹션 수
     Returns:
         표본 섹션 목록
