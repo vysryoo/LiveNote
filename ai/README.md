@@ -38,7 +38,7 @@ uv run pytest                                   # 테스트 (외부 API 호출 �
 | `LLM_MODEL` | `gpt-6-luna` | 모든 LLM 호출의 모델 |
 | `LLM_<용도>_MODEL`, `LLM_<용도>_REASONING_EFFORT` | -, `none` | 용도별 모델·추론 강도. 용도: `SUMMARY`, `QA`, `QUERY`, `VERIFY` |
 | `RAG_PERSIST_DIR`, `RAG_UPLOAD_DIR` | `server_storage/chroma_data`, `server_storage/uploads` | 벡터 저장소, 업로드 PDF. 상대 경로는 `ai/` 기준 |
-| `RAG_CHUNK_STRATEGY` | `semantic` | 강의 자료 분할 방식: `page`, `recursive`, `semantic` |
+| `RAG_CHUNK_STRATEGY` | `semantic` | 강의 자료 분할 방식: `page`, `fixed`, `recursive`, `semantic` |
 | `SUMMARY_CALLBACK_URL` | - | 요약 요청에 콜백 URL이 없을 때 사용 |
 
 분할 세부값(`RAG_SEMANTIC_*`, `RAG_CHUNK_*`)과 요청 처리 기준(검색 개수, 질문 유형, 추천 개수·최소 점수)은 `core/config.py`에 있습니다.
@@ -51,7 +51,7 @@ uv run pytest                                   # 테스트 (외부 API 호출 �
 ai/
 ├── server/         # FastAPI 앱, 라우트, 요청 모델, 서비스 묶음, QnA·추천 공통 RAG 문맥 검색, 내부 인증, 콜백 전송
 ├── core/           # 설정, LLM 호출, 외부 API 재시도, 로깅, 공용 모델
-├── rag/            # PDF 분할(page, recursive, semantic), Chroma 저장·검색
+├── rag/            # PDF 분할(page, fixed, recursive, semantic), Chroma 저장·검색
 ├── qa/             # QnA 프롬프트, 생성 그래프, 스트림 파서
 ├── recommend/      # 추천 공통 흐름, 추천 그래프, 공급자(providers/: 논문, 위키, 영상, 블로그)
 ├── summary/        # 섹션 요약

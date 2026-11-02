@@ -1,9 +1,10 @@
 """
 강의 자료 분할
 
-PDF 쪽 텍스트를 검색 단위 조각으로 나눈다. 분할 방식은 세 가지다.
+PDF 쪽 텍스트를 검색 단위 조각으로 나눈다. 분할 방식은 네 가지다.
 
 - page: 쪽 하나를 조각 하나로 (기존 방식)
+- fixed: 문서를 이어 붙인 뒤 글자 수만 보고 자름. 문장·단어 경계를 보지 않음 (비교 기준선)
 - recursive: 문서를 이어 붙인 뒤 토큰 수 기준으로 자르고 이웃 조각과 겹침
 - semantic: 이웃 문장 묶음의 임베딩 거리가 크게 벌어지는 곳(주제 전환)에서 자르고 크기 보정·문장 겹침
 """
@@ -12,6 +13,7 @@ from __future__ import annotations
 from typing import List
 
 from .base import STRATEGIES, Chunk, ChunkSettings, PageText, count_tokens, normalize
+from .fixed import split_fixed
 from .page import split_by_page
 from .recursive import split_recursive
 from .semantic import split_semantic
@@ -33,6 +35,8 @@ def split_document(pages: List[PageText], settings: ChunkSettings, embeddings=No
     """
     if settings.strategy == "page":
         return split_by_page(pages)
+    if settings.strategy == "fixed":
+        return split_fixed(pages, settings)
     if settings.strategy == "recursive":
         return split_recursive(pages, settings)
     if embeddings is None:

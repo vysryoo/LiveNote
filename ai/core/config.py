@@ -130,6 +130,7 @@ class Settings(BaseSettings):
     rag_embedding_model: str = "text-embedding-3-large"
     rag_openai_api_key: Optional[str] = None
     rag_chunk_strategy: Optional[str] = None
+    rag_chunk_chars: Optional[int] = None
     rag_chunk_tokens: Optional[int] = None
     rag_chunk_overlap_tokens: Optional[int] = None
     rag_semantic_percentile: Optional[float] = None

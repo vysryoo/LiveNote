@@ -24,6 +24,31 @@ def test_recursive_split_records_page_range():
     assert [c.index for c in chunks] == list(range(len(chunks)))
 
 
+def test_fixed_split_cuts_every_n_chars_ignoring_sentences():
+    pages = [PageText(page=0, text="온정주의는 환자의 이익을 앞세운다. 자율성 존중은 자기결정을 앞세운다.")]
+
+    chunks = split_document(pages, ChunkSettings(strategy="fixed", chunk_chars=10))
+
+    assert [c.text for c in chunks] == ["온정주의는 환자의", "이익을 앞세운다.", "자율성 존중은 자기", "결정을 앞세운다."]
+    assert [c.index for c in chunks] == list(range(4))
+
+
+def test_fixed_split_records_page_range_across_page_boundary():
+    pages = [PageText(page=0, text="가" * 8), PageText(page=1, text="나" * 8)]
+
+    chunks = split_document(pages, ChunkSettings(strategy="fixed", chunk_chars=6))
+
+    assert [(c.page_start, c.page_end) for c in chunks] == [(0, 0), (0, 1), (1, 1)]
+
+
+def test_fixed_split_skips_blank_pieces():
+    pages = [PageText(page=0, text="가나"), PageText(page=1, text=" " * 10), PageText(page=2, text="다라")]
+
+    chunks = split_document(pages, ChunkSettings(strategy="fixed", chunk_chars=4))
+
+    assert [(c.text, c.page_start) for c in chunks] == [("가나", 0), ("다라", 2)]
+
+
 def test_join_wrapped_lines_only_on_paragraph_pages():
     paragraph = ["가" * 60 + " 이어지는", "문장의 끝입니다.", "짧은 줄"]
     slide = ["제목", "항목 하나", "항목 둘"]
