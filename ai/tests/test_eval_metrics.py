@@ -3,12 +3,15 @@ from __future__ import annotations
 import pytest
 
 from eval.agreement import cohen_kappa, draw_rows
+from eval.compare import paired_bootstrap, section_precisions
 from eval.dataset import Section, draw_sample
+from eval.diagnose import build_skeletons, cut_judgments, find_cuts, label_context
 from eval.judge import JudgeItem, build_user_prompt, cache_key, parse_judgment
 from eval.report import precision_at_k, summarize
 from eval.run_cards import eval_lecture_number, parse_sse, resource_content
 from eval.run_latency import item_timings, percentile
 from eval.run_retrieval import collection_name
+from rag.splitters import PageText
 
 
 def _section(lecture_id: str, field: str, index: int) -> Section:
@@ -126,3 +129,76 @@ def test_item_timings_takes_first_arrival_per_item():
     assert timings["항목 완료"] == [400.0, 500.0]
     assert timings["전체 완료"] == [500.0]
     assert percentile([1, 2, 3, 4], 0.5) == 2.5
+
+
+def test_section_precisions_sorts_by_rank_per_section():
+    rows = [
+        {"section_key": "a#0", "rank": 2, "relevant": False},
+        {"section_key": "a#0", "rank": 1, "relevant": True},
+        {"section_key": "b#0", "rank": 1, "relevant": False},
+    ]
+
+    assert section_precisions(rows, k=1) == {"a#0": 1.0, "b#0": 0.0}
+
+
+def test_paired_bootstrap_is_repeatable_and_uses_common_sections():
+    before = {"a": 0.5, "b": 0.25, "c": 0.75, "only_before": 1.0}
+    after = {"a": 1.0, "b": 0.5, "c": 1.0, "only_after": 0.0}
+
+    first = paired_bootstrap(before, after, rounds=500, seed=1)
+
+    assert first == paired_bootstrap(before, after, rounds=500, seed=1)
+    assert first["sections"] == 3
+    assert first["diff"] == pytest.approx(1 / 3)
+    assert 0.25 <= first["ci_low"] <= first["diff"] <= first["ci_high"] <= 0.5
+    assert (first["only_before"], first["only_after"]) == (1, 1)
+
+
+def test_paired_bootstrap_interval_contains_zero_without_consistent_difference():
+    before = {str(i): 0.5 for i in range(20)}
+    after = {str(i): 0.5 + (0.25 if i % 2 else -0.25) for i in range(20)}
+
+    result = paired_bootstrap(before, after, rounds=1000, seed=1)
+
+    assert result["ci_low"] < 0 < result["ci_high"]
+
+
+def test_find_cuts_detects_chunks_cut_inside_sentences():
+    pages = [PageText(page=0, text="* 자율성 존중\n* 온정주의 비교\n대리 결정은 환자 의사를 따른다.")]
+    skeletons = build_skeletons(pages)
+
+    cuts = find_cuts(["자율성 존중 온정주의 비교", "대리 결정은 환자", "의사를 따른다."], skeletons)
+
+    assert cuts == [False, True, True]
+
+
+def test_find_cuts_locates_semantic_chunks_without_bullets_and_marks_unknown():
+    pages = [PageText(page=0, text="* 첫 항목\n* 둘째 항목")]
+
+    assert find_cuts(["첫 항목 둘째 항목", "없는 문장"], build_skeletons(pages)) == [False, None]
+
+
+def test_cut_judgments_groups_by_cut_flag_per_lecture():
+    rows = [
+        {"lecture_id": "a", "chunk_id": "c0", "relevant": True},
+        {"lecture_id": "a", "chunk_id": "c1", "relevant": False},
+        {"lecture_id": "b", "chunk_id": "c0", "relevant": False},
+        {"lecture_id": "b", "chunk_id": "c9", "relevant": True},
+    ]
+
+    groups = cut_judgments(rows, {"a|c0": False, "a|c1": True, "b|c0": True})
+
+    assert groups == {"끊긴 조각": {"items": 2, "relevant": 0}, "온전한 조각": {"items": 1, "relevant": 1}}
+
+
+def test_label_context_counts_relevant_top_chunks_per_section():
+    retrieval = [
+        {"section_key": "a#0", "rank": 1, "relevant": True},
+        {"section_key": "a#0", "rank": 2, "relevant": False},
+        {"section_key": "a#0", "rank": 3, "relevant": True},
+    ]
+    resources = [{"section_key": "a#0", "rank": 1, "relevant": True}, {"section_key": "b#0", "rank": 1, "relevant": True}]
+
+    labeled = label_context(resources, retrieval)
+
+    assert [(r["section_key"], r["context"]) for r in labeled] == [("a#0", "관련 문맥 1/2")]

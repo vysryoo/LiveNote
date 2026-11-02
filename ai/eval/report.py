@@ -81,6 +81,20 @@ def save_raw(name: str, rows: List[dict]) -> Path:
     return path
 
 
+def load_raw(name: str) -> List[dict]:
+    """save_raw()로 저장한 판정 원자료를 읽는다.
+
+    Args:
+        name: 파일 이름 (확장자 제외, 예: E2_retrieval_test)
+    Returns:
+        판정 원자료
+    Raises:
+        FileNotFoundError: 원자료가 없는 경우
+    """
+    path = RAW_DIR / f"{name}.jsonl"
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
 def write_report(
     name: str, title: str, settings: dict, summary: Dict[str, dict], k: int, extra: Dict[str, Dict[str, dict]] | None = None
 ) -> Path:
