@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1760" height="800" viewBox="0 0 1760 800" font-family="Inter, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Segoe UI', Helvetica, Arial, sans-serif">
+<defs><marker id="arrow-ws" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563EB"/></marker><marker id="arrow-stomp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#9333EA"/></marker><marker id="arrow-http" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#059669"/></marker><marker id="arrow-sse" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#EA580C"/></marker><marker id="arrow-jdbc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#64748B"/></marker><marker id="arrow-inproc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4B5563"/></marker></defs>
+<rect width="1760" height="800" fill="#FFFFFF"/>
+<g><rect x="60" y="300" width="220" height="200" rx="14" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5"/><text x="170.0" y="398.0" text-anchor="middle" font-size="21" font-weight="600" fill="#1F2937">Browser</text><text x="170.0" y="422.0" text-anchor="middle" font-size="13.5" fill="#6B7280">React</text></g>
+<g><rect x="700" y="300" width="240" height="200" rx="14" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5"/><text x="820.0" y="398.0" text-anchor="middle" font-size="21" font-weight="600" fill="#1F2937">Backend</text><text x="820.0" y="422.0" text-anchor="middle" font-size="13.5" fill="#6B7280">Spring Boot</text></g>
+<g><rect x="1300" y="300" width="240" height="200" rx="14" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5"/><text x="1420.0" y="398.0" text-anchor="middle" font-size="21" font-weight="600" fill="#1F2937">AI Server</text><text x="1420.0" y="422.0" text-anchor="middle" font-size="13.5" fill="#6B7280">FastAPI</text></g>
+<g><rect x="700" y="60" width="240" height="100" rx="14" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5"/><text x="820.0" y="108.0" text-anchor="middle" font-size="21" font-weight="600" fill="#1F2937">OpenAI</text><text x="820.0" y="132.0" text-anchor="middle" font-size="13.5" fill="#6B7280">Realtime API</text></g>
+<g><rect x="1170" y="60" width="220" height="100" rx="14" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5"/><text x="1280.0" y="108.0" text-anchor="middle" font-size="21" font-weight="600" fill="#1F2937">OpenAI</text><text x="1280.0" y="132.0" text-anchor="middle" font-size="13.5" fill="#6B7280">LLM · Embedding API</text></g>
+<g><rect x="1430" y="60" width="300" height="100" rx="14" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5"/><text x="1580.0" y="108.0" text-anchor="middle" font-size="21" font-weight="600" fill="#1F2937">External APIs</text><text x="1580.0" y="132.0" text-anchor="middle" font-size="12.5" fill="#6B7280">Wikipedia · Naver · YouTube · OpenAlex</text></g>
+<g><rect x="440" y="640" width="200" height="100" rx="14" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5"/><text x="540.0" y="688.0" text-anchor="middle" font-size="21" font-weight="600" fill="#1F2937">RabbitMQ</text><text x="540.0" y="712.0" text-anchor="middle" font-size="13.5" fill="#6B7280">STOMP 중계</text></g>
+<g><rect x="720" y="640" width="200" height="100" rx="14" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5"/><text x="820.0" y="688.0" text-anchor="middle" font-size="21" font-weight="600" fill="#1F2937">DB</text><text x="820.0" y="712.0" text-anchor="middle" font-size="13.5" fill="#6B7280">PostgreSQL</text></g>
+<g><rect x="1000" y="640" width="200" height="100" rx="14" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5"/><text x="1100.0" y="688.0" text-anchor="middle" font-size="21" font-weight="600" fill="#1F2937">Redis</text><text x="1100.0" y="712.0" text-anchor="middle" font-size="13.5" fill="#6B7280">녹음 상태 · 잠금</text></g>
+<g><rect x="1300" y="640" width="240" height="100" rx="14" fill="#F3F4F6" stroke="#CBD0D6" stroke-width="1.5" stroke-dasharray="7 5"/><text x="1420.0" y="688.0" text-anchor="middle" font-size="21" font-weight="600" fill="#1F2937">ChromaDB</text><text x="1420.0" y="712.0" text-anchor="middle" font-size="13.5" fill="#6B7280">Local disk · in-process</text></g>
+<path d="M286,335 L694,335" fill="none" stroke="#059669" stroke-width="2.2" marker-start="url(#arrow-http)" marker-end="url(#arrow-http)"/>
+<text x="490.0" y="327" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#059669">REST</tspan><tspan fill="#374151"> · 로그인, 강의, 강의 자료 PDF</tspan></text>
+<path d="M286,380 L694,380" fill="none" stroke="#2563EB" stroke-width="2.2" marker-end="url(#arrow-ws)"/>
+<text x="490.0" y="372" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#2563EB">Binary</tspan><tspan fill="#374151"> · 음성 PCM16</tspan></text>
+<path d="M694,425 L286,425" fill="none" stroke="#2563EB" stroke-width="2.2" marker-end="url(#arrow-ws)"/>
+<text x="490.0" y="417" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#2563EB">JSON</tspan><tspan fill="#374151"> · 말하는 중인 글자</tspan></text>
+<path d="M694,470 L286,470" fill="none" stroke="#9333EA" stroke-width="2.2" marker-end="url(#arrow-stomp)"/>
+<text x="490.0" y="462" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#9333EA">JSON</tspan><tspan fill="#374151"> · 확정 전사, 요약, QnA 토큰, 추천 카드</tspan></text>
+<path d="M946,335 L1294,335" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow-http)"/>
+<text x="1120.0" y="327" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#059669">JSON</tspan><tspan fill="#374151"> · 요약·QnA·추천 요청</tspan></text>
+<path d="M946,380 L1294,380" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow-http)"/>
+<text x="1120.0" y="372" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#059669">PDF·JSON</tspan><tspan fill="#374151"> · 강의 자료, 최종 요약 색인</tspan></text>
+<path d="M1294,425 L946,425" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow-http)"/>
+<text x="1120.0" y="417" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#059669">JSON</tspan><tspan fill="#374151"> · 요약·추천 콜백</tspan></text>
+<path d="M1294,470 L946,470" fill="none" stroke="#EA580C" stroke-width="2.2" marker-end="url(#arrow-sse)"/>
+<text x="1120.0" y="462" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#EA580C">JSON</tspan><tspan fill="#374151"> · QnA 토큰</tspan></text>
+<path d="M790,294 L790,166" fill="none" stroke="#2563EB" stroke-width="2.2" marker-end="url(#arrow-ws)"/>
+<text x="780" y="236" text-anchor="end" font-size="12.5"><tspan font-weight="700" fill="#2563EB">JSON</tspan><tspan fill="#374151"> · 음성 (Base64)</tspan></text>
+<path d="M850,166 L850,294" fill="none" stroke="#2563EB" stroke-width="2.2" marker-end="url(#arrow-ws)"/>
+<text x="860" y="236" text-anchor="start" font-size="12.5"><tspan font-weight="700" fill="#2563EB">JSON</tspan><tspan fill="#374151"> · 말하는 중인 글자, 확정 문장</tspan></text>
+<path d="M1340,294 L1340,166" fill="none" stroke="#059669" stroke-width="2.2" marker-start="url(#arrow-http)" marker-end="url(#arrow-http)"/>
+<text x="1330" y="236" text-anchor="end" font-size="12.5"><tspan font-weight="700" fill="#059669">JSON</tspan><tspan fill="#374151"> · 프롬프트·생성 결과, 임베딩</tspan></text>
+<path d="M1500,294 L1500,166" fill="none" stroke="#059669" stroke-width="2.2" marker-start="url(#arrow-http)" marker-end="url(#arrow-http)"/>
+<text x="1510" y="236" text-anchor="start" font-size="12.5"><tspan font-weight="700" fill="#059669">JSON</tspan><tspan fill="#374151"> · 검색어·검색 결과</tspan></text>
+<path d="M740,506 L740,570 L540,570 L540,634" fill="none" stroke="#9333EA" stroke-width="2.2" marker-start="url(#arrow-stomp)" marker-end="url(#arrow-stomp)"/>
+<text x="640" y="562" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#9333EA">STOMP</tspan><tspan fill="#374151"> · 구독, 메시지 중계</tspan></text>
+<path d="M820,506 L820,634" fill="none" stroke="#64748B" stroke-width="2.2" stroke-dasharray="6 5" marker-start="url(#arrow-jdbc)" marker-end="url(#arrow-jdbc)"/>
+<text x="810" y="612" text-anchor="end" font-size="12.5"><tspan font-weight="700" fill="#64748B">SQL</tspan><tspan fill="#374151"> · 강의, 전사, 요약, 카드</tspan></text>
+<path d="M900,506 L900,590 L1100,590 L1100,634" fill="none" stroke="#64748B" stroke-width="2.2" stroke-dasharray="6 5" marker-start="url(#arrow-jdbc)" marker-end="url(#arrow-jdbc)"/>
+<text x="1000" y="582" text-anchor="middle" font-size="12.5"><tspan font-weight="700" fill="#64748B">Redis</tspan><tspan fill="#374151"> · 섹션 상태, 시각 보정값, 잠금</tspan></text>
+<path d="M1420,506 L1420,634" fill="none" stroke="#4B5563" stroke-width="2.2" marker-start="url(#arrow-inproc)" marker-end="url(#arrow-inproc)"/>
+<text x="1430" y="575" text-anchor="start" font-size="12.5"><tspan font-weight="700" fill="#4B5563">Vector</tspan><tspan fill="#374151"> · 강의 자료 조각, 최종 요약 저장·검색</tspan></text>
+<line x1="70" y1="610" x2="106" y2="610" stroke="#2563EB" stroke-width="3"/>
+<text x="118" y="615" font-size="13.5" fill="#374151">WebSocket</text>
+<line x1="70" y1="636" x2="106" y2="636" stroke="#9333EA" stroke-width="3"/>
+<text x="118" y="641" font-size="13.5" fill="#374151">WebSocket (STOMP)</text>
+<line x1="70" y1="662" x2="106" y2="662" stroke="#059669" stroke-width="3"/>
+<text x="118" y="667" font-size="13.5" fill="#374151">HTTP</text>
+<line x1="70" y1="688" x2="106" y2="688" stroke="#EA580C" stroke-width="3"/>
+<text x="118" y="693" font-size="13.5" fill="#374151">SSE</text>
+<line x1="70" y1="714" x2="106" y2="714" stroke="#64748B" stroke-width="3" stroke-dasharray="6 5"/>
+<text x="118" y="719" font-size="13.5" fill="#374151">JDBC · Redis</text>
+<line x1="70" y1="740" x2="106" y2="740" stroke="#4B5563" stroke-width="3"/>
+<text x="118" y="745" font-size="13.5" fill="#374151">In-process</text>
+</svg>
